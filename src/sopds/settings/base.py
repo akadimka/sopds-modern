@@ -89,6 +89,8 @@ if ENGINE == "sqlite":
     default_database = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / env("SOPDS_DB_NAME", default="sopds.db"),
+        # WAL-режим: позволяет веб-серверу и сканеру работать одновременно без блокировок
+        "OPTIONS": {"timeout": 30},
     }
 elif ENGINE == "postgres":
     default_database = {

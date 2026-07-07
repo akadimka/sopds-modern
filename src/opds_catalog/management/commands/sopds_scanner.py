@@ -69,6 +69,10 @@ class Command(BaseCommand):
         action = options["command"]
         self.logger = logging.getLogger("")
         self.logger.setLevel(logging.DEBUG)
+        # Убираем все хэндлеры Django/APScheduler — они используют стандартный StreamHandler
+        # без поддержки кириллики на Windows. Заменяем нашими безопасными версиями.
+        for h in list(self.logger.handlers):
+            self.logger.removeHandler(h)
         formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
 
         if settings.LOGLEVEL != logging.NOTSET:
