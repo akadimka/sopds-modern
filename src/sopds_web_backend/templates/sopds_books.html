@@ -26,17 +26,16 @@
 function openCoverModal(bookId) {
     var img = document.getElementById('CoverModalImage');
     img.src = '';
-    img.onload = function() { new Foundation.Reveal(document.getElementById('CoverModal')).open(); };
+    img.onload = function() { $('#CoverModal').foundation('open'); };
     img.src = "{% url 'opds_catalog:cover' 0 %}".replace('/0/', '/' + bookId + '/');
 }
 function openBookModal(bookId) {
     var frame = document.getElementById('BookFrame');
     frame.src = "{% url 'opds_catalog:view_html' 0 %}".replace('/0/', '/' + bookId + '/');
-    var modal = new Foundation.Reveal(document.getElementById('BookModal'));
-    modal.open();
-    document.getElementById('BookModal').addEventListener('closed.zf.reveal', function() {
+    $('#BookModal').foundation('open');
+    $('#BookModal').one('closed.zf.reveal', function() {
         frame.src = '';
-    }, { once: true });
+    });
 }
 </script>
 

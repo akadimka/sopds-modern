@@ -15,6 +15,7 @@ from django.http import (
     HttpResponseNotFound,
     HttpResponseRedirect,
 )
+from django.views.decorators.clickjacking import xframe_options_exempt
 from PIL import Image
 
 from book_tools.format import create_bookfile, mime_detector
@@ -155,6 +156,7 @@ def Thumbnail(request, book_id):
     return Cover(request, book_id, True)
 
 
+@xframe_options_exempt
 def ViewHtml(request, book_id):
     """Отдать книгу как HTML для чтения в браузере (только fb2)."""
     book = Book.objects.get(id=book_id)
