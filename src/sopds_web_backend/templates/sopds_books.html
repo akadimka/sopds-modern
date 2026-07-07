@@ -3,6 +3,43 @@
 {% load static %}
 
 {% block body %}
+
+<!-- Модальное окно: полная обложка -->
+<div id="CoverModal" class="reveal text-center" data-reveal
+     style="width:auto; max-width:92vw; background:transparent; border:none; box-shadow:none;">
+    <img id="CoverModalImage" src="" alt=""
+         style="display:block; max-width:90vw; max-height:90vh; width:auto; height:auto; margin:auto;">
+    <button class="close-button" data-close aria-label="Закрыть" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+<!-- Модальное окно: встроенный читатель -->
+<div id="BookModal" class="reveal" data-reveal style="width:96vw; height:94vh; padding:0;">
+    <iframe id="BookFrame" src="" style="width:100%; height:100%; border:none;"></iframe>
+    <button class="close-button" data-close aria-label="Закрыть" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+<script>
+function openCoverModal(bookId) {
+    var img = document.getElementById('CoverModalImage');
+    img.src = '';
+    img.onload = function() { new Foundation.Reveal(document.getElementById('CoverModal')).open(); };
+    img.src = "{% url 'opds_catalog:cover' 0 %}".replace('/0/', '/' + bookId + '/');
+}
+function openBookModal(bookId) {
+    var frame = document.getElementById('BookFrame');
+    frame.src = "{% url 'opds_catalog:view_html' 0 %}".replace('/0/', '/' + bookId + '/');
+    var modal = new Foundation.Reveal(document.getElementById('BookModal'));
+    modal.open();
+    document.getElementById('BookModal').addEventListener('closed.zf.reveal', function() {
+        frame.src = '';
+    }, { once: true });
+}
+</script>
+
 <div id="list-content" class="cell"
      hx-target="this"
      hx-select="#list-content"
@@ -39,7 +76,10 @@
         <div class="card-section grid-x grid-margin-x">
             <!-- Book cover && action links -->
             <div class="cell medium-2 small-4">
-                <img src="{% url 'opds_catalog:thumb' b.id %}" type="image/jpeg" >
+                <a href="#" onclick="openCoverModal({{ b.id }}); return false;" title="{% trans 'View cover' %}">
+                    <img src="{% url 'opds_catalog:thumb' b.id %}" type="image/jpeg"
+                         style="cursor:pointer; width:100%; height:auto;">
+                </a>
                 <!-- Action links -->
                 <div class="cell auto">
                     <div class="cell">
@@ -56,6 +96,16 @@
                         {% if b.format == 'fb2' and fb2tomobi %}
                         <i><a href="{% url 'opds_catalog:convert' b.id 'mobi' %}" title="mobi"><img src="{% static "images/sopds-ng-download-mobi.svg" %}" width="30" alt="mobi"></a></i>&nbsp;
                         {% endif %}
+                    </div>
+                    {% if b.format == 'fb2' %}
+                    <div class="cell" style="margin-top:0.4rem;">
+                        <a href="#" onclick="openBookModal({{ b.id }}); return false;"
+                           class="button small secondary" style="font-size:75%; padding:0.3rem 0.6rem;">
+                            📖 {% trans "Read" %}
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="cell" style="display:none;"><!-- spacer --></div>
                         {% if isbookshelf %}
                         &nbsp;&nbsp;<i><a href="#"
                            hx-delete="{% url "web:bsdel" %}?book={{ b.id }}"

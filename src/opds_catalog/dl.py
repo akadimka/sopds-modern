@@ -4,6 +4,7 @@ import io
 import logging
 import os
 import subprocess
+import sys
 import zipfile
 
 from constance import config
@@ -152,6 +153,29 @@ def Cover(
 
 def Thumbnail(request, book_id):
     return Cover(request, book_id, True)
+
+
+def ViewHtml(request, book_id):
+    """Отдать книгу как HTML для чтения в браузере (только fb2)."""
+    book = Book.objects.get(id=book_id)
+
+    if book.format.lower() != "fb2":
+        raise Http404
+
+    fb2_data = getFileData(book)
+    if fb2_data is None:
+        raise Http404
+
+    # Импортируем конвертер из src/convert/
+    convert_dir = os.path.join(os.path.dirname(__file__), "..", "convert")
+    convert_dir = os.path.normpath(convert_dir)
+    if convert_dir not in sys.path:
+        sys.path.insert(0, convert_dir)
+
+    from fb2_to_html import convert_bytes_to_html_string  # noqa: PLC0415
+    html_content = convert_bytes_to_html_string(fb2_data.read())
+
+    return HttpResponse(html_content, content_type="text/html; charset=utf-8")
 
 
 def ConvertFB2(request, book_id, convert_type):
