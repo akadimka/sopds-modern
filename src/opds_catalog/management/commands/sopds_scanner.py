@@ -4,19 +4,32 @@ import signal
 import sys
 
 
-class _SafeStreamHandler(logging.StreamHandler):
+class _SafeMixin:
+    """Заглушает handleError: предотвращает каскадный краш logging → traceback → stderr на Windows/Python 3.13."""
+    def handleError(self, record):
+        pass
+
+
+class _SafeStreamHandler(_SafeMixin, logging.StreamHandler):
     """StreamHandler без краша на символах, которые не поддерживает консоль Windows."""
 
     def emit(self, record):
         try:
             msg = self.format(record)
             stream = self.stream
-            stream.write(msg.encode("utf-8", errors="replace").decode(
-                stream.encoding or "utf-8", errors="replace"
-            ) + self.terminator)
+            stream.write(
+                msg.encode("utf-8", errors="replace").decode(
+                    stream.encoding or "utf-8", errors="replace"
+                ) + self.terminator
+            )
             self.flush()
         except Exception:
-            pass  # молча глотаем ошибки кодировки — файловый лог остаётся нетронутым
+            pass
+
+
+class _SafeFileHandler(_SafeMixin, logging.FileHandler):
+    """FileHandler с явной кодировкой UTF-8 — кириллические имена файлов не ломают лог."""
+    pass
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from constance import config
@@ -60,7 +73,7 @@ class Command(BaseCommand):
 
         if settings.LOGLEVEL != logging.NOTSET:
             # Создаем обработчик для записи логов в файл
-            fh = logging.FileHandler(config.SOPDS_SCANNER_LOG)
+            fh = _SafeFileHandler(config.SOPDS_SCANNER_LOG, encoding="utf-8")
             fh.setLevel(settings.LOGLEVEL)
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)
