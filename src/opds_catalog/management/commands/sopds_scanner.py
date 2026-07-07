@@ -3,14 +3,20 @@ import os
 import signal
 import sys
 
-# Принудительно переключаем stdout/stderr в UTF-8 на Windows,
-# чтобы logging не падал при выводе кириллических имён файлов.
-if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except AttributeError:
-        pass
+
+class _SafeStreamHandler(logging.StreamHandler):
+    """StreamHandler без краша на символах, которые не поддерживает консоль Windows."""
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            stream.write(msg.encode("utf-8", errors="replace").decode(
+                stream.encoding or "utf-8", errors="replace"
+            ) + self.terminator)
+            self.flush()
+        except Exception:
+            pass  # молча глотаем ошибки кодировки — файловый лог остаётся нетронутым
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from constance import config
@@ -61,7 +67,7 @@ class Command(BaseCommand):
 
         if options["verbose"]:
             # Создадим обработчик для вывода логов на экран с максимальным уровнем вывода
-            ch = logging.StreamHandler()
+            ch = _SafeStreamHandler()
             ch.setLevel(logging.DEBUG)
             ch.setFormatter(formatter)
             self.logger.addHandler(ch)
