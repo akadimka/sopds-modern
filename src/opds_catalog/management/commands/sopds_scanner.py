@@ -3,6 +3,15 @@ import os
 import signal
 import sys
 
+# Принудительно переключаем stdout/stderr в UTF-8 на Windows,
+# чтобы logging не падал при выводе кириллических имён файлов.
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except AttributeError:
+        pass
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 from constance import config
 from django.conf import settings as main_settings
