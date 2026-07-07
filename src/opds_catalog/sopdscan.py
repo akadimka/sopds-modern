@@ -126,7 +126,10 @@ class opdsScanner:
                 else:
                     self.logger.info("Process regular file {file}")
                     file_size = os.path.getsize(file)
-                    self.processfile(name, full_path, file, None, 0, file_size)
+                    try:
+                        self.processfile(name, full_path, file, None, 0, file_size)
+                    except Exception as err:
+                        self.logger.error(f"Skipping broken file {file}: {err}")
 
         # if config.SOPDS_DELETE_LOGICAL:
         #    self.books_deleted=opdsdb.books_del_logical()

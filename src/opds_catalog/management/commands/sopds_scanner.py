@@ -3,6 +3,34 @@ import os
 import signal
 import sys
 
+
+class _SafeMixin:
+    """Заглушает handleError: предотвращает каскадный краш logging → traceback → stderr на Windows/Python 3.13."""
+    def handleError(self, record):
+        pass
+
+
+class _SafeStreamHandler(_SafeMixin, logging.StreamHandler):
+    """StreamHandler без краша на символах, которые не поддерживает консоль Windows."""
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            stream.write(
+                msg.encode("utf-8", errors="replace").decode(
+                    stream.encoding or "utf-8", errors="replace"
+                ) + self.terminator
+            )
+            self.flush()
+        except Exception:
+            pass
+
+
+class _SafeFileHandler(_SafeMixin, logging.FileHandler):
+    """FileHandler с явной кодировкой UTF-8 — кириллические имена файлов не ломают лог."""
+    pass
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 from constance import config
 from django.conf import settings as main_settings
@@ -41,18 +69,22 @@ class Command(BaseCommand):
         action = options["command"]
         self.logger = logging.getLogger("")
         self.logger.setLevel(logging.DEBUG)
+        # Убираем все хэндлеры Django/APScheduler — они используют стандартный StreamHandler
+        # без поддержки кириллики на Windows. Заменяем нашими безопасными версиями.
+        for h in list(self.logger.handlers):
+            self.logger.removeHandler(h)
         formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
 
         if settings.LOGLEVEL != logging.NOTSET:
             # Создаем обработчик для записи логов в файл
-            fh = logging.FileHandler(config.SOPDS_SCANNER_LOG)
+            fh = _SafeFileHandler(config.SOPDS_SCANNER_LOG, encoding="utf-8")
             fh.setLevel(settings.LOGLEVEL)
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)
 
         if options["verbose"]:
             # Создадим обработчик для вывода логов на экран с максимальным уровнем вывода
-            ch = logging.StreamHandler()
+            ch = _SafeStreamHandler()
             ch.setLevel(logging.DEBUG)
             ch.setFormatter(formatter)
             self.logger.addHandler(ch)

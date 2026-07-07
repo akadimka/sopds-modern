@@ -4,6 +4,12 @@
 import os
 import sys
 
+# На Windows пересоздаём процесс с PYTHONUTF8=1, если ещё не установлено.
+# Это единственный надёжный способ сделать stdin/stdout/stderr UTF-8 до инициализации logging.
+if sys.platform == "win32" and not os.environ.get("PYTHONUTF8"):
+    os.environ["PYTHONUTF8"] = "1"
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
 
 def main():
     """Run administrative tasks."""
