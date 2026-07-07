@@ -85,7 +85,12 @@ WSGI_APPLICATION = "sopds.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 ENGINE = env("SOPDS_DB_ENGINE")
-if "postgres" == ENGINE:
+if ENGINE == "sqlite":
+    default_database = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / env("SOPDS_DB_NAME", default="sopds.db"),
+    }
+elif ENGINE == "postgres":
     default_database = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": env("SOPDS_DB_NAME"),
@@ -94,6 +99,8 @@ if "postgres" == ENGINE:
         "HOST": env("SOPDS_DB_HOST"),
         "PORT": env("SOPDS_DB_PORT"),
     }
+else:
+    raise ValueError(f"Unsupported SOPDS_DB_ENGINE: {ENGINE!r}. Use 'sqlite' or 'postgres'.")
 DATABASES = {"default": default_database}
 
 # Memcached

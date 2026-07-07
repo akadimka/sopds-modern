@@ -5,6 +5,11 @@
 /tmp
 /log
 
+### Local dev
+src/.env
+src/sopds.db
+src/log/
+
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/
