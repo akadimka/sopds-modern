@@ -1,22 +1,33 @@
 {% if state.running %}
-<div hx-get="{% url 'fb2parser:normalize_status' %}"
+<div id="norm-bar-inner"
+     hx-get="{% url 'fb2parser:normalize_status' %}"
      hx-trigger="every 2s"
-     hx-target="#norm-statusbar"
-     hx-swap="innerHTML"
+     hx-target="#norm-bar-inner"
+     hx-swap="outerHTML"
      style="display:flex; align-items:center; gap:0.6rem; width:100%;">
     <span style="color:#8e44ad; flex-shrink:0;">⏳</span>
-    <div style="flex:1; background:#e9ecef; border-radius:3px; height:6px; overflow:hidden;">
-        <div style="width:{{ pct }}%; background:#8e44ad; height:100%; transition:width 0.3s;"></div>
+    <div style="flex:1; background:#e9ecef; border-radius:3px; height:8px; overflow:hidden;">
+        <div style="width:{{ pct }}%; background:#8e44ad; height:100%; transition:width 0.4s;"></div>
     </div>
-    <span style="white-space:nowrap; color:#495057; flex-shrink:0;">{{ pct }}%</span>
-    <span style="color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:50%; font-size:0.78rem; font-family:monospace;">{{ state.current_file }}</span>
+    <span style="white-space:nowrap; color:#495057; flex-shrink:0; font-weight:600;">{{ pct }}%</span>
+    <span style="white-space:nowrap; color:#7f8c8d; flex-shrink:0; font-size:0.78rem;">{{ state.processed }}/{{ state.total }}</span>
+    <span style="color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45%; font-size:0.76rem; font-family:monospace;">{{ state.current_file }}</span>
 </div>
 {% elif state.done %}
-<span data-norm-done="1" style="color:#27ae60; flex-shrink:0;">✓ Готово:</span>
-<span style="flex-shrink:0;">{{ state.records_total }} записей</span>
-<span style="color:#7f8c8d; font-size:0.78rem; margin-left:0.5rem;">Фильтр работает по загруженным строкам</span>
+<div id="norm-bar-inner" data-norm-done="1" style="display:flex; align-items:center; gap:0.6rem; width:100%;">
+    <span style="color:#27ae60; font-size:1rem;">✓</span>
+    <span style="color:#27ae60; font-weight:600;">Готово:</span>
+    <span style="font-weight:600;">{{ state.records_total }} записей</span>
+    <span style="color:#7f8c8d; font-size:0.78rem; margin-left:0.5rem;">Таблица загружена автоматически. Клиентский фильтр работает мгновенно.</span>
+</div>
 {% elif state.error %}
-<span style="color:#c0392b;">❌ {{ state.error }}</span>
+<div id="norm-bar-inner" style="display:flex; align-items:center; gap:0.5rem; width:100%;">
+    <span style="color:#c0392b; font-weight:600;">❌ Ошибка:</span>
+    <span style="color:#c0392b; font-family:monospace; font-size:0.78rem;">{{ state.error }}</span>
+</div>
 {% else %}
-<span style="color:#6c757d;">Готово к работе. Нажмите «Создать CSV» для запуска.</span>
+<div id="norm-bar-inner" style="display:flex; align-items:center; gap:0.5rem; width:100%;">
+    <span style="color:#6c757d;">Готово к работе.</span>
+    <span style="color:#95a5a6; font-size:0.78rem;">Выберите папку и нажмите «Создать CSV».</span>
+</div>
 {% endif %}
