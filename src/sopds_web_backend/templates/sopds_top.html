@@ -16,10 +16,11 @@
         {% if sopds_auth %}
         <ul class="menu" style="font-size:90%;">
             {% if user.is_authenticated %}
-                <li><a href="{% url "web:logout" %}"><i class="fi-torsos"></i>{% trans "Logout" %} ({{ user.username }})</a></li>
             {% if user.is_superuser %}
+                <li><a href="{% url "fb2parser:dashboard" %}"><i class="fi-list"></i> FB2Parser</a></li>
             	<li><a href="{% url "admin:index" %}"><i class="fi-widget"></i>{% trans "Settings" %}</a></li>
             {% endif %}
+                <li><a href="{% url "web:logout" %}"><i class="fi-torsos"></i>{% trans "Logout" %} ({{ user.username }})</a></li>
             {% else %}
                 <li><a href="{% url "web:login" %}"><i class="fi-torsos"></i>{% trans "Login" %}</a></li>
             {% endif %}

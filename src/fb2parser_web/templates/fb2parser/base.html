@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="shortcut icon" type="image/icon" href="{% static "images/favicon.ico" %}"/>
+    <title>FB2Parser — {{ fb2_title }}</title>
+    <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "css/sopds-htmx.css" %}">
+    <style>
+        .fb2-topbar { background: #2c3e50; color: #fff; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .fb2-topbar-title { font-weight: bold; font-size: 1.1rem; letter-spacing: 0.05em; }
+        .fb2-topbar-links a { color: #ecf0f1; margin-left: 1.2rem; font-size: 0.9rem; text-decoration: none; }
+        .fb2-topbar-links a:hover { color: #f39c12; }
+        .fb2-navbar { background: #34495e; }
+        .fb2-navbar .menu > li > a { color: #ecf0f1; font-size: 0.9rem; padding: 0.7rem 1rem; }
+        .fb2-navbar .menu > li > a:hover { background: #f39c12; color: #fff; }
+        .fb2-navbar .is-dropdown-submenu { background: #2c3e50; border: none; min-width: 200px; }
+        .fb2-navbar .is-dropdown-submenu a { color: #ecf0f1; padding: 0.5rem 1rem; font-size: 0.85rem; }
+        .fb2-navbar .is-dropdown-submenu a:hover { background: #f39c12; color: #fff; }
+        .fb2-content { padding: 1.5rem 0; min-height: 60vh; }
+        .fb2-stub { background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 6px; padding: 3rem; text-align: center; color: #6c757d; margin-top: 1rem; }
+        .fb2-stub h3 { color: #495057; }
+    </style>
+</head>
+<body>
+<div class="grid-container fluid">
+
+    <!-- Топ-бар -->
+    <div class="fb2-topbar">
+        <div class="fb2-topbar-title">FB2PARSER</div>
+        <div class="fb2-topbar-links">
+            <a href="{% url 'fb2parser:dashboard' %}">FB2Parser</a>
+            <a href="{% url 'web:main' %}">↔ SOPDS</a>
+            {% if user.is_superuser %}
+            <a href="{% url 'admin:index' %}">Настройки</a>
+            {% endif %}
+            <a href="{% url 'web:logout' %}">Logout ({{ user.username }})</a>
+        </div>
+    </div>
+
+    <!-- Навигационная строка -->
+    <div class="fb2-navbar">
+        <div class="grid-container">
+            <ul class="menu" data-responsive-menu="dropdown">
+
+                <!-- Файл -->
+                <li class="is-dropdown-submenu-parent" data-is-click="true">
+                    <a href="#">Файл</a>
+                    <ul class="menu is-dropdown-submenu">
+                        <li><a href="#">Новая сессия</a></li>
+                        <li><a href="#">Открыть результаты</a></li>
+                        <li><a href="#">Сохранить результаты</a></li>
+                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li><a href="#">Загрузка жанров</a></li>
+                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li><a href="{% url 'admin:index' %}">Настройки</a></li>
+                    </ul>
+                </li>
+
+                <!-- Действия -->
+                <li class="is-dropdown-submenu-parent" data-is-click="true">
+                    <a href="#">Действия</a>
+                    <ul class="menu is-dropdown-submenu">
+                        <li><a href="{% url 'fb2parser:scan' %}">Сканирование</a></li>
+                        <li><a href="{% url 'fb2parser:normalize' %}">Нормализация</a></li>
+                        <li><a href="{% url 'fb2parser:sync' %}">Синхронизация</a></li>
+                        <li><a href="{% url 'fb2parser:archive' %}">Заархивировать</a></li>
+                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li><a href="{% url 'fb2parser:database' %}">База данных</a></li>
+                    </ul>
+                </li>
+
+                <!-- Жанры -->
+                <li><a href="{% url 'fb2parser:genres' %}">Жанры</a></li>
+
+                <!-- Библиотека -->
+                <li class="is-dropdown-submenu-parent" data-is-click="true">
+                    <a href="#">Библиотека</a>
+                    <ul class="menu is-dropdown-submenu">
+                        <li><a href="{% url 'fb2parser:dashboard' %}">Статистика</a></li>
+                        <li><a href="{% url 'fb2parser:search' %}">Поиск по метаданным</a></li>
+                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li><a href="{% url 'fb2parser:new_books' %}">Новые книги</a></li>
+                        <li><a href="{% url 'fb2parser:series_gaps' %}">Серии с пробелами</a></li>
+                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li><a href="{% url 'fb2parser:integrity' %}">Проверка целостности FB2</a></li>
+                    </ul>
+                </li>
+
+                <!-- Лог -->
+                <li><a href="{% url 'fb2parser:log' %}">Лог</a></li>
+
+            </ul>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="grid-container fb2-content">
+        {% block content %}{% endblock %}
+    </div>
+
+</div>
+
+<script src="{% static "js/vendor/jquery.min.js" %}"></script>
+<script src="{% static "js/vendor/foundation.min.js" %}"></script>
+<script src="{% static "js/vendor/htmx.min.js" %}"></script>
+<script>
+    $(document).foundation();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

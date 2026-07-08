@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "constance",
     "opds_catalog",
     "sopds_web_backend",
+    "fb2parser_web",
     "django.contrib.admin",
     "django.contrib.staticfiles",
 ]

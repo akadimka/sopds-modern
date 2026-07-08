@@ -23,6 +23,7 @@ from django.views.generic import RedirectView
 urlpatterns = [
     path("opds/", include("opds_catalog.urls", namespace="opds")),
     path("web/", include("sopds_web_backend.urls", namespace="web")),
+    path("fb2parser/", include("fb2parser_web.urls", namespace="fb2parser")),
     path("admin/", admin.site.urls),
     # url(r'^logout/$', logout, {'next_page':'/web/'},name='logout'),
     # url(r'^', include('sopds_web_backend.urls', namespace='web', app_name='opds_web_backend')),
