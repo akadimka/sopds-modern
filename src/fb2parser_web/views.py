@@ -637,15 +637,13 @@ def _norm_restore_from_cache(folder_path):
 
 
 def _run_normalize_thread(folder_path):
-    from .fb2parser_bridge import _ensure_path
     from django import db
+    from constance import config as cfg
     db.connections.close_all()
     try:
-        fb2parser_path = _ensure_path()
-        import importlib, os as _os
-        mod = importlib.import_module("regen_csv")
-        config_path = _os.path.join(fb2parser_path, "config.json")
-        service = mod.RegenCSVService(config_path)
+        from fb2parser_core import regen_csv
+        config_path = os.path.join(cfg.FB2PARSER_PATH, "config.json")
+        service = regen_csv.RegenCSVService(config_path)
 
         def _progress(current, total, status=""):
             with _norm_lock:
@@ -757,8 +755,7 @@ def normalize_table(request):
 @staff_member_required(login_url="/web/login/")
 def names_list(request):
     """Возвращает список авторов с неизвестным полом из текущего _norm_state."""
-    from .fb2parser_bridge import _ensure_path
-    import importlib, re as _re
+    import re as _re
     with _norm_lock:
         records = list(_norm_state["records"])
         cached_folder = _norm_state.get("folder", "")
@@ -770,13 +767,11 @@ def names_list(request):
     if not records:
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 
-    fb2parser_path = _ensure_path()
-    import sys
-    if fb2parser_path not in sys.path:
-        sys.path.insert(0, fb2parser_path)
-
-    config_path = os.path.join(fb2parser_path, "config.json")
-    sm = importlib.import_module("settings_manager").SettingsManager(config_path)
+    from constance import config as cfg
+    from fb2parser_core.settings_manager import SettingsManager
+    from fb2parser_core.author_pipeline_service import guess_first_name
+    config_path = os.path.join(cfg.FB2PARSER_PATH, "config.json")
+    sm = SettingsManager(config_path)
     male_set   = {n.lower() for n in sm.get_male_names()}
     female_set = {n.lower() for n in sm.get_female_names()}
 
@@ -802,7 +797,6 @@ def names_list(request):
                     break
             if gender:
                 continue
-            guess_first_name = importlib.import_module("author_pipeline_service").guess_first_name
             first_name = guess_first_name(author, source)
             rows.append({"source": source, "author": author,
                          "first_name": first_name, "file_path": r.get("file_path", "")})
@@ -818,8 +812,9 @@ def names_save(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
-    import json, importlib
-    from .fb2parser_bridge import _ensure_path
+    import json
+    from constance import config as cfg
+    from fb2parser_core.settings_manager import SettingsManager
 
     try:
         data = json.loads(request.body)
@@ -832,13 +827,8 @@ def names_save(request):
     if not male_new and not female_new:
         return JsonResponse({"added": 0})
 
-    fb2parser_path = _ensure_path()
-    import sys
-    if fb2parser_path not in sys.path:
-        sys.path.insert(0, fb2parser_path)
-
-    config_path = os.path.join(fb2parser_path, "config.json")
-    sm = importlib.import_module("settings_manager").SettingsManager(config_path)
+    config_path = os.path.join(cfg.FB2PARSER_PATH, "config.json")
+    sm = SettingsManager(config_path)
 
     male_added = female_added = 0
     if male_new:
