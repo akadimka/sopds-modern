@@ -72,7 +72,8 @@
         </button>
         <span id="norm-spinner" class="htmx-indicator" style="font-size:0.78rem; color:#bdc3c7;">Запуск...</span>
 
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;"
+                onclick="namesOpen()">
             Получить имена
         </button>
         <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
@@ -97,6 +98,29 @@
                 {% if not state.log %}disabled{% endif %}>
             Логи
         </button>
+    </div>
+</div>
+
+<!-- Панель «Получить имена» -->
+<div id="names-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(600px,90vh); display:flex; flex-direction:column; overflow:hidden;">
+        <!-- Заголовок -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#34495e; color:#ecf0f1; flex-shrink:0;">
+            <strong>Авторы с неопределённым полом</strong>
+            <button onclick="namesClose()" style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+        </div>
+        <!-- Контент (загружается htmx) -->
+        <div id="names-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
+            <div style="color:#7f8c8d; font-size:0.85rem;">Загрузка...</div>
+        </div>
+        <!-- Футер -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0.8rem; border-top:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
+            <span id="names-save-result" style="font-size:0.82rem;"></span>
+            <div style="display:flex; gap:0.5rem;">
+                <button class="button secondary" style="margin:0; font-size:0.82rem;" onclick="namesClose()">Отмена</button>
+                <button class="button" style="margin:0; font-size:0.82rem; background:#27ae60;" onclick="namesSave()">💾 Сохранить</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -149,6 +173,58 @@ function normFilter(q) {
         if (countEl) countEl.textContent = q ? visible + ' из ' + rows.length : rows.length + ' строк';
     }, 150);
 }
+
+// ── Панель «Получить имена» ──────────────────────────────────────────────────
+function namesOpen() {
+    var panel = document.getElementById('names-panel');
+    panel.style.display = 'flex';
+    document.getElementById('names-save-result').textContent = '';
+    htmx.ajax('GET', "{% url 'fb2parser:names_list' %}",
+              {target: '#names-body', swap: 'innerHTML'});
+}
+function namesClose() {
+    document.getElementById('names-panel').style.display = 'none';
+}
+function namesMassSet(gender) {
+    document.querySelectorAll('#names-tbody .names-gender-sel').forEach(function(s) {
+        s.value = gender;
+    });
+}
+async function namesSave() {
+    var male = [], female = [];
+    document.querySelectorAll('#names-tbody .names-row').forEach(function(tr) {
+        var author = tr.dataset.author;
+        var gender = tr.querySelector('.names-gender-sel').value;
+        if (gender === 'М') male.push(author.split(' ')[0]);
+        else if (gender === 'Ж') female.push(author.split(' ')[0]);
+    });
+    if (!male.length && !female.length) {
+        document.getElementById('names-save-result').textContent = 'Не выбрано ни одного имени.';
+        return;
+    }
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    var res = await fetch("{% url 'fb2parser:names_save' %}", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json',
+                  'X-CSRFToken': csrfToken ? csrfToken.value : ''},
+        body: JSON.stringify({male: male, female: female})
+    });
+    var data = await res.json();
+    var el = document.getElementById('names-save-result');
+    if (data.added !== undefined) {
+        el.style.color = '#27ae60';
+        el.textContent = '✓ Добавлено: ' + data.added + ' имён (муж.: ' + data.male + ', жен.: ' + data.female + ')';
+        setTimeout(namesClose, 2000);
+    } else {
+        el.style.color = '#c0392b';
+        el.textContent = '❌ ' + (data.error || 'Ошибка');
+    }
+}
+// Закрытие по клику вне панели
+document.addEventListener('click', function(e) {
+    var panel = document.getElementById('names-panel');
+    if (panel && panel.style.display === 'flex' && e.target === panel) namesClose();
+});
 
 function normShowLog() {
     document.getElementById('norm-log-panel').style.display = 'flex';

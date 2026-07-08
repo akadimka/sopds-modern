@@ -693,6 +693,107 @@ def normalize_table(request):
     return HttpResponse(html)
 
 
+@staff_member_required(login_url="/web/login/")
+def names_list(request):
+    """Возвращает список авторов с неизвестным полом из текущего _norm_state."""
+    from .fb2parser_bridge import _ensure_path
+    import importlib, re as _re
+    with _norm_lock:
+        records = list(_norm_state["records"])
+    if not records:
+        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
+
+    fb2parser_path = _ensure_path()
+    import sys
+    if fb2parser_path not in sys.path:
+        sys.path.insert(0, fb2parser_path)
+
+    config_path = os.path.join(fb2parser_path, "config.json")
+    sm = importlib.import_module("settings_manager").SettingsManager(config_path)
+    male_set   = {n.lower() for n in sm.get_male_names()}
+    female_set = {n.lower() for n in sm.get_female_names()}
+
+    seen = set()
+    rows = []
+    for r in records:
+        combined = (r.get("proposed_author") or "").strip()
+        if not combined or combined == "Сборник":
+            continue
+        source = r.get("author_source") or ""
+        for author in (a.strip() for a in _re.split(r'[,;]+', combined) if a.strip()):
+            if author in seen:
+                continue
+            seen.add(author)
+            gender = ""
+            for word in author.split():
+                w = word.lower()
+                if w in male_set:
+                    gender = "М"
+                    break
+                if w in female_set:
+                    gender = "Ж"
+                    break
+            if gender:
+                continue
+            # угадаем имя (первое слово)
+            first_name = author.split()[0] if author.split() else ""
+            rows.append({"source": source, "author": author,
+                         "first_name": first_name, "file_path": r.get("file_path", "")})
+
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/names_list.html", {"rows": rows})
+    return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def names_save(request):
+    """POST {male: [...], female: [...]} — добавляет имена в app_settings.json."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json, importlib
+    from .fb2parser_bridge import _ensure_path
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    male_new   = [n.strip() for n in data.get("male", [])   if n.strip()]
+    female_new = [n.strip() for n in data.get("female", []) if n.strip()]
+
+    if not male_new and not female_new:
+        return JsonResponse({"added": 0})
+
+    fb2parser_path = _ensure_path()
+    import sys
+    if fb2parser_path not in sys.path:
+        sys.path.insert(0, fb2parser_path)
+
+    config_path = os.path.join(fb2parser_path, "config.json")
+    sm = importlib.import_module("settings_manager").SettingsManager(config_path)
+
+    male_added = female_added = 0
+    if male_new:
+        existing = set(sm.get_male_names())
+        actual = set(male_new) - existing
+        if actual:
+            merged = sorted(existing | actual, key=str.lower)
+            sm.set_male_names(merged)
+            male_added = len(actual)
+
+    if female_new:
+        existing = set(sm.get_female_names())
+        actual = set(female_new) - existing
+        if actual:
+            merged = sorted(existing | actual, key=str.lower)
+            sm.set_female_names(merged)
+            female_added = len(actual)
+
+    return JsonResponse({"added": male_added + female_added,
+                         "male": male_added, "female": female_added})
+
+
 # ── Синхронизация ─────────────────────────────────────────────────────────────
 
 _sync_lock = threading.Lock()

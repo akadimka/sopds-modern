@@ -1,0 +1,47 @@
+{% if rows %}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0;">
+    <span style="font-size:0.82rem; color:#495057;">
+        Найдено <strong>{{ rows|length }}</strong> авторов с неопределённым полом.
+        Назначьте пол и нажмите «Сохранить».
+    </span>
+    <div style="display:flex; gap:0.4rem;">
+        <button class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem;"
+                onclick="namesMassSet('М')">Все — Муж.</button>
+        <button class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem;"
+                onclick="namesMassSet('Ж')">Все — Жен.</button>
+    </div>
+</div>
+
+<div style="flex:1; overflow-y:auto; min-height:0;">
+    <table style="border-collapse:collapse; font-size:0.8rem; width:100%;">
+        <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
+            <tr>
+                <th style="padding:0.3rem 0.5rem; text-align:left; width:100px;">Источник</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left;">Автор</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left; width:130px;">Имя</th>
+                <th style="padding:0.3rem 0.5rem; text-align:center; width:90px;">Пол</th>
+            </tr>
+        </thead>
+        <tbody id="names-tbody">
+        {% for r in rows %}
+        <tr class="names-row" data-author="{{ r.author }}" style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:0.18rem 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">{{ r.source }}</td>
+            <td style="padding:0.18rem 0.5rem; white-space:nowrap;">{{ r.author }}</td>
+            <td style="padding:0.18rem 0.5rem; color:#555; font-size:0.78rem;">{{ r.first_name }}</td>
+            <td style="padding:0.18rem 0.5rem; text-align:center;">
+                <select class="names-gender-sel" style="margin:0; font-size:0.78rem; padding:0.1rem 0.2rem; width:80px;">
+                    <option value="">—</option>
+                    <option value="М">Муж.</option>
+                    <option value="Ж">Жен.</option>
+                </select>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div style="padding:2rem; text-align:center; color:#27ae60; font-size:0.9rem;">
+    ✓ Все авторы уже имеют определённый пол — ничего добавлять не нужно.
+</div>
+{% endif %}
