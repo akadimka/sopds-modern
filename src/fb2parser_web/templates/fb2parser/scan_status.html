@@ -35,6 +35,16 @@
         <tr><td>Ошибок:</td><td style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</td></tr>
         <tr><td>Всего обработано:</td><td>{{ state.processed }}</td></tr>
     </table>
+    {% if state.bad_list %}
+    <details style="margin-top:1rem;">
+        <summary style="cursor:pointer; font-size:0.9rem; color:#c0392b;">▶ Показать ошибки ({{ state.bad_list|length }})</summary>
+        <div style="margin-top:0.5rem; max-height:300px; overflow-y:auto; font-size:0.78rem; font-family:monospace; background:#fff5f5; padding:0.5rem; border:1px solid #f5c6cb; border-radius:4px;">
+            {% for msg in state.bad_list %}
+            <div style="border-bottom:1px solid #f5c6cb; padding:0.2rem 0;">{{ msg }}</div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
 
 {% elif state.error %}
 <div id="scan-status">

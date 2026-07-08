@@ -22,7 +22,19 @@ _scan_state: dict = {
     "books_added": 0,
     "books_skipped": 0,
     "bad_books": 0,
+    "bad_list": [],   # [(rel_path/name, error_msg), ...]
 }
+
+
+class _ErrorCapture(logging.Handler):
+    """Перехватывает ERROR-записи сканера и складывает их в _scan_state."""
+
+    def emit(self, record):
+        if record.levelno >= logging.ERROR:
+            msg = self.format(record)
+            with _scan_lock:
+                if len(_scan_state["bad_list"]) < 200:
+                    _scan_state["bad_list"].append(msg)
 
 
 class _TrackingScanner(opdsScanner):
@@ -64,7 +76,14 @@ def _run_scan_thread(root_path):
             _scan_state["processed"] = 0
             _scan_state["current"] = ""
 
-        scanner = _TrackingScanner(logging.getLogger("fb2parser.scan"))
+        scan_logger = logging.getLogger("fb2parser.scan")
+        capture = _ErrorCapture()
+        capture.setLevel(logging.ERROR)
+        scan_logger.addHandler(capture)
+        # also capture errors from the root scanner logger
+        root_scan_logger = logging.getLogger("scanner")
+        root_scan_logger.addHandler(capture)
+        scanner = _TrackingScanner(scan_logger)
         scanner.scan_all()
         Counter.objects.update_known_counters()
 
@@ -144,6 +163,7 @@ def scan_start(request):
             "running": True, "done": False, "error": None,
             "processed": 0, "total": 0, "current": "",
             "books_added": 0, "books_skipped": 0, "bad_books": 0,
+            "bad_list": [],
         })
 
     t = threading.Thread(target=_run_scan_thread, args=(root,), daemon=True)
