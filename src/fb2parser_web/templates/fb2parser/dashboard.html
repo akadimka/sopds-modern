@@ -96,6 +96,8 @@
         <button class="button warning" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
                 onclick="gpOpen()">🏷️ Присвоить жанр</button>
         <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
+                onclick="selAll()">☑ Выбрать все</button>
+        <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
                 onclick="selClear()">✕ Снять выделение</button>
         <div id="sel-result" style="font-size:0.82rem; margin-left:auto;"></div>
     </div>
@@ -160,16 +162,54 @@ function reloadTree(path) {
 }
 
 /* ── Выделение папок ────────────────────────────────────── */
-function ftreeCheckChange(cb) {
+function _ftreeApplyCb(cb, checked) {
     var path = cb.dataset.path;
     var nodeId = cb.dataset.nodeId;
-    if (cb.checked) {
+    cb.checked = checked;
+    cb.indeterminate = false;
+    var row = document.getElementById('row-' + nodeId);
+    if (checked) {
         _selectedPaths.set(path, nodeId);
-        document.getElementById('row-' + nodeId).classList.add('selected');
+        if (row) row.classList.add('selected');
     } else {
         _selectedPaths.delete(path);
-        document.getElementById('row-' + nodeId).classList.remove('selected');
+        if (row) row.classList.remove('selected');
     }
+}
+
+function _cascadeDown(nodeId, checked) {
+    var childrenDiv = document.getElementById('ftch-' + nodeId);
+    if (!childrenDiv) return;
+    childrenDiv.querySelectorAll('.ftree-checkbox').forEach(function(childCb) {
+        _ftreeApplyCb(childCb, checked);
+    });
+}
+
+function _bubbleUpIndeterminate(cb) {
+    var row = cb.closest('.ftree-row');
+    if (!row) return;
+    var node = row.parentElement;
+    if (!node) return;
+    var parentChildren = node.parentElement;
+    if (!parentChildren || !parentChildren.classList.contains('ftree-children')) return;
+    var parentNode = parentChildren.parentElement;
+    if (!parentNode) return;
+    var parentCb = parentNode.querySelector(':scope > .ftree-row > .ftree-checkbox');
+    if (!parentCb || parentCb.checked) return;   // already checked — don't touch
+    var siblings = parentChildren.querySelectorAll(':scope > .ftree-node > .ftree-row > .ftree-checkbox');
+    var anyChecked = false, allChecked = true;
+    siblings.forEach(function(s) {
+        if (s.checked || s.indeterminate) anyChecked = true;
+        if (!s.checked) allChecked = false;
+    });
+    parentCb.indeterminate = anyChecked && !allChecked;
+    _bubbleUpIndeterminate(parentCb);
+}
+
+function ftreeCheckChange(cb) {
+    _ftreeApplyCb(cb, cb.checked);
+    _cascadeDown(cb.dataset.nodeId, cb.checked);
+    _bubbleUpIndeterminate(cb);
     selUpdateBar();
 }
 
@@ -192,10 +232,21 @@ function selUpdateBar() {
     }
 }
 
+function selAll() {
+    // Только верхний уровень (не внутри .ftree-children) — каскад сам пойдёт вниз
+    document.querySelectorAll('#tree-view .ftree-checkbox').forEach(function(cb) {
+        if (!cb.closest('.ftree-children') && !cb.checked) {
+            cb.checked = true;
+            ftreeCheckChange(cb);
+        }
+    });
+}
+
 function selClear() {
     _selectedPaths.clear();
     document.querySelectorAll('.ftree-checkbox').forEach(function(cb) {
         cb.checked = false;
+        cb.indeterminate = false;
     });
     document.querySelectorAll('.ftree-row.selected').forEach(function(r) {
         r.classList.remove('selected');
