@@ -1218,7 +1218,10 @@ class RegenCSVService:
         _TRAIL_DIGIT = _re.compile(r'^(.+?)\s+(\d{1,2})\s*$')
 
         # Строим множество (author_norm, series_norm) для всех записей без хвостовой цифры
-        from series_normalizer import _nfc_lower_yo as _nky
+        try:
+            from series_normalizer import _nfc_lower_yo as _nky
+        except ImportError:
+            from .series_normalizer import _nfc_lower_yo as _nky
         base_series: set = set()
         for rec in self.records:
             if not rec.proposed_series or '\\' in rec.proposed_series:
@@ -1376,7 +1379,10 @@ class RegenCSVService:
           - дедушка-папка не является коллекционной папкой (не в collection_keywords)
         """
         from pathlib import Path as _P
-        from extraction_constants import FILE_EXTENSION_FOLDER_NAMES
+        try:
+            from extraction_constants import FILE_EXTENSION_FOLDER_NAMES
+        except ImportError:
+            from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES
 
         # Нормализованные ключи author_folder_cache (lowercase paths)
         _author_cache_lower = {str(k).lower() for k in self.author_folder_cache}
