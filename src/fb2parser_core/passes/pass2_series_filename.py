@@ -493,7 +493,10 @@ class Pass2SeriesFilename:
                             continue
 
                         if author_was_series:
-                            from name_normalizer import AuthorName as _AN
+                            try:
+                                from name_normalizer import AuthorName as _AN
+                            except ImportError:
+                                from ..name_normalizer import AuthorName as _AN
                             _an = _AN(extracted_author)
                             canonical_author = _an.normalized if (_an.is_valid and _an.normalized) else extracted_author
                             record.proposed_author = canonical_author
@@ -815,7 +818,10 @@ class Pass2SeriesFilename:
                 _surname_lc = record.proposed_author.lower().replace('ё', 'е')
                 if ('(' in _direct_parent
                         and _surname_lc in _direct_parent.lower().replace('ё', 'е')):
-                    from name_normalizer import normalize_author_name as _norm_au
+                    try:
+                        from name_normalizer import normalize_author_name as _norm_au
+                    except ImportError:
+                        from ..name_normalizer import normalize_author_name as _norm_au
                     _expanded = None
                     for _raw_au in record.metadata_authors.replace(';', ',').split(','):
                         _raw_au = _raw_au.strip()

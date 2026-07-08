@@ -224,7 +224,10 @@ class Pass2Filename:
                     # This prevents "First Middle Last" metadata (e.g. "Кристофер Джон Сэнсом")
                     # from being stored under the first-name key ("кристофер"), which would
                     # incorrectly expand unrelated single-word authors (e.g. "Кристофер" = Пол Кристофер).
-                    from name_normalizer import AuthorName as _AN2
+                    try:
+                        from name_normalizer import AuthorName as _AN2
+                    except ImportError:
+                        from ..name_normalizer import AuthorName as _AN2
                     _an = _AN2(author)
                     normalized_author = _an.normalized if (_an.is_valid and _an.normalized) else author
                     # Only use normalized form if it successfully reordered to "Surname First"
@@ -854,7 +857,10 @@ class Pass2Filename:
                         sep = '; ' if '; ' in record.metadata_authors else ', '
                         meta_parts = [a.strip() for a in record.metadata_authors.split(sep) if a.strip()]
                         if len(meta_parts) == 2:
-                            from author_normalizer_extended import AuthorNormalizer as _AN
+                            try:
+                                from author_normalizer_extended import AuthorNormalizer as _AN
+                            except ImportError:
+                                from ..author_normalizer_extended import AuthorNormalizer as _AN
                             _norm = _AN(self.settings)
                             normalized_pair = [
                                 _norm.normalize_format(a) for a in meta_parts

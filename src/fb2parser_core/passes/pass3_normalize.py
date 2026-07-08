@@ -437,7 +437,10 @@ class Pass3Normalize:
                             # it successfully identified first+last (e.g. "Кристофер Джон Сэнсом"
                             # → "Сэнсом Кристофер"). Otherwise fall back to first-2-words
                             # truncation (safe for Russian patronymics like Иванов Иван Иванович).
-                            from name_normalizer import AuthorName as _AN
+                            try:
+                                from name_normalizer import AuthorName as _AN
+                            except ImportError:
+                                from ..name_normalizer import AuthorName as _AN
                             _an = _AN(auth)
                             if _an.is_valid and len(_an.normalized.split()) == 2:
                                 auth = _an.normalized
