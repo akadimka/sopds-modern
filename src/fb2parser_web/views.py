@@ -264,15 +264,14 @@ def folder_tree(request):
             children = os.listdir(full)
         except PermissionError:
             children = []
-        fb2_count = sum(1 for f in children if f.lower().endswith(".fb2"))
         has_subdirs = any(os.path.isdir(os.path.join(full, f)) for f in children)
-        if fb2_count == 0 and not has_subdirs:
-            continue  # пустая папка без вложенных — скрываем
+        has_fb2_direct = any(f.lower().endswith(".fb2") for f in children)
+        if not has_fb2_direct and not has_subdirs:
+            continue  # пустая папка — скрываем
         node_id = "n" + hashlib.md5(full.encode("utf-8", errors="replace")).hexdigest()[:12]
         entries.append({
             "path": full,
             "name": name,
-            "fb2_count": fb2_count,
             "has_subdirs": has_subdirs,
             "node_id": node_id,
         })
@@ -280,6 +279,26 @@ def folder_tree(request):
     from django.template.loader import render_to_string
     html = render_to_string("fb2parser/folder_tree.html", {"folders": entries})
     return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def folder_count(request):
+    """Рекурсивный подсчёт FB2 в папке — вызывается асинхронно после рендера узла."""
+    path = request.GET.get("path", "").strip()
+    if not path or not os.path.isdir(path):
+        return HttpResponse("")
+    count = 0
+    try:
+        for _, _, files in os.walk(path):
+            count += sum(1 for f in files if f.lower().endswith(".fb2"))
+    except Exception:
+        pass
+    if count == 0:
+        return HttpResponse("")
+    return HttpResponse(
+        f'<span class="ftree-count">{count} fb2</span>',
+        content_type="text/html; charset=utf-8",
+    )
 
 
 @staff_member_required(login_url="/web/login/")

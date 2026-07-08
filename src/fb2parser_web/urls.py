@@ -7,6 +7,7 @@ urlpatterns = [
     path("",                    views.dashboard,          name="dashboard"),
     path("statistics/",         views.statistics,         name="statistics"),
     path("folder-tree/",        views.folder_tree,        name="folder_tree"),
+    path("folder-count/",       views.folder_count,       name="folder_count"),
     path("main-scan/start/",    views.main_scan_start,    name="main_scan_start"),
     path("main-scan/status/",   views.main_scan_status,   name="main_scan_status"),
     path("scan-results/",       views.scan_results,       name="scan_results"),

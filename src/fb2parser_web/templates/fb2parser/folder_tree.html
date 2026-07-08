@@ -19,9 +19,10 @@
         <span class="ftree-icon">📁</span>
         <span class="ftree-name" title="{{ f.path }}"
               onclick="ftreeRowClick(event, '{{ f.path|escapejs }}', '{{ f.node_id }}')">{{ f.name }}</span>
-        {% if f.fb2_count %}
-        <span class="ftree-count">{{ f.fb2_count }} fb2</span>
-        {% endif %}
+        <span id="cnt-{{ f.node_id }}"
+              hx-get="{% url 'fb2parser:folder_count' %}?path={{ f.path|urlencode }}"
+              hx-trigger="load"
+              hx-swap="outerHTML"></span>
         <span class="ftree-badge" id="badge-{{ f.node_id }}" style="display:none;"></span>
     </div>
     {% if f.has_subdirs %}
