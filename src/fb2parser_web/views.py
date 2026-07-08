@@ -6,7 +6,6 @@ from constance import config
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_POST
 
 from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
 from opds_catalog.sopdscan import opdsScanner
@@ -128,15 +127,19 @@ def scan(request):
     return render(request, "fb2parser/scan.html", _ctx("scan", "Сканирование", root=root, state=state))
 
 
-@require_POST
 @staff_member_required(login_url="/web/login/")
 def scan_start(request):
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
     with _scan_lock:
         if _scan_state["running"]:
-            return HttpResponse("Сканирование уже запущено", status=400)
+            return _render_status(dict(_scan_state))
         root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
         if not root or not os.path.isdir(root):
-            return HttpResponse(f"Папка не найдена: {root}", status=400)
+            return HttpResponse(
+                f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {root}</div></div>'
+            )
         _scan_state.update({
             "running": True, "done": False, "error": None,
             "processed": 0, "total": 0, "current": "",
@@ -145,25 +148,18 @@ def scan_start(request):
 
     t = threading.Thread(target=_run_scan_thread, args=(root,), daemon=True)
     t.start()
-    return _scan_status_partial()
+    return _render_status(dict(_scan_state))
 
 
+@staff_member_required(login_url="/web/login/")
 def scan_status(request):
-    return _scan_status_partial()
+    return _render_status(dict(_scan_state))
 
 
-def _scan_status_partial():
-    with _scan_lock:
-        state = dict(_scan_state)
+def _render_status(state):
     pct = 0
     if state["total"] > 0:
         pct = min(100, int(state["processed"] / state["total"] * 100))
-    return render(None, "fb2parser/scan_status.html", {"state": state, "pct": pct},
-                  using=None) if False else \
-        _render_status(state, pct)
-
-
-def _render_status(state, pct):
     from django.template.loader import render_to_string
     html = render_to_string("fb2parser/scan_status.html", {"state": state, "pct": pct})
     return HttpResponse(html)
