@@ -67,12 +67,6 @@
                             disabled onclick="gpApply()">
                         ▶ Применить к выбранным папкам
                     </button>
-                    <div id="gp-progress" style="display:none; margin-top:0.5rem;">
-                        <div style="background:#e9ecef; border-radius:3px; height:6px; overflow:hidden; margin-bottom:0.3rem;">
-                            <div id="gp-progress-bar" style="width:0%; background:#f39c12; height:100%; transition:width 0.2s;"></div>
-                        </div>
-                        <div id="gp-progress-label" style="font-size:0.76rem; color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -105,7 +99,13 @@
                 onclick="selAll()">☑ Выбрать все</button>
         <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
                 onclick="selClear()">✕ Снять выделение</button>
-        <div id="sel-result" style="font-size:0.82rem; margin-left:auto;"></div>
+        <div id="gp-progress" style="display:none; flex-direction:column; gap:0.2rem; max-width:360px;">
+            <div style="background:rgba(255,255,255,0.2); border-radius:3px; height:6px; overflow:hidden;">
+                <div id="gp-progress-bar" style="width:0%; background:#f39c12; height:100%; transition:width 0.25s;"></div>
+            </div>
+            <div id="gp-progress-label" style="font-size:0.76rem; color:#bdc3c7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+        </div>
+        <div id="sel-result" style="font-size:0.82rem; margin-left:auto; white-space:nowrap;"></div>
     </div>
 
     <!-- Строка статуса -->
@@ -314,8 +314,10 @@ async function gpApply() {
     var resultEl = document.getElementById('sel-result');
 
     btn.disabled = true;
-    btn.textContent = '⏳ Применяется...';
-    progressWrap.style.display = 'block';
+    progressWrap.style.display = 'flex';
+    progressBar.style.width = '0%';
+    progressBar.style.background = '#f39c12';
+    progressLabel.textContent = 'Подготовка...';
     resultEl.textContent = '';
 
     var ok = 0, fail = 0;
@@ -328,9 +330,8 @@ async function gpApply() {
         // Обновляем прогресс
         var pct = Math.round(i / total * 100);
         progressBar.style.width = pct + '%';
-        progressLabel.textContent = (i + 1) + ' / ' + total + ' — ' + folderName;
-        resultEl.textContent = (i + 1) + ' / ' + total;
-        resultEl.style.color = '#f39c12';
+        progressLabel.textContent = folderName;
+        btn.textContent = '⏳ ' + (i + 1) + ' / ' + total;
 
         try {
             var r = await fetch(ASSIGN_URL, {
@@ -372,23 +373,19 @@ async function gpApply() {
     // Финальное состояние
     progressBar.style.width = '100%';
     progressBar.style.background = fail ? '#c0392b' : '#27ae60';
-    progressLabel.textContent = 'Готово: ' + ok + ' ок' + (fail ? ', ' + fail + ' ошибок' : '');
-    var msg = '✓ ' + ok + ' папок';
-    if (fail) msg += ', ⚠ ' + fail + ' ошибок';
-    resultEl.textContent = msg;
-    resultEl.style.color = fail ? '#c0392b' : '#27ae60';
-
+    progressLabel.textContent = 'Готово: ' + ok + ' папок' + (fail ? ', ошибок: ' + fail : '');
     btn.textContent = '▶ Применить к выбранным папкам';
     btn.disabled = false;
 
-    // Закрываем через секунду чтобы пользователь увидел итог
+    // Закрываем через 2 секунды чтобы пользователь увидел итог
     setTimeout(function() {
         progressWrap.style.display = 'none';
         progressBar.style.width = '0%';
         progressBar.style.background = '#f39c12';
+        progressLabel.textContent = '';
         selClear();
         gpClose();
-    }, 1500);
+    }, 2000);
 }
 
 function _getCsrf() {
