@@ -561,6 +561,8 @@ _norm_lock = threading.Lock()
 _norm_state: dict = {
     "running": False, "done": False, "error": None,
     "processed": 0, "total": 0, "log": [],
+    "records": [], "records_total": 0,
+    "current_file": "",
 }
 
 
@@ -577,42 +579,53 @@ def normalize(request):
 
 
 def _run_normalize_thread(folder_path):
-    from .fb2parser_bridge import _ensure_path, get_normalization_settings
+    from .fb2parser_bridge import _ensure_path
     from django import db
     db.connections.close_all()
     try:
-        _ensure_path()
-        import importlib
-        settings_mod = importlib.import_module("settings_manager")
-        pipeline_mod = importlib.import_module("author_pipeline_service")
-        pass3_mod = importlib.import_module("passes.pass3_normalize")
-
         fb2parser_path = _ensure_path()
-        import os as _os
-        settings = settings_mod.SettingsManager(_os.path.join(fb2parser_path, "config.json"))
+        import importlib, os as _os
+        mod = importlib.import_module("regen_csv")
+        config_path = _os.path.join(fb2parser_path, "config.json")
+        service = mod.RegenCSVService(config_path)
 
-        log_lines = []
-        def log(msg):
-            log_lines.append(msg)
+        def _progress(current, total, status=""):
             with _norm_lock:
-                _norm_state["log"] = log_lines[-100:]
+                _norm_state["processed"] = current
+                _norm_state["total"] = max(total, 1)
+                if status:
+                    _norm_state["current_file"] = str(status)[:120]
+                    _norm_state["log"].append(str(status))
+                    _norm_state["log"] = _norm_state["log"][-200:]
 
-        log(f"Запуск нормализации для: {folder_path}")
-        records = pipeline_mod.run_author_only_pipeline(folder_path, settings, None)
+        records = service.generate_csv(folder_path, progress_callback=_progress) or []
+
+        recs_dicts = []
+        for r in records:
+            recs_dicts.append({
+                "file_path":        getattr(r, "file_path", ""),
+                "metadata_authors": getattr(r, "metadata_authors", ""),
+                "proposed_author":  getattr(r, "proposed_author", ""),
+                "author_source":    getattr(r, "author_source", ""),
+                "metadata_series":  getattr(r, "metadata_series", ""),
+                "proposed_series":  getattr(r, "proposed_series", ""),
+                "series_source":    getattr(r, "series_source", ""),
+                "book_title":       getattr(r, "file_title", ""),
+                "metadata_genre":   getattr(r, "metadata_genre", ""),
+            })
+
         with _norm_lock:
-            _norm_state["total"] = len(records)
-
-        log(f"Получено записей: {len(records)}")
-        p3 = pass3_mod.Pass3Normalize(None, settings)
-        p3.execute(records)
-        log("Нормализация завершена.")
-
-        with _norm_lock:
-            _norm_state.update({"done": True, "running": False, "processed": len(records)})
+            _norm_state.update({
+                "done": True, "running": False,
+                "processed": len(recs_dicts), "total": len(recs_dicts),
+                "records": recs_dicts, "records_total": len(recs_dicts),
+            })
     except Exception as exc:
         import traceback
+        tb = traceback.format_exc()
         with _norm_lock:
             _norm_state.update({"error": str(exc), "running": False})
+            _norm_state["log"].append(tb)
     finally:
         from django import db as _db
         _db.connections.close_all()
@@ -629,8 +642,11 @@ def normalize_start(request):
     with _norm_lock:
         if _norm_state["running"]:
             return _render_norm_status(dict(_norm_state))
-        _norm_state.update({"running": True, "done": False, "error": None,
-                            "processed": 0, "total": 0, "log": []})
+        _norm_state.update({
+            "running": True, "done": False, "error": None,
+            "processed": 0, "total": 0, "log": [],
+            "records": [], "records_total": 0, "current_file": "",
+        })
     threading.Thread(target=_run_normalize_thread, args=(folder,), daemon=True).start()
     return _render_norm_status(dict(_norm_state))
 
@@ -647,7 +663,33 @@ def _render_norm_status(state):
     pct = 0
     if state["total"] > 0:
         pct = min(100, int(state["processed"] / state["total"] * 100))
-    html = render_to_string("fb2parser/normalize_status.html", {"state": state, "pct": pct})
+    html = render_to_string("fb2parser/normalize_bar.html", {"state": state, "pct": pct})
+    return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def normalize_table(request):
+    """Возвращает HTML-строки таблицы нормализации (постранично)."""
+    offset = int(request.GET.get("offset", 0))
+    limit = 1000
+    q = request.GET.get("q", "").strip().lower()
+    with _norm_lock:
+        records = list(_norm_state["records"])
+        total_all = _norm_state["records_total"]
+    if q:
+        records = [r for r in records if any(q in str(v).lower() for v in r.values())]
+    total = len(records)
+    page = records[offset:offset + limit]
+    has_more = (offset + limit) < total
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/normalize_table.html", {
+        "records": page,
+        "has_more": has_more,
+        "next_offset": offset + limit,
+        "total": total,
+        "total_all": total_all,
+        "q": q,
+    })
     return HttpResponse(html)
 
 

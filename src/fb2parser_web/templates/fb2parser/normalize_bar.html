@@ -1,0 +1,22 @@
+{% if state.running %}
+<div hx-get="{% url 'fb2parser:normalize_status' %}"
+     hx-trigger="every 2s"
+     hx-target="#norm-statusbar"
+     hx-swap="innerHTML"
+     style="display:flex; align-items:center; gap:0.6rem; width:100%;">
+    <span style="color:#8e44ad; flex-shrink:0;">⏳</span>
+    <div style="flex:1; background:#e9ecef; border-radius:3px; height:6px; overflow:hidden;">
+        <div style="width:{{ pct }}%; background:#8e44ad; height:100%; transition:width 0.3s;"></div>
+    </div>
+    <span style="white-space:nowrap; color:#495057; flex-shrink:0;">{{ pct }}%</span>
+    <span style="color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:50%; font-size:0.78rem; font-family:monospace;">{{ state.current_file }}</span>
+</div>
+{% elif state.done %}
+<span data-norm-done="1" style="color:#27ae60; flex-shrink:0;">✓ Готово:</span>
+<span style="flex-shrink:0;">{{ state.records_total }} записей</span>
+<span style="color:#7f8c8d; font-size:0.78rem; margin-left:0.5rem;">Фильтр работает по загруженным строкам</span>
+{% elif state.error %}
+<span style="color:#c0392b;">❌ {{ state.error }}</span>
+{% else %}
+<span style="color:#6c757d;">Готово к работе. Нажмите «Создать CSV» для запуска.</span>
+{% endif %}

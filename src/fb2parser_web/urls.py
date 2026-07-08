@@ -19,6 +19,7 @@ urlpatterns = [
     path("normalize/",         views.normalize,        name="normalize"),
     path("normalize/start/",   views.normalize_start,  name="normalize_start"),
     path("normalize/status/",  views.normalize_status, name="normalize_status"),
+    path("normalize/table/",   views.normalize_table,  name="normalize_table"),
     path("sync/",              views.sync,             name="sync"),
     path("sync/start/",        views.sync_start,       name="sync_start"),
     path("sync/status/",       views.sync_status,      name="sync_status"),

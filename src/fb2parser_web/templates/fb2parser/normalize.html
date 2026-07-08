@@ -1,40 +1,171 @@
 {% extends "fb2parser/base.html" %}
 {% block content %}
-<h2>✏️ Нормализация имён авторов</h2>
+<div style="display:flex; flex-direction:column; height:calc(100vh - 112px); margin:-1.5rem 0 0;">
 
-<div class="grid-x grid-margin-x">
-    <div class="cell medium-6">
-        <div class="card">
-            <div class="card-divider"><strong>Параметры нормализации</strong></div>
-            <div class="card-section">
-                <p style="font-size:0.85rem; color:#555;">
-                    Нормализация приводит имена авторов к формату <em>«Фамилия Имя»</em>
-                    для всех книг в папке. Используется Pass 3 пайплайна fb2parser.
-                </p>
-                <label style="font-size:0.85rem;">Папка для нормализации</label>
-                <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
-                    <input id="norm-folder" name="folder" type="text" value="{{ root }}"
-                           style="font-family:monospace; font-size:0.85rem; margin:0; flex:1;"
-                           placeholder="/path/to/scan/folder">
-                    <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;"
-                            onclick="openBrowser('norm-folder')">📁 Обзор</button>
-                </div>
-                <div id="fb-browser-norm-folder" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
-                <div style="margin-top:0.8rem;">
-                    <button class="button" style="background:#8e44ad; margin:0;"
-                            hx-post="{% url 'fb2parser:normalize_start' %}"
-                            hx-target="#norm-status"
-                            hx-swap="outerHTML"
-                            hx-include="#norm-folder">
-                        ▶ Запустить нормализацию
-                    </button>
-                </div>
-            </div>
+    <!-- Тулбар: папка + обзор -->
+    <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.7rem; background:#f8f9fa; border-bottom:2px solid #dee2e6; flex-shrink:0;">
+        <span style="font-size:0.88rem; color:#495057; white-space:nowrap; font-weight:500;">Папка для Input:</span>
+        <div style="flex:1; position:relative; display:flex; gap:0.4rem; min-width:0;">
+            <input id="norm-folder" type="text" name="folder" value="{{ root }}"
+                   style="margin:0; flex:1; font-family:monospace; font-size:0.83rem; min-width:0;"
+                   placeholder="/path/to/library">
+            <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap; padding:0.5rem 0.8rem;"
+                    onclick="openBrowser('norm-folder')">📁 Обзор</button>
+            <div id="fb-browser-norm-folder" class="fb-browser-wrap"
+                 style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:500;"></div>
         </div>
     </div>
 
-    <div class="cell medium-6">
-        {% include "fb2parser/normalize_status.html" with state=state pct=0 %}
+    <!-- Строка фильтра -->
+    <div style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0.7rem; background:#fff; border-bottom:1px solid #dee2e6; flex-shrink:0;">
+        <span style="font-size:0.85rem; color:#495057;">Фильтр:</span>
+        <input id="norm-filter" type="text" placeholder="Поиск по всем колонкам..."
+               style="margin:0; flex:1; font-size:0.82rem; max-width:400px;"
+               oninput="normFilter(this.value)">
+        <button type="button" class="button secondary" style="margin:0; padding:0.35rem 0.6rem; font-size:0.82rem;"
+                onclick="document.getElementById('norm-filter').value=''; normFilter('');">✕</button>
+        <span id="norm-row-count" style="font-size:0.78rem; color:#7f8c8d; margin-left:0.5rem;"></span>
+    </div>
+
+    <!-- Таблица -->
+    <div style="flex:1; overflow:auto; min-height:0;">
+        <table id="norm-table" style="border-collapse:collapse; font-size:0.78rem; width:max-content; min-width:100%;">
+            <thead style="position:sticky; top:0; z-index:10; background:#34495e; color:#ecf0f1;">
+                <tr>
+                    <th class="nt-th nt-path">file_path</th>
+                    <th class="nt-th">metadata_authors</th>
+                    <th class="nt-th nt-proposed">proposed_author</th>
+                    <th class="nt-th nt-src">author_source</th>
+                    <th class="nt-th">metadata_series</th>
+                    <th class="nt-th nt-proposed">proposed_series</th>
+                    <th class="nt-th nt-src">series_source</th>
+                    <th class="nt-th">book_title</th>
+                    <th class="nt-th">metadata_genre</th>
+                </tr>
+            </thead>
+            <tbody id="norm-tbody">
+                {% if state.records %}
+                    {% include "fb2parser/normalize_table.html" with records=state.records has_more=False total=state.records_total q="" %}
+                {% else %}
+                <tr><td colspan="9" style="text-align:center; padding:2rem; color:#7f8c8d;">
+                    Нет данных — нажмите «Создать CSV»
+                </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Строка статуса -->
+    <div id="norm-statusbar" style="border-top:1px solid #dee2e6; padding:0.3rem 0.7rem; font-size:0.8rem; background:#f8f9fa; flex-shrink:0; min-height:1.8rem; display:flex; align-items:center; gap:0.5rem;">
+        {% include "fb2parser/normalize_bar.html" with state=state pct=0 %}
+    </div>
+
+    <!-- Кнопочная панель (аналог нижних кнопок десктопа) -->
+    <div style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.7rem; background:#2c3e50; flex-shrink:0; flex-wrap:wrap;">
+        <button class="button" style="margin:0; background:#8e44ad; font-size:0.82rem; padding:0.45rem 0.9rem;"
+                hx-post="{% url 'fb2parser:normalize_start' %}"
+                hx-include="#norm-folder"
+                hx-target="#norm-statusbar"
+                hx-swap="innerHTML"
+                hx-indicator="#norm-spinner">
+            Создать CSV
+        </button>
+        <span id="norm-spinner" class="htmx-indicator" style="font-size:0.78rem; color:#bdc3c7;">Запуск...</span>
+
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Получить имена
+        </button>
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Имена из CSV
+        </button>
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Битые файлы
+        </button>
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Великомученницы
+        </button>
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Дубликаты
+        </button>
+        <button class="button alert" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Удалить пустые папки
+        </button>
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+            Скомпилировать
+        </button>
+        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" onclick="normShowLog()"
+                {% if not state.log %}disabled{% endif %}>
+            Логи
+        </button>
     </div>
 </div>
+
+<!-- Лог-панель (боковая, появляется по кнопке Логи) -->
+<div id="norm-log-panel" style="display:none; position:fixed; top:0; right:0; width:480px; height:100vh; background:#1e1e1e; color:#d4d4d4; z-index:1000; display:none; flex-direction:column; box-shadow:-6px 0 20px rgba(0,0,0,0.4);">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.8rem; background:#252526; flex-shrink:0;">
+        <strong style="font-size:0.88rem;">Лог нормализации</strong>
+        <button onclick="normCloseLog()" style="background:none; border:none; color:#d4d4d4; cursor:pointer; font-size:1rem;">✕</button>
+    </div>
+    <div id="norm-log-content" style="flex:1; overflow-y:auto; padding:0.5rem 0.8rem; font-family:monospace; font-size:0.76rem; line-height:1.5;">
+        {% for line in state.log %}
+        <div>{{ line }}</div>
+        {% empty %}
+        <div style="color:#7f8c8d;">Лог пуст</div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .nt-th { padding:0.3rem 0.6rem; font-weight:600; font-size:0.78rem; text-align:left; white-space:nowrap; border-right:1px solid #4a6278; }
+    .nt-th:last-child { border-right:none; }
+    .nt-path { min-width:220px; max-width:320px; }
+    .nt-cell { min-width:140px; max-width:220px; }
+    .nt-proposed { background:rgba(241,196,15,0.08); min-width:140px; }
+    .nt-src { min-width:100px; max-width:130px; color:#7f8c8d; font-size:0.74rem; }
+    .norm-row td { padding:0.18rem 0.6rem; border-bottom:1px solid #f0f0f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:320px; vertical-align:middle; }
+    .norm-row:nth-child(even) { background:#fafafa; }
+    .norm-row:hover td { background:#f0f4f8 !important; }
+    .norm-row.filtered-out { display:none; }
+</style>
+
+<script>
+var _normFilterTimer = null;
+
+function normFilter(q) {
+    clearTimeout(_normFilterTimer);
+    _normFilterTimer = setTimeout(function() {
+        q = q.toLowerCase().trim();
+        var rows = document.querySelectorAll('#norm-tbody .norm-row');
+        var visible = 0;
+        rows.forEach(function(tr) {
+            var text = tr.textContent.toLowerCase();
+            var show = !q || text.includes(q);
+            tr.classList.toggle('filtered-out', !show);
+            if (show) visible++;
+        });
+        var countEl = document.getElementById('norm-row-count');
+        if (countEl) countEl.textContent = q ? visible + ' из ' + rows.length : rows.length + ' строк';
+    }, 150);
+}
+
+function normShowLog() {
+    document.getElementById('norm-log-panel').style.display = 'flex';
+}
+function normCloseLog() {
+    document.getElementById('norm-log-panel').style.display = 'none';
+}
+
+// После завершения CSV — загружаем таблицу и обновляем счётчик
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target.id === 'norm-statusbar' && e.target.querySelector('[data-norm-done]')) {
+        htmx.ajax('GET', "{% url 'fb2parser:normalize_table' %}",
+                  {target: '#norm-tbody', swap: 'innerHTML'});
+    }
+    if (e.target.id === 'norm-tbody' || e.target.closest && e.target.closest('#norm-tbody')) {
+        var rows = document.querySelectorAll('#norm-tbody .norm-row');
+        var countEl = document.getElementById('norm-row-count');
+        if (countEl) countEl.textContent = rows.length + ' строк';
+    }
+});
+</script>
 {% endblock %}

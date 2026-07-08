@@ -1,0 +1,31 @@
+{% if records %}
+{% for r in records %}
+<tr class="norm-row">
+    <td class="nt-path" title="{{ r.file_path }}">{{ r.file_path }}</td>
+    <td class="nt-cell">{{ r.metadata_authors }}</td>
+    <td class="nt-cell nt-proposed">{{ r.proposed_author }}</td>
+    <td class="nt-src">{{ r.author_source }}</td>
+    <td class="nt-cell">{{ r.metadata_series }}</td>
+    <td class="nt-cell nt-proposed">{{ r.proposed_series }}</td>
+    <td class="nt-src">{{ r.series_source }}</td>
+    <td class="nt-cell">{{ r.book_title }}</td>
+    <td class="nt-cell">{{ r.metadata_genre }}</td>
+</tr>
+{% endfor %}
+{% if has_more %}
+<tr id="load-more-row">
+    <td colspan="9" style="text-align:center; padding:0.5rem;">
+        <button class="button secondary" style="margin:0; font-size:0.82rem;"
+                hx-get="{% url 'fb2parser:normalize_table' %}?offset={{ next_offset }}&q={{ q }}"
+                hx-target="#load-more-row"
+                hx-swap="outerHTML">
+            Загрузить ещё (показано {{ records|length }} из {{ total }})
+        </button>
+    </td>
+</tr>
+{% endif %}
+{% else %}
+<tr><td colspan="9" style="text-align:center; padding:1.5rem; color:#7f8c8d;">
+    {% if q %}Ничего не найдено по запросу «{{ q }}»{% else %}Нет данных — запустите «Создать CSV»{% endif %}
+</td></tr>
+{% endif %}
