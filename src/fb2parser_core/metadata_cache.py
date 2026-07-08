@@ -138,7 +138,10 @@ class MetadataCache:
         """
         content_hash = ''
         try:
-            from fb2_utils import read_fb2_bytes
+            try:
+                from fb2_utils import read_fb2_bytes
+            except ImportError:
+                from .fb2_utils import read_fb2_bytes
             stat = file_path.stat()
             raw = read_fb2_bytes(file_path)
             file_hash = hashlib.md5(raw).hexdigest()
