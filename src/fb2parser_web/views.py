@@ -562,7 +562,7 @@ _norm_state: dict = {
     "running": False, "done": False, "error": None,
     "processed": 0, "total": 0, "log": [],
     "records": [], "records_total": 0,
-    "current_file": "",
+    "current_file": "", "folder": "",
 }
 
 
@@ -646,6 +646,7 @@ def normalize_start(request):
             "running": True, "done": False, "error": None,
             "processed": 0, "total": 0, "log": [],
             "records": [], "records_total": 0, "current_file": "",
+            "folder": folder,
         })
     threading.Thread(target=_run_normalize_thread, args=(folder,), daemon=True).start()
     return _render_norm_status(dict(_norm_state))

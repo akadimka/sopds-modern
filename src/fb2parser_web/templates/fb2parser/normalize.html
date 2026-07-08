@@ -72,30 +72,34 @@
         </button>
         <span id="norm-spinner" class="htmx-indicator" style="font-size:0.78rem; color:#bdc3c7;">Запуск...</span>
 
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;"
+        <div id="norm-stale-warn" style="display:none; align-items:center; gap:0.3rem; background:rgba(231,76,60,0.18); border:1px solid #e74c3c; border-radius:4px; padding:0.2rem 0.6rem; font-size:0.78rem; color:#ffc;">
+            ⚠ Путь изменён — данные устарели. Пересоздайте CSV.
+        </div>
+
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled
                 onclick="namesOpen()">
             Получить имена
         </button>
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Имена из CSV
         </button>
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Битые файлы
         </button>
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Великомученницы
         </button>
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Дубликаты
         </button>
-        <button class="button alert" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button alert norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Удалить пустые папки
         </button>
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Скомпилировать
         </button>
-        <button class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" onclick="normShowLog()"
-                {% if not state.log %}disabled{% endif %}>
+        <button id="norm-log-btn" class="button secondary" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled
+                onclick="normShowLog()">
             Логи
         </button>
     </div>
@@ -173,6 +177,55 @@ function normFilter(q) {
         if (countEl) countEl.textContent = q ? visible + ' из ' + rows.length : rows.length + ' строк';
     }, 150);
 }
+
+// ── Кэш: отслеживание пути и активация кнопок ───────────────────────────────
+var _normCachedFolder = '';  // папка, для которой есть актуальные данные
+
+function normCheckCache() {
+    var currentFolder = (document.getElementById('norm-folder') || {}).value || '';
+    var cacheBtns = document.querySelectorAll('.norm-cache-btn');
+    var staleWarn = document.getElementById('norm-stale-warn');
+    var logBtn = document.getElementById('norm-log-btn');
+
+    if (!_normCachedFolder) {
+        // Нет кэша — всё заблокировано, предупреждения нет
+        cacheBtns.forEach(function(b) { b.disabled = true; });
+        if (staleWarn) staleWarn.style.display = 'none';
+        if (logBtn) logBtn.disabled = true;
+        return;
+    }
+
+    var stale = currentFolder.trim() !== _normCachedFolder.trim();
+    cacheBtns.forEach(function(b) { b.disabled = stale; });
+    if (staleWarn) staleWarn.style.display = stale ? 'flex' : 'none';
+    if (logBtn) logBtn.disabled = false;
+}
+
+function normSetCachedFolder(folder) {
+    _normCachedFolder = folder || '';
+    normCheckCache();
+}
+
+// Слушаем изменение поля пути
+document.addEventListener('DOMContentLoaded', function() {
+    var folderInput = document.getElementById('norm-folder');
+    if (folderInput) {
+        folderInput.addEventListener('input', normCheckCache);
+        // Также реагируем на изменение через браузер папок (он меняет value без события input)
+        var _lastVal = folderInput.value;
+        setInterval(function() {
+            if (folderInput.value !== _lastVal) {
+                _lastVal = folderInput.value;
+                normCheckCache();
+            }
+        }, 500);
+    }
+    // Если при загрузке страницы уже есть done-состояние — восстанавливаем кэш
+    var doneEl = document.querySelector('[data-norm-done]');
+    if (doneEl && doneEl.dataset.normFolder) {
+        normSetCachedFolder(doneEl.dataset.normFolder);
+    }
+});
 
 // ── Панель «Получить имена» ──────────────────────────────────────────────────
 function namesOpen() {
@@ -271,11 +324,13 @@ document.addEventListener('htmx:afterSwap', function(e) {
     // Проверяем и сам элемент, и его родителя — outerHTML swap меняет #norm-bar-inner,
     // innerHTML swap из normalize_start меняет #norm-statusbar
     var swapped = e.target;
-    var done = swapped.dataset && swapped.dataset.normDone
-               || swapped.querySelector && swapped.querySelector('[data-norm-done]');
-    if (done) {
+    var doneEl = (swapped.dataset && swapped.dataset.normDone) ? swapped
+                 : (swapped.querySelector ? swapped.querySelector('[data-norm-done]') : null);
+    if (doneEl) {
         htmx.ajax('GET', "{% url 'fb2parser:normalize_table' %}",
                   {target: '#norm-tbody', swap: 'innerHTML'});
+        // Активируем кнопки — данные актуальны для этой папки
+        normSetCachedFolder(doneEl.dataset.normFolder || '');
     }
     // Обновить счётчик строк после загрузки таблицы
     if (swapped.id === 'norm-tbody' || (swapped.closest && swapped.closest('#norm-tbody'))) {

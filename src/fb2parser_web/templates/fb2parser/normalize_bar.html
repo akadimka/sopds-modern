@@ -14,11 +14,12 @@
     <span style="color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45%; font-size:0.76rem; font-family:monospace;">{{ state.current_file }}</span>
 </div>
 {% elif state.done %}
-<div id="norm-bar-inner" data-norm-done="1" style="display:flex; align-items:center; gap:0.6rem; width:100%;">
+<div id="norm-bar-inner" data-norm-done="1" data-norm-folder="{{ state.folder }}" style="display:flex; align-items:center; gap:0.6rem; width:100%;">
     <span style="color:#27ae60; font-size:1rem;">✓</span>
     <span style="color:#27ae60; font-weight:600;">Готово:</span>
     <span style="font-weight:600;">{{ state.records_total }} записей</span>
-    <span style="color:#7f8c8d; font-size:0.78rem; margin-left:0.5rem;">Таблица загружена автоматически. Клиентский фильтр работает мгновенно.</span>
+    <span style="color:#7f8c8d; font-size:0.78rem;">·</span>
+    <span style="color:#7f8c8d; font-size:0.78rem; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%;">{{ state.folder }}</span>
 </div>
 {% elif state.error %}
 <div id="norm-bar-inner" style="display:flex; align-items:center; gap:0.5rem; width:100%;">
