@@ -67,6 +67,12 @@
                             disabled onclick="gpApply()">
                         ▶ Применить к выбранным папкам
                     </button>
+                    <div id="gp-progress" style="display:none; margin-top:0.5rem;">
+                        <div style="background:#e9ecef; border-radius:3px; height:6px; overflow:hidden; margin-bottom:0.3rem;">
+                            <div id="gp-progress-bar" style="width:0%; background:#f39c12; height:100%; transition:width 0.2s;"></div>
+                        </div>
+                        <div id="gp-progress-label" style="font-size:0.76rem; color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -297,59 +303,92 @@ function gpSelectGenre(name, el) {
     document.getElementById('gp-apply-btn').disabled = false;
 }
 
-function gpApply() {
+async function gpApply() {
     if (!_gpSelectedGenre || _selectedPaths.size === 0) return;
-    var paths = Array.from(_selectedPaths.keys());
+    var entries = Array.from(_selectedPaths.entries());  // [[path, nodeId], ...]
+    var total = entries.length;
     var btn = document.getElementById('gp-apply-btn');
+    var progressWrap = document.getElementById('gp-progress');
+    var progressBar = document.getElementById('gp-progress-bar');
+    var progressLabel = document.getElementById('gp-progress-label');
+    var resultEl = document.getElementById('sel-result');
+
     btn.disabled = true;
     btn.textContent = '⏳ Применяется...';
+    progressWrap.style.display = 'block';
+    resultEl.textContent = '';
 
-    fetch(ASSIGN_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': _getCsrf()
-        },
-        body: JSON.stringify({genre: _gpSelectedGenre, paths: paths})
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.error) {
-            document.getElementById('sel-result').textContent = '❌ ' + data.error;
-            document.getElementById('sel-result').style.color = '#c0392b';
-        } else {
-            var ok = 0, fail = 0;
-            data.results.forEach(function(r) {
-                var badge = document.getElementById('badge-' + _selectedPaths.get(r.path));
-                if (!badge) return;
-                if (r.success) {
-                    ok++;
+    var ok = 0, fail = 0;
+
+    for (var i = 0; i < entries.length; i++) {
+        var path = entries[i][0];
+        var nodeId = entries[i][1];
+        var folderName = path.replace(/\\/g, '/').split('/').pop();
+
+        // Обновляем прогресс
+        var pct = Math.round(i / total * 100);
+        progressBar.style.width = pct + '%';
+        progressLabel.textContent = (i + 1) + ' / ' + total + ' — ' + folderName;
+        resultEl.textContent = (i + 1) + ' / ' + total;
+        resultEl.style.color = '#f39c12';
+
+        try {
+            var r = await fetch(ASSIGN_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf()},
+                body: JSON.stringify({genre: _gpSelectedGenre, paths: [path]})
+            });
+            var data = await r.json();
+            var res = data.results && data.results[0];
+            var badge = document.getElementById('badge-' + nodeId);
+            if (res && res.success) {
+                ok++;
+                if (badge) {
                     badge.textContent = _gpSelectedGenre;
                     badge.className = 'ftree-badge';
                     badge.style.display = 'inline-block';
-                } else {
-                    fail++;
+                }
+            } else {
+                fail++;
+                if (badge) {
                     badge.textContent = '⚠ ошибка';
                     badge.className = 'ftree-badge error';
                     badge.style.display = 'inline-block';
-                    badge.title = r.error || '';
+                    badge.title = (res && res.error) || 'Неизвестная ошибка';
                 }
-            });
-            var msg = '✓ ' + ok + ' папок обработано';
-            if (fail) msg += ', ' + fail + ' ошибок';
-            document.getElementById('sel-result').textContent = msg;
-            document.getElementById('sel-result').style.color = fail ? '#c0392b' : '#27ae60';
+            }
+        } catch(e) {
+            fail++;
+            var badge2 = document.getElementById('badge-' + nodeId);
+            if (badge2) {
+                badge2.textContent = '⚠ ошибка';
+                badge2.className = 'ftree-badge error';
+                badge2.style.display = 'inline-block';
+                badge2.title = String(e);
+            }
         }
-        btn.textContent = '▶ Применить к выбранным папкам';
-        btn.disabled = false;
+    }
+
+    // Финальное состояние
+    progressBar.style.width = '100%';
+    progressBar.style.background = fail ? '#c0392b' : '#27ae60';
+    progressLabel.textContent = 'Готово: ' + ok + ' ок' + (fail ? ', ' + fail + ' ошибок' : '');
+    var msg = '✓ ' + ok + ' папок';
+    if (fail) msg += ', ⚠ ' + fail + ' ошибок';
+    resultEl.textContent = msg;
+    resultEl.style.color = fail ? '#c0392b' : '#27ae60';
+
+    btn.textContent = '▶ Применить к выбранным папкам';
+    btn.disabled = false;
+
+    // Закрываем через секунду чтобы пользователь увидел итог
+    setTimeout(function() {
+        progressWrap.style.display = 'none';
+        progressBar.style.width = '0%';
+        progressBar.style.background = '#f39c12';
         selClear();
         gpClose();
-    })
-    .catch(function(e) {
-        document.getElementById('sel-result').textContent = '❌ ' + e;
-        btn.textContent = '▶ Применить к выбранным папкам';
-        btn.disabled = false;
-    });
+    }, 1500);
 }
 
 function _getCsrf() {
