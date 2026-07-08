@@ -31,8 +31,7 @@
     <div class="fb2-topbar">
         <div class="fb2-topbar-title">FB2PARSER</div>
         <div class="fb2-topbar-links">
-            <a href="{% url 'fb2parser:dashboard' %}">FB2Parser</a>
-            <a href="{% url 'web:main' %}">↔ SOPDS</a>
+            <a href="{% url 'web:main' %}">→ SOPDS</a>
             {% if user.is_superuser %}
             <a href="{% url 'admin:index' %}">Настройки</a>
             {% endif %}
