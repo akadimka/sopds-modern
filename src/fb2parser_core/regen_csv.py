@@ -17,7 +17,7 @@ from .logger import Logger
 from .fb2_author_extractor import FB2AuthorExtractor
 
 from .precache import Precache
-from passes import (
+from .passes import (
     Pass1ReadFiles,
     Pass2Filename,
     Pass2Fallback,
