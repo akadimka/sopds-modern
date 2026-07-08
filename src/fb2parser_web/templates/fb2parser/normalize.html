@@ -1,9 +1,37 @@
 {% extends "fb2parser/base.html" %}
 {% block content %}
-<h2> Нормализация</h2>
-<div class="fb2-stub">
-    <h3>Нормализация</h3>
-    <p>Нормализация имён авторов, названий серий и жанров.</p>
-    <p><em>— В разработке —</em></p>
+<h2>✏️ Нормализация имён авторов</h2>
+
+<div class="grid-x grid-margin-x">
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>Параметры нормализации</strong></div>
+            <div class="card-section">
+                <p style="font-size:0.85rem; color:#555;">
+                    Нормализация приводит имена авторов к формату <em>«Фамилия Имя»</em>
+                    для всех книг в папке. Используется Pass 3 пайплайна fb2parser.
+                </p>
+                <label style="font-size:0.85rem;">
+                    Папка для нормализации
+                    <input id="norm-folder" name="folder" type="text" value="{{ root }}"
+                           style="font-family:monospace; font-size:0.85rem;"
+                           placeholder="/path/to/scan/folder">
+                </label>
+                <div style="margin-top:0.8rem;">
+                    <button class="button" style="background:#8e44ad; margin:0;"
+                            hx-post="{% url 'fb2parser:normalize_start' %}"
+                            hx-target="#norm-status"
+                            hx-swap="outerHTML"
+                            hx-include="#norm-folder">
+                        ▶ Запустить нормализацию
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-6">
+        {% include "fb2parser/normalize_status.html" with state=state pct=0 %}
+    </div>
 </div>
 {% endblock %}

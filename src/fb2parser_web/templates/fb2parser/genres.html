@@ -1,9 +1,107 @@
 {% extends "fb2parser/base.html" %}
 {% block content %}
-<h2> Менеджер жанров</h2>
-<div class="fb2-stub">
-    <h3>Менеджер жанров</h3>
-    <p>Управление списком жанров, маппинг и группировка.</p>
-    <p><em>— В разработке —</em></p>
+<h2>🎭 Менеджер жанров</h2>
+
+{% if error %}
+<div class="callout alert">❌ {{ error }}</div>
+{% else %}
+
+<div class="grid-x grid-margin-x">
+    <div class="cell medium-4">
+        <div class="card" style="height:72vh; display:flex; flex-direction:column;">
+            <div class="card-divider">
+                <strong>Дерево жанров</strong>
+                <span style="float:right; font-size:0.8rem; color:#7f8c8d;">{{ genre_list|length }} узлов</span>
+            </div>
+            <div style="padding:0.4rem 0.7rem;">
+                <input type="text" id="genre-filter" placeholder="Фильтр..." style="margin:0; font-size:0.82rem;">
+            </div>
+            <div style="flex:1; overflow-y:auto; padding:0 0.5rem 0.5rem;">
+                <ul class="no-bullet" id="genre-tree" style="font-size:0.83rem; margin:0;">
+                {% for g in genre_list %}
+                <li class="genre-node" data-name="{{ g.name|lower }}"
+                    style="padding:0.18rem 0 0.18rem {{ g.depth }}rem;
+                           {% if g.has_children %}font-weight:600;{% endif %}
+                           border-bottom:1px solid #f0f0f0; cursor:pointer;"
+                    onclick="selectGenre('{{ g.name|escapejs }}', this)">
+                    {% if g.depth > 0 %}<span style="color:#aaa;">└ </span>{% endif %}
+                    {{ g.name }}
+                    {% if g.assigned %}<span style="font-size:0.7rem; color:#7f8c8d; font-weight:normal;"> ({{ g.assigned|length }})</span>{% endif %}
+                </li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-4">
+        <div class="card" style="height:72vh; display:flex; flex-direction:column;">
+            <div class="card-divider"><strong>Ассоциированные строки жанра</strong></div>
+            <div style="flex:1; overflow-y:auto; padding:0.5rem;" id="assigned-panel">
+                <div style="color:#7f8c8d; font-size:0.85rem;">Выберите жанр слева</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-divider"><strong>Присвоить жанр папке</strong></div>
+            <div class="card-section">
+                <p style="font-size:0.82rem; color:#555; margin-bottom:0.7rem;">
+                    Выберите жанр слева, укажите папку.<br>
+                    Операция заменяет &lt;genre&gt; во всех FB2 в папке.
+                </p>
+                <label style="font-size:0.85rem;">
+                    Жанр
+                    <input id="selected-genre" name="genre" type="text" readonly
+                           style="background:#f8f9fa; font-family:monospace; font-size:0.82rem;"
+                           placeholder="(не выбран)">
+                </label>
+                <label style="font-size:0.85rem;">
+                    Папка
+                    <input id="assign-folder" name="folder" type="text"
+                           style="font-family:monospace; font-size:0.82rem;"
+                           placeholder="/path/to/folder">
+                </label>
+                <button class="button warning" style="width:100%; margin-top:0.3rem;"
+                        hx-post="{% url 'fb2parser:genre_assign_start' %}"
+                        hx-target="#assign-status"
+                        hx-swap="outerHTML"
+                        hx-include="#selected-genre,#assign-folder">
+                    ▶ Присвоить жанр
+                </button>
+            </div>
+        </div>
+
+        {% include "fb2parser/genre_assign_status.html" with state=state pct=0 %}
+    </div>
 </div>
+
+{% endif %}
+
+<script>
+const GENRE_DATA = {
+{% for g in genre_list %}"{{ g.name|escapejs }}": [{% for a in g.assigned %}"{{ a|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+{% endfor %}};
+
+function selectGenre(name, el) {
+    document.querySelectorAll('.genre-node').forEach(n => n.style.background = '');
+    el.style.background = '#fef9e7';
+    document.getElementById('selected-genre').value = name;
+    const assigned = GENRE_DATA[name] || [];
+    const panel = document.getElementById('assigned-panel');
+    panel.innerHTML = assigned.length === 0
+        ? '<div style="color:#7f8c8d; font-size:0.85rem;">Нет ассоциаций</div>'
+        : '<ul class="no-bullet" style="font-size:0.82rem; margin:0;">' +
+          assigned.map(a => `<li style="padding:0.15rem 0; border-bottom:1px solid #f0f0f0;">${a}</li>`).join('') +
+          '</ul>';
+}
+
+document.getElementById('genre-filter').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.genre-node').forEach(el => {
+        el.style.display = (!q || el.dataset.name.includes(q)) ? '' : 'none';
+    });
+});
+</script>
 {% endblock %}

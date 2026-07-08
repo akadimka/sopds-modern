@@ -1,0 +1,46 @@
+{% if state.running %}
+<div id="sync-status"
+     hx-get="{% url 'fb2parser:sync_status' %}"
+     hx-trigger="every 2s"
+     hx-target="#sync-status"
+     hx-swap="outerHTML">
+    <div class="callout primary">
+        <strong>⏳ Синхронизация...</strong>
+        {% if state.current %}<div style="font-size:0.78rem; color:#555; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.current }}</div>{% endif %}
+    </div>
+    {% if state.total > 0 %}
+    <div style="font-size:0.82rem; margin-bottom:0.3rem;">{{ state.processed }} / {{ state.total }} ({{ pct }}%)</div>
+    <div class="progress" style="height:1rem;">
+        <span class="progress-meter" style="width:{{ pct }}%; background:#27ae60;"></span>
+    </div>
+    {% endif %}
+
+{% elif state.done %}
+<div id="sync-status">
+    <div class="callout success"><strong>✅ Синхронизация завершена</strong></div>
+    {% if state.stats %}
+    <table class="unstriped" style="font-size:0.85rem; max-width:350px; margin-top:0.5rem;">
+        {% for k, v in state.stats.items %}
+        <tr><td>{{ k }}</td><td><strong>{{ v }}</strong></td></tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+{% elif state.error %}
+<div id="sync-status">
+    <div class="callout alert"><strong>❌ Ошибка:</strong> {{ state.error }}</div>
+
+{% else %}
+<div id="sync-status">
+    <div class="callout secondary" style="font-size:0.85rem;">Синхронизация не запущена.</div>
+{% endif %}
+
+{% if state.log %}
+<details style="margin-top:0.5rem;">
+    <summary style="cursor:pointer; font-size:0.85rem;">▶ Лог операции ({{ state.log|length }} строк)</summary>
+    <div style="margin-top:0.3rem; max-height:250px; overflow-y:auto; font-size:0.75rem; font-family:monospace; background:#f8f9fa; padding:0.4rem; border:1px solid #dee2e6; border-radius:4px;">
+        {% for line in state.log %}<div>{{ line }}</div>{% endfor %}
+    </div>
+</details>
+{% endif %}
+</div>

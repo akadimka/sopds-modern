@@ -328,6 +328,13 @@ CONSTANCE_CONFIG = OrderedDict(
         ),
         ("SOPDS_DELETE_LOGICAL", (False, _("Logical deleting unavialable files"))),
         (
+            "FB2PARSER_PATH",
+            (
+                r"C:\Temp\fb2parser",
+                _("Absolute path to fb2parser project directory (for genre assignment, normalization, sync)"),
+            ),
+        ),
+        (
             "SOPDS_SCAN_SHED_MIN",
             ("0", _("sheduled minutes for sopds_scanner (cron syntax)")),
         ),
@@ -412,7 +419,10 @@ CONSTANCE_CONFIG_FIELDSETS = {
         "SOPDS_TITLE_AS_FILENAME",
         "SOPDS_NOCOVER_PATH",
     ),
-    "3. Scanner Options": (
+    "3. FB2Parser Integration": (
+        "FB2PARSER_PATH",
+    ),
+    "4. Scanner Options": (
         "SOPDS_FB2SAX",
         "SOPDS_ZIPSCAN",
         "SOPDS_ZIPCODEPAGE",
@@ -422,19 +432,19 @@ CONSTANCE_CONFIG_FIELDSETS = {
         "SOPDS_INPX_TEST_FILES",
         "SOPDS_DELETE_LOGICAL",
     ),
-    "4. Scanner Shedule": (
+    "5. Scanner Shedule": (
         "SOPDS_SCAN_SHED_MIN",
         "SOPDS_SCAN_SHED_HOUR",
         "SOPDS_SCAN_SHED_DAY",
         "SOPDS_SCAN_SHED_DOW",
     ),
-    "5. Telegramm Bot Options": (
+    "6. Telegramm Bot Options": (
         "SOPDS_TELEBOT_API_TOKEN",
         "SOPDS_TELEBOT_AUTH",
         "SOPDS_TELEBOT_MAXITEMS",
     ),
-    "6. Converters Options": ("SOPDS_FB2TOEPUB", "SOPDS_FB2TOMOBI", "SOPDS_TEMP_DIR"),
-    "7. Log & PID Files": (
+    "7. Converters Options": ("SOPDS_FB2TOEPUB", "SOPDS_FB2TOMOBI", "SOPDS_TEMP_DIR"),
+    "8. Log & PID Files": (
         "SOPDS_SERVER_LOG",
         "SOPDS_SCANNER_LOG",
         "SOPDS_TELEBOT_LOG",
