@@ -332,10 +332,11 @@ class Pass2SeriesFilename:
         'folder_metadata_confirmed',
     })
 
-    def __init__(self, logger: Logger = None, male_names: set = None, female_names: set = None):
+    def __init__(self, logger: Logger = None, male_names: set = None, female_names: set = None, config_path: str = None):
         self.logger = logger or Logger()
-        _cfg = Path(__file__).parent.parent / 'config.json'
-        self.settings = SettingsManager(str(_cfg))
+        if config_path is None:
+            config_path = str(Path(__file__).parent.parent / 'config.json')
+        self.settings = SettingsManager(config_path)
         self.block_selector = BlockLevelPatternSelector()
         self.male_names = male_names or set()
         self.female_names = female_names or set()

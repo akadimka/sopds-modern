@@ -802,7 +802,8 @@ class RegenCSVService:
             print("[SERIES] Extracting series from filenames...")
             pass2_series = Pass2SeriesFilename(self.logger,
                                               male_names=precache.male_names,
-                                              female_names=precache.female_names)
+                                              female_names=precache.female_names,
+                                              config_path=str(self.config_path))
             pass2_series.execute(self.records)
             print(f"[SERIES PASS 2] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] Series PASS 2: Extracted from filenames")
