@@ -37,12 +37,15 @@
                         </label>
                     </div>
                     <div class="cell medium-6">
-                        <label style="font-size:0.85rem;">
-                            Папка с книгами
+                        <label style="font-size:0.85rem;">Папка с книгами</label>
+                        <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                             <input id="assign-folder" name="folder" type="text" value="{{ root }}"
-                                   style="font-family:monospace; font-size:0.82rem;"
+                                   style="font-family:monospace; font-size:0.82rem; margin:0; flex:1;"
                                    placeholder="/path/to/books">
-                        </label>
+                            <button type="button" class="button secondary tiny fb-browse-btn" style="margin:0; white-space:nowrap;"
+                                    onclick="openBrowser('assign-folder')">📁</button>
+                        </div>
+                        <div id="fb-browser-assign-folder" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
                     </div>
                 </div>
                 <div class="callout warning" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-top:0.5rem;">

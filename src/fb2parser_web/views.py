@@ -108,29 +108,34 @@ def _ctx(page_id, title, **kwargs):
 
 @staff_member_required(login_url="/web/login/")
 def dashboard(request):
+    root = config.SOPDS_ROOT_LIB or ""
+    with _scan_lock:
+        state = dict(_scan_state)
+    return render(request, "fb2parser/dashboard.html", _ctx(
+        "dashboard", "Главная",
+        root=root,
+        state=state,
+    ))
+
+
+@staff_member_required(login_url="/web/login/")
+def statistics(request):
+    from django.db.models import Count
     stats = {
-        "books":   Book.objects.count(),
-        "authors": Author.objects.count(),
-        "genres":  Genre.objects.count(),
-        "series":  Series.objects.count(),
+        "books":    Book.objects.count(),
+        "authors":  Author.objects.count(),
+        "genres":   Genre.objects.count(),
+        "series":   Series.objects.count(),
         "catalogs": Catalog.objects.count(),
     }
     try:
         last_scan = Counter.objects.get(name="allbooks").update_time
     except Counter.DoesNotExist:
         last_scan = None
-
-    # Топ-5 жанров по количеству книг
-    from django.db.models import Count
-    top_genres = (
-        Genre.objects.annotate(cnt=Count("bgenre"))
-        .order_by("-cnt")[:5]
-    )
-    # Последние 10 добавленных книг
+    top_genres = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
     recent_books = Book.objects.order_by("-id")[:10]
-
-    return render(request, "fb2parser/dashboard.html", _ctx(
-        "dashboard", "Статистика",
+    return render(request, "fb2parser/statistics.html", _ctx(
+        "statistics", "Статистика",
         stats=stats,
         last_scan=last_scan,
         top_genres=top_genres,
@@ -182,6 +187,221 @@ def _render_status(state):
         pct = min(100, int(state["processed"] / state["total"] * 100))
     from django.template.loader import render_to_string
     html = render_to_string("fb2parser/scan_status.html", {"state": state, "pct": pct})
+    return HttpResponse(html)
+
+
+# ── Браузер папок ────────────────────────────────────────────────────────────
+
+@staff_member_required(login_url="/web/login/")
+def browse_folders(request):
+    """Возвращает HTML-список подпапок для folder picker."""
+    path = request.GET.get("path", "").strip()
+    target_input = request.GET.get("target", "")  # id поля, которое заполняем
+
+    entries = []
+    error = None
+    parent = None
+
+    if not path:
+        # Показываем корни: диски на Windows, / на Linux
+        import string
+        if os.name == "nt":
+            drives = [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
+            entries = [{"name": d, "path": d, "is_drive": True} for d in drives]
+        else:
+            path = "/"
+
+    if path:
+        try:
+            parent = str(os.path.dirname(path.rstrip("/\\")) or path)
+            if parent == path.rstrip("/\\"):
+                parent = None  # уже на корне
+            entries = []
+            for name in sorted(os.listdir(path), key=str.lower):
+                full = os.path.join(path, name)
+                if os.path.isdir(full):
+                    entries.append({"name": name, "path": full, "is_drive": False})
+        except PermissionError:
+            error = "Нет доступа к папке"
+        except Exception as e:
+            error = str(e)
+
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/folder_browser.html", {
+        "path": path,
+        "parent": parent,
+        "entries": entries,
+        "target": target_input,
+        "error": error,
+    })
+    return HttpResponse(html)
+
+
+# ── Дерево папок (главная страница) ──────────────────────────────────────────
+
+@staff_member_required(login_url="/web/login/")
+def folder_tree(request):
+    """Возвращает один уровень дерева папок (ленивая загрузка)."""
+    import hashlib
+    path = request.GET.get("path", "").strip()
+    if not path or not os.path.isdir(path):
+        return HttpResponse(
+            "<div style='padding:1.5rem; color:#7f8c8d; text-align:center;'>Укажите папку для отображения структуры</div>"
+        )
+    try:
+        names = sorted(os.listdir(path), key=str.lower)
+    except PermissionError:
+        return HttpResponse("<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ Нет доступа к папке</div>")
+    except Exception as e:
+        return HttpResponse(f"<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ {e}</div>")
+
+    entries = []
+    for name in names:
+        full = os.path.join(path, name)
+        if not os.path.isdir(full):
+            continue
+        try:
+            children = os.listdir(full)
+        except PermissionError:
+            children = []
+        fb2_count = sum(1 for f in children if f.lower().endswith(".fb2"))
+        has_subdirs = any(os.path.isdir(os.path.join(full, f)) for f in children)
+        if fb2_count == 0 and not has_subdirs:
+            continue  # пустая папка без вложенных — скрываем
+        node_id = "n" + hashlib.md5(full.encode("utf-8", errors="replace")).hexdigest()[:12]
+        entries.append({
+            "path": full,
+            "name": name,
+            "fb2_count": fb2_count,
+            "has_subdirs": has_subdirs,
+            "node_id": node_id,
+        })
+
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/folder_tree.html", {"folders": entries})
+    return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_names(request):
+    """Список всех имён жанров для picker-а (HTML-частичка)."""
+    from .fb2parser_bridge import get_genres_manager
+    from django.template.loader import render_to_string
+    try:
+        gm = get_genres_manager()
+        names = []
+        def _collect(nodes):
+            for n in nodes:
+                names.append(n.name)
+                _collect(n.children)
+        _collect(gm.root_nodes)
+        names.sort()
+        error = None
+    except Exception as e:
+        names = []
+        error = str(e)
+    html = render_to_string("fb2parser/genre_picker_list.html", {"names": names, "error": error})
+    return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def assign_genre_multi(request):
+    """Присвоить жанр нескольким папкам сразу. POST JSON: {genre, paths:[...]}."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    from django.http import JsonResponse
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    genre = data.get("genre", "").strip()
+    paths = data.get("paths", [])
+    if not genre or not paths:
+        return JsonResponse({"error": "genre and paths required"}, status=400)
+    from .fb2parser_bridge import get_genre_assignment_service
+    results = []
+    try:
+        service = get_genre_assignment_service()
+    except Exception as e:
+        return JsonResponse({"error": f"Не удалось загрузить fb2parser: {e}"}, status=500)
+    for path in paths:
+        if not os.path.isdir(path):
+            results.append({"path": path, "success": False, "error": "Папка не найдена"})
+            continue
+        try:
+            count = service.assign_genre_to_folder(path, genre)
+            results.append({"path": path, "success": True, "count": count})
+        except Exception as e:
+            results.append({"path": path, "success": False, "error": str(e)})
+    return JsonResponse({"results": results})
+
+
+@staff_member_required(login_url="/web/login/")
+def main_scan_start(request):
+    """Запускает сканирование с главной страницы; возвращает строку статуса."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    with _scan_lock:
+        if _scan_state["running"]:
+            return _render_main_status(dict(_scan_state))
+        root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
+        if not root or not os.path.isdir(root):
+            return HttpResponse(
+                f'<span style="color:#c0392b;">❌ Папка не найдена: {root}</span>'
+            )
+        _scan_state.update({
+            "running": True, "done": False, "error": None,
+            "processed": 0, "total": 0, "current": "",
+            "books_added": 0, "books_skipped": 0, "bad_books": 0,
+            "bad_list": [],
+        })
+    t = threading.Thread(target=_run_scan_thread, args=(root,), daemon=True)
+    t.start()
+    return _render_main_status(dict(_scan_state))
+
+
+@staff_member_required(login_url="/web/login/")
+def main_scan_status(request):
+    return _render_main_status(dict(_scan_state))
+
+
+def _render_main_status(state):
+    from django.template.loader import render_to_string
+    pct = 0
+    if state["total"] > 0:
+        pct = min(100, int(state["processed"] / state["total"] * 100))
+    html = render_to_string("fb2parser/main_scan_statusbar.html", {"state": state, "pct": pct})
+    return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def scan_results(request):
+    """3-панельный вид результатов: жанры / ошибки / детали."""
+    with _scan_lock:
+        state = dict(_scan_state)
+    from django.db.models import Count
+    genres_qs = (
+        Genre.objects
+        .values("subsection")
+        .annotate(cnt=Count("bgenre"))
+        .order_by("subsection")
+    )
+    return render(request, "fb2parser/main_results.html", {
+        "state": state,
+        "genres_list": list(genres_qs),
+    })
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_books(request):
+    """Книги для выбранного жанра (для панели Детали)."""
+    genre_name = request.GET.get("genre", "")
+    books = Book.objects.filter(genre__subsection=genre_name).order_by("title")[:200]
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/genre_books.html", {"books": books, "genre": genre_name})
     return HttpResponse(html)
 
 

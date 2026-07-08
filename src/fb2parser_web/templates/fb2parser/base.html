@@ -22,6 +22,27 @@
         .fb2-content { padding: 1.5rem 0; min-height: 60vh; }
         .fb2-stub { background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 6px; padding: 3rem; text-align: center; color: #6c757d; margin-top: 1rem; }
         .fb2-stub h3 { color: #495057; }
+
+        /* Folder tree */
+        .ftree-node { font-size: 0.83rem; font-family: monospace; }
+        .ftree-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.18rem 0.5rem; cursor: default; border-bottom: 1px solid #f5f5f5; user-select: none; transition: background 0.1s; }
+        .ftree-row.hover { background: #f0f4f8; }
+        .ftree-row.selected { background: #fef3e2 !important; }
+        .ftree-checkbox { cursor: pointer; flex-shrink: 0; accent-color: #f39c12; width: 13px; height: 13px; }
+        .ftree-toggle { background: none; border: none; cursor: pointer; font-size: 0.68rem; color: #7f8c8d; padding: 0; width: 1.1rem; flex-shrink: 0; transition: transform 0.15s; }
+        .ftree-toggle.open { transform: rotate(90deg); }
+        .ftree-leaf-indent { display: inline-block; width: 1.1rem; flex-shrink: 0; }
+        .ftree-icon { flex-shrink: 0; }
+        .ftree-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #2c3e50; }
+        .ftree-name:hover { text-decoration: underline dotted; cursor: pointer; }
+        .ftree-count { font-size: 0.75rem; color: #7f8c8d; white-space: nowrap; flex-shrink: 0; }
+        .ftree-badge { font-size: 0.71rem; padding: 0.08rem 0.45rem; border-radius: 10px; background: #27ae60; color: #fff; white-space: nowrap; flex-shrink: 0; font-family: sans-serif; }
+        .ftree-badge.error { background: #c0392b; }
+        .ftree-children { padding-left: 1.4rem; border-left: 1px solid #e9ecef; margin-left: 0.55rem; }
+        .ftree-loading { padding: 0.3rem 0.5rem; color: #7f8c8d; font-size: 0.8rem; }
+        /* Genre picker */
+        .gp-item:hover { background: #f0f4f8; }
+        .gp-item.selected { background: #fef3e2; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -62,7 +83,6 @@
                 <li class="is-dropdown-submenu-parent" data-is-click="true">
                     <a href="#">Действия</a>
                     <ul class="menu is-dropdown-submenu">
-                        <li><a href="{% url 'fb2parser:scan' %}">Сканирование</a></li>
                         <li><a href="{% url 'fb2parser:genre_assign' %}">Присвоение жанра</a></li>
                         <li><a href="{% url 'fb2parser:normalize' %}">Нормализация</a></li>
                         <li><a href="{% url 'fb2parser:sync' %}">Синхронизация</a></li>
@@ -79,7 +99,7 @@
                 <li class="is-dropdown-submenu-parent" data-is-click="true">
                     <a href="#">Библиотека</a>
                     <ul class="menu is-dropdown-submenu">
-                        <li><a href="{% url 'fb2parser:dashboard' %}">Статистика</a></li>
+                        <li><a href="{% url 'fb2parser:statistics' %}">Статистика</a></li>
                         <li><a href="{% url 'fb2parser:search' %}">Поиск по метаданным</a></li>
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
                         <li><a href="{% url 'fb2parser:new_books' %}">Новые книги</a></li>
@@ -111,5 +131,75 @@
     $(document).foundation();
 </script>
 {% block extra_js %}{% endblock %}
+<script>
+var fbBrowseUrl = "{% url 'fb2parser:browse' %}";
+var fbFolderTreeUrl = "{% url 'fb2parser:folder_tree' %}";
+
+/* Collapsible folder tree */
+function ftreeToggle(btn) {
+    var nodeId = btn.dataset.nodeId;
+    var path = btn.dataset.path;
+    var children = document.getElementById('ftch-' + nodeId);
+    if (!children) return;
+    var isOpen = children.style.display !== 'none';
+    if (isOpen) {
+        children.style.display = 'none';
+        btn.classList.remove('open');
+    } else {
+        children.style.display = 'block';
+        btn.classList.add('open');
+        if (!btn.dataset.loaded) {
+            btn.dataset.loaded = '1';
+            children.innerHTML = '<div class="ftree-loading">...</div>';
+            htmx.ajax('GET', fbFolderTreeUrl + '?path=' + encodeURIComponent(path),
+                      {target: '#ftch-' + nodeId, swap: 'innerHTML'});
+        }
+    }
+}
+/* Folder browser helpers — global, available on every fb2parser page */
+function openBrowser(targetId) {
+    var wrap = document.getElementById('fb-browser-' + targetId);
+    if (!wrap) return;
+    var isOpen = wrap.style.display !== 'none';
+    // close all open browsers first
+    document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
+    if (isOpen) return;
+    wrap.style.display = 'block';
+    // load drives/root if empty
+    if (!wrap.querySelector('div')) {
+        htmx.ajax('GET', fbBrowseUrl + '?target=' + encodeURIComponent(targetId), {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
+            htmx.process(document.getElementById('fb-browser-' + targetId));
+        });
+    }
+}
+function closeBrowser(targetId) {
+    var wrap = document.getElementById('fb-browser-' + targetId);
+    if (wrap) wrap.style.display = 'none';
+}
+function fbNavigateTo(targetId, path) {
+    if (!path) return;
+    htmx.ajax('GET', fbBrowseUrl + '?path=' + encodeURIComponent(path) + '&target=' + encodeURIComponent(targetId),
+        {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('fb-browser-' + targetId));
+    });
+}
+function selectFolder(targetId, path) {
+    var inp = document.getElementById(targetId);
+    if (inp) inp.value = path;
+    closeBrowser(targetId);
+}
+// re-process htmx after folder browser navigation (hx-get buttons inside injected HTML)
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('fb-browser-wrap')) {
+        htmx.process(e.target);
+    }
+});
+// close browser when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.fb-browser-wrap') && !e.target.closest('.fb-browse-btn')) {
+        document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
+    }
+});
+</script>
 </body>
 </html>

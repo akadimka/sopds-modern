@@ -1,0 +1,17 @@
+{% if books %}
+<div style="padding:0.3rem 0.5rem; font-size:0.78rem; color:#7f8c8d; border-bottom:1px solid #eee;">
+    Жанр: <strong>{{ genre }}</strong> — {{ books|length }} книг
+</div>
+<ul class="no-bullet" style="margin:0;">
+    {% for b in books %}
+    <li style="border-bottom:1px solid #f5f5f5; padding:0.25rem 0.6rem;">
+        <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ b.title }}</div>
+        <div style="font-size:0.78rem; color:#7f8c8d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {% for a in b.authors.all %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div style="padding:1rem; color:#7f8c8d; text-align:center;">Книги не найдены</div>
+{% endif %}

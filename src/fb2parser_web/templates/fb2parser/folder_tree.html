@@ -1,0 +1,34 @@
+{% if folders %}
+{% for f in folders %}
+<div class="ftree-node">
+    <div class="ftree-row" id="row-{{ f.node_id }}"
+         onmouseover="this.classList.add('hover')" onmouseout="this.classList.remove('hover')">
+        <input type="checkbox" class="ftree-checkbox"
+               data-path="{{ f.path }}" data-node-id="{{ f.node_id }}"
+               onchange="ftreeCheckChange(this)"
+               onclick="event.stopPropagation()">
+        {% if f.has_subdirs %}
+        <button class="ftree-toggle"
+                data-node-id="{{ f.node_id }}"
+                data-path="{{ f.path }}"
+                onclick="ftreeToggle(this)"
+                title="Развернуть">▶</button>
+        {% else %}
+        <span class="ftree-leaf-indent"></span>
+        {% endif %}
+        <span class="ftree-icon">📁</span>
+        <span class="ftree-name" title="{{ f.path }}"
+              onclick="ftreeRowClick(event, '{{ f.path|escapejs }}', '{{ f.node_id }}')">{{ f.name }}</span>
+        {% if f.fb2_count %}
+        <span class="ftree-count">{{ f.fb2_count }} fb2</span>
+        {% endif %}
+        <span class="ftree-badge" id="badge-{{ f.node_id }}" style="display:none;"></span>
+    </div>
+    {% if f.has_subdirs %}
+    <div id="ftch-{{ f.node_id }}" class="ftree-children" style="display:none;"></div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div style="padding:0.5rem 1rem; color:#7f8c8d; font-size:0.83rem;">Нет папок с FB2-файлами</div>
+{% endif %}

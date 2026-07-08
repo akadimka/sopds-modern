@@ -57,12 +57,15 @@
                            style="background:#f8f9fa; font-family:monospace; font-size:0.82rem;"
                            placeholder="(не выбран)">
                 </label>
-                <label style="font-size:0.85rem;">
-                    Папка
+                <label style="font-size:0.85rem;">Папка</label>
+                <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                     <input id="assign-folder" name="folder" type="text"
-                           style="font-family:monospace; font-size:0.82rem;"
+                           style="font-family:monospace; font-size:0.82rem; margin:0; flex:1;"
                            placeholder="/path/to/folder">
-                </label>
+                    <button type="button" class="button secondary tiny fb-browse-btn" style="margin:0; white-space:nowrap;"
+                            onclick="openBrowser('assign-folder')">📁</button>
+                </div>
+                <div id="fb-browser-assign-folder" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
                 <button class="button warning" style="width:100%; margin-top:0.3rem;"
                         hx-post="{% url 'fb2parser:genre_assign_start' %}"
                         hx-target="#assign-status"

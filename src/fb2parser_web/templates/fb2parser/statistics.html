@@ -1,0 +1,92 @@
+{% extends "fb2parser/base.html" %}
+{% block content %}
+<h2>📊 Статистика библиотеки</h2>
+
+{% if last_scan %}
+<p style="color:#6c757d; font-size:0.85rem;">Последнее сканирование: <strong>{{ last_scan }}</strong></p>
+{% endif %}
+
+<div class="grid-x grid-margin-x" style="margin-bottom:1.5rem;">
+    <div class="cell medium-2 small-6">
+        <div class="card text-center" style="border-top:4px solid #f39c12;">
+            <div class="card-section">
+                <div style="font-size:2rem; font-weight:bold; color:#f39c12;">{{ stats.books }}</div>
+                <div style="font-size:0.85rem; color:#6c757d;">Книг</div>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-2 small-6">
+        <div class="card text-center" style="border-top:4px solid #2980b9;">
+            <div class="card-section">
+                <div style="font-size:2rem; font-weight:bold; color:#2980b9;">{{ stats.authors }}</div>
+                <div style="font-size:0.85rem; color:#6c757d;">Авторов</div>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-2 small-6">
+        <div class="card text-center" style="border-top:4px solid #27ae60;">
+            <div class="card-section">
+                <div style="font-size:2rem; font-weight:bold; color:#27ae60;">{{ stats.genres }}</div>
+                <div style="font-size:0.85rem; color:#6c757d;">Жанров</div>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-2 small-6">
+        <div class="card text-center" style="border-top:4px solid #8e44ad;">
+            <div class="card-section">
+                <div style="font-size:2rem; font-weight:bold; color:#8e44ad;">{{ stats.series }}</div>
+                <div style="font-size:0.85rem; color:#6c757d;">Серий</div>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-2 small-6">
+        <div class="card text-center" style="border-top:4px solid #7f8c8d;">
+            <div class="card-section">
+                <div style="font-size:2rem; font-weight:bold; color:#7f8c8d;">{{ stats.catalogs }}</div>
+                <div style="font-size:0.85rem; color:#6c757d;">Каталогов</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-x grid-margin-x">
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-divider"><strong>🏷️ Топ жанров</strong></div>
+            <div class="card-section" style="padding:0.5rem;">
+                <table class="unstriped" style="font-size:0.85rem; margin:0;">
+                    <tbody>
+                    {% for g in top_genres %}
+                    <tr>
+                        <td>{{ g.subsection }}</td>
+                        <td style="text-align:right; color:#7f8c8d;">{{ g.cnt }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-8">
+        <div class="card">
+            <div class="card-divider"><strong>🆕 Последние добавленные</strong></div>
+            <div class="card-section" style="padding:0.5rem;">
+                <table class="unstriped" style="font-size:0.82rem; margin:0;">
+                    <thead>
+                        <tr><th>Название</th><th>Формат</th><th>Дата</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for b in recent_books %}
+                    <tr>
+                        <td>{{ b.title|truncatechars:50 }}</td>
+                        <td>{{ b.format }}</td>
+                        <td style="white-space:nowrap;">{{ b.docdate }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

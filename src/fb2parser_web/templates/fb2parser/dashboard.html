@@ -1,96 +1,309 @@
 {% extends "fb2parser/base.html" %}
+{% load static %}
 {% block content %}
-<h2>📊 Статистика библиотеки</h2>
+<div style="display:flex; flex-direction:column; height:calc(100vh - 112px); margin:-1.5rem 0 0;">
 
-{% if last_scan %}
-<p style="color:#6c757d; font-size:0.85rem;">Последнее сканирование: <strong>{{ last_scan }}</strong></p>
-{% endif %}
+    <!-- Тулбар -->
+    <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.7rem; background:#f8f9fa; border-bottom:2px solid #dee2e6; flex-shrink:0;">
+        <span style="font-size:0.88rem; color:#495057; white-space:nowrap; font-weight:500;">Папка для обработки:</span>
+        <div style="flex:1; position:relative; display:flex; gap:0.4rem; min-width:0;">
+            <input id="main-folder" type="text" name="root" value="{{ root }}"
+                   style="margin:0; flex:1; font-family:monospace; font-size:0.83rem; min-width:0;"
+                   placeholder="/path/to/library">
+            <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap; padding:0.5rem 0.8rem;"
+                    onclick="openBrowser('main-folder')">📁 Обзор</button>
+            <div id="fb-browser-main-folder" class="fb-browser-wrap"
+                 style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:500;"></div>
+        </div>
+        <button id="scan-btn" class="button" style="background:#f39c12; margin:0; white-space:nowrap; flex-shrink:0;"
+                hx-post="{% url 'fb2parser:main_scan_start' %}"
+                hx-include="#main-folder"
+                hx-target="#main-statusbar"
+                hx-swap="innerHTML"
+                hx-indicator="#scan-spinner">
+            ▶ Сканировать
+        </button>
+        <span id="scan-spinner" class="htmx-indicator" style="font-size:0.82rem; color:#7f8c8d; white-space:nowrap;">Запуск...</span>
+        <button type="button" class="button secondary" style="margin:0; white-space:nowrap; flex-shrink:0;"
+                onclick="toggleMainView()">⇄ Вид</button>
+    </div>
 
-<!-- Счётчики -->
-<div class="grid-x grid-margin-x" style="margin-bottom:1.5rem;">
-    <div class="cell medium-2 small-6">
-        <div class="card text-center" style="border-top:4px solid #f39c12;">
-            <div class="card-section">
-                <div style="font-size:2rem; font-weight:bold; color:#f39c12;">{{ stats.books }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Книг</div>
+    <!-- Основная рабочая область -->
+    <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; min-height:0; position:relative;">
+
+        <!-- Режим дерева папок -->
+        <div id="tree-view" style="flex:1; overflow-y:auto; padding:0.3rem 0; position:relative;">
+            {% if root %}
+            <div id="tree-content"
+                 hx-get="{% url 'fb2parser:folder_tree' %}?path={{ root|urlencode }}"
+                 hx-trigger="load"
+                 hx-swap="outerHTML">
+                <div style="padding:1.5rem; color:#7f8c8d; text-align:center;">Загрузка дерева папок...</div>
+            </div>
+            {% else %}
+            <div style="padding:2rem; text-align:center; color:#7f8c8d;">
+                <div style="font-size:1.5rem; margin-bottom:0.5rem;">📁</div>
+                Укажите папку для отображения структуры
+            </div>
+            {% endif %}
+
+            <!-- Панель выбора жанра (overlay поверх дерева, справа) -->
+            <div id="genre-picker-panel" style="display:none; position:absolute; top:0; right:0; width:300px; height:100%; background:#fff; border-left:2px solid #dee2e6; box-shadow:-6px 0 18px rgba(0,0,0,0.12); display:none; flex-direction:column; z-index:200;">
+                <div style="background:#34495e; color:#ecf0f1; padding:0.4rem 0.7rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                    <strong style="font-size:0.88rem;">Выбор жанра</strong>
+                    <button onclick="gpClose()" style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1rem; padding:0; line-height:1;">✕</button>
+                </div>
+                <div style="padding:0.4rem 0.5rem; border-bottom:1px solid #eee; flex-shrink:0;">
+                    <input id="gp-filter" type="text" placeholder="Фильтр жанров..."
+                           style="margin:0; font-size:0.82rem;"
+                           oninput="gpFilter(this.value)">
+                </div>
+                <div id="gp-list" style="flex:1; overflow-y:auto;">
+                    <div style="padding:0.5rem; color:#7f8c8d; font-size:0.82rem;">Загрузка...</div>
+                </div>
+                <div style="padding:0.5rem 0.7rem; border-top:1px solid #eee; flex-shrink:0; background:#f8f9fa;">
+                    <div id="gp-selected-label" style="font-size:0.78rem; color:#7f8c8d; margin-bottom:0.4rem;">Жанр не выбран</div>
+                    <button id="gp-apply-btn" class="button warning" style="width:100%; margin:0;"
+                            disabled onclick="gpApply()">
+                        ▶ Применить к выбранным папкам
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Режим результатов: 3 панели -->
+        <div id="results-view" style="display:none; flex:1; overflow:hidden;">
+            <div id="results-content" style="display:flex; height:100%; gap:0; border-top:1px solid #dee2e6;">
+                <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #dee2e6; min-width:0;">
+                    <div style="background:#34495e; color:#ecf0f1; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">Жанры</div>
+                    <div id="genres-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;"><div style="padding:0.5rem; color:#7f8c8d;">Выполните сканирование</div></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #dee2e6; min-width:0;">
+                    <div style="background:#c0392b; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">Ошибки/Замечания</div>
+                    <div id="errors-panel" style="flex:1; overflow-y:auto; font-size:0.78rem; font-family:monospace;"><div style="padding:0.5rem; color:#7f8c8d; font-family:sans-serif;">Нет данных</div></div>
+                </div>
+                <div style="flex:1.5; display:flex; flex-direction:column; min-width:0;">
+                    <div style="background:#2980b9; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">Детали</div>
+                    <div id="details-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;"><div style="padding:0.5rem; color:#7f8c8d;">Выберите жанр слева</div></div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="cell medium-2 small-6">
-        <div class="card text-center" style="border-top:4px solid #2980b9;">
-            <div class="card-section">
-                <div style="font-size:2rem; font-weight:bold; color:#2980b9;">{{ stats.authors }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Авторов</div>
-            </div>
-        </div>
+
+    <!-- Бар выделения (появляется при выборе папок) -->
+    <div id="selection-bar" style="display:none; align-items:center; gap:0.7rem; padding:0.4rem 0.8rem; background:#2c3e50; color:#ecf0f1; flex-shrink:0; border-top:2px solid #f39c12;">
+        <span id="sel-count" style="font-size:0.85rem; font-weight:500;"></span>
+        <button class="button warning" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
+                onclick="gpOpen()">🏷️ Присвоить жанр</button>
+        <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
+                onclick="selClear()">✕ Снять выделение</button>
+        <div id="sel-result" style="font-size:0.82rem; margin-left:auto;"></div>
     </div>
-    <div class="cell medium-2 small-6">
-        <div class="card text-center" style="border-top:4px solid #27ae60;">
-            <div class="card-section">
-                <div style="font-size:2rem; font-weight:bold; color:#27ae60;">{{ stats.genres }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Жанров</div>
-            </div>
-        </div>
-    </div>
-    <div class="cell medium-2 small-6">
-        <div class="card text-center" style="border-top:4px solid #8e44ad;">
-            <div class="card-section">
-                <div style="font-size:2rem; font-weight:bold; color:#8e44ad;">{{ stats.series }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Серий</div>
-            </div>
-        </div>
-    </div>
-    <div class="cell medium-2 small-6">
-        <div class="card text-center" style="border-top:4px solid #7f8c8d;">
-            <div class="card-section">
-                <div style="font-size:2rem; font-weight:bold; color:#7f8c8d;">{{ stats.catalogs }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Каталогов</div>
-            </div>
-        </div>
+
+    <!-- Строка статуса -->
+    <div id="main-statusbar" style="border-top:1px solid #dee2e6; padding:0.3rem 0.7rem; font-size:0.8rem; background:#f8f9fa; flex-shrink:0; min-height:1.8rem; display:flex; align-items:center; gap:0.5rem;">
+        {% if state.running %}
+        {% include "fb2parser/main_scan_statusbar.html" with state=state pct=0 %}
+        {% elif state.done %}
+        <span style="color:#27ae60;">✓ Сканирование завершено:</span>
+        <span>добавлено {{ state.books_added }}, пропущено {{ state.books_skipped }}, ошибок {{ state.bad_books }}</span>
+        {% else %}
+        <span style="color:#6c757d;">Готово к работе</span>
+        {% endif %}
     </div>
 </div>
 
-<div class="grid-x grid-margin-x">
-    <!-- Топ жанров -->
-    <div class="cell medium-4">
-        <div class="card">
-            <div class="card-divider"><strong>🏷️ Топ жанров</strong></div>
-            <div class="card-section" style="padding:0.5rem;">
-                <table class="unstriped" style="font-size:0.85rem; margin:0;">
-                    <tbody>
-                    {% for g in top_genres %}
-                    <tr>
-                        <td>{{ g.subsection }}</td>
-                        <td style="text-align:right; color:#7f8c8d;">{{ g.cnt }}</td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<script>
+var _currentView = 'tree';
+var _selectedPaths = new Map();  // path → nodeId
+var _gpSelectedGenre = null;
+var _gpLoaded = false;
+var ASSIGN_URL = "{% url 'fb2parser:assign_genre_multi' %}";
+var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
 
-    <!-- Последние книги -->
-    <div class="cell medium-8">
-        <div class="card">
-            <div class="card-divider"><strong>🆕 Последние добавленные</strong></div>
-            <div class="card-section" style="padding:0.5rem;">
-                <table class="unstriped" style="font-size:0.82rem; margin:0;">
-                    <thead>
-                        <tr><th>Название</th><th>Формат</th><th>Дата</th></tr>
-                    </thead>
-                    <tbody>
-                    {% for b in recent_books %}
-                    <tr>
-                        <td>{{ b.title|truncatechars:50 }}</td>
-                        <td>{{ b.format }}</td>
-                        <td style="white-space:nowrap;">{{ b.docdate }}</td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+/* ── Вид (дерево / результаты) ─────────────────────────── */
+function toggleMainView() {
+    if (_currentView === 'tree') {
+        document.getElementById('tree-view').style.display = 'none';
+        document.getElementById('results-view').style.display = 'flex';
+        _currentView = 'results';
+        htmx.ajax('GET', "{% url 'fb2parser:scan_results' %}", {target: '#results-content', swap: 'outerHTML'});
+    } else {
+        document.getElementById('results-view').style.display = 'none';
+        document.getElementById('tree-view').style.display = 'flex';
+        _currentView = 'tree';
+    }
+}
+
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target.id === 'main-statusbar' && e.target.querySelector('[data-scan-done]') && _currentView === 'tree') {
+        toggleMainView();
+    }
+});
+
+var _origSelectFolder = window.selectFolder;
+window.selectFolder = function(targetId, path) {
+    _origSelectFolder(targetId, path);
+    if (targetId === 'main-folder') reloadTree(path);
+};
+
+document.getElementById('main-folder').addEventListener('change', function() {
+    if (this.value.trim()) reloadTree(this.value.trim());
+});
+
+function reloadTree(path) {
+    selClear();
+    document.getElementById('tree-view').innerHTML =
+        '<div style="padding:1.5rem; color:#7f8c8d; text-align:center;">Загрузка дерева папок...</div>';
+    htmx.ajax('GET', fbFolderTreeUrl + '?path=' + encodeURIComponent(path),
+              {target: '#tree-view', swap: 'innerHTML'});
+}
+
+/* ── Выделение папок ────────────────────────────────────── */
+function ftreeCheckChange(cb) {
+    var path = cb.dataset.path;
+    var nodeId = cb.dataset.nodeId;
+    if (cb.checked) {
+        _selectedPaths.set(path, nodeId);
+        document.getElementById('row-' + nodeId).classList.add('selected');
+    } else {
+        _selectedPaths.delete(path);
+        document.getElementById('row-' + nodeId).classList.remove('selected');
+    }
+    selUpdateBar();
+}
+
+function ftreeRowClick(event, path, nodeId) {
+    if (!event.ctrlKey && !event.metaKey) return;
+    var cb = document.querySelector('.ftree-checkbox[data-node-id="' + nodeId + '"]');
+    if (cb) { cb.checked = !cb.checked; ftreeCheckChange(cb); }
+}
+
+function selUpdateBar() {
+    var n = _selectedPaths.size;
+    var bar = document.getElementById('selection-bar');
+    if (n > 0) {
+        bar.style.display = 'flex';
+        document.getElementById('sel-count').textContent = n + ' ' + _plural(n, 'папка', 'папки', 'папок') + ' выбрано';
+        document.getElementById('sel-result').textContent = '';
+    } else {
+        bar.style.display = 'none';
+        gpClose();
+    }
+}
+
+function selClear() {
+    _selectedPaths.clear();
+    document.querySelectorAll('.ftree-checkbox').forEach(function(cb) {
+        cb.checked = false;
+    });
+    document.querySelectorAll('.ftree-row.selected').forEach(function(r) {
+        r.classList.remove('selected');
+    });
+    selUpdateBar();
+}
+
+function _plural(n, one, few, many) {
+    var mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+}
+
+/* ── Панель выбора жанра ────────────────────────────────── */
+function gpOpen() {
+    var panel = document.getElementById('genre-picker-panel');
+    panel.style.display = 'flex';
+    document.getElementById('gp-filter').value = '';
+    if (!_gpLoaded) {
+        _gpLoaded = true;
+        htmx.ajax('GET', GENRE_NAMES_URL, {target: '#gp-list', swap: 'innerHTML'});
+    }
+    gpFilter('');
+}
+
+function gpClose() {
+    document.getElementById('genre-picker-panel').style.display = 'none';
+}
+
+function gpFilter(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('#gp-list .gp-item').forEach(function(el) {
+        el.style.display = (!q || el.dataset.name.includes(q)) ? '' : 'none';
+    });
+}
+
+function gpSelectGenre(name, el) {
+    _gpSelectedGenre = name;
+    document.querySelectorAll('#gp-list .gp-item').forEach(function(x) {
+        x.style.background = '';
+        x.style.fontWeight = '';
+    });
+    el.style.background = '#fef3e2';
+    el.style.fontWeight = '600';
+    document.getElementById('gp-selected-label').textContent = '✓ ' + name;
+    document.getElementById('gp-selected-label').style.color = '#e67e22';
+    document.getElementById('gp-apply-btn').disabled = false;
+}
+
+function gpApply() {
+    if (!_gpSelectedGenre || _selectedPaths.size === 0) return;
+    var paths = Array.from(_selectedPaths.keys());
+    var btn = document.getElementById('gp-apply-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Применяется...';
+
+    fetch(ASSIGN_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': _getCsrf()
+        },
+        body: JSON.stringify({genre: _gpSelectedGenre, paths: paths})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) {
+            document.getElementById('sel-result').textContent = '❌ ' + data.error;
+            document.getElementById('sel-result').style.color = '#c0392b';
+        } else {
+            var ok = 0, fail = 0;
+            data.results.forEach(function(r) {
+                var badge = document.getElementById('badge-' + _selectedPaths.get(r.path));
+                if (!badge) return;
+                if (r.success) {
+                    ok++;
+                    badge.textContent = _gpSelectedGenre;
+                    badge.className = 'ftree-badge';
+                    badge.style.display = 'inline-block';
+                } else {
+                    fail++;
+                    badge.textContent = '⚠ ошибка';
+                    badge.className = 'ftree-badge error';
+                    badge.style.display = 'inline-block';
+                    badge.title = r.error || '';
+                }
+            });
+            var msg = '✓ ' + ok + ' папок обработано';
+            if (fail) msg += ', ' + fail + ' ошибок';
+            document.getElementById('sel-result').textContent = msg;
+            document.getElementById('sel-result').style.color = fail ? '#c0392b' : '#27ae60';
+        }
+        btn.textContent = '▶ Применить к выбранным папкам';
+        btn.disabled = false;
+        selClear();
+        gpClose();
+    })
+    .catch(function(e) {
+        document.getElementById('sel-result').textContent = '❌ ' + e;
+        btn.textContent = '▶ Применить к выбранным папкам';
+        btn.disabled = false;
+    });
+}
+
+function _getCsrf() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+}
+</script>
 {% endblock %}

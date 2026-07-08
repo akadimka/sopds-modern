@@ -9,12 +9,15 @@
             <div class="card-divider"><strong>Параметры сканирования</strong></div>
             <div class="card-section">
                 {% csrf_token %}
-                <label>
-                    Папка с книгами
+                <label>Папка с книгами</label>
+                <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                     <input id="scan-root" type="text" name="root" value="{{ root }}"
                            placeholder="/path/to/library"
-                           style="font-family:monospace; font-size:0.85rem;">
-                </label>
+                           style="font-family:monospace; font-size:0.85rem; margin:0; flex:1;">
+                    <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;"
+                            onclick="openBrowser('scan-root')">📁 Обзор</button>
+                </div>
+                <div id="fb-browser-scan-root" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
                 <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
                     <button id="scan-btn"
                             class="button"

@@ -11,12 +11,15 @@
                     Нормализация приводит имена авторов к формату <em>«Фамилия Имя»</em>
                     для всех книг в папке. Используется Pass 3 пайплайна fb2parser.
                 </p>
-                <label style="font-size:0.85rem;">
-                    Папка для нормализации
+                <label style="font-size:0.85rem;">Папка для нормализации</label>
+                <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                     <input id="norm-folder" name="folder" type="text" value="{{ root }}"
-                           style="font-family:monospace; font-size:0.85rem;"
+                           style="font-family:monospace; font-size:0.85rem; margin:0; flex:1;"
                            placeholder="/path/to/scan/folder">
-                </label>
+                    <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;"
+                            onclick="openBrowser('norm-folder')">📁 Обзор</button>
+                </div>
+                <div id="fb-browser-norm-folder" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
                 <div style="margin-top:0.8rem;">
                     <button class="button" style="background:#8e44ad; margin:0;"
                             hx-post="{% url 'fb2parser:normalize_start' %}"

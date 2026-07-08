@@ -4,7 +4,15 @@ from fb2parser_web import views
 app_name = "fb2parser"
 
 urlpatterns = [
-    path("",              views.dashboard,   name="dashboard"),
+    path("",                    views.dashboard,          name="dashboard"),
+    path("statistics/",         views.statistics,         name="statistics"),
+    path("folder-tree/",        views.folder_tree,        name="folder_tree"),
+    path("main-scan/start/",    views.main_scan_start,    name="main_scan_start"),
+    path("main-scan/status/",   views.main_scan_status,   name="main_scan_status"),
+    path("scan-results/",       views.scan_results,       name="scan_results"),
+    path("genre-books/",        views.genre_books,        name="genre_books"),
+    path("genre-names/",        views.genre_names,        name="genre_names"),
+    path("assign-genre-multi/", views.assign_genre_multi, name="assign_genre_multi"),
     path("scan/",              views.scan,        name="scan"),
     path("scan/start/",        views.scan_start,  name="scan_start"),
     path("scan/status/",       views.scan_status,  name="scan_status"),
@@ -14,6 +22,7 @@ urlpatterns = [
     path("sync/",              views.sync,             name="sync"),
     path("sync/start/",        views.sync_start,       name="sync_start"),
     path("sync/status/",       views.sync_status,      name="sync_status"),
+    path("browse/",            views.browse_folders,     name="browse"),
     path("genre-assign/",        views.genre_assign,        name="genre_assign"),
     path("genre-assign/start/",  views.genre_assign_start,  name="genre_assign_start"),
     path("genre-assign/status/", views.genre_assign_status, name="genre_assign_status"),
