@@ -233,9 +233,8 @@ class FB2(EbookMetaParser):
             '/fb:FictionBook/fb:description/fb:title-info/fb:book-title|/*[local-name() = "FictionBook"]/*[local-name() = "description"]/*[local-name() = "title-info"]/*[local-name() = "book-title"]',
         )
         if len(nodes) > 0:
-            res: str = nodes[0].text.strip()
-
-        return res
+            return (nodes[0].text or "").strip()
+        return ""
 
     @property
     def description(self) -> bytes | None:
@@ -285,7 +284,8 @@ class FB2(EbookMetaParser):
         )
         tags: list[str] = []
         for node in res:
-            tags.append(node.text)
+            if node.text:
+                tags.append(node.text)
         return tags
 
     @property

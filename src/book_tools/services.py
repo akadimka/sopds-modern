@@ -1,9 +1,20 @@
 # Сервисы для работы с электронными книгами
 import logging
+import re
 import zipfile
 from datetime import date
 from io import BytesIO
 from typing import Callable, Optional
+
+def _parse_series_no(value) -> int:
+    """Convert series index to int, tolerating '9.0', '1-3', None, etc."""
+    if not value:
+        return 0
+    s = str(value).strip()
+    # Take only the leading numeric part (handles '1-3' → 1, '9.0' → 9)
+    m = re.match(r'^(\d+)', s)
+    return int(m.group(1)) if m else 0
+
 
 from .exceptions import (
     EbookParserException,
@@ -134,7 +145,7 @@ def _fb2_parser_to_metadata(
     if parser.series_info:
         series = Series(
             name=parser.series_info.get("title", ""),
-            series_no=int(parser.series_info.get("index", 0) or 0),
+            series_no=_parse_series_no(parser.series_info.get("index")),
         )
 
     genres = parser.tags or []
@@ -193,7 +204,7 @@ def parse_epub(file_obj, original_filename: str) -> BookMetadata:
         idx = epub.series_info.get("index")
         series = Series(
             name=epub.series_info.get("title", ""),
-            series_no=int(idx) if idx else 0,
+            series_no=_parse_series_no(idx),
         )
 
     docdate: str = epub.docdate or ""
