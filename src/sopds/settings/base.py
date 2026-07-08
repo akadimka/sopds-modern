@@ -328,13 +328,6 @@ CONSTANCE_CONFIG = OrderedDict(
         ),
         ("SOPDS_DELETE_LOGICAL", (False, _("Logical deleting unavialable files"))),
         (
-            "FB2PARSER_PATH",
-            (
-                r"C:\Temp\fb2parser",
-                _("Путь к fb2parser (устарело — данные теперь в src/fb2_data/)"),
-            ),
-        ),
-        (
             "SOPDS_SCAN_SHED_MIN",
             ("0", _("sheduled minutes for sopds_scanner (cron syntax)")),
         ),
@@ -418,9 +411,6 @@ CONSTANCE_CONFIG_FIELDSETS = {
         "SOPDS_MAXITEMS",
         "SOPDS_TITLE_AS_FILENAME",
         "SOPDS_NOCOVER_PATH",
-    ),
-    "3. FB2Parser Integration": (
-        "FB2PARSER_PATH",
     ),
     "4. Scanner Options": (
         "SOPDS_FB2SAX",
