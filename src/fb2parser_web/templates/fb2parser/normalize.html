@@ -32,15 +32,15 @@
         <table id="norm-table" style="border-collapse:collapse; font-size:0.78rem; width:max-content; min-width:100%;">
             <thead style="position:sticky; top:0; z-index:2; background:#34495e; color:#ecf0f1;">
                 <tr>
-                    <th class="nt-th nt-path">file_path</th>
-                    <th class="nt-th">metadata_authors</th>
-                    <th class="nt-th nt-proposed">proposed_author</th>
-                    <th class="nt-th nt-src">author_source</th>
-                    <th class="nt-th">metadata_series</th>
-                    <th class="nt-th nt-proposed">proposed_series</th>
-                    <th class="nt-th nt-src">series_source</th>
-                    <th class="nt-th">book_title</th>
-                    <th class="nt-th">metadata_genre</th>
+                    <th class="nt-th" style="width:240px;">file_path<div class="nt-resizer"></div></th>
+                    <th class="nt-th" style="width:180px;">metadata_authors<div class="nt-resizer"></div></th>
+                    <th class="nt-th nt-proposed" style="width:160px;">proposed_author<div class="nt-resizer"></div></th>
+                    <th class="nt-th nt-src" style="width:110px;">author_source<div class="nt-resizer"></div></th>
+                    <th class="nt-th" style="width:160px;">metadata_series<div class="nt-resizer"></div></th>
+                    <th class="nt-th nt-proposed" style="width:160px;">proposed_series<div class="nt-resizer"></div></th>
+                    <th class="nt-th nt-src" style="width:110px;">series_source<div class="nt-resizer"></div></th>
+                    <th class="nt-th" style="width:180px;">book_title<div class="nt-resizer"></div></th>
+                    <th class="nt-th" style="width:140px;">metadata_genre</th>
                 </tr>
             </thead>
             <tbody id="norm-tbody">
@@ -116,16 +116,18 @@
 </div>
 
 <style>
-    .nt-th { padding:0.3rem 0.6rem; font-weight:600; font-size:0.78rem; text-align:left; white-space:nowrap; border-right:1px solid #4a6278; }
+    #norm-table { table-layout: fixed; }
+    .nt-th { padding:0.3rem 0.6rem 0.3rem 0.4rem; font-weight:600; font-size:0.78rem; text-align:left; white-space:nowrap; border-right:1px solid #4a6278; position:relative; user-select:none; overflow:hidden; }
     .nt-th:last-child { border-right:none; }
-    .nt-path { min-width:220px; max-width:320px; }
-    .nt-cell { min-width:140px; max-width:220px; }
-    .nt-proposed { background:rgba(241,196,15,0.08); min-width:140px; }
-    .nt-src { min-width:100px; max-width:130px; color:#7f8c8d; font-size:0.74rem; }
-    .norm-row td { padding:0.18rem 0.6rem; border-bottom:1px solid #f0f0f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:320px; vertical-align:middle; }
+    .nt-resizer { position:absolute; right:0; top:0; width:5px; height:100%; cursor:col-resize; background:transparent; z-index:1; }
+    .nt-resizer:hover, .nt-resizer.dragging { background:rgba(243,156,18,0.6); }
+    .nt-proposed { background:rgba(241,196,15,0.08); }
+    .nt-src { color:#7f8c8d; font-size:0.74rem; }
+    .norm-row td { padding:0.18rem 0.6rem; border-bottom:1px solid #f0f0f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
     .norm-row:nth-child(even) { background:#fafafa; }
     .norm-row:hover td { background:#f0f4f8 !important; }
     .norm-row.filtered-out { display:none; }
+    body.col-resizing { cursor:col-resize !important; user-select:none !important; }
 </style>
 
 <script>
@@ -154,6 +156,39 @@ function normShowLog() {
 function normCloseLog() {
     document.getElementById('norm-log-panel').style.display = 'none';
 }
+
+// Изменение ширины столбцов
+(function() {
+    var _col = null, _startX = 0, _startW = 0;
+
+    function initResizers() {
+        document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) {
+            r.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                _col = r.closest('th');
+                _startX = e.clientX;
+                _startW = _col.offsetWidth;
+                r.classList.add('dragging');
+                document.body.classList.add('col-resizing');
+            });
+        });
+    }
+
+    document.addEventListener('mousemove', function(e) {
+        if (!_col) return;
+        var w = Math.max(50, _startW + e.clientX - _startX);
+        _col.style.width = w + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (!_col) return;
+        document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) { r.classList.remove('dragging'); });
+        document.body.classList.remove('col-resizing');
+        _col = null;
+    });
+
+    initResizers();
+})();
 
 // После завершения CSV — загружаем таблицу и обновляем счётчик
 document.addEventListener('htmx:afterSwap', function(e) {
