@@ -1,0 +1,51 @@
+{% if state.running %}
+<div id="scan-status"
+     hx-get="{% url 'fb2parser:scan_status' %}"
+     hx-trigger="every 2s"
+     hx-target="#scan-status"
+     hx-swap="outerHTML">
+
+    <div class="callout primary" style="margin-bottom:1rem;">
+        <strong>⏳ Сканирование...</strong>
+        {% if state.current %}
+        <div style="font-size:0.8rem; color:#555; margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+            Файл: {{ state.current }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="margin-bottom:0.5rem; font-size:0.85rem;">
+        Обработано: <strong>{{ state.processed }}</strong>
+        {% if state.total > 0 %} из {{ state.total }} ({{ pct }}%){% endif %}
+    </div>
+    <div class="progress" style="height:1.5rem; margin-bottom:1rem;">
+        <span class="progress-meter" style="width:{{ pct }}%; background:#f39c12;">
+            <span class="progress-meter-text">{{ pct }}%</span>
+        </span>
+    </div>
+
+{% elif state.done %}
+<div id="scan-status">
+    <div class="callout success">
+        <strong>✅ Сканирование завершено</strong>
+    </div>
+    <table class="unstriped" style="max-width:400px; font-size:0.9rem;">
+        <tr><td>Добавлено книг:</td><td><strong>{{ state.books_added }}</strong></td></tr>
+        <tr><td>Пропущено (уже есть):</td><td>{{ state.books_skipped }}</td></tr>
+        <tr><td>Ошибок:</td><td style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</td></tr>
+        <tr><td>Всего обработано:</td><td>{{ state.processed }}</td></tr>
+    </table>
+
+{% elif state.error %}
+<div id="scan-status">
+    <div class="callout alert">
+        <strong>❌ Ошибка:</strong> {{ state.error }}
+    </div>
+
+{% else %}
+<div id="scan-status">
+    <div class="callout secondary" style="font-size:0.9rem;">
+        Сканирование не запущено.
+    </div>
+{% endif %}
+</div>

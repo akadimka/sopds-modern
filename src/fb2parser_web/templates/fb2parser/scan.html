@@ -1,9 +1,43 @@
 {% extends "fb2parser/base.html" %}
 {% block content %}
-<h2> Сканирование</h2>
-<div class="fb2-stub">
-    <h3>Сканирование</h3>
-    <p>Сканирование папок с книгами и добавление новых файлов в базу данных.</p>
-    <p><em>— В разработке —</em></p>
+<h2>🔍 Сканирование библиотеки</h2>
+
+<div class="grid-x grid-margin-x">
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>Параметры сканирования</strong></div>
+            <div class="card-section">
+                <form hx-post="{% url 'fb2parser:scan_start' %}"
+                      hx-target="#scan-status"
+                      hx-swap="outerHTML"
+                      hx-indicator="#scan-spinner">
+                    {% csrf_token %}
+                    <label>
+                        Папка с книгами
+                        <input type="text" name="root" value="{{ root }}"
+                               placeholder="/path/to/library"
+                               style="font-family:monospace; font-size:0.85rem;">
+                    </label>
+                    <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
+                        <button type="submit" class="button" style="background:#f39c12; margin:0;">
+                            ▶ Запустить сканирование
+                        </button>
+                        <span id="scan-spinner" class="htmx-indicator" style="font-size:0.85rem; color:#7f8c8d;">
+                            Запускаем...
+                        </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>Прогресс</strong></div>
+            <div class="card-section">
+                {% include "fb2parser/scan_status.html" with state=state pct=0 %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

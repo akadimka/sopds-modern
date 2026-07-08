@@ -5,7 +5,9 @@ app_name = "fb2parser"
 
 urlpatterns = [
     path("",              views.dashboard,   name="dashboard"),
-    path("scan/",         views.scan,        name="scan"),
+    path("scan/",              views.scan,        name="scan"),
+    path("scan/start/",        views.scan_start,  name="scan_start"),
+    path("scan/status/",       views.scan_status,  name="scan_status"),
     path("normalize/",    views.normalize,   name="normalize"),
     path("sync/",         views.sync,        name="sync"),
     path("archive/",      views.archive,     name="archive"),
