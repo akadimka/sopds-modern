@@ -571,11 +571,69 @@ def normalize(request):
     from constance import config as cfg
     with _norm_lock:
         state = dict(_norm_state)
+    # Если после перезапуска сервера память пуста — пробуем восстановить кэш
+    if not state["records"] and not state["running"]:
+        folder = state.get("folder") or cfg.SOPDS_ROOT_LIB or ""
+        if folder:
+            _norm_restore_from_cache(folder)
+            with _norm_lock:
+                state = dict(_norm_state)
     return render(request, "fb2parser/normalize.html", _ctx(
         "normalize", "Нормализация",
         root=cfg.SOPDS_ROOT_LIB or "",
         state=state,
     ))
+
+
+def _norm_cache_path(folder_path):
+    import hashlib
+    h = hashlib.md5(folder_path.encode("utf-8", errors="replace")).hexdigest()[:16]
+    cache_dir = os.path.join(os.path.dirname(__file__), "_norm_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, f"norm_{h}.json")
+
+
+def _norm_cache_save(folder_path, records):
+    import json, time
+    try:
+        data = {"folder": folder_path, "ts": time.time(), "records": records}
+        with open(_norm_cache_path(folder_path), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def _norm_cache_load(folder_path, max_age_hours=24):
+    import json, time
+    try:
+        p = _norm_cache_path(folder_path)
+        if not os.path.exists(p):
+            return None
+        with open(p, encoding="utf-8") as f:
+            data = json.load(f)
+        age_h = (time.time() - data.get("ts", 0)) / 3600
+        if age_h > max_age_hours:
+            return None
+        if data.get("folder") != folder_path:
+            return None
+        return data["records"]
+    except Exception:
+        return None
+
+
+def _norm_restore_from_cache(folder_path):
+    """Загружает кэш в _norm_state если он есть и актуален. Возвращает True при успехе."""
+    records = _norm_cache_load(folder_path)
+    if records is None:
+        return False
+    with _norm_lock:
+        _norm_state.update({
+            "done": True, "running": False, "error": None,
+            "processed": len(records), "total": len(records),
+            "records": records, "records_total": len(records),
+            "folder": folder_path, "current_file": "",
+        })
+    return True
 
 
 def _run_normalize_thread(folder_path):
@@ -620,6 +678,8 @@ def _run_normalize_thread(folder_path):
                 "processed": len(recs_dicts), "total": len(recs_dicts),
                 "records": recs_dicts, "records_total": len(recs_dicts),
             })
+        # Сохраняем кэш на диск — переживёт перезапуск сервера
+        _norm_cache_save(folder_path, recs_dicts)
     except Exception as exc:
         import traceback
         tb = traceback.format_exc()
@@ -701,6 +761,12 @@ def names_list(request):
     import importlib, re as _re
     with _norm_lock:
         records = list(_norm_state["records"])
+        cached_folder = _norm_state.get("folder", "")
+    # Пробуем восстановить из кэша если память пуста
+    if not records and cached_folder:
+        _norm_restore_from_cache(cached_folder)
+        with _norm_lock:
+            records = list(_norm_state["records"])
     if not records:
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 

@@ -9,6 +9,7 @@
 src/.env
 src/sopds.db
 src/log/
+src/fb2parser_web/_norm_cache/
 
 ### Python template
 # Byte-compiled / optimized / DLL files
