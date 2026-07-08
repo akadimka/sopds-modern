@@ -149,8 +149,16 @@ class FB2(EbookMetaParser):
         try:
             self._file.seek(0, 0)
             parser = etree.XMLParser(recover=True)
-            self._etree = etree.parse(self._file, parser)
-            if self._etree.getroot() is None:
+            try:
+                self._etree = etree.parse(self._file, parser)
+            except etree.XMLSyntaxError:
+                # Encoding error (e.g. NUL bytes, invalid UTF-8 sequence) —
+                # strip non-XML bytes and retry from cleaned bytes
+                self._file.seek(0, 0)
+                raw = self._file.read().replace(b'\x00', b'')
+                parser2 = etree.XMLParser(recover=True, encoding="utf-8")
+                self._etree = etree.fromstring(raw, parser2).getroottree()
+            if self._etree is None or self._etree.getroot() is None:
                 raise FB2StructureException("XML recovery failed: empty document")
         except FB2StructureException:
             raise
