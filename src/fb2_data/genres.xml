@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<genres>
+  <genre name="Фантастика"/>
+  <genre name="Детектив">
+    <genre name="Классический детектив"/>
+    <genre name="Триллер"/>
+    <genre name="Нуар"/>
+    <genre name="Полицейский детектив"/>
+  </genre>
+  <genre name="Роман">
+    <genre name="Исторический роман"/>
+  </genre>
+  <genre name="Криминальная проза"/>
+  <genre name="Non-Fiction">
+    <genre name="Научно-популярная"/>
+    <genre name="Биография"/>
+  </genre>
+</genres>

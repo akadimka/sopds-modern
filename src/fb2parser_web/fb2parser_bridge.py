@@ -1,21 +1,24 @@
 """
 Мост к fb2parser_core — тонкий слой для функций, требующих config.json.
-config.json и app_settings.json берутся из пути FB2PARSER_PATH (constance),
-так как там хранятся пользовательские настройки (жанры, словари имён и т.д.)
+Все пользовательские данные (config, app_settings, genres.xml) хранятся
+в src/fb2_data/ внутри проекта sopds-modern.
 """
 import os
 
+_FB2_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "fb2_data")
+
 
 def _config_path() -> str:
-    from constance import config as cfg
-    return os.path.join(cfg.FB2PARSER_PATH, "config.json")
+    return os.path.normpath(os.path.join(_FB2_DATA_DIR, "config.json"))
+
+
+def _genres_path() -> str:
+    return os.path.normpath(os.path.join(_FB2_DATA_DIR, "genres.xml"))
 
 
 def get_genres_manager():
     from fb2parser_core.genres_manager import GenresManager
-    from constance import config as cfg
-    genres_xml = os.path.join(cfg.FB2PARSER_PATH, "genres.xml")
-    gm = GenresManager(genres_xml)
+    gm = GenresManager(_genres_path())
     gm.load()
     return gm
 

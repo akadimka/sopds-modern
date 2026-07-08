@@ -638,11 +638,11 @@ def _norm_restore_from_cache(folder_path):
 
 def _run_normalize_thread(folder_path):
     from django import db
-    from constance import config as cfg
     db.connections.close_all()
     try:
         from fb2parser_core import regen_csv
-        config_path = os.path.join(cfg.FB2PARSER_PATH, "config.json")
+        from .fb2parser_bridge import _config_path
+        config_path = _config_path()
         service = regen_csv.RegenCSVService(config_path)
 
         def _progress(current, total, status=""):
@@ -767,11 +767,10 @@ def names_list(request):
     if not records:
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 
-    from constance import config as cfg
     from fb2parser_core.settings_manager import SettingsManager
     from fb2parser_core.author_pipeline_service import guess_first_name
-    config_path = os.path.join(cfg.FB2PARSER_PATH, "config.json")
-    sm = SettingsManager(config_path)
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
     male_set   = {n.lower() for n in sm.get_male_names()}
     female_set = {n.lower() for n in sm.get_female_names()}
 
@@ -813,8 +812,8 @@ def names_save(request):
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
     import json
-    from constance import config as cfg
     from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
 
     try:
         data = json.loads(request.body)
@@ -827,8 +826,7 @@ def names_save(request):
     if not male_new and not female_new:
         return JsonResponse({"added": 0})
 
-    config_path = os.path.join(cfg.FB2PARSER_PATH, "config.json")
-    sm = SettingsManager(config_path)
+    sm = SettingsManager(_config_path())
 
     male_added = female_added = 0
     if male_new:

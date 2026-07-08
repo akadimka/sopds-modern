@@ -331,7 +331,7 @@ CONSTANCE_CONFIG = OrderedDict(
             "FB2PARSER_PATH",
             (
                 r"C:\Temp\fb2parser",
-                _("Absolute path to fb2parser project directory (for genre assignment, normalization, sync)"),
+                _("Путь к fb2parser (устарело — данные теперь в src/fb2_data/)"),
             ),
         ),
         (
