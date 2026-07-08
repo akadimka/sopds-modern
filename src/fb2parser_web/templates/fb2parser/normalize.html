@@ -157,11 +157,17 @@ function normCloseLog() {
 
 // После завершения CSV — загружаем таблицу и обновляем счётчик
 document.addEventListener('htmx:afterSwap', function(e) {
-    if (e.target.id === 'norm-statusbar' && e.target.querySelector('[data-norm-done]')) {
+    // Проверяем и сам элемент, и его родителя — outerHTML swap меняет #norm-bar-inner,
+    // innerHTML swap из normalize_start меняет #norm-statusbar
+    var swapped = e.target;
+    var done = swapped.dataset && swapped.dataset.normDone
+               || swapped.querySelector && swapped.querySelector('[data-norm-done]');
+    if (done) {
         htmx.ajax('GET', "{% url 'fb2parser:normalize_table' %}",
                   {target: '#norm-tbody', swap: 'innerHTML'});
     }
-    if (e.target.id === 'norm-tbody' || e.target.closest && e.target.closest('#norm-tbody')) {
+    // Обновить счётчик строк после загрузки таблицы
+    if (swapped.id === 'norm-tbody' || (swapped.closest && swapped.closest('#norm-tbody'))) {
         var rows = document.querySelectorAll('#norm-tbody .norm-row');
         var countEl = document.getElementById('norm-row-count');
         if (countEl) countEl.textContent = rows.length + ' строк';
