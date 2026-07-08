@@ -2382,7 +2382,10 @@ class Pass2SeriesFilename:
         - "и др", "et al." и подобные суффиксы из имени автора убираются.
         - Работает для любых вложенных структур (Коллекция / СерияАвтор / Подсерия / Файл).
         """
-        from passes.folder_author_parser import parse_author_from_folder_name
+        try:
+            from passes.folder_author_parser import parse_author_from_folder_name
+        except ImportError:
+            from .folder_author_parser import parse_author_from_folder_name
 
         # Список суффиксов-заменителей соавторов, которые нужно убирать
         _ET_AL_PATTERN = re.compile(
