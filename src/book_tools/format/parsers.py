@@ -148,7 +148,12 @@ class FB2(EbookMetaParser):
         """Парсинг полученного файла."""
         try:
             self._file.seek(0, 0)
-            self._etree = etree.parse(self._file)
+            parser = etree.XMLParser(recover=True)
+            self._etree = etree.parse(self._file, parser)
+            if self._etree.getroot() is None:
+                raise FB2StructureException("XML recovery failed: empty document")
+        except FB2StructureException:
+            raise
         except Exception as e:
             self._log.exception(e)
             raise FB2StructureException(f"The file is not a valid XML: {e}")
