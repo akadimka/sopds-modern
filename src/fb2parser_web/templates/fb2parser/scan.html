@@ -1,4 +1,5 @@
 {% extends "fb2parser/base.html" %}
+{% load static %}
 {% block content %}
 <h2>🔍 Сканирование библиотеки</h2>
 
@@ -7,26 +8,28 @@
         <div class="card">
             <div class="card-divider"><strong>Параметры сканирования</strong></div>
             <div class="card-section">
-                <form hx-post="{% url 'fb2parser:scan_start' %}"
-                      hx-target="#scan-status"
-                      hx-swap="outerHTML"
-                      hx-indicator="#scan-spinner">
-                    {% csrf_token %}
-                    <label>
-                        Папка с книгами
-                        <input type="text" name="root" value="{{ root }}"
-                               placeholder="/path/to/library"
-                               style="font-family:monospace; font-size:0.85rem;">
-                    </label>
-                    <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
-                        <button type="submit" class="button" style="background:#f39c12; margin:0;">
-                            ▶ Запустить сканирование
-                        </button>
-                        <span id="scan-spinner" class="htmx-indicator" style="font-size:0.85rem; color:#7f8c8d;">
-                            Запускаем...
-                        </span>
-                    </div>
-                </form>
+                {% csrf_token %}
+                <label>
+                    Папка с книгами
+                    <input id="scan-root" type="text" name="root" value="{{ root }}"
+                           placeholder="/path/to/library"
+                           style="font-family:monospace; font-size:0.85rem;">
+                </label>
+                <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
+                    <button id="scan-btn"
+                            class="button"
+                            style="background:#f39c12; margin:0;"
+                            hx-post="{% url 'fb2parser:scan_start' %}"
+                            hx-target="#scan-status"
+                            hx-swap="outerHTML"
+                            hx-include="#scan-root"
+                            hx-indicator="#scan-spinner">
+                        ▶ Запустить сканирование
+                    </button>
+                    <span id="scan-spinner" class="htmx-indicator" style="font-size:0.85rem; color:#7f8c8d;">
+                        Запускаем...
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -40,4 +43,13 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Если при загрузке страницы сканирование уже идёт — запускаем поллинг
+document.addEventListener("DOMContentLoaded", function () {
+    htmx.process(document.getElementById("scan-status"));
+});
+</script>
 {% endblock %}
