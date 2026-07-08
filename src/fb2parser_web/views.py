@@ -736,8 +736,8 @@ def names_list(request):
                     break
             if gender:
                 continue
-            # угадаем имя (первое слово)
-            first_name = author.split()[0] if author.split() else ""
+            guess_first_name = importlib.import_module("author_pipeline_service").guess_first_name
+            first_name = guess_first_name(author, source)
             rows.append({"source": source, "author": author,
                          "first_name": first_name, "file_path": r.get("file_path", "")})
 

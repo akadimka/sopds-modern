@@ -246,10 +246,10 @@ function namesMassSet(gender) {
 async function namesSave() {
     var male = [], female = [];
     document.querySelectorAll('#names-tbody .names-row').forEach(function(tr) {
-        var author = tr.dataset.author;
+        var firstName = tr.dataset.firstName;
         var gender = tr.querySelector('.names-gender-sel').value;
-        if (gender === 'М') male.push(author.split(' ')[0]);
-        else if (gender === 'Ж') female.push(author.split(' ')[0]);
+        if (firstName && gender === 'М') male.push(firstName);
+        else if (firstName && gender === 'Ж') female.push(firstName);
     });
     if (!male.length && !female.length) {
         document.getElementById('names-save-result').textContent = 'Не выбрано ни одного имени.';

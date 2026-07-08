@@ -24,7 +24,7 @@
         </thead>
         <tbody id="names-tbody">
         {% for r in rows %}
-        <tr class="names-row" data-author="{{ r.author }}" style="border-bottom:1px solid #f0f0f0;">
+        <tr class="names-row" data-author="{{ r.author }}" data-first-name="{{ r.first_name }}" style="border-bottom:1px solid #f0f0f0;">
             <td style="padding:0.18rem 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">{{ r.source }}</td>
             <td style="padding:0.18rem 0.5rem; white-space:nowrap;">{{ r.author }}</td>
             <td style="padding:0.18rem 0.5rem; color:#555; font-size:0.78rem;">{{ r.first_name }}</td>
