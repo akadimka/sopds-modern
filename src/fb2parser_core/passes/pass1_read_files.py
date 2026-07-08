@@ -32,9 +32,15 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
     """
     try:
         from pathlib import Path
-        from fb2_author_extractor import FB2AuthorExtractor
-        from settings_manager import SettingsManager
-        from metadata_cache import MetadataCache
+        # Ensure fb2parser_core is importable in subprocess
+        import sys as _sys, os as _os
+        _pkg = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+        if _pkg not in _sys.path:
+            _sys.path.insert(0, _pkg)
+        from fb2parser_core.fb2_author_extractor import FB2AuthorExtractor
+        from fb2parser_core.fb2_sax_extractor import FB2SAXExtractor
+        from fb2parser_core.settings_manager import SettingsManager
+        from fb2parser_core.metadata_cache import MetadataCache
 
         fb2_file = Path(fb2_file_path_str)
         work_dir = Path(work_dir_str)
