@@ -470,16 +470,17 @@ LOGGING = {
         },
         "file": {
             "formatter": "verbose",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "when": "midnight",
-            "interval": 1,
+            "class": "logging.handlers.RotatingFileHandler",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 7,
             "filename": "log/sopds-ng.log",
+            "encoding": "utf-8",
         },
         "scanner": {
             "formatter": "verbose",
             "class": "logging.FileHandler",
             "filename": "log/sopds-scaner.log",
+            "encoding": "utf-8",
         },
     },
     "loggers": {
