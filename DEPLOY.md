@@ -208,38 +208,41 @@ systemctl status sopds-modern
 
 ---
 
-## 12. Настройка nginx (обратный прокси)
+## 12. Настройка Apache (обратный прокси)
 
-TurnKey поставляется с nginx или Apache. Рекомендуем nginx.
+TurnKey поставляется с Apache. Включаем нужные модули и создаём конфиг:
 
 ```bash
-apt install -y nginx
-nano /etc/nginx/sites-available/sopds-modern
+a2enmod proxy proxy_http headers
+apt install -y apache2
+nano /etc/apache2/sites-available/sopds-modern.conf
 ```
 
 Содержимое:
 
-```nginx
-server {
-    listen 80;
-    server_name <IP-адрес или домен>;
+```apache
+<VirtualHost *:80>
+    ServerName <IP-адрес или домен>
 
-    client_max_body_size 100M;
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:8008/
+    ProxyPassReverse / http://127.0.0.1:8008/
 
-    location / {
-        proxy_pass http://127.0.0.1:8008;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 120;
-    }
-}
+    RequestHeader set X-Forwarded-Proto "http"
+
+    # Увеличенный таймаут для долгих операций (сканирование, нормализация)
+    ProxyTimeout 120
+
+    ErrorLog  ${APACHE_LOG_DIR}/sopds-modern-error.log
+    CustomLog ${APACHE_LOG_DIR}/sopds-modern-access.log combined
+</VirtualHost>
 ```
 
 ```bash
-ln -s /etc/nginx/sites-available/sopds-modern /etc/nginx/sites-enabled/
-nginx -t
-systemctl reload nginx
+a2ensite sopds-modern
+a2dissite 000-default          # отключить дефолтный сайт (опционально)
+apache2ctl configtest
+systemctl reload apache2
 ```
 
 ---
@@ -277,3 +280,5 @@ systemctl restart sopds-modern
 | Статика не грузится | Проверить `collectstatic`, убедиться что `whitenoise` в MIDDLEWARE |
 | Нет доступа к `/fb2parser/` | Войти как суперпользователь (`is_superuser=True`) |
 | Ошибка прав на файлы | `chown -R www-data:www-data /opt/sopds-modern` |
+| Apache: `AH00961: failed to make connection` | Gunicorn не запущен — `systemctl start sopds-modern` |
+| Apache: `403 Forbidden` на статику | Whitenoise обслуживает статику через gunicorn — `ProxyPass /` должен покрывать всё |
