@@ -94,7 +94,8 @@
                 onclick="namesOpen()">
             Получить имена
         </button>
-        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled
+                onclick="namesCsvOpen()">
             Имена из CSV
         </button>
         <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
@@ -137,6 +138,40 @@
             <div style="display:flex; gap:0.5rem;">
                 <button class="button secondary" style="margin:0; font-size:0.82rem;" onclick="namesClose()">Отмена</button>
                 <button class="button" style="margin:0; font-size:0.82rem; background:#27ae60;" onclick="namesSave()">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Панель «Имена из CSV» -->
+<div id="names-csv-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
+        <!-- Заголовок -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#34495e; color:#ecf0f1; flex-shrink:0;">
+            <strong>Имена из CSV</strong>
+            <button onclick="namesCsvClose()" style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+        </div>
+        <!-- Поле пути к CSV -->
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.8rem; border-bottom:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
+            <span style="font-size:0.83rem; white-space:nowrap; color:#495057;">Путь к CSV:</span>
+            <div style="flex:1;">
+                <input id="names-csv-path" type="text" placeholder="C:\path\to\regen.csv"
+                       style="margin:0; width:100%; font-family:monospace; font-size:0.82rem;"
+                       onkeydown="if(event.key==='Enter') namesCsvLoad()">
+            </div>
+            <button class="button" style="margin:0; padding:0.4rem 0.8rem; font-size:0.82rem; white-space:nowrap;"
+                    onclick="namesCsvLoad()">Загрузить</button>
+        </div>
+        <!-- Контент -->
+        <div id="names-csv-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
+            <div style="color:#7f8c8d; font-size:0.85rem;">Укажите путь к CSV и нажмите «Загрузить».</div>
+        </div>
+        <!-- Футер -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0.8rem; border-top:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
+            <span id="names-csv-save-result" style="font-size:0.82rem;"></span>
+            <div style="display:flex; gap:0.5rem;">
+                <button class="button secondary" style="margin:0; font-size:0.82rem;" onclick="namesCsvClose()">Отмена</button>
+                <button class="button" style="margin:0; font-size:0.82rem; background:#27ae60;" onclick="namesCsvSave()">💾 Сохранить</button>
             </div>
         </div>
     </div>
@@ -292,7 +327,61 @@ async function namesSave() {
 document.addEventListener('click', function(e) {
     var panel = document.getElementById('names-panel');
     if (panel && panel.style.display === 'flex' && e.target === panel) namesClose();
+    var csvPanel = document.getElementById('names-csv-panel');
+    if (csvPanel && csvPanel.style.display === 'flex' && e.target === csvPanel) namesCsvClose();
 });
+
+// ── Имена из CSV ──────────────────────────────────────────────────────────────
+var _namesCsvFromUrl = "{% url 'fb2parser:names_from_csv' %}";
+var _namesSaveUrl    = "{% url 'fb2parser:names_save' %}";
+
+function namesCsvOpen() {
+    document.getElementById('names-csv-panel').style.display = 'flex';
+    document.getElementById('names-csv-save-result').textContent = '';
+}
+function namesCsvClose() {
+    document.getElementById('names-csv-panel').style.display = 'none';
+}
+function namesCsvLoad() {
+    var path = (document.getElementById('names-csv-path').value || '').trim();
+    if (!path) return;
+    document.getElementById('names-csv-body').innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;padding:0.5rem;">Загрузка...</div>';
+    htmx.ajax('GET', _namesCsvFromUrl + '?csv_path=' + encodeURIComponent(path),
+              {target: '#names-csv-body', swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('names-csv-body'));
+    });
+}
+async function namesCsvSave() {
+    var male = [], female = [];
+    document.querySelectorAll('#names-csv-body .names-row').forEach(function(tr) {
+        var inp = tr.querySelector('.names-first-name');
+        var firstName = (inp ? inp.value : tr.dataset.firstName || '').trim();
+        var gender = tr.querySelector('.names-gender-sel').value;
+        if (firstName && gender === 'М') male.push(firstName);
+        else if (firstName && gender === 'Ж') female.push(firstName);
+    });
+    if (!male.length && !female.length) {
+        document.getElementById('names-csv-save-result').textContent = 'Не выбрано ни одного имени.';
+        return;
+    }
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    var res = await fetch(_namesSaveUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json',
+                  'X-CSRFToken': csrfToken ? csrfToken.value : ''},
+        body: JSON.stringify({male: male, female: female})
+    });
+    var data = await res.json();
+    var el = document.getElementById('names-csv-save-result');
+    if (data.added !== undefined) {
+        el.style.color = '#27ae60';
+        el.textContent = '✓ Добавлено: ' + data.added + ' имён (муж.: ' + data.male + ', жен.: ' + data.female + ')';
+        setTimeout(namesCsvClose, 2000);
+    } else {
+        el.style.color = '#c0392b';
+        el.textContent = '❌ ' + (data.error || 'Ошибка');
+    }
+}
 
 function normShowLog() {
     document.getElementById('norm-log-panel').style.display = 'flex';

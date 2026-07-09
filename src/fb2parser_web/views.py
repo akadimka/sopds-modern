@@ -788,6 +788,63 @@ def normalize_table(request):
 
 
 @staff_member_required(login_url="/web/login/")
+@staff_member_required(login_url="/web/login/")
+def names_from_csv(request):
+    """GET ?csv_path=... → список авторов с неизвестным полом из CSV-файла."""
+    import re as _re, csv as _csv
+    csv_path = request.GET.get("csv_path", "").strip()
+
+    if not csv_path:
+        return HttpResponse(
+            '<div style="padding:1rem;color:#7f8c8d;">Укажите путь к CSV-файлу.</div>')
+    if not os.path.isfile(csv_path):
+        return HttpResponse(
+            f'<div style="padding:1rem;color:#c0392b;">❌ Файл не найден: {csv_path}</div>')
+
+    from fb2parser_core.settings_manager import SettingsManager
+    from fb2parser_core.author_pipeline_service import guess_first_name
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
+    male_set   = {n.lower() for n in sm.get_male_names()}
+    female_set = {n.lower() for n in sm.get_female_names()}
+
+    seen = set()
+    rows = []
+    try:
+        with open(csv_path, encoding='utf-8', newline='') as f:
+            for row in _csv.DictReader(f):
+                if row.get('delete_flag'):
+                    continue
+                combined = (row.get('proposed_author') or '').strip()
+                if not combined or combined == 'Сборник':
+                    continue
+                source    = row.get('author_source') or row.get('series_source') or ''
+                file_path = row.get('file_path') or ''
+                for author in (a.strip() for a in _re.split(r'[,;]+', combined) if a.strip()):
+                    if author in seen:
+                        continue
+                    seen.add(author)
+                    gender = ''
+                    for word in author.split():
+                        w = word.lower()
+                        if w in male_set:
+                            gender = 'М'; break
+                        if w in female_set:
+                            gender = 'Ж'; break
+                    if gender:
+                        continue
+                    rows.append({'source': source, 'author': author,
+                                 'first_name': guess_first_name(author, source),
+                                 'file_path': file_path})
+    except Exception as e:
+        return HttpResponse(
+            f'<div style="padding:1rem;color:#c0392b;">❌ Ошибка чтения CSV: {e}</div>')
+
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/names_list.html", {"rows": rows})
+    return HttpResponse(html)
+
+
 def names_list(request):
     """Возвращает список авторов с неизвестным полом из текущего _norm_state."""
     import re as _re
