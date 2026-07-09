@@ -27,21 +27,7 @@ apt install -y git curl build-essential libssl-dev zlib1g-dev \
 
 ---
 
-## 2. Установка Python 3.13
-
-Python 3.13 отсутствует в стандартных репозиториях Debian 11. Устанавливаем через deadsnakes PPA:
-
-```bash
-apt install -y software-properties-common
-add-apt-repository ppa:deadsnakes/ppa
-apt update
-apt install -y python3.13 python3.13-venv python3.13-dev
-python3.13 --version   # должно вывести Python 3.13.x
-```
-
----
-
-## 3. Установка uv
+## 2. Установка uv
 
 ```bash
 curl -Lsf https://astral.sh/uv/install.sh | sh
@@ -51,11 +37,22 @@ uv --version
 
 ---
 
+## 3. Установка Python 3.13
+
+Python 3.13 отсутствует в стандартных репозиториях Debian 11, а PPA (например, deadsnakes) не всегда доступен на конкретном дистрибутиве/релизе. Вместо системного пакета используем uv — он скачивает собственный переносимый билд Python:
+
+```bash
+uv python install 3.13
+uv python list   # убедиться, что 3.13.x установлен
+```
+
+---
+
 ## 4. Клонирование репозитория
 
 ```bash
 cd /opt
-git clone https://github.com/akadimka/sopds-modern.git
+git clone -b master https://github.com/akadimka/sopds-modern.git
 cd sopds-modern
 ```
 
@@ -110,7 +107,8 @@ SOPDS_BOOK_PATH=/path/to/your/ebook/library
 ## 7. Генерация секретного ключа
 
 ```bash
-python3.13 -c "import secrets; print(secrets.token_urlsafe(50))" \
+cd /opt/sopds-modern
+.venv/bin/python -c "import secrets; print(secrets.token_urlsafe(50))" \
     > /opt/sopds-modern/secret_key.txt
 chmod 600 /opt/sopds-modern/secret_key.txt
 ```
