@@ -48,4 +48,7 @@ urlpatterns = [
     path("new-books/",    views.new_books,   name="new_books"),
     path("series-gaps/",  views.series_gaps, name="series_gaps"),
     path("integrity/",    views.integrity,   name="integrity"),
+    path("settings/",         views.fb2parser_settings, name="fb2parser_settings"),
+    path("settings/list/",    views.settings_list_op,   name="settings_list_op"),
+    path("settings/conv/",    views.settings_conv_op,   name="settings_conv_op"),
 ]

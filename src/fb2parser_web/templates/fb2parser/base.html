@@ -54,7 +54,7 @@
         <div class="fb2-topbar-links">
             <a href="{% url 'web:main' %}">→ SOPDS</a>
             {% if user.is_superuser %}
-            <a href="{% url 'admin:index' %}">Настройки</a>
+            <a href="{% url 'fb2parser:fb2parser_settings' %}">Настройки</a>
             {% endif %}
             <span id="restart-btn"
                   style="cursor:pointer; color:#e67e22; margin-left:1.2rem; font-size:0.9rem;"
@@ -82,7 +82,7 @@
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
                         <li><a href="#">Загрузка жанров</a></li>
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
-                        <li><a href="{% url 'admin:index' %}">Настройки</a></li>
+                        <li><a href="{% url 'fb2parser:fb2parser_settings' %}">Настройки</a></li>
                     </ul>
                 </li>
 

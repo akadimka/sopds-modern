@@ -1754,3 +1754,119 @@ def series_gaps(request):
 @staff_member_required(login_url="/web/login/")
 def integrity(request):
     return render(request, "fb2parser/integrity.html", _ctx("integrity", "Проверка целостности FB2"))
+
+
+# ── Настройки FB2Parser ───────────────────────────────────────────────────────
+
+_SETTINGS_LISTS = {
+    'filename_blacklist':         'Слова/фразы, не считающиеся названиями серий (жанровые термины и т.д.)',
+    'service_words':              'Служебные слова, игнорируемые при анализе имён файлов',
+    'sequence_patterns':          'Regex-шаблоны для распознавания номеров серий (напр. \\d+\\., книга\\s\\d+)',
+    'abbreviations_preserve_case':'Аббревиатуры с сохранением регистра (СССР, РФ, США)',
+    'author_initials_and_suffixes':'Суффиксы/инициалы авторов, игнорируемые при сравнении (мл, ст, ср)',
+    'genre_category_words':       'Слова-категории серий для распознавания типа серии',
+    'male_names':                 'Список мужских имён для определения пола автора',
+    'female_names':               'Список женских имён для определения пола автора',
+    'no_series_folder_names':     'Имена папок, означающих «без серии» (Вне серий, Без серии, standalone)',
+}
+
+
+@staff_member_required(login_url="/web/login/")
+def fb2parser_settings(request):
+    from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
+
+    if request.method == 'POST':
+        sm.set_library_path(request.POST.get('library_path', '').strip())
+        sm.set_genres_file_path(request.POST.get('genres_file_path', '').strip())
+        lim = request.POST.get('folder_parse_limit', '').strip()
+        if lim.isdigit():
+            sm.set_folder_parse_limit(int(lim))
+        sm.set_genderize_api_key(request.POST.get('genderize_api_key', '').strip())
+        sm.set_generate_csv(request.POST.get('generate_csv') == 'on')
+        sm.save()
+        ctx = _ctx("settings", "Настройки")
+        ctx['saved'] = True
+    else:
+        ctx = _ctx("settings", "Настройки")
+
+    ctx['library_path']       = sm.get_library_path()
+    ctx['genres_file_path']   = sm.get_genres_file_path()
+    ctx['folder_parse_limit'] = sm.get_folder_parse_limit()
+    ctx['genderize_api_key']  = sm.get_genderize_api_key()
+    ctx['generate_csv']       = sm.get_generate_csv()
+    import json as _json
+    ctx['lists_meta']         = list(_SETTINGS_LISTS.items())
+    ctx['first_list_key']     = list(_SETTINGS_LISTS.keys())[0]
+    ctx['lists_data_json']    = _json.dumps({k: sm.get_list(k) or [] for k in _SETTINGS_LISTS}, ensure_ascii=False)
+    ctx['conversions']        = sm.get_author_surname_conversions() or {}
+    return render(request, "fb2parser/settings.html", ctx)
+
+
+@staff_member_required(login_url="/web/login/")
+def settings_list_op(request):
+    """POST {key, value, action:'add'|'delete'} → JSON."""
+    import json as _json
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        body = _json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'bad JSON'}, status=400)
+    key    = body.get('key', '')
+    value  = (body.get('value') or '').strip()
+    action = body.get('action', '')
+    if key not in _SETTINGS_LISTS:
+        return JsonResponse({'error': 'unknown key'}, status=400)
+    if not value:
+        return JsonResponse({'error': 'empty value'}, status=400)
+
+    from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
+    lst = list(sm.get_list(key) or [])
+    if action == 'add':
+        if value not in lst:
+            lst.append(value)
+            sm.set_list(key, lst)
+    elif action == 'delete':
+        lst = [x for x in lst if x != value]
+        sm.set_list(key, lst)
+    else:
+        return JsonResponse({'error': 'unknown action'}, status=400)
+    return JsonResponse({'ok': True, 'list': lst})
+
+
+@staff_member_required(login_url="/web/login/")
+def settings_conv_op(request):
+    """POST {from_val, to_val?, action:'add'|'delete'} → JSON."""
+    import json as _json
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        body = _json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'bad JSON'}, status=400)
+    action   = body.get('action', '')
+    from_val = (body.get('from_val') or '').strip()
+
+    from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
+    convs = dict(sm.get_author_surname_conversions() or {})
+
+    if action == 'add':
+        to_val = (body.get('to_val') or '').strip()
+        if not from_val or not to_val:
+            return JsonResponse({'error': 'both fields required'}, status=400)
+        convs[from_val] = to_val
+        sm.set_author_surname_conversions(convs)
+    elif action == 'delete':
+        if not from_val:
+            return JsonResponse({'error': 'from_val required'}, status=400)
+        convs.pop(from_val, None)
+        sm.set_author_surname_conversions(convs)
+    else:
+        return JsonResponse({'error': 'unknown action'}, status=400)
+    return JsonResponse({'ok': True, 'conversions': convs})

@@ -1,0 +1,310 @@
+{% extends "fb2parser/base.html" %}
+{% block content %}
+<style>
+.s-tabs { display:flex; gap:0; border-bottom:2px solid #2c3e50; margin-bottom:1.2rem; }
+.s-tab  { padding:0.5rem 1.2rem; cursor:pointer; font-size:0.9rem; border:1px solid transparent;
+          border-bottom:none; border-radius:4px 4px 0 0; color:#495057; background:#f8f9fa; }
+.s-tab.active { background:#2c3e50; color:#fff; border-color:#2c3e50; }
+.s-pane { display:none; }
+.s-pane.active { display:block; }
+
+.s-field { margin-bottom:1rem; }
+.s-field label { display:block; font-size:0.85rem; color:#495057; margin-bottom:0.25rem; font-weight:600; }
+.s-field input[type=text], .s-field input[type=number] {
+    width:100%; max-width:600px; font-size:0.88rem; padding:0.35rem 0.5rem;
+    border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
+.s-hint { font-size:0.77rem; color:#7f8c8d; margin-top:0.2rem; }
+.s-row { display:flex; gap:0.5rem; align-items:center; max-width:600px; }
+.s-row input[type=text] { flex:1; }
+
+/* Lists tab */
+.sl-selector { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; }
+.sl-selector label { font-size:0.85rem; font-weight:600; color:#495057; white-space:nowrap; }
+.sl-selector select { font-size:0.85rem; padding:0.3rem 0.5rem; border:1px solid #ccc; border-radius:4px; min-width:260px; }
+.sl-desc { font-size:0.8rem; color:#546e7a; background:#f5f5f5; padding:0.4rem 0.7rem;
+           border-radius:4px; margin-bottom:0.7rem; border-left:3px solid #78909c; }
+.sl-list { border:1px solid #dee2e6; border-radius:4px; min-height:180px; max-height:360px;
+           overflow-y:auto; background:#fff; padding:0.3rem; font-family:monospace; font-size:0.82rem; }
+.sl-item { display:flex; justify-content:space-between; align-items:center;
+           padding:0.2rem 0.4rem; border-radius:3px; }
+.sl-item:hover { background:#f0f4f8; }
+.sl-item span { flex:1; word-break:break-all; }
+.sl-item button { background:none; border:none; cursor:pointer; color:#c0392b; font-size:1rem;
+                  padding:0 0.3rem; line-height:1; flex-shrink:0; }
+.sl-add-row { display:flex; gap:0.5rem; margin-top:0.6rem; }
+.sl-add-row input { flex:1; font-size:0.85rem; padding:0.3rem 0.5rem;
+                    border:1px solid #ccc; border-radius:4px; }
+.sl-add-row button { padding:0.3rem 0.8rem; font-size:0.85rem; background:#2c3e50;
+                     color:#fff; border:none; border-radius:4px; cursor:pointer; }
+
+/* Conversions tab */
+.cv-table { border-collapse:collapse; width:100%; max-width:700px; font-size:0.85rem; }
+.cv-table th { background:#2c3e50; color:#fff; padding:0.3rem 0.6rem; text-align:left; }
+.cv-table td { padding:0.25rem 0.6rem; border-bottom:1px solid #f0f0f0; }
+.cv-table tr:hover td { background:#f8f9fa; }
+.cv-add-row { display:flex; gap:0.5rem; margin-top:0.8rem; max-width:700px; align-items:center; }
+.cv-add-row input { flex:1; font-size:0.85rem; padding:0.3rem 0.5rem;
+                    border:1px solid #ccc; border-radius:4px; }
+.cv-add-row button { padding:0.3rem 0.8rem; font-size:0.85rem; background:#2c3e50;
+                     color:#fff; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; }
+
+.s-save-btn { padding:0.45rem 1.4rem; font-size:0.9rem; background:#27ae60;
+              color:#fff; border:none; border-radius:4px; cursor:pointer; margin-top:0.5rem; }
+.s-save-btn:hover { background:#219a52; }
+.s-msg { font-size:0.85rem; padding:0.35rem 0.7rem; border-radius:4px; margin-top:0.5rem; display:inline-block; }
+.s-msg.ok  { background:#d4edda; color:#155724; }
+.s-msg.err { background:#f8d7da; color:#721c24; }
+</style>
+
+<h2 style="font-size:1.2rem; margin-bottom:1rem; color:#2c3e50;">⚙ Настройки FB2Parser</h2>
+
+{% if saved %}
+<div class="s-msg ok" style="margin-bottom:0.8rem;">✓ Настройки сохранены.</div>
+{% endif %}
+
+<!-- Вкладки -->
+<div class="s-tabs">
+    <div class="s-tab active" onclick="sTab('general')">Общие</div>
+    <div class="s-tab" onclick="sTab('lists')">Списки</div>
+    <div class="s-tab" onclick="sTab('conversions')">Конвертация авторов</div>
+</div>
+
+<!-- ═══════════════════════════════ Вкладка: Общие ══════════════════════════════ -->
+<div id="s-pane-general" class="s-pane active">
+<form method="post">
+{% csrf_token %}
+<div class="s-field">
+    <label>Путь к библиотеке</label>
+    <div class="s-row">
+        <input type="text" name="library_path" id="inp-library_path" value="{{ library_path }}" placeholder="Корневой путь к FB2-файлам">
+        <button type="button" class="fb-browse-btn" onclick="openBrowser('library_path')"
+                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
+    </div>
+    <div class="fb-browser-wrap" id="fb-browser-library_path" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
+    <div class="s-hint">Корневой каталог, с которого начинается обход библиотеки FB2-файлов.</div>
+</div>
+
+<div class="s-field">
+    <label>Путь к файлу жанров (genres.xml)</label>
+    <div class="s-row">
+        <input type="text" name="genres_file_path" id="inp-genres_file_path" value="{{ genres_file_path }}" placeholder="Путь к genres.xml">
+        <button type="button" class="fb-browse-btn" onclick="openBrowser('genres_file_path')"
+                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
+    </div>
+    <div class="fb-browser-wrap" id="fb-browser-genres_file_path" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
+    <div class="s-hint">Путь к XML-файлу с определениями жанров.</div>
+</div>
+
+<div class="s-field">
+    <label>Предел количества папок при парсинге</label>
+    <input type="number" name="folder_parse_limit" value="{{ folder_parse_limit }}" min="1" max="100" style="max-width:120px;">
+    <div class="s-hint">Глубина обхода папок при парсинге, начиная от файла (по умолчанию 5).</div>
+</div>
+
+<div class="s-field">
+    <label>API-ключ Genderize.io</label>
+    <div class="s-row">
+        <input type="text" name="genderize_api_key" id="inp-genderize_api_key" value="{{ genderize_api_key }}" placeholder="Необязательно (без ключа — 100 запросов/день)">
+        <button type="button" onclick="document.getElementById('inp-genderize_api_key').value=''"
+                style="padding:0.35rem 0.6rem; font-size:0.82rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">✕ Очистить</button>
+    </div>
+    <div class="s-hint">Без ключа доступно 100 бесплатных запросов в день.</div>
+</div>
+
+<div class="s-field">
+    <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal; cursor:pointer;">
+        <input type="checkbox" name="generate_csv" {% if generate_csv %}checked{% endif %}
+               style="width:16px; height:16px; accent-color:#27ae60; cursor:pointer;">
+        <span style="font-weight:600;">Генерировать CSV-файл при нормализации</span>
+    </label>
+    <div class="s-hint">Если включено, при нормализации создаётся CSV-отчёт.</div>
+</div>
+
+<button type="submit" class="s-save-btn">💾 Сохранить</button>
+</form>
+</div>
+
+<!-- ═══════════════════════════════ Вкладка: Списки ══════════════════════════════ -->
+<div id="s-pane-lists" class="s-pane">
+<div class="sl-selector">
+    <label for="sl-select">Список:</label>
+    <select id="sl-select" onchange="slLoad(this.value)">
+        {% for key, desc in lists_meta %}
+        <option value="{{ key }}" {% if key == first_list_key %}selected{% endif %}>{{ key }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div id="sl-desc" class="sl-desc">
+    {% for key, desc in lists_meta %}{% if key == first_list_key %}{{ desc }}{% endif %}{% endfor %}
+</div>
+<div id="sl-list" class="sl-list">
+    <!-- заполняется при инициализации -->
+</div>
+<div class="sl-add-row">
+    <input type="text" id="sl-new-val" placeholder="Новое значение…" onkeydown="if(event.key==='Enter')slAdd()">
+    <button onclick="slAdd()">+ Добавить</button>
+</div>
+<div id="sl-msg" style="font-size:0.8rem; min-height:1.2em; margin-top:0.3rem;"></div>
+</div>
+
+<!-- ═══════════════════════════ Вкладка: Конвертация авторов ═══════════════════════════ -->
+<div id="s-pane-conversions" class="s-pane">
+<p style="font-size:0.85rem; color:#546e7a; margin-bottom:0.8rem;">
+    Правила транслитерации/замены фамилий авторов. Ключ — оригинальная фамилия, значение — целевая.
+</p>
+<div style="overflow-x:auto; max-width:700px;">
+<table class="cv-table" id="cv-table">
+    <thead><tr><th>Оригинальная</th><th>Конвертированная</th><th style="width:2rem;"></th></tr></thead>
+    <tbody id="cv-tbody">
+    {% for from_val, to_val in conversions.items %}
+    <tr data-from="{{ from_val }}">
+        <td style="font-family:monospace;">{{ from_val }}</td>
+        <td style="font-family:monospace;">{{ to_val }}</td>
+        <td><button onclick="cvDelete('{{ from_val|escapejs }}')" title="Удалить"
+                    style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:1rem;padding:0 0.3rem;">✕</button></td>
+    </tr>
+    {% empty %}
+    <tr id="cv-empty"><td colspan="3" style="color:#7f8c8d; text-align:center; padding:1rem;">Нет правил конвертации.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+<div class="cv-add-row" style="margin-top:0.8rem;">
+    <input type="text" id="cv-from" placeholder="Оригинальная фамилия">
+    <span style="font-size:1rem; color:#7f8c8d;">→</span>
+    <input type="text" id="cv-to" placeholder="Конвертированная фамилия"
+           onkeydown="if(event.key==='Enter')cvAdd()">
+    <button onclick="cvAdd()">+ Добавить</button>
+</div>
+<div id="cv-msg" style="font-size:0.8rem; min-height:1.2em; margin-top:0.3rem;"></div>
+</div>
+
+<script>
+(function(){
+    var listUrl = "{% url 'fb2parser:settings_list_op' %}";
+    var convUrl = "{% url 'fb2parser:settings_conv_op' %}";
+    var csrf    = (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value||'';
+
+    // ── Tabs ──────────────────────────────────────────────────────────────────
+    window.sTab = function(name) {
+        document.querySelectorAll('.s-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.s-pane').forEach(function(p) { p.classList.remove('active'); });
+        document.querySelector('.s-tab[onclick="sTab(\''+name+'\')"]').classList.add('active');
+        document.getElementById('s-pane-'+name).classList.add('active');
+    };
+
+    // ── Lists tab ─────────────────────────────────────────────────────────────
+    var _listsData = {{ lists_data_json|safe }};
+    var _listsMeta = {
+        {% for key, desc in lists_meta %}'{{ key }}': '{{ desc|escapejs }}',{% endfor %}
+    };
+
+    function slRender(key) {
+        var items = _listsData[key] || [];
+        var el = document.getElementById('sl-list');
+        if (!items.length) { el.innerHTML = '<div style="color:#7f8c8d;padding:0.5rem;">Список пуст.</div>'; return; }
+        el.innerHTML = items.map(function(v) {
+            var esc = v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            var escJ = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            return '<div class="sl-item"><span title="'+esc+'">'+esc+'</span>'
+                 + '<button onclick="slDelete(\''+escJ+'\')">✕</button></div>';
+        }).join('');
+    }
+
+    window.slLoad = function(key) {
+        document.getElementById('sl-desc').textContent = _listsMeta[key] || '';
+        slRender(key);
+        document.getElementById('sl-new-val').value = '';
+        document.getElementById('sl-msg').textContent = '';
+    };
+
+    window.slAdd = function() {
+        var key = document.getElementById('sl-select').value;
+        var val = document.getElementById('sl-new-val').value.trim();
+        if (!val) return;
+        fetch(listUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify({key:key, value:val, action:'add'})})
+        .then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                _listsData[key] = d.list;
+                slRender(key);
+                document.getElementById('sl-new-val').value = '';
+                _slMsg('✓ Добавлено', '#155724');
+            } else { _slMsg('❌ '+d.error, '#721c24'); }
+        }).catch(function(){ _slMsg('❌ Ошибка', '#721c24'); });
+    };
+
+    window.slDelete = function(val) {
+        var key = document.getElementById('sl-select').value;
+        fetch(listUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify({key:key, value:val, action:'delete'})})
+        .then(function(r){return r.json();}).then(function(d){
+            if (d.ok) { _listsData[key] = d.list; slRender(key); _slMsg('✓ Удалено', '#155724'); }
+            else { _slMsg('❌ '+d.error, '#721c24'); }
+        }).catch(function(){ _slMsg('❌ Ошибка', '#721c24'); });
+    };
+
+    function _slMsg(txt, color) {
+        var el = document.getElementById('sl-msg');
+        el.style.color = color;
+        el.textContent = txt;
+        setTimeout(function(){ el.textContent=''; }, 3000);
+    }
+
+    // ── Conversions tab ───────────────────────────────────────────────────────
+    window.cvAdd = function() {
+        var fromVal = document.getElementById('cv-from').value.trim();
+        var toVal   = document.getElementById('cv-to').value.trim();
+        if (!fromVal || !toVal) { _cvMsg('Заполните оба поля', '#721c24'); return; }
+        fetch(convUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify({action:'add', from_val:fromVal, to_val:toVal})})
+        .then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                cvRender(d.conversions);
+                document.getElementById('cv-from').value = '';
+                document.getElementById('cv-to').value = '';
+                _cvMsg('✓ Добавлено', '#155724');
+            } else { _cvMsg('❌ '+d.error, '#721c24'); }
+        }).catch(function(){ _cvMsg('❌ Ошибка', '#721c24'); });
+    };
+
+    window.cvDelete = function(fromVal) {
+        fetch(convUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
+              body: JSON.stringify({action:'delete', from_val:fromVal})})
+        .then(function(r){return r.json();}).then(function(d){
+            if (d.ok) { cvRender(d.conversions); _cvMsg('✓ Удалено', '#155724'); }
+            else { _cvMsg('❌ '+d.error, '#721c24'); }
+        }).catch(function(){ _cvMsg('❌ Ошибка', '#721c24'); });
+    };
+
+    function cvRender(convs) {
+        var tbody = document.getElementById('cv-tbody');
+        var keys = Object.keys(convs);
+        if (!keys.length) {
+            tbody.innerHTML = '<tr id="cv-empty"><td colspan="3" style="color:#7f8c8d;text-align:center;padding:1rem;">Нет правил конвертации.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = keys.map(function(k) {
+            var escK = k.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+            var escV = convs[k].replace(/&/g,'&amp;').replace(/</g,'&lt;');
+            var escJ = k.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            return '<tr data-from="'+escK+'">'
+                 + '<td style="font-family:monospace;">'+escK+'</td>'
+                 + '<td style="font-family:monospace;">'+escV+'</td>'
+                 + '<td><button onclick="cvDelete(\''+escJ+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:1rem;padding:0 0.3rem;">✕</button></td>'
+                 + '</tr>';
+        }).join('');
+    }
+
+    function _cvMsg(txt, color) {
+        var el = document.getElementById('cv-msg');
+        el.style.color = color;
+        el.textContent = txt;
+        setTimeout(function(){ el.textContent=''; }, 3000);
+    }
+
+    // Инициализация вкладки Списки
+    slLoad(document.getElementById('sl-select').value);
+})();
+</script>
+{% endblock %}
