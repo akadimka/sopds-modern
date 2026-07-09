@@ -132,6 +132,12 @@ EOF
 ```bash
 cd /opt/sopds-modern/src
 
+# manage.py по умолчанию использует sopds.settings.local (для разработки,
+# требует dev-зависимость debug_toolbar). .env этот дефолт не перекрывает,
+# т.к. читается уже после того, как Django выбрал settings-модуль —
+# поэтому явно задаём переменную окружения перед запуском команд:
+export DJANGO_SETTINGS_MODULE=sopds.settings.base
+
 # Собрать статику
 ../.venv/bin/python manage.py collectstatic --noinput
 
