@@ -73,7 +73,7 @@
                     <tr>
                         <td>{{ b.title|truncatechars:50 }}</td>
                         <td>{{ b.format }}</td>
-                        <td style="white-space:nowrap;">{{ b.docdate|slice:":10" }}</td>
+                        <td style="white-space:nowrap;">{% with d=b.docdate|slice:":4" %}{% if d >= "1900" %}{{ b.docdate|slice:":10" }}{% endif %}{% endwith %}</td>
                     </tr>
                     {% endfor %}
                     </tbody>
