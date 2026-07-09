@@ -17,45 +17,56 @@
                value="{{ path|default:'' }}"
                placeholder="\\server\share или C:\path\to\folder"
                style="margin:0; flex:1; font-family:monospace; font-size:0.78rem; padding:0.25rem 0.4rem;"
-               onkeydown="if(event.key==='Enter'){ fbNavigateTo('{{ target }}', this.value); }">
+               onkeydown="if(event.key==='Enter'){ fbNavigateTo('{{ target }}', this.value{% if show_files %}, '1', '{{ ext_filter|escapejs }}'{% endif %}); }">
         <button type="button" class="button tiny secondary" style="margin:0; white-space:nowrap;"
-                onclick="fbNavigateTo('{{ target }}', document.getElementById('fb-path-input-{{ target }}').value)">→</button>
+                onclick="fbNavigateTo('{{ target }}', document.getElementById('fb-path-input-{{ target }}').value{% if show_files %}, '1', '{{ ext_filter|escapejs }}'{% endif %})">→</button>
     </div>
 
     <!-- Кнопки навигации -->
     <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid #eee;">
         {% if parent %}
         <button type="button" class="button tiny secondary" style="margin:0;"
-                hx-get="{% url 'fb2parser:browse' %}?path={{ parent|urlencode }}&target={{ target }}"
+                hx-get="{% url 'fb2parser:browse' %}?path={{ parent|urlencode }}&target={{ target }}{% if show_files %}&show_files=1&ext={{ ext_filter|urlencode }}{% endif %}"
                 hx-target="#fb-browser-{{ target }}"
                 hx-swap="innerHTML">
             ↑ Вверх
         </button>
         {% endif %}
+        {% if not show_files %}
         <button type="button" class="button tiny success" style="margin:0;"
                 onclick="selectFolder('{{ target }}', '{{ path|escapejs }}')">
             ✓ Выбрать эту папку
         </button>
+        {% endif %}
     </div>
 
-    <!-- Список подпапок -->
+    <!-- Список папок и файлов -->
     <ul class="no-bullet" style="margin:0; max-height:260px; overflow-y:auto;">
         {% if entries %}
             {% for entry in entries %}
             <li style="border-bottom:1px solid #f5f5f5;">
+                {% if entry.is_file %}
+                <button type="button"
+                        style="width:100%; text-align:left; background:none; border:none; padding:0.3rem 0.7rem; cursor:pointer; font-family:monospace; font-size:0.8rem; color:#1a5276; display:flex; align-items:center; gap:0.4rem;"
+                        onmouseover="this.style.background='#eaf4fb'" onmouseout="this.style.background='none'"
+                        onclick="selectFolder('{{ target }}', '{{ entry.path|escapejs }}')">
+                    📄 {{ entry.name }}
+                </button>
+                {% else %}
                 <button type="button"
                         style="width:100%; text-align:left; background:none; border:none; padding:0.35rem 0.7rem; cursor:pointer; font-family:monospace; font-size:0.8rem; color:#2c3e50; display:flex; align-items:center; gap:0.4rem;"
                         onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'"
-                        hx-get="{% url 'fb2parser:browse' %}?path={{ entry.path|urlencode }}&target={{ target }}"
+                        hx-get="{% url 'fb2parser:browse' %}?path={{ entry.path|urlencode }}&target={{ target }}{% if show_files %}&show_files=1&ext={{ ext_filter|urlencode }}{% endif %}"
                         hx-target="#fb-browser-{{ target }}"
                         hx-swap="innerHTML">
                     {% if entry.is_drive %}💽{% else %}📁{% endif %}
                     {{ entry.name }}
                 </button>
+                {% endif %}
             </li>
             {% endfor %}
         {% else %}
-            <li style="padding:0.5rem 0.7rem; color:#7f8c8d;">Нет подпапок</li>
+            <li style="padding:0.5rem 0.7rem; color:#7f8c8d;">{% if show_files %}Нет файлов{% else %}Нет подпапок{% endif %}</li>
         {% endif %}
     </ul>
 </div>

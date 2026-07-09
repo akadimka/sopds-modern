@@ -184,10 +184,11 @@ function closeBrowser(targetId) {
     var wrap = document.getElementById('fb-browser-' + targetId);
     if (wrap) wrap.style.display = 'none';
 }
-function fbNavigateTo(targetId, path) {
+function fbNavigateTo(targetId, path, showFiles, ext) {
     if (!path) return;
-    htmx.ajax('GET', fbBrowseUrl + '?path=' + encodeURIComponent(path) + '&target=' + encodeURIComponent(targetId),
-        {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
+    var url = fbBrowseUrl + '?path=' + encodeURIComponent(path) + '&target=' + encodeURIComponent(targetId);
+    if (showFiles) url += '&show_files=1&ext=' + encodeURIComponent(ext || '');
+    htmx.ajax('GET', url, {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
         htmx.process(document.getElementById('fb-browser-' + targetId));
     });
 }

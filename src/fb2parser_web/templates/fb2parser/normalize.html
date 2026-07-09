@@ -154,10 +154,14 @@
         <!-- Поле пути к CSV -->
         <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.8rem; border-bottom:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
             <span style="font-size:0.83rem; white-space:nowrap; color:#495057;">Путь к CSV:</span>
-            <div style="flex:1;">
+            <div style="flex:1; position:relative; display:flex; gap:0.4rem;">
                 <input id="names-csv-path" type="text" placeholder="C:\path\to\regen.csv"
-                       style="margin:0; width:100%; font-family:monospace; font-size:0.82rem;"
+                       style="margin:0; flex:1; font-family:monospace; font-size:0.82rem;"
                        onkeydown="if(event.key==='Enter') namesCsvLoad()">
+                <button type="button" class="button secondary fb-browse-btn" style="margin:0; padding:0.4rem 0.7rem; font-size:0.82rem; white-space:nowrap;"
+                        onclick="namesCsvBrowse()">📁</button>
+                <div id="fb-browser-names-csv-path" class="fb-browser-wrap"
+                     style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:500;"></div>
             </div>
             <button class="button" style="margin:0; padding:0.4rem 0.8rem; font-size:0.82rem; white-space:nowrap;"
                     onclick="namesCsvLoad()">Загрузить</button>
@@ -338,6 +342,20 @@ var _namesSaveUrl    = "{% url 'fb2parser:names_save' %}";
 function namesCsvOpen() {
     document.getElementById('names-csv-panel').style.display = 'flex';
     document.getElementById('names-csv-save-result').textContent = '';
+}
+function namesCsvBrowse() {
+    var wrap = document.getElementById('fb-browser-names-csv-path');
+    if (!wrap) return;
+    var isOpen = wrap.style.display !== 'none';
+    document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
+    if (isOpen) return;
+    wrap.style.display = 'block';
+    if (!wrap.querySelector('div')) {
+        htmx.ajax('GET', fbBrowseUrl + '?target=names-csv-path&show_files=1&ext=.csv',
+                  {target: '#fb-browser-names-csv-path', swap: 'innerHTML'}).then(function() {
+            htmx.process(wrap);
+        });
+    }
 }
 function namesCsvClose() {
     document.getElementById('names-csv-panel').style.display = 'none';

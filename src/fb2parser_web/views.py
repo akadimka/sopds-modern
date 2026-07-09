@@ -194,20 +194,21 @@ def _render_status(state):
 
 @staff_member_required(login_url="/web/login/")
 def browse_folders(request):
-    """Возвращает HTML-список подпапок для folder picker."""
+    """Возвращает HTML-список подпапок (и опционально файлов) для picker."""
     path = request.GET.get("path", "").strip()
-    target_input = request.GET.get("target", "")  # id поля, которое заполняем
+    target_input = request.GET.get("target", "")
+    show_files = request.GET.get("show_files", "")       # непустое → показывать файлы
+    ext_filter  = request.GET.get("ext", "").lower()     # ".csv" → только .csv файлы
 
     entries = []
     error = None
     parent = None
 
     if not path:
-        # Показываем корни: диски на Windows, / на Linux
         import string
         if os.name == "nt":
             drives = [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
-            entries = [{"name": d, "path": d, "is_drive": True} for d in drives]
+            entries = [{"name": d, "path": d, "is_drive": True, "is_file": False} for d in drives]
         else:
             path = "/"
 
@@ -215,12 +216,15 @@ def browse_folders(request):
         try:
             parent = str(os.path.dirname(path.rstrip("/\\")) or path)
             if parent == path.rstrip("/\\"):
-                parent = None  # уже на корне
+                parent = None
             entries = []
             for name in sorted(os.listdir(path), key=str.lower):
                 full = os.path.join(path, name)
                 if os.path.isdir(full):
-                    entries.append({"name": name, "path": full, "is_drive": False})
+                    entries.append({"name": name, "path": full, "is_drive": False, "is_file": False})
+                elif show_files:
+                    if not ext_filter or name.lower().endswith(ext_filter):
+                        entries.append({"name": name, "path": full, "is_drive": False, "is_file": True})
         except PermissionError:
             error = "Нет доступа к папке"
         except Exception as e:
@@ -233,6 +237,8 @@ def browse_folders(request):
         "entries": entries,
         "target": target_input,
         "error": error,
+        "show_files": show_files,
+        "ext_filter": ext_filter,
     })
     return HttpResponse(html)
 
