@@ -40,6 +40,20 @@
     </div>
 </div>
 
+<!-- Random Book -->
+{% if random_book %}
+<div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-divider"><strong>🎲 {% trans "Random Book" %}</strong></div>
+    <div class="card-section clearfix" style="padding:0.6rem;">
+        <img class="float-left" src="{% url 'opds_catalog:thumb' random_book.id %}" type="image/jpeg" width="80px" style="padding:0.3rem;">
+        <p style="font-size:0.85rem; line-height:1.2rem; margin-bottom:0.25rem; margin-top:0.25rem;">
+            <b><a href="{% url "web:searchbooks" %}?searchtype=i&searchterms={{ random_book.id }}">{{ random_book.title }}</a></b>
+        </p>
+        <div style="font-size:0.78rem; text-align:justify;">{{ random_book.annotation|truncatechars:400 }}</div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Топ жанров + Последние добавленные -->
 <div class="grid-x grid-margin-x">
     <div class="cell medium-4">
