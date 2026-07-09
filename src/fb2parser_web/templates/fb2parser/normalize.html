@@ -287,37 +287,37 @@ function normCloseLog() {
 }
 
 // Изменение ширины столбцов
-(function() {
-    var _col = null, _startX = 0, _startW = 0;
+var _rCol = null, _rStartX = 0, _rStartW = 0;
 
-    function initResizers() {
-        document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) {
-            r.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                _col = r.closest('th');
-                _startX = e.clientX;
-                _startW = _col.offsetWidth;
-                r.classList.add('dragging');
-                document.body.classList.add('col-resizing');
-            });
+function initResizers() {
+    document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) {
+        if (r._resizerBound) return;
+        r._resizerBound = true;
+        r.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            _rCol = r.closest('th');
+            _rStartX = e.clientX;
+            _rStartW = _rCol.offsetWidth;
+            r.classList.add('dragging');
+            document.body.classList.add('col-resizing');
         });
-    }
-
-    document.addEventListener('mousemove', function(e) {
-        if (!_col) return;
-        var w = Math.max(50, _startW + e.clientX - _startX);
-        _col.style.width = w + 'px';
     });
+}
 
-    document.addEventListener('mouseup', function() {
-        if (!_col) return;
-        document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) { r.classList.remove('dragging'); });
-        document.body.classList.remove('col-resizing');
-        _col = null;
-    });
+document.addEventListener('mousemove', function(e) {
+    if (!_rCol) return;
+    var w = Math.max(50, _rStartW + e.clientX - _rStartX);
+    _rCol.style.width = w + 'px';
+});
 
-    initResizers();
-})();
+document.addEventListener('mouseup', function() {
+    if (!_rCol) return;
+    document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) { r.classList.remove('dragging'); });
+    document.body.classList.remove('col-resizing');
+    _rCol = null;
+});
+
+initResizers();
 
 // После завершения CSV — загружаем таблицу и обновляем счётчик
 document.addEventListener('htmx:afterSwap', function(e) {
@@ -332,11 +332,12 @@ document.addEventListener('htmx:afterSwap', function(e) {
         // Активируем кнопки — данные актуальны для этой папки
         normSetCachedFolder(doneEl.dataset.normFolder || '');
     }
-    // Обновить счётчик строк после загрузки таблицы
+    // Обновить счётчик строк и переинициализировать ресайзеры после загрузки таблицы
     if (swapped.id === 'norm-tbody' || (swapped.closest && swapped.closest('#norm-tbody'))) {
         var rows = document.querySelectorAll('#norm-tbody .norm-row');
         var countEl = document.getElementById('norm-row-count');
         if (countEl) countEl.textContent = rows.length + ' строк';
+        initResizers();
     }
 });
 </script>
