@@ -162,9 +162,7 @@ cp /path/to/genres.xml /opt/sopds-modern/src/fb2_data/genres.xml
 mkdir -p /opt/sopds-modern/src/fb2_data/csv
 ```
 
-Откройте браузер, войдите как администратор и в разделе **FB2Parser → Настройки** заполните:
-- **Путь к библиотеке** — папка с вашими FB2-файлами
-- **Путь к файлу жанров** — `/opt/sopds-modern/src/fb2_data/genres.xml`
+> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 13 «Проверка».
 
 ---
 
@@ -258,6 +256,10 @@ systemctl reload apache2
 - Главная страница SOPDS → статистика библиотеки
 - `/fb2parser/` → раздел FB2Parser (только для суперпользователя)
 - `/admin/` → Django Admin
+
+Войдите как суперпользователь и в разделе **FB2Parser → Настройки** заполните:
+- **Путь к библиотеке** — папка с вашими FB2-файлами (`SOPDS_BOOK_PATH` из `.env`)
+- **Путь к файлу жанров** — `/opt/sopds-modern/src/fb2_data/genres.xml`
 
 ---
 
