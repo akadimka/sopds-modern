@@ -1785,7 +1785,6 @@ def fb2parser_settings(request):
         lim = request.POST.get('folder_parse_limit', '').strip()
         if lim.isdigit():
             sm.set_folder_parse_limit(int(lim))
-        sm.set_genderize_api_key(request.POST.get('genderize_api_key', '').strip())
         sm.set_generate_csv(request.POST.get('generate_csv') == 'on')
         norm_folder = request.POST.get('normalizer_folder', '').strip()
         sm.set_normalizer_folder(norm_folder or _csv_dir())
@@ -1811,7 +1810,6 @@ def fb2parser_settings(request):
     ctx['genres_file_path']   = genres_path
     ctx['normalizer_folder']  = norm_folder
     ctx['folder_parse_limit'] = sm.get_folder_parse_limit()
-    ctx['genderize_api_key']  = sm.get_genderize_api_key()
     ctx['generate_csv']       = sm.get_generate_csv()
     ctx['lists_meta']         = list(_SETTINGS_LISTS.items())
     ctx['first_list_key']     = list(_SETTINGS_LISTS.keys())[0]
