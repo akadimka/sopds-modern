@@ -260,7 +260,8 @@ function namesMassSet(gender) {
 async function namesSave() {
     var male = [], female = [];
     document.querySelectorAll('#names-tbody .names-row').forEach(function(tr) {
-        var firstName = tr.dataset.firstName;
+        var inp = tr.querySelector('.names-first-name');
+        var firstName = (inp ? inp.value : tr.dataset.firstName || '').trim();
         var gender = tr.querySelector('.names-gender-sel').value;
         if (firstName && gender === 'М') male.push(firstName);
         else if (firstName && gender === 'Ж') female.push(firstName);
@@ -324,7 +325,7 @@ function initResizers() {
             document.body.classList.add('col-resizing');
 
             function onMove(ev) {
-                var w = Math.max(50, startW + ev.clientX - startX);
+                var w = Math.max(100, startW + ev.clientX - startX);
                 col.style.width = w + 'px';
                 document.getElementById('norm-table').style.width = _ntTableWidth() + 'px';
             }

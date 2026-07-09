@@ -1,15 +1,24 @@
 {% if rows %}
-<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0;">
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0; gap:0.4rem; flex-wrap:wrap;">
     <span style="font-size:0.82rem; color:#495057;">
         Найдено <strong>{{ rows|length }}</strong> авторов с неопределённым полом.
-        Назначьте пол и нажмите «Сохранить».
     </span>
-    <div style="display:flex; gap:0.4rem;">
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
         <button class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem;"
                 onclick="namesMassSet('М')">Все — Муж.</button>
         <button class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem;"
                 onclick="namesMassSet('Ж')">Все — Жен.</button>
+        <button id="names-check-btn" class="button" style="margin:0; padding:0.3rem 0.8rem; font-size:0.8rem; background:#2980b9;"
+                onclick="namesCheckOnline()">🌐 Сверить онлайн</button>
+        <button id="names-retry-btn" class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem; display:none;"
+                onclick="namesRetryErrors()">↺ Повторить ошибочные</button>
     </div>
+</div>
+
+<!-- Прогресс онлайн-проверки -->
+<div id="names-check-progress" style="display:none; font-size:0.79rem; color:#555; margin-bottom:0.3rem; flex-shrink:0;">
+    <span id="names-check-cnt">0</span> / <span id="names-check-total">0</span> проверено
+    <span id="names-check-status" style="margin-left:0.5rem;"></span>
 </div>
 
 <div style="flex:1; overflow-y:auto; min-height:0;">
@@ -18,16 +27,26 @@
             <tr>
                 <th style="padding:0.3rem 0.5rem; text-align:left; width:100px;">Источник</th>
                 <th style="padding:0.3rem 0.5rem; text-align:left;">Автор</th>
-                <th style="padding:0.3rem 0.5rem; text-align:left; width:130px;">Имя</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left; width:150px;">Имя</th>
                 <th style="padding:0.3rem 0.5rem; text-align:center; width:90px;">Пол</th>
             </tr>
         </thead>
         <tbody id="names-tbody">
         {% for r in rows %}
-        <tr class="names-row" data-author="{{ r.author }}" data-first-name="{{ r.first_name }}" style="border-bottom:1px solid #f0f0f0;">
-            <td style="padding:0.18rem 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">{{ r.source }}</td>
-            <td style="padding:0.18rem 0.5rem; white-space:nowrap;">{{ r.author }}</td>
-            <td style="padding:0.18rem 0.5rem; color:#555; font-size:0.78rem;">{{ r.first_name }}</td>
+        <tr class="names-row" data-author="{{ r.author }}" data-first-name="{{ r.first_name }}" data-status=""
+            style="border-bottom:1px solid #f0f0f0; transition:background 0.3s;">
+            <td style="padding:0.18rem 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;"
+                title="{{ r.file_path }}">{{ r.source }}</td>
+            <td style="padding:0.18rem 0.5rem; white-space:nowrap;">
+                {% for word in r.author.split %}
+                <span class="names-word" style="cursor:pointer; padding:0 1px;" title="Нажмите — скопировать в «Имя»"
+                      onclick="namesWordClick(this, '{{ word|escapejs }}')">{{ word }}</span>
+                {% endfor %}
+            </td>
+            <td style="padding:0.18rem 0.3rem;">
+                <input class="names-first-name" type="text" value="{{ r.first_name }}"
+                       style="margin:0; padding:0.1rem 0.3rem; font-size:0.78rem; width:100%; box-sizing:border-box;">
+            </td>
             <td style="padding:0.18rem 0.5rem; text-align:center;">
                 <select class="names-gender-sel" style="margin:0; font-size:0.78rem; padding:0.1rem 0.2rem; width:80px;">
                     <option value="">—</option>
@@ -40,6 +59,155 @@
         </tbody>
     </table>
 </div>
+
+<style>
+.names-word:hover { background:#fef3e2; border-radius:2px; }
+.names-row[data-status="found"] { background:#C8F0C8 !important; }
+.names-row[data-status="unknown"] { background:#FFE4C4 !important; }
+.names-row[data-status="error"] { background:#FFCCCC !important; }
+.names-row[data-status="rate_limit"] { background:#FFD0FF !important; }
+</style>
+
+<script>
+(function() {
+    var checkUrl = "{% url 'fb2parser:names_check_online' %}";
+    var csrfToken = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+    var _checkRunning = false;
+
+    window.namesWordClick = function(span, word) {
+        var row = span.closest('.names-row');
+        var inp = row.querySelector('.names-first-name');
+        if (inp) inp.value = word;
+    };
+
+    window.namesCheckOnline = function() {
+        if (_checkRunning) return;
+        var rows = document.querySelectorAll('#names-tbody .names-row');
+        var authors = [];
+        rows.forEach(function(tr) { authors.push(tr.dataset.author); });
+        if (!authors.length) return;
+
+        _checkRunning = true;
+        document.getElementById('names-check-btn').disabled = true;
+        document.getElementById('names-check-progress').style.display = 'block';
+        document.getElementById('names-check-total').textContent = authors.length;
+        document.getElementById('names-check-cnt').textContent = '0';
+        document.getElementById('names-retry-btn').style.display = 'none';
+
+        fetch(checkUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({authors: authors})
+        }).then(function(resp) {
+            var reader = resp.body.getReader();
+            var decoder = new TextDecoder();
+            var buf = '';
+            var done_count = 0;
+            var has_errors = false;
+
+            function read() {
+                reader.read().then(function(chunk) {
+                    if (chunk.done) { _finishCheck(has_errors); return; }
+                    buf += decoder.decode(chunk.value, {stream: true});
+                    var parts = buf.split('\n\n');
+                    buf = parts.pop();
+                    parts.forEach(function(part) {
+                        var line = part.trim();
+                        if (!line.startsWith('data:')) return;
+                        var json_str = line.slice(5).trim();
+                        try {
+                            var ev = JSON.parse(json_str);
+                            if (ev.done) { _finishCheck(has_errors); return; }
+                            done_count++;
+                            document.getElementById('names-check-cnt').textContent = done_count;
+                            // Найти строку по автору
+                            var tr = document.querySelector('#names-tbody .names-row[data-author="' + CSS.escape(ev.author) + '"]');
+                            if (!tr) return;
+                            tr.dataset.status = ev.status;
+                            if (ev.status === 'found' && ev.gender) {
+                                tr.querySelector('.names-gender-sel').value = ev.gender;
+                                if (ev.first_name) tr.querySelector('.names-first-name').value = ev.first_name;
+                            }
+                            if (ev.status === 'error' || ev.status === 'rate_limit') has_errors = true;
+                        } catch(e) {}
+                    });
+                    read();
+                });
+            }
+            read();
+        }).catch(function(e) {
+            document.getElementById('names-check-status').textContent = '❌ Ошибка соединения';
+            _checkRunning = false;
+            document.getElementById('names-check-btn').disabled = false;
+        });
+    };
+
+    function _finishCheck(has_errors) {
+        _checkRunning = false;
+        document.getElementById('names-check-btn').disabled = false;
+        document.getElementById('names-check-status').textContent = has_errors ? '⚠ Есть ошибки' : '✓ Готово';
+        if (has_errors) document.getElementById('names-retry-btn').style.display = 'inline-block';
+    }
+
+    window.namesRetryErrors = function() {
+        var rows = document.querySelectorAll('#names-tbody .names-row[data-status="error"], #names-tbody .names-row[data-status="rate_limit"]');
+        var authors = [];
+        rows.forEach(function(tr) {
+            tr.dataset.status = '';
+            authors.push(tr.dataset.author);
+        });
+        if (!authors.length) return;
+        document.getElementById('names-retry-btn').style.display = 'none';
+        // Temporarily replace authors list and re-run
+        var origCheck = window.namesCheckOnline;
+        // inline retry: same logic but only error rows
+        _checkRunning = false;
+        document.getElementById('names-check-btn').disabled = true;
+        _checkRunning = true;
+        document.getElementById('names-check-total').textContent = authors.length;
+        document.getElementById('names-check-cnt').textContent = '0';
+        fetch(checkUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({authors: authors})
+        }).then(function(resp) {
+            var reader = resp.body.getReader();
+            var decoder = new TextDecoder();
+            var buf = '';
+            var done_count = 0;
+            var has_errors = false;
+            function read() {
+                reader.read().then(function(chunk) {
+                    if (chunk.done) { _finishCheck(has_errors); return; }
+                    buf += decoder.decode(chunk.value, {stream: true});
+                    var parts = buf.split('\n\n');
+                    buf = parts.pop();
+                    parts.forEach(function(part) {
+                        var line = part.trim();
+                        if (!line.startsWith('data:')) return;
+                        try {
+                            var ev = JSON.parse(line.slice(5).trim());
+                            if (ev.done) { _finishCheck(has_errors); return; }
+                            done_count++;
+                            document.getElementById('names-check-cnt').textContent = done_count;
+                            var tr = document.querySelector('#names-tbody .names-row[data-author="' + CSS.escape(ev.author) + '"]');
+                            if (!tr) return;
+                            tr.dataset.status = ev.status;
+                            if (ev.status === 'found' && ev.gender) {
+                                tr.querySelector('.names-gender-sel').value = ev.gender;
+                                if (ev.first_name) tr.querySelector('.names-first-name').value = ev.first_name;
+                            }
+                            if (ev.status === 'error' || ev.status === 'rate_limit') has_errors = true;
+                        } catch(e) {}
+                    });
+                    read();
+                });
+            }
+            read();
+        });
+    };
+})();
+</script>
 {% else %}
 <div style="padding:2rem; text-align:center; color:#27ae60; font-size:0.9rem;">
     ✓ Все авторы уже имеют определённый пол — ничего добавлять не нужно.

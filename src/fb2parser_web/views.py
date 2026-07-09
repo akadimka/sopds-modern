@@ -884,6 +884,52 @@ def names_save(request):
                          "male": male_added, "female": female_added})
 
 
+@staff_member_required(login_url="/web/login/")
+def names_check_online(request):
+    """POST {authors: ["Иванов Иван", ...]} → StreamingHttpResponse с SSE.
+    Каждое событие: data: {"author": "...", "gender": "М"|"Ж"|"", "status": "ok"|"unknown"|"error"|"rate_limit"}
+    """
+    import json
+    from django.http import StreamingHttpResponse
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    try:
+        data = json.loads(request.body)
+        authors = [a.strip() for a in data.get("authors", []) if a.strip()]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    from fb2parser_core.gender_lookup import GenderLookupService, STATUS_FOUND
+    from .fb2parser_bridge import _config_path
+    db_path = os.path.join(os.path.dirname(_config_path()), "gender_cache.db")
+
+    def event_stream():
+        svc = GenderLookupService()
+        svc._db_path = __import__('pathlib').Path(db_path)
+        svc._load_db_cache()
+        for author in authors:
+            try:
+                result = svc.lookup_one(author)
+                gender = ""
+                if result.status == STATUS_FOUND:
+                    gender = "М" if result.gender_ru == "Муж." else "Ж" if result.gender_ru == "Жен." else ""
+                payload = json.dumps({"author": author, "gender": gender,
+                                      "status": result.status,
+                                      "first_name": result.first_name or ""},
+                                     ensure_ascii=False)
+            except Exception as e:
+                payload = json.dumps({"author": author, "gender": "", "status": "error",
+                                      "detail": str(e)}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+        yield "data: {\"done\": true}\n\n"
+
+    resp = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    resp["Cache-Control"] = "no-cache"
+    resp["X-Accel-Buffering"] = "no"
+    return resp
+
+
 # ── Синхронизация ─────────────────────────────────────────────────────────────
 
 _sync_lock = threading.Lock()
