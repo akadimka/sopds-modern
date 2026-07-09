@@ -43,10 +43,13 @@
                     <th class="nt-th" style="width:140px;">metadata_genre</th>
                 </tr>
             </thead>
-            <tbody id="norm-tbody">
+            <tbody id="norm-tbody"
                 {% if state.records %}
-                    {% include "fb2parser/normalize_table.html" with records=state.records has_more=False total=state.records_total q="" %}
-                {% else %}
+                   hx-get="{% url 'fb2parser:normalize_table' %}"
+                   hx-trigger="load"
+                   hx-swap="innerHTML"
+                {% endif %}>
+                {% if not state.records %}
                 <tr><td colspan="9" style="text-align:center; padding:2rem; color:#7f8c8d;">
                     Нет данных — нажмите «Создать CSV»
                 </td></tr>
@@ -286,38 +289,45 @@ function normCloseLog() {
     document.getElementById('norm-log-panel').style.display = 'none';
 }
 
-// Изменение ширины столбцов
-var _rCol = null, _rStartX = 0, _rStartW = 0;
-
+// Изменение ширины столбцов через pointer capture
 function initResizers() {
     document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) {
         if (r._resizerBound) return;
         r._resizerBound = true;
-        r.addEventListener('mousedown', function(e) {
+        r.addEventListener('pointerdown', function(e) {
             e.preventDefault();
-            _rCol = r.closest('th');
-            _rStartX = e.clientX;
-            _rStartW = _rCol.offsetWidth;
+            var th = r.closest('th');
+            var startX = e.clientX;
+            var startW = th.offsetWidth;
+            r.setPointerCapture(e.pointerId);
             r.classList.add('dragging');
             document.body.classList.add('col-resizing');
+
+            function onMove(ev) {
+                var w = Math.max(40, startW + ev.clientX - startX);
+                th.style.width = w + 'px';
+            }
+            function onUp() {
+                r.classList.remove('dragging');
+                document.body.classList.remove('col-resizing');
+                r.removeEventListener('pointermove', onMove);
+                r.removeEventListener('pointerup', onUp);
+            }
+            r.addEventListener('pointermove', onMove);
+            r.addEventListener('pointerup', onUp);
         });
     });
 }
 
-document.addEventListener('mousemove', function(e) {
-    if (!_rCol) return;
-    var w = Math.max(50, _rStartW + e.clientX - _rStartX);
-    _rCol.style.width = w + 'px';
-});
-
-document.addEventListener('mouseup', function() {
-    if (!_rCol) return;
-    document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) { r.classList.remove('dragging'); });
-    document.body.classList.remove('col-resizing');
-    _rCol = null;
-});
-
 initResizers();
+
+// Активируем hx-trigger="load" на tbody если он сразу имеет данные (восстановление из кэша)
+document.addEventListener('DOMContentLoaded', function() {
+    var tbody = document.getElementById('norm-tbody');
+    if (tbody && tbody.hasAttribute('hx-get')) {
+        htmx.process(tbody);
+    }
+});
 
 // После завершения CSV — загружаем таблицу и обновляем счётчик
 document.addEventListener('htmx:afterSwap', function(e) {
