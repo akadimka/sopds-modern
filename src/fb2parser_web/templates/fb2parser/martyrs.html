@@ -1,0 +1,81 @@
+{% if rows %}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0; gap:0.5rem; flex-wrap:wrap;">
+    <span style="font-size:0.83rem; color:#495057;">
+        Найдено <strong>{{ rows|length }}</strong> файлов, где все авторы — женщины.
+    </span>
+    <div style="display:flex; gap:0.5rem;">
+        <button id="martyrs-del-btn" class="button alert" style="margin:0; padding:0.35rem 0.8rem; font-size:0.82rem;"
+                onclick="martyrsDelete()">🗑 Удалить всё</button>
+    </div>
+</div>
+<div id="martyrs-result" style="font-size:0.82rem; margin-bottom:0.3rem; flex-shrink:0;"></div>
+
+<div style="flex:1; overflow-y:auto; min-height:0;">
+    <table id="martyrs-table" style="border-collapse:collapse; font-size:0.8rem; width:100%;">
+        <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
+            <tr>
+                <th style="padding:0.3rem 0.5rem; text-align:left;">Файл</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left; width:200px;">Автор(ы)</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+        <tr class="martyrs-row" data-full-path="{{ r.full_path }}" style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:0 0.5rem; font-family:monospace; font-size:0.76rem; line-height:1.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:500px;"
+                title="{{ r.full_path }}">{{ r.file_path }}</td>
+            <td style="padding:0 0.5rem; line-height:1.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.authors }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+(function() {
+    var deleteUrl = "{% url 'fb2parser:martyrs_delete' %}";
+    var csrfToken = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+
+    window.martyrsDelete = function() {
+        var rows = document.querySelectorAll('#martyrs-table .martyrs-row');
+        var paths = [];
+        rows.forEach(function(tr) { if (tr.dataset.fullPath) paths.push(tr.dataset.fullPath); });
+        if (!paths.length) return;
+
+        if (!confirm('Удалить ' + paths.length + ' файлов с диска? Это действие необратимо.')) return;
+
+        document.getElementById('martyrs-del-btn').disabled = true;
+        document.getElementById('martyrs-result').textContent = 'Удаление...';
+
+        fetch(deleteUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({paths: paths})
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            var el = document.getElementById('martyrs-result');
+            if (data.deleted !== undefined) {
+                el.style.color = '#27ae60';
+                el.textContent = '✓ Удалено: ' + data.deleted + ' файлов.';
+                if (data.errors && data.errors.length) {
+                    el.style.color = '#e67e22';
+                    el.textContent += ' Ошибки: ' + data.errors.length;
+                }
+                // Убираем удалённые строки из таблицы
+                rows.forEach(function(tr) { tr.remove(); });
+                document.getElementById('martyrs-del-btn').style.display = 'none';
+            } else {
+                el.style.color = '#c0392b';
+                el.textContent = '❌ ' + (data.error || 'Ошибка');
+                document.getElementById('martyrs-del-btn').disabled = false;
+            }
+        }).catch(function(e) {
+            document.getElementById('martyrs-result').textContent = '❌ Ошибка соединения';
+            document.getElementById('martyrs-del-btn').disabled = false;
+        });
+    };
+})();
+</script>
+{% else %}
+<div style="padding:2rem; text-align:center; color:#27ae60; font-size:0.9rem;">
+    ✓ Файлов с авторами-только-женщинами не найдено.
+</div>
+{% endif %}

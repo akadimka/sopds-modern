@@ -1,10 +1,11 @@
 import logging
 import os
+import re
 import threading
 
 from constance import config
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
 from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
@@ -991,6 +992,404 @@ def names_check_online(request):
     resp["Cache-Control"] = "no-cache"
     resp["X-Accel-Buffering"] = "no"
     return resp
+
+
+# ── Великомученницы ───────────────────────────────────────────────────────────
+
+def _is_female_author(author_str: str, male_set: set, female_set: set) -> bool:
+    """Автор женщина: ни одно слово не мужское, хотя бы одно женское."""
+    parts = author_str.split()
+    if not parts:
+        return False
+    for word in parts:
+        if word.lower() in male_set:
+            return False
+    for word in parts:
+        if word.lower() in female_set:
+            return True
+    return False
+
+
+@staff_member_required(login_url="/web/login/")
+def martyrs_list(request):
+    """Возвращает список файлов, у которых все авторы — женщины."""
+    import re as _re
+    _SKIP = {"Сборник", "Соавторство", "[unknown]"}
+
+    with _norm_lock:
+        records = list(_norm_state["records"])
+        folder  = _norm_state.get("folder", "")
+
+    if not records and folder:
+        _norm_restore_from_cache(folder)
+        with _norm_lock:
+            records = list(_norm_state["records"])
+            folder  = _norm_state.get("folder", "")
+
+    if not records:
+        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
+
+    from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
+    male_set   = {n.lower() for n in sm.get_male_names()}
+    female_set = {n.lower() for n in sm.get_female_names()}
+
+    rows = []
+    for rec in records:
+        combined = (rec.get("proposed_author") or "").strip()
+        if not combined or combined in _SKIP:
+            continue
+        authors = [a.strip() for a in _re.split(r'[,;]+', combined) if a.strip()]
+        if authors and all(_is_female_author(a, male_set, female_set) for a in authors):
+            file_path = rec.get("file_path", "")
+            full_path = os.path.join(folder, file_path) if folder and not os.path.isabs(file_path) else file_path
+            rows.append({"file_path": file_path, "full_path": full_path, "authors": combined})
+
+    from django.template.loader import render_to_string
+    return HttpResponse(render_to_string("fb2parser/martyrs.html", {"rows": rows, "folder": folder}))
+
+
+@staff_member_required(login_url="/web/login/")
+def martyrs_delete(request):
+    """POST {paths: [...]} — удаляет файлы и пустые папки вверх до корня."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data  = json.loads(request.body)
+        paths = [p.strip() for p in data.get("paths", []) if p.strip()]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    with _norm_lock:
+        folder = _norm_state.get("folder", "")
+
+    deleted, errors = 0, []
+    deleted_dirs = set()
+    for p in paths:
+        try:
+            if os.path.isfile(p):
+                parent = os.path.dirname(p)
+                os.remove(p)
+                deleted += 1
+                deleted_dirs.add(parent)
+        except Exception as e:
+            errors.append(f"{p}: {e}")
+
+    # Удаляем пустые папки вверх до корня библиотеки
+    for d in sorted(deleted_dirs, key=len, reverse=True):
+        try:
+            cur = d
+            while cur and os.path.isdir(cur) and not os.listdir(cur):
+                if folder and os.path.normpath(cur) == os.path.normpath(folder):
+                    break
+                os.rmdir(cur)
+                cur = os.path.dirname(cur)
+        except Exception:
+            pass
+
+    return JsonResponse({"deleted": deleted, "errors": errors})
+
+
+# ── Дубликаты ─────────────────────────────────────────────────────────────────
+
+import unicodedata as _ud
+
+
+_RGET_ALIASES = {'file_title': 'book_title', 'book_title': 'file_title'}
+
+
+def _rget(rec, attr, default=''):
+    """Универсальный геттер: работает и с dataclass-объектами, и с dict (из JSON-кэша).
+
+    Обрабатывает алиасы полей (file_title ↔ book_title).
+    """
+    if isinstance(rec, dict):
+        v = rec.get(attr)
+        if v is None and attr in _RGET_ALIASES:
+            v = rec.get(_RGET_ALIASES[attr])
+        return v if v is not None else default
+    return getattr(rec, attr, default)
+
+
+_DUP_COLLECTION = re.compile(
+    r'\b(сборник|антология|anthology|collection|omnibus|сборн)\b',
+    re.IGNORECASE | re.UNICODE,
+)
+_DUP_RNG_SN = re.compile(r'^\d+\s*[-–—]\s*\d+')
+
+
+def _dup_priority(path, rec=None) -> float:
+    score = 0.0
+    if rec is not None and (_rget(rec, 'proposed_series') or '').strip():
+        score += 2.0
+    if not any(_DUP_COLLECTION.search(p) for p in path.parts):
+        score += 1.0
+    score += len(path.parts) * 0.1
+    return score
+
+
+def _dup_norm_str(s: str) -> str:
+    s = _ud.normalize('NFKC', s or '').lower().replace('ё', 'е')
+    s = re.sub(r'[«»"\'„"‟\(\)\[\]…]', '', s)
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def _dup_norm_author(s: str) -> str:
+    s = _ud.normalize('NFKC', s or '').lower().replace('ё', 'е')
+    return re.sub(r'\s+', ' ', re.sub(r'\.', ' ', s)).strip()
+
+
+def _dup_rec_authors(rec) -> frozenset:
+    proposed = _rget(rec, 'proposed_author') or ''
+    meta = _rget(rec, 'metadata_authors') or ''
+    src = proposed if proposed else meta
+    return frozenset(a for a in (_dup_norm_author(p) for p in re.split(r'[;,]', src)) if len(a) >= 3)
+
+
+def _find_duplicates(records, folder_path) -> dict:
+    """Двухфазный поиск дубликатов: хэш + метаданные.
+
+    Возвращает {dup_path: {source, reasons, series}}.
+    """
+    from pathlib import Path as _Path
+    _PLACEHOLDER = {'no title', 'без названия', 'untitled', 'unknown'}
+
+    def _abs(fp):
+        p = _Path(fp)
+        return p if p.is_absolute() else folder_path / p
+
+    # Индекс record → Path
+    rec_by_path = {}
+    for rec in records:
+        fp = _rget(rec, 'file_path') or ''
+        if fp:
+            rec_by_path[_abs(fp)] = rec
+
+    def _pick_src(paths_with_recs):
+        scored = sorted(paths_with_recs,
+                        key=lambda pr: (-_dup_priority(pr[0], pr[1]), str(pr[0])))
+        return scored[0][0], [p for p, _ in scored[1:]]
+
+    result = {}
+
+    # Фаза 1: хэш-дубликаты
+    hash_map = {}
+    for rec in records:
+        h = _rget(rec, 'content_hash') or ''
+        fp = _rget(rec, 'file_path') or ''
+        if h and fp:
+            hash_map.setdefault(h, []).append(_abs(fp))
+    for paths in hash_map.values():
+        if len(paths) < 2:
+            continue
+        src, dups = _pick_src([(p, rec_by_path.get(p)) for p in paths])
+        for dup in dups:
+            result.setdefault(dup, {'source': src, 'reasons': set(), 'series': ''})['reasons'].add('Хэш')
+
+    # Фаза 2: метадата-дубликаты
+    _RNG_IN_STEM = re.compile(r'\b(\d+)\s*[-–—]\s*(\d+)\s*$')
+
+    def _precomp_range(rec):
+        """Возвращает нормализованную строку диапазона ('N-M') или '' если не предкомпиляция."""
+        sn = (_rget(rec, 'series_number') or '').strip()
+        m = _DUP_RNG_SN.match(sn) if sn else None
+        if m:
+            return sn
+        fp = _rget(rec, 'file_path') or ''
+        stem = _Path(fp).stem if fp else ''
+        last = stem.rsplit('. ', 1)[-1] if '. ' in stem else stem
+        m2 = _RNG_IN_STEM.search(last)
+        return m2.group(0).strip() if m2 else ''
+
+    def _is_precomp(rec):
+        return bool(_precomp_range(rec))
+
+    def _is_subcomp(rec):
+        return (_Path(_rget(rec, 'file_path') or '').stem.count('. ') >= 2)
+
+    title_map = {}
+    for rec in records:
+        t = _dup_norm_str(_rget(rec, 'file_title') or '')
+        if t and len(t) >= 4 and t not in _PLACEHOLDER:
+            title_map.setdefault(t, []).append(rec)
+
+    for recs in title_map.values():
+        if len(recs) < 2:
+            continue
+        recs_sorted = sorted(recs, key=lambda r: str(_rget(r, 'file_path')))
+        for i, ra in enumerate(recs_sorted):
+            auth_a = _dup_rec_authors(ra)
+            if not auth_a:
+                continue
+            for rb in recs_sorted[i + 1:]:
+                auth_b = _dup_rec_authors(rb)
+                if not auth_b or not (auth_a & auth_b):
+                    continue
+                rng_a, rng_b = _precomp_range(ra), _precomp_range(rb)
+                # Предкомпиляция vs одиночная книга → не дубликаты
+                if bool(rng_a) != bool(rng_b):
+                    continue
+                # Две предкомпиляции с разными диапазонами → не дубликаты
+                if rng_a and rng_b and rng_a != rng_b:
+                    continue
+                if _is_subcomp(ra) != _is_subcomp(rb):
+                    continue
+                fp_a = _rget(ra, 'file_path') or ''
+                fp_b = _rget(rb, 'file_path') or ''
+                if not fp_a or not fp_b:
+                    continue
+                pa, pb = _abs(fp_a), _abs(fp_b)
+                if not pb.exists():
+                    continue
+                if _dup_priority(pa, ra) >= _dup_priority(pb, rb):
+                    src_p, dup_p, dup_rec = pa, pb, rb
+                else:
+                    src_p, dup_p, dup_rec = pb, pa, ra
+                    if not src_p.exists():
+                        continue
+                series = (_rget(dup_rec, 'proposed_series') or
+                          _rget(ra, 'proposed_series') or
+                          _rget(rb, 'proposed_series') or '')
+                entry = result.setdefault(dup_p, {'source': src_p, 'reasons': set(), 'series': ''})
+                entry['reasons'].add('Метаданные')
+                if series and not entry['series']:
+                    entry['series'] = series
+
+    return result
+
+
+@staff_member_required(login_url="/web/login/")
+def duplicates_find(request):
+    """GET — ищет дубликаты в записях текущего сеанса нормализации."""
+    from pathlib import Path as _Path
+    with _norm_lock:
+        records = list(_norm_state["records"])
+        folder = _norm_state.get("folder", "")
+
+    if not records and not folder:
+        from constance import config as _cfg
+        folder = _cfg.SOPDS_ROOT_LIB or ""
+    if not records and folder:
+        _norm_restore_from_cache(folder)
+        with _norm_lock:
+            records = list(_norm_state["records"])
+            folder = _norm_state.get("folder", folder)
+
+    if not records:
+        return render(request, "fb2parser/duplicates.html", {
+            "rows": [], "groups": [],
+            "error": "Нет данных — сначала запустите нормализацию.",
+        })
+
+    folder_path = _Path(folder) if folder else _Path(".")
+
+    # Диагностика: проверяем первые записи
+    diag = []
+    for r in records[:2]:
+        fp = _rget(r, 'file_path') or 'N/A'
+        ft = (_rget(r, 'file_title') or '')[:40]
+        pa = (_rget(r, 'proposed_author') or '')[:30]
+        diag.append(f"fp={fp!r} title={ft!r} author={pa!r}")
+    diag_str = " | ".join(diag)
+
+    try:
+        all_dups = _find_duplicates(records, folder_path)
+    except Exception as exc:
+        import traceback as _tb
+        return render(request, "fb2parser/duplicates.html", {
+            "rows": [], "groups": [], "error": f"{exc}\n\nDIAG: {diag_str}",
+        })
+
+    # Группируем по оригиналу (source)
+    from collections import defaultdict
+    groups_map = defaultdict(list)
+    total_bytes = 0
+    for dup_path in sorted(all_dups):
+        info = all_dups[dup_path]
+        try:
+            sz = dup_path.stat().st_size if dup_path.exists() else 0
+        except Exception:
+            sz = 0
+        total_bytes += sz
+        sz_str = (f"{sz // 1024} КБ" if sz < 1_048_576
+                  else f"{sz / 1_048_576:.1f} МБ")
+        reason = '+'.join(sorted(info['reasons']))
+        src = info['source']
+        try:
+            rel = str(dup_path.relative_to(folder_path))
+        except ValueError:
+            rel = str(dup_path)
+        try:
+            src_rel = str(src.relative_to(folder_path)) if src else ''
+        except ValueError:
+            src_rel = str(src) if src else ''
+        groups_map[str(src)].append({
+            "full_path": str(dup_path),
+            "file_path": rel,
+            "reason": reason,
+            "series": info.get('series', ''),
+            "size": sz_str,
+            "size_bytes": sz,
+            "src_rel": src_rel,
+        })
+
+    groups = [{"source_full": src, "source_rel": rows[0]["src_rel"], "rows": rows}
+              for src, rows in sorted(groups_map.items())]
+    total_mb = total_bytes / 1_048_576
+    total_size_str = f"{total_mb:.1f} МБ" if total_bytes >= 1_048_576 else f"{total_bytes // 1024} КБ"
+
+    return render(request, "fb2parser/duplicates.html", {
+        "groups": groups,
+        "total_dups": len(all_dups),
+        "total_files": len(records),
+        "total_size": total_size_str,
+        "diag": diag_str,
+    })
+
+
+@staff_member_required(login_url="/web/login/")
+def duplicates_delete(request):
+    """POST {paths: [...]} — удаляет отмеченные дубликаты и пустые папки."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data = json.loads(request.body)
+        paths = [p.strip() for p in data.get("paths", []) if p.strip()]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    with _norm_lock:
+        folder = _norm_state.get("folder", "")
+
+    deleted, errors = 0, []
+    deleted_dirs = set()
+    for p in paths:
+        try:
+            if os.path.isfile(p):
+                parent = os.path.dirname(p)
+                os.remove(p)
+                deleted += 1
+                deleted_dirs.add(parent)
+        except Exception as e:
+            errors.append(f"{p}: {e}")
+
+    for d in sorted(deleted_dirs, key=len, reverse=True):
+        try:
+            cur = d
+            while cur and os.path.isdir(cur) and not os.listdir(cur):
+                if folder and os.path.normpath(cur) == os.path.normpath(folder):
+                    break
+                os.rmdir(cur)
+                cur = os.path.dirname(cur)
+        except Exception:
+            pass
+
+    return JsonResponse({"deleted": deleted, "errors": errors})
 
 
 # ── Синхронизация ─────────────────────────────────────────────────────────────

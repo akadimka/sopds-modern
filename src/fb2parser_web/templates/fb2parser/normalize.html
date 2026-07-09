@@ -101,10 +101,12 @@
         <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
             Битые файлы
         </button>
-        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled
+                onclick="martyrsOpen()">
             Великомученницы
         </button>
-        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;"
+                onclick="duplicatesOpen()">
             Дубликаты
         </button>
         <button class="button alert norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="Этап 2">
@@ -177,6 +179,32 @@
                 <button class="button secondary" style="margin:0; font-size:0.82rem;" onclick="namesCsvClose()">Отмена</button>
                 <button class="button" style="margin:0; font-size:0.82rem; background:#27ae60;" onclick="namesCsvSave()">💾 Сохранить</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Панель «Великомученницы» -->
+<div id="martyrs-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#c0392b; color:#fff; flex-shrink:0;">
+            <strong>Великомученницы — файлы с авторами-женщинами</strong>
+            <button onclick="martyrsClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+        </div>
+        <div id="martyrs-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
+            <div style="color:#7f8c8d; font-size:0.85rem;">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Панель «Дубликаты» -->
+<div id="duplicates-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(1060px,96vw); height:min(700px,94vh); display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#546e7a; color:#fff; flex-shrink:0;">
+            <strong>Дубликаты</strong>
+            <button onclick="duplicatesClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+        </div>
+        <div id="duplicates-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
+            <div style="color:#7f8c8d; font-size:0.85rem;">Загрузка...</div>
         </div>
     </div>
 </div>
@@ -359,6 +387,32 @@ function namesCsvBrowse() {
 }
 function namesCsvClose() {
     document.getElementById('names-csv-panel').style.display = 'none';
+}
+var _martyrsUrl = "{% url 'fb2parser:martyrs_list' %}";
+function martyrsOpen() {
+    var panel = document.getElementById('martyrs-panel');
+    panel.style.display = 'flex';
+    document.getElementById('martyrs-body').innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;">Загрузка...</div>';
+    htmx.ajax('GET', _martyrsUrl, {target: '#martyrs-body', swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('martyrs-body'));
+    });
+}
+function martyrsClose() {
+    document.getElementById('martyrs-panel').style.display = 'none';
+}
+var _duplicatesUrl = "{% url 'fb2parser:duplicates_find' %}";
+function duplicatesOpen() {
+    console.log('[duplicates] open called');
+    var panel = document.getElementById('duplicates-panel');
+    if (!panel) { console.error('[duplicates] panel not found'); return; }
+    panel.style.display = 'flex';
+    document.getElementById('duplicates-body').innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;">Поиск дубликатов… (может занять несколько секунд)</div>';
+    htmx.ajax('GET', _duplicatesUrl, {target: '#duplicates-body', swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('duplicates-body'));
+    });
+}
+function duplicatesClose() {
+    document.getElementById('duplicates-panel').style.display = 'none';
 }
 function namesCsvLoad() {
     var path = (document.getElementById('names-csv-path').value || '').trim();
