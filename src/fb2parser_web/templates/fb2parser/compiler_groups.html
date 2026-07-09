@@ -41,15 +41,31 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 <div style="flex:1; display:flex; flex-direction:column; min-height:0; gap:0;">
 
     <!-- Верхняя панель: группы (55%) -->
-    <div style="flex:55; min-height:0; overflow-y:auto; border:1px solid #dee2e6; border-radius:4px 4px 0 0;">
-        <table id="cg-table" style="border-collapse:collapse; font-size:0.8rem; width:100%;">
+    <div style="flex:55; min-height:0; overflow-x:auto; overflow-y:auto; border:1px solid #dee2e6; border-radius:4px 4px 0 0;">
+        <table id="cg-table" style="border-collapse:collapse; font-size:0.8rem; table-layout:fixed; width:760px;">
+            <colgroup>
+                <col id="cgc-0" style="width:30px;">
+                <col id="cgc-1" style="width:220px;">
+                <col id="cgc-2" style="width:370px;">
+                <col id="cgc-3" style="width:46px;">
+                <col id="cgc-4" style="width:90px;">
+            </colgroup>
             <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
                 <tr>
-                    <th style="padding:0.22rem 0.4rem; width:26px; text-align:center;">✓</th>
-                    <th style="padding:0.22rem 0.4rem; text-align:left;">Автор</th>
-                    <th style="padding:0.22rem 0.4rem; text-align:left;">Серия</th>
-                    <th style="padding:0.22rem 0.4rem; width:42px; text-align:center;">Кн.</th>
-                    <th style="padding:0.22rem 0.4rem; width:80px; text-align:center;">Диапазон</th>
+                    <th style="padding:0.22rem 0.4rem; text-align:center; overflow:hidden;">✓</th>
+                    <th style="padding:0.22rem 0.4rem; text-align:left; overflow:hidden; position:relative;">
+                        Автор
+                        <span class="cgc-resizer" data-col="1" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:rgba(255,255,255,0.15);"></span>
+                    </th>
+                    <th style="padding:0.22rem 0.4rem; text-align:left; overflow:hidden; position:relative;">
+                        Серия
+                        <span class="cgc-resizer" data-col="2" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:rgba(255,255,255,0.15);"></span>
+                    </th>
+                    <th style="padding:0.22rem 0.4rem; text-align:center; overflow:hidden; position:relative;">
+                        Кн.
+                        <span class="cgc-resizer" data-col="3" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:rgba(255,255,255,0.15);"></span>
+                    </th>
+                    <th style="padding:0.22rem 0.4rem; text-align:center; overflow:hidden;">Диапазон</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,7 +75,7 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
                 style="border-bottom:1px solid #eee; cursor:pointer;
                        background:{% if g.status == 'ok' %}#f0faf3{% elif g.status == 'partial' %}#fefdf0{% elif g.status == 'alpha' %}#f0f7fb{% else %}#f5f5f5{% endif %};">
                 <td style="padding:0 0.4rem; text-align:center; vertical-align:middle;" onclick="event.stopPropagation()">
-                    <input type="checkbox" class="cg-check" {% if not g.cleanup_only %}checked{% endif %}
+                    <input type="checkbox" class="cg-check" checked
                            data-idx="{{ g.idx }}" onchange="cgUpdateCount()"
                            style="cursor:pointer; accent-color:#27ae60;">
                 </td>
@@ -176,6 +192,16 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
                   + '</tr>';
         });
 
+        // Оставляемые файлы — kept (серо-зелёные, для cleanup_only групп)
+        (data.kept || []).forEach(function(p) {
+            var name = p.replace(/.*[\/\\]/, '');
+            html += '<tr style="background:#eafaf1;" title="Оставить: ' + _esc(p) + '">'
+                  + '<td style="padding:0 0.4rem;text-align:center;color:#27ae60;">✓</td>'
+                  + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#27ae60;">' + _esc(name) + '</td>'
+                  + '<td style="padding:0 0.4rem;text-align:right;color:#27ae60;font-size:0.73rem;">оставить</td>'
+                  + '</tr>';
+        });
+
         // Дубликаты (красные)
         (data.dups || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
@@ -203,6 +229,36 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
     function _esc(s) {
         return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
+    // ── Ресайзер столбцов верхней таблицы ───────────────────────────────────
+    function _cgTableWidth() {
+        var total = 0;
+        document.querySelectorAll('#cg-table col').forEach(function(c) {
+            total += parseInt(c.style.width) || 0;
+        });
+        return total;
+    }
+    document.querySelectorAll('#cg-table .cgc-resizer').forEach(function(r) {
+        r.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            var colIdx = parseInt(r.dataset.col);
+            var col = document.getElementById('cgc-' + colIdx);
+            var startX = e.clientX;
+            var startW = parseInt(col.style.width) || 100;
+            r.setPointerCapture(e.pointerId);
+            function onMove(ev) {
+                var w = Math.max(50, startW + ev.clientX - startX);
+                col.style.width = w + 'px';
+                document.getElementById('cg-table').style.width = _cgTableWidth() + 'px';
+            }
+            function onUp() {
+                r.removeEventListener('pointermove', onMove);
+                r.removeEventListener('pointerup', onUp);
+            }
+            r.addEventListener('pointermove', onMove);
+            r.addEventListener('pointerup', onUp);
+        });
+    });
 
     // ── Splitter ─────────────────────────────────────────────────────────────
     var splitter = document.getElementById('cg-splitter');
