@@ -22,10 +22,6 @@
   - ruff (линтер, форматтер), mypy (type checking), pre-commit.
   - Настройка coverage с исключением заменяемых модулей.
   - Настройка pytest в CI (DJANGO_SETTINGS_MODULE, SECRET_KEY, SOPDS_VERSION).
-- **Docker**:
-  - Многостадийная сборка (builder → final-prod / final-dev).
-  - `docker-compose.yml` с сервисами web (gunicorn) + PostgreSQL 17.
-  - Dev- и prod-таргеты сборки.
 - **Навигация по коду**: интеграция cartog для семантического поиска и анализа кода.
 - **Конвенции проекта**: AGENTS.md, CONVENTIONS.md, CONTRIBUTING.md.
 
@@ -50,7 +46,6 @@
 - **Open Redirect (HIGH)**: защита `LoginView` через `url_has_allowed_host_and_scheme`.
 - **htmx-поиск**: исправлена работа suggest после htmx-swap, корректный POST-запрос.
 - **Обработка статики при тестах**: исправлена ошибка в тестовой среде.
-- **Настройка Docker для dev/prod**: корректная передача `BUILD_TARGET`.
 - **Тесты скачивания книги**: исправлены urlpatterns и параметры для корректного тестирования.
 - **Обработка INPX**: книги не добавлялись из-за ошибки при сканировании ZIP в INPX.
 - **Работа с ZIP при сканировании**: исправлена кодировка и чтение файлов из архива.
@@ -75,7 +70,6 @@
 - Первая версия с поддержкой Python 3.13, Django 5.2, PostgreSQL 17.
 - Рефакторинг структуры проекта (src/, sopds/, opds_catalog/, sopds_web_backend/).
 - Использование `uv` для управления зависимостями.
-- Начальная конфигурация Docker и docker-compose.
 - Базовая поддержка SQLite (экспериментальная).
 
 [1.0.0RC1]: https://github.com/sarutobi/sopds-ng/releases/tag/v1.0.0RC1

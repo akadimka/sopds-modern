@@ -96,13 +96,7 @@ except ValueError as err:
 - **Миграции:** создавать через `python src/manage.py makemigrations`, коммитить в репозиторий.
 - **Модели:** наследовать от `django.db.models.Model`, именовать в единственном числе (`Book`, `Author`).
 
-## 10. Docker
-
-- **Dev:** `docker compose up -d` (web + db).
-- **Тестовый postgres:** `just postgres_start` (порт 5433, чтобы не конфликтовать с основным).
-- **Production:** `docker compose up -d` с `.env` из `base.env`.
-
-## 11. Justfile
+## 10. Justfile
 
 Основные команды:
 
@@ -115,9 +109,7 @@ except ValueError as err:
 | `just format` | ruff format |
 | `just typecheck` | mypy |
 | `just postgres_tests` | Тесты на postgres |
-| `just up` / `just down` | Docker compose |
-
-## 12. Примеры
+## 11. Примеры
 
 | Ситуация | Плохо | Хорошо |
 |---|---|---|

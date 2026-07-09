@@ -1,6 +1,6 @@
 # Развёртывание SOPDS-MODERN на TurnKey Linux v.17
 
-TurnKey v.17 основан на Debian 11 (Bullseye). В инструкции описан **нативный** способ установки (без Docker).
+TurnKey v.17 основан на Debian 11 (Bullseye).
 
 ---
 

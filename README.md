@@ -16,8 +16,6 @@ The following changes are planned relative to the original project:
 
 2. Base page layout redesign (work in progress).
 
-3. Ability to run SOPDS-NG in a docker/podman container (work in progress).
-
 The following changes have been applied so far:
 
 1. Identified bugs have been fixed; changes from third-party contributors' pull requests for the original project have been applied.
@@ -39,5 +37,3 @@ All changes are being made in the dev branch of this repository.
 - PostgreSQL 17
 
 - gunicorn
-
-- docker
