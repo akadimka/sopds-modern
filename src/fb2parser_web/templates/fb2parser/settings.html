@@ -96,6 +96,17 @@
 </div>
 
 <div class="s-field">
+    <label>Папка для CSV-файлов нормализатора</label>
+    <div class="s-row">
+        <input type="text" name="normalizer_folder" id="normalizer_folder" value="{{ normalizer_folder }}" placeholder="Куда сохранять CSV-файлы нормализации">
+        <button type="button" class="fb-browse-btn" onclick="openBrowser('normalizer_folder')"
+                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
+    </div>
+    <div class="fb-browser-wrap" id="fb-browser-normalizer_folder" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
+    <div class="s-hint">Сюда будут сохраняться CSV-файлы при нормализации (по умолчанию: <code>fb2_data/csv/</code>).</div>
+</div>
+
+<div class="s-field">
     <label>Предел количества папок при парсинге</label>
     <input type="number" name="folder_parse_limit" value="{{ folder_parse_limit }}" min="1" max="100" style="max-width:120px;">
     <div class="s-hint">Глубина обхода папок при парсинге, начиная от файла (по умолчанию 5).</div>

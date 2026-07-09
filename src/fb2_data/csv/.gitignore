@@ -1,0 +1,2 @@
+# Ignore generated CSV files but keep the directory
+*.csv

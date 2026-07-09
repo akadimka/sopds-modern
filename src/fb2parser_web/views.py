@@ -1773,18 +1773,22 @@ _SETTINGS_LISTS = {
 
 @staff_member_required(login_url="/web/login/")
 def fb2parser_settings(request):
+    import json as _json
     from fb2parser_core.settings_manager import SettingsManager
-    from .fb2parser_bridge import _config_path
+    from .fb2parser_bridge import _config_path, _genres_path, _csv_dir
     sm = SettingsManager(_config_path())
 
     if request.method == 'POST':
         sm.set_library_path(request.POST.get('library_path', '').strip())
-        sm.set_genres_file_path(request.POST.get('genres_file_path', '').strip())
+        genres = request.POST.get('genres_file_path', '').strip()
+        sm.set_genres_file_path(genres or _genres_path())
         lim = request.POST.get('folder_parse_limit', '').strip()
         if lim.isdigit():
             sm.set_folder_parse_limit(int(lim))
         sm.set_genderize_api_key(request.POST.get('genderize_api_key', '').strip())
         sm.set_generate_csv(request.POST.get('generate_csv') == 'on')
+        norm_folder = request.POST.get('normalizer_folder', '').strip()
+        sm.set_normalizer_folder(norm_folder or _csv_dir())
         sm.save()
         from django.shortcuts import redirect as _redir
         from django.urls import reverse as _rev
@@ -1793,12 +1797,22 @@ def fb2parser_settings(request):
     ctx = _ctx("settings", "Настройки")
     ctx['saved'] = request.GET.get('saved') == '1'
 
+    # Подставляем дефолты если пути не заданы
+    genres_path = sm.get_genres_file_path()
+    if not genres_path or genres_path in ('.', ''):
+        genres_path = _genres_path()
+        sm.set_genres_file_path(genres_path)
+    norm_folder = sm.get_normalizer_folder()
+    if not norm_folder:
+        norm_folder = _csv_dir()
+        sm.set_normalizer_folder(norm_folder)
+
     ctx['library_path']       = sm.get_library_path()
-    ctx['genres_file_path']   = sm.get_genres_file_path()
+    ctx['genres_file_path']   = genres_path
+    ctx['normalizer_folder']  = norm_folder
     ctx['folder_parse_limit'] = sm.get_folder_parse_limit()
     ctx['genderize_api_key']  = sm.get_genderize_api_key()
     ctx['generate_csv']       = sm.get_generate_csv()
-    import json as _json
     ctx['lists_meta']         = list(_SETTINGS_LISTS.items())
     ctx['first_list_key']     = list(_SETTINGS_LISTS.keys())[0]
     ctx['lists_data_json']    = _json.dumps({k: sm.get_list(k) or [] for k in _SETTINGS_LISTS}, ensure_ascii=False)

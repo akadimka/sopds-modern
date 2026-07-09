@@ -5,15 +5,22 @@
 """
 import os
 
-_FB2_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "fb2_data")
+_FB2_DATA_DIR      = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "fb2_data"))
+_FB2_SETTINGS_DIR  = os.path.join(_FB2_DATA_DIR, "settings")
+_FB2_CSV_DIR       = os.path.join(_FB2_DATA_DIR, "csv")
 
 
 def _config_path() -> str:
-    return os.path.normpath(os.path.join(_FB2_DATA_DIR, "config.json"))
+    return os.path.join(_FB2_SETTINGS_DIR, "config.json")
 
 
 def _genres_path() -> str:
-    return os.path.normpath(os.path.join(_FB2_DATA_DIR, "genres.xml"))
+    return os.path.join(_FB2_DATA_DIR, "genres.xml")
+
+
+def _csv_dir() -> str:
+    os.makedirs(_FB2_CSV_DIR, exist_ok=True)
+    return _FB2_CSV_DIR
 
 
 def get_genres_manager():
