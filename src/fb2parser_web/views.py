@@ -1392,6 +1392,199 @@ def duplicates_delete(request):
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
+# ── Компилятор ────────────────────────────────────────────────────────────────
+
+_compiler_lock = threading.Lock()
+_compiler_state: dict = {
+    "groups": [],           # List[CompilationGroup] — только в памяти
+    "folder": "",
+    "running": False,
+    "done": False,
+    "error": None,
+    "progress": 0,
+    "total": 0,
+    "current": "",
+    "log": [],
+}
+
+
+def _rec_to_ns(rec):
+    """Конвертировать dict-запись (из JSON-кэша) в SimpleNamespace для FB2CompilerService."""
+    from types import SimpleNamespace
+    if isinstance(rec, dict):
+        d = dict(rec)
+        # Алиас: кэш хранит book_title, а FB2CompilerService ожидает file_title
+        if 'book_title' in d and 'file_title' not in d:
+            d['file_title'] = d['book_title']
+        # Гарантируем наличие всех полей BookRecord
+        _defaults = {
+            'file_path': '', 'file_title': '', 'metadata_authors': '',
+            'proposed_author': '', 'author_source': '', 'metadata_series': '',
+            'proposed_series': '', 'series_source': '', 'metadata_genre': '',
+            'series_number': '', 'content_hash': '',
+            'needs_filename_fallback': False, 'delete_flag': False,
+        }
+        for k, v in _defaults.items():
+            d.setdefault(k, v)
+        return SimpleNamespace(**d)
+    return rec
+
+
+@staff_member_required(login_url="/web/login/")
+def compiler_scan(request):
+    """GET — ищет группы для компиляции из записей текущего сеанса нормализации."""
+    from pathlib import Path as _Path
+    with _norm_lock:
+        records = list(_norm_state["records"])
+        folder = _norm_state.get("folder", "")
+
+    if not records and not folder:
+        from constance import config as _cfg
+        folder = _cfg.SOPDS_ROOT_LIB or ""
+    if not records and folder:
+        _norm_restore_from_cache(folder)
+        with _norm_lock:
+            records = list(_norm_state["records"])
+            folder = _norm_state.get("folder", folder)
+
+    if not records:
+        return render(request, "fb2parser/compiler_groups.html", {
+            "groups": [], "error": "Нет данных — сначала запустите нормализацию.",
+        })
+
+    ns_records = [_rec_to_ns(r) for r in records]
+    folder_path = _Path(folder) if folder else _Path(".")
+
+    try:
+        from fb2parser_core.fb2_compiler import FB2CompilerService
+        svc = FB2CompilerService()
+        groups = svc.find_groups(ns_records, folder_path)
+    except Exception as exc:
+        import traceback as _tb
+        return render(request, "fb2parser/compiler_groups.html", {
+            "groups": [], "error": str(exc) + "\n" + _tb.format_exc()[-500:],
+        })
+
+    with _compiler_lock:
+        _compiler_state.update({
+            "groups": groups,
+            "folder": str(folder_path),
+            "done": False, "running": False, "error": None, "log": [],
+        })
+
+    group_data = []
+    for i, g in enumerate(groups):
+        # Цветовой статус: cleanup_only → серый; alphabetical → голубой;
+        # not order_determined → жёлтый; else → зелёный
+        if g.cleanup_only:
+            status = "cleanup"
+        elif g.alphabetical_order:
+            status = "alpha"
+        elif not g.order_determined:
+            status = "partial"
+        else:
+            status = "ok"
+        group_data.append({
+            "idx": i,
+            "author": g.author,
+            "series": FB2CompilerService._series_to_display(g.series),
+            "count": len(g.books),
+            "range": g.volume_range or "",
+            "status": status,
+            "cleanup_only": g.cleanup_only,
+        })
+
+    return render(request, "fb2parser/compiler_groups.html", {
+        "groups": group_data,
+        "total": len(groups),
+    })
+
+
+def _run_compiler_thread(indices, delete_sources):
+    """Фоновый поток: компилирует выбранные группы."""
+    try:
+        from fb2parser_core.fb2_compiler import FB2CompilerService
+    except ImportError:
+        from fb2parser_core.fb2_compiler import FB2CompilerService  # noqa
+
+    with _compiler_lock:
+        all_groups = list(_compiler_state["groups"])
+
+    groups_to_run = [all_groups[i] for i in indices if i < len(all_groups)]
+    total = len(groups_to_run)
+    svc = FB2CompilerService()
+    log = []
+
+    for n, group in enumerate(groups_to_run, 1):
+        with _compiler_lock:
+            _compiler_state["progress"] = n - 1
+            _compiler_state["total"] = total
+            _compiler_state["current"] = f"{group.author} / {FB2CompilerService._series_to_display(group.series)}"
+
+        try:
+            result = svc.compile_group(group, output_dir=None, delete_sources=delete_sources)
+            if result.success:
+                if result.output_path:
+                    log.append({"ok": True, "msg": f"✓ {result.output_path.name}"})
+                else:
+                    log.append({"ok": True, "msg": f"♻ Очищено: {group.author} / {group.series}"})
+            else:
+                log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {result.error}"})
+        except Exception as exc:
+            log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {exc}"})
+
+        with _compiler_lock:
+            _compiler_state["log"] = log[:]
+
+    with _compiler_lock:
+        _compiler_state.update({
+            "running": False, "done": True,
+            "progress": total, "total": total,
+            "current": "", "log": log,
+        })
+
+
+@staff_member_required(login_url="/web/login/")
+def compiler_run(request):
+    """POST {indices:[...], delete_sources:bool} — запускает компиляцию в фоне."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data = json.loads(request.body)
+        indices = [int(i) for i in data.get("indices", [])]
+        delete_sources = bool(data.get("delete_sources", False))
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    if not indices:
+        return JsonResponse({"error": "Не выбрано ни одной группы"}, status=400)
+
+    with _compiler_lock:
+        if _compiler_state["running"]:
+            return JsonResponse({"error": "Компиляция уже запущена"}, status=409)
+        _compiler_state.update({
+            "running": True, "done": False, "error": None,
+            "progress": 0, "total": len(indices), "current": "",
+            "log": [],
+        })
+
+    t = threading.Thread(target=_run_compiler_thread, args=(indices, delete_sources), daemon=True)
+    t.start()
+    return JsonResponse({"ok": True, "total": len(indices)})
+
+
+@staff_member_required(login_url="/web/login/")
+def compiler_status(request):
+    """GET — текущий статус компиляции (для polling)."""
+    with _compiler_lock:
+        s = dict(_compiler_state)
+    s.pop("groups", None)
+    s["folder"] = str(s.get("folder", ""))
+    return JsonResponse(s)
+
+
 # ── Синхронизация ─────────────────────────────────────────────────────────────
 
 _sync_lock = threading.Lock()
