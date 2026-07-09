@@ -44,6 +44,10 @@
     </div>
     {% endif %}
 
+    <div class="grid-x">
+        {% include "sopds_footer.html" %}
+    </div><!-- footer -->
+
     {% block content %}
     <div class="grid-x">
         {% block ext-body %} {% endblock %}  {# ext-body #}
@@ -52,11 +56,6 @@
         {# {% endcache %} #}
     </div> <!-- content -->
     {% endblock %}  {# content #}
-
-
-    <div class="grid-x">
-        {% include "sopds_footer.html" %}
-    </div><!-- footer -->
 </div><!-- conntainer -->
 
   <script src="{% static "js/vendor/jquery.min.js" %}"></script>
