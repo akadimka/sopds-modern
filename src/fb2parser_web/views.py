@@ -1786,10 +1786,12 @@ def fb2parser_settings(request):
         sm.set_genderize_api_key(request.POST.get('genderize_api_key', '').strip())
         sm.set_generate_csv(request.POST.get('generate_csv') == 'on')
         sm.save()
-        ctx = _ctx("settings", "Настройки")
-        ctx['saved'] = True
-    else:
-        ctx = _ctx("settings", "Настройки")
+        from django.shortcuts import redirect as _redir
+        from django.urls import reverse as _rev
+        return _redir(_rev('fb2parser:fb2parser_settings') + '?saved=1')
+
+    ctx = _ctx("settings", "Настройки")
+    ctx['saved'] = request.GET.get('saved') == '1'
 
     ctx['library_path']       = sm.get_library_path()
     ctx['genres_file_path']   = sm.get_genres_file_path()
