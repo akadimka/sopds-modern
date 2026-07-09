@@ -73,7 +73,7 @@
                     <tr>
                         <td>{{ b.title|truncatechars:50 }}</td>
                         <td>{{ b.format }}</td>
-                        <td style="white-space:nowrap;">{{ b.docdate }}</td>
+                        <td style="white-space:nowrap;">{{ b.docdate|date:"d.m.Y" }}</td>
                     </tr>
                     {% endfor %}
                     </tbody>
