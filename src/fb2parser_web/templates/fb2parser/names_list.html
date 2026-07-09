@@ -35,20 +35,20 @@
         {% for r in rows %}
         <tr class="names-row" data-author="{{ r.author }}" data-first-name="{{ r.first_name }}" data-status=""
             style="border-bottom:1px solid #f0f0f0; transition:background 0.3s;">
-            <td style="padding:0.18rem 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;"
+            <td style="padding:0 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px; line-height:1.4rem;"
                 title="{{ r.file_path }}">{{ r.source }}</td>
-            <td style="padding:0.18rem 0.5rem; white-space:nowrap;">
+            <td style="padding:0 0.5rem; white-space:nowrap; line-height:1.4rem;">
                 {% for word in r.author.split %}
                 <span class="names-word" style="cursor:pointer; padding:0 1px;" title="Нажмите — скопировать в «Имя»"
                       onclick="namesWordClick(this, '{{ word|escapejs }}')">{{ word }}</span>
                 {% endfor %}
             </td>
-            <td style="padding:0.18rem 0.3rem;">
+            <td style="padding:0 0.3rem;">
                 <input class="names-first-name" type="text" value="{{ r.first_name }}"
-                       style="margin:0; padding:0.1rem 0.3rem; font-size:0.78rem; width:100%; box-sizing:border-box;">
+                       style="margin:0; padding:0 0.3rem; font-size:0.78rem; width:100%; box-sizing:border-box; height:1.4rem; line-height:1.4rem;">
             </td>
-            <td style="padding:0.18rem 0.5rem; text-align:center;">
-                <select class="names-gender-sel" style="margin:0; font-size:0.78rem; padding:0.1rem 0.2rem; width:80px;">
+            <td style="padding:0 0.5rem; text-align:center;">
+                <select class="names-gender-sel" style="margin:0; font-size:0.78rem; padding:0; width:80px; height:1.4rem;">
                     <option value="">—</option>
                     <option value="М">Муж.</option>
                     <option value="Ж">Жен.</option>
