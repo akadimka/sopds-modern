@@ -282,6 +282,22 @@ def folder_tree(request):
 
 
 @staff_member_required(login_url="/web/login/")
+@staff_member_required
+def server_restart(request):
+    """Touch manage.py to trigger Django dev server autoreload."""
+    import pathlib, threading
+    manage_py = pathlib.Path(__file__).parent.parent / "manage.py"
+    def _touch():
+        import time; time.sleep(0.3)
+        manage_py.touch()
+    threading.Thread(target=_touch, daemon=True).start()
+    return HttpResponse(
+        '<script>setTimeout(function(){location.reload();},2500);</script>'
+        '<span style="color:#27ae60">⟳ Перезагрузка...</span>',
+        content_type="text/html; charset=utf-8",
+    )
+
+
 def folder_count(request):
     """Рекурсивный подсчёт FB2 в папке — вызывается асинхронно после рендера узла."""
     path = request.GET.get("path", "").strip()

@@ -26,6 +26,7 @@ urlpatterns = [
     path("sync/",              views.sync,             name="sync"),
     path("sync/start/",        views.sync_start,       name="sync_start"),
     path("sync/status/",       views.sync_status,      name="sync_status"),
+    path("server-restart/",    views.server_restart,     name="server_restart"),
     path("browse/",            views.browse_folders,     name="browse"),
     path("genre-assign/",        views.genre_assign,        name="genre_assign"),
     path("genre-assign/start/",  views.genre_assign_start,  name="genre_assign_start"),

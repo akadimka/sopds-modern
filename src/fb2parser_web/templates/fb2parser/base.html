@@ -56,6 +56,13 @@
             {% if user.is_superuser %}
             <a href="{% url 'admin:index' %}">Настройки</a>
             {% endif %}
+            <span id="restart-btn"
+                  style="cursor:pointer; color:#e67e22; margin-left:1.2rem; font-size:0.9rem;"
+                  hx-post="{% url 'fb2parser:server_restart' %}"
+                  hx-target="#restart-btn"
+                  hx-swap="innerHTML"
+                  hx-confirm="Перезагрузить сервер?"
+                  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>⟳ Рестарт</span>
             <a href="{% url 'web:logout' %}">Logout ({{ user.username }})</a>
         </div>
     </div>
