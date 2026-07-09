@@ -134,7 +134,7 @@ def statistics(request):
     except Counter.DoesNotExist:
         last_scan = None
     top_genres = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
-    recent_books = Book.objects.order_by("-id")[:10]
+    recent_books = Book.objects.order_by("-id").prefetch_related("genres")[:10]
     return render(request, "fb2parser/statistics.html", _ctx(
         "statistics", "Статистика",
         stats=stats,
