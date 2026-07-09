@@ -29,18 +29,29 @@
 
     <!-- Таблица -->
     <div style="flex:1; overflow:auto; min-height:0;">
-        <table id="norm-table" style="border-collapse:collapse; font-size:0.78rem; width:max-content; min-width:100%;">
+        <table id="norm-table" style="border-collapse:collapse; font-size:0.78rem; table-layout:fixed; width:max-content;">
+            <colgroup>
+                <col id="ntc-0" style="width:240px;">
+                <col id="ntc-1" style="width:180px;">
+                <col id="ntc-2" style="width:160px;">
+                <col id="ntc-3" style="width:110px;">
+                <col id="ntc-4" style="width:160px;">
+                <col id="ntc-5" style="width:160px;">
+                <col id="ntc-6" style="width:110px;">
+                <col id="ntc-7" style="width:180px;">
+                <col id="ntc-8" style="width:140px;">
+            </colgroup>
             <thead style="position:sticky; top:0; z-index:2; background:#34495e; color:#ecf0f1;">
                 <tr>
-                    <th class="nt-th" style="width:240px;">file_path<div class="nt-resizer"></div></th>
-                    <th class="nt-th" style="width:180px;">metadata_authors<div class="nt-resizer"></div></th>
-                    <th class="nt-th nt-proposed" style="width:160px;">proposed_author<div class="nt-resizer"></div></th>
-                    <th class="nt-th nt-src" style="width:110px;">author_source<div class="nt-resizer"></div></th>
-                    <th class="nt-th" style="width:160px;">metadata_series<div class="nt-resizer"></div></th>
-                    <th class="nt-th nt-proposed" style="width:160px;">proposed_series<div class="nt-resizer"></div></th>
-                    <th class="nt-th nt-src" style="width:110px;">series_source<div class="nt-resizer"></div></th>
-                    <th class="nt-th" style="width:180px;">book_title<div class="nt-resizer"></div></th>
-                    <th class="nt-th" style="width:140px;">metadata_genre</th>
+                    <th class="nt-th">file_path<div class="nt-resizer" data-col="0"></div></th>
+                    <th class="nt-th">metadata_authors<div class="nt-resizer" data-col="1"></div></th>
+                    <th class="nt-th nt-proposed">proposed_author<div class="nt-resizer" data-col="2"></div></th>
+                    <th class="nt-th nt-src">author_source<div class="nt-resizer" data-col="3"></div></th>
+                    <th class="nt-th">metadata_series<div class="nt-resizer" data-col="4"></div></th>
+                    <th class="nt-th nt-proposed">proposed_series<div class="nt-resizer" data-col="5"></div></th>
+                    <th class="nt-th nt-src">series_source<div class="nt-resizer" data-col="6"></div></th>
+                    <th class="nt-th">book_title<div class="nt-resizer" data-col="7"></div></th>
+                    <th class="nt-th">metadata_genre</th>
                 </tr>
             </thead>
             <tbody id="norm-tbody"
@@ -147,7 +158,7 @@
 </div>
 
 <style>
-    #norm-table { table-layout: fixed; }
+    #norm-table col { overflow: hidden; }
     .nt-th { padding:0.3rem 0.6rem 0.3rem 0.4rem; font-weight:600; font-size:0.78rem; text-align:left; white-space:nowrap; border-right:1px solid #4a6278; position:relative; user-select:none; overflow:hidden; }
     .nt-th:last-child { border-right:none; }
     .nt-resizer { position:absolute; right:0; top:0; width:5px; height:100%; cursor:col-resize; background:transparent; z-index:1; }
@@ -289,23 +300,33 @@ function normCloseLog() {
     document.getElementById('norm-log-panel').style.display = 'none';
 }
 
-// Изменение ширины столбцов через pointer capture
+// Изменение ширины столбцов через pointer capture + colgroup
+function _ntTableWidth() {
+    var cols = document.querySelectorAll('#norm-table col');
+    var total = 0;
+    cols.forEach(function(c) { total += parseInt(c.style.width) || 0; });
+    return total;
+}
+
 function initResizers() {
     document.querySelectorAll('#norm-table .nt-resizer').forEach(function(r) {
         if (r._resizerBound) return;
         r._resizerBound = true;
         r.addEventListener('pointerdown', function(e) {
             e.preventDefault();
-            var th = r.closest('th');
+            var colIdx = parseInt(r.dataset.col);
+            var col = document.getElementById('ntc-' + colIdx);
+            if (!col) return;
             var startX = e.clientX;
-            var startW = th.offsetWidth;
+            var startW = parseInt(col.style.width) || r.closest('th').offsetWidth;
             r.setPointerCapture(e.pointerId);
             r.classList.add('dragging');
             document.body.classList.add('col-resizing');
 
             function onMove(ev) {
-                var w = Math.max(40, startW + ev.clientX - startX);
-                th.style.width = w + 'px';
+                var w = Math.max(50, startW + ev.clientX - startX);
+                col.style.width = w + 'px';
+                document.getElementById('norm-table').style.width = _ntTableWidth() + 'px';
             }
             function onUp() {
                 r.classList.remove('dragging');
