@@ -1472,10 +1472,19 @@ def compiler_scan(request):
             "done": False, "running": False, "error": None, "log": [],
         })
 
+    _SORT_LABEL = {
+        "series_number": "Номер тома",
+        "filename":      "Имя файла",
+        "title_date":    "Дата (назв.)",
+        "publish_date":  "Дата (изд.)",
+    }
+
+    import json as _json
+
     group_data = []
+    groups_books_js = {}   # idx → {books, dups, excluded, auto_excluded, output_name}
+
     for i, g in enumerate(groups):
-        # Цветовой статус: cleanup_only → серый; alphabetical → голубой;
-        # not order_determined → жёлтый; else → зелёный
         if g.cleanup_only:
             status = "cleanup"
         elif g.alphabetical_order:
@@ -1484,19 +1493,76 @@ def compiler_scan(request):
             status = "partial"
         else:
             status = "ok"
+
+        # Книги группы
+        books_list = []
+        for n, book in enumerate(g.books, 1):
+            title = (getattr(book.record, 'file_title', '') or
+                     getattr(book.record, 'book_title', '') or
+                     book.abs_path.stem)
+            try:
+                sz = book.abs_path.stat().st_size
+                sz_str = f"{sz // 1024} КБ" if sz < 1_048_576 else f"{sz / 1_048_576:.1f} МБ"
+            except Exception:
+                sz_str = "—"
+            vol = book.volume_label or ("α" if g.alphabetical_order else ("?" if book.order_ambiguous else "—"))
+            books_list.append({
+                "n": n,
+                "title": title[:80],
+                "file": book.abs_path.name,
+                "sort_src": _SORT_LABEL.get(book.sort_source, book.sort_source or "—"),
+                "vol": vol,
+                "ambiguous": book.order_ambiguous,
+                "size": sz_str,
+            })
+
+        # Дубликаты, исключённые
+        dups_list = [str(p) for p in (g.duplicate_paths or [])]
+        excl_list = [str(p) for p in (g.excluded_paths or [])]
+        auto_excl = [str(p) for p in (g.auto_excluded_paths or [])]
+        kept_list = [str(p) for p in (g.kept_paths or [])]
+
+        # Предпросмотр имени выходного файла
+        try:
+            n_vols = len(g.books)
+            vol_m = re.match(r'^(\d+)-(\d+)$', g.volume_range or '')
+            lo = int(vol_m.group(1)) if vol_m else 0
+            hi = int(vol_m.group(2)) if vol_m else 0
+            suffix = svc._series_suffix(n_vols, lo, hi, g.part_count,
+                                         series_complete=g.series_complete)
+            clean_s = FB2CompilerService._clean_series_name(g.series)
+            safe_a = re.sub(r'[\\/:*?"<>|]', '_', g.author)
+            safe_s = re.sub(r'[/:*?"<>|]', '_', FB2CompilerService._series_to_display(clean_s))
+            if suffix:
+                suffix = svc._suppress_redundant_suffix(safe_s, suffix)
+            out_name = f"{safe_a} - {safe_s} ({suffix}).fb2" if suffix else f"{safe_a} - {safe_s}.fb2"
+        except Exception:
+            out_name = ""
+
+        series_disp = FB2CompilerService._series_to_display(g.series)
         group_data.append({
             "idx": i,
             "author": g.author,
-            "series": FB2CompilerService._series_to_display(g.series),
+            "series": series_disp,
             "count": len(g.books),
             "range": g.volume_range or "",
             "status": status,
             "cleanup_only": g.cleanup_only,
         })
+        groups_books_js[i] = {
+            "books": books_list,
+            "dups": dups_list,
+            "excluded": excl_list,
+            "auto_excluded": auto_excl,
+            "kept": kept_list,
+            "output_name": out_name,
+            "cleanup_only": g.cleanup_only,
+        }
 
     return render(request, "fb2parser/compiler_groups.html", {
         "groups": group_data,
         "total": len(groups),
+        "groups_books_json": _json.dumps(groups_books_js, ensure_ascii=False),
     })
 
 
