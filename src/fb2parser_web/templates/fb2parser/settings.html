@@ -76,7 +76,7 @@
 <div class="s-field">
     <label>Путь к библиотеке</label>
     <div class="s-row">
-        <input type="text" name="library_path" id="inp-library_path" value="{{ library_path }}" placeholder="Корневой путь к FB2-файлам">
+        <input type="text" name="library_path" id="library_path" value="{{ library_path }}" placeholder="Корневой путь к FB2-файлам">
         <button type="button" class="fb-browse-btn" onclick="openBrowser('library_path')"
                 style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
     </div>
@@ -87,7 +87,7 @@
 <div class="s-field">
     <label>Путь к файлу жанров (genres.xml)</label>
     <div class="s-row">
-        <input type="text" name="genres_file_path" id="inp-genres_file_path" value="{{ genres_file_path }}" placeholder="Путь к genres.xml">
+        <input type="text" name="genres_file_path" id="genres_file_path" value="{{ genres_file_path }}" placeholder="Путь к genres.xml">
         <button type="button" class="fb-browse-btn" onclick="openBrowser('genres_file_path')"
                 style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
     </div>
@@ -104,8 +104,8 @@
 <div class="s-field">
     <label>API-ключ Genderize.io</label>
     <div class="s-row">
-        <input type="text" name="genderize_api_key" id="inp-genderize_api_key" value="{{ genderize_api_key }}" placeholder="Необязательно (без ключа — 100 запросов/день)">
-        <button type="button" onclick="document.getElementById('inp-genderize_api_key').value=''"
+        <input type="text" name="genderize_api_key" id="genderize_api_key" value="{{ genderize_api_key }}" placeholder="Необязательно (без ключа — 100 запросов/день)">
+        <button type="button" onclick="document.getElementById('genderize_api_key').value=''"
                 style="padding:0.35rem 0.6rem; font-size:0.82rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">✕ Очистить</button>
     </div>
     <div class="s-hint">Без ключа доступно 100 бесплатных запросов в день.</div>
