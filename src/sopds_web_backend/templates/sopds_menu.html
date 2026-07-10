@@ -11,11 +11,11 @@
 	    <li {% if current == "series" %} class="active" {% endif %}><a href="{% url "web:series" %}?lang=0">{% trans "Series" %}</a></li>
 	  </ul>
 	  <div style="display:flex; align-items:center; gap:0.5rem; padding-right:0.7rem;">
-	    {% include "sopds_scan_status.html" %}
-	    <button class="button small" style="margin:0; padding:0.3rem 0.8rem; font-size:0.82rem; background:#e8580c;"
+	    <span id="sopds-scan-status"></span>
+	    <button class="button small" style="margin:0; padding:0.3rem 0.8rem; font-size:0.82rem; background:#c0392b; border-color:#c0392b;"
 	            hx-post="{% url 'web:scan_start' %}"
 	            hx-target="#sopds-scan-status"
-	            hx-swap="outerHTML">
+	            hx-swap="innerHTML">
 	      🔄 {% trans "Scan" %}
 	    </button>
 	  </div>
