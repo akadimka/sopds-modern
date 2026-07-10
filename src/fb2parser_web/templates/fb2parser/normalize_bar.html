@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if state.running %}
 <div id="norm-bar-inner"
      hx-get="{% url 'fb2parser:normalize_status' %}"
@@ -16,19 +17,19 @@
 {% elif state.done %}
 <div id="norm-bar-inner" data-norm-done="1" data-norm-folder="{{ state.folder }}" style="display:flex; align-items:center; gap:0.6rem; width:100%;">
     <span style="color:#27ae60; font-size:1rem;">✓</span>
-    <span style="color:#27ae60; font-weight:600;">Готово:</span>
-    <span style="font-weight:600;">{{ state.records_total }} записей</span>
+    <span style="color:#27ae60; font-weight:600;">{% trans "Done:" %}</span>
+    <span style="font-weight:600;">{{ state.records_total }} {% trans "records" %}</span>
     <span style="color:#7f8c8d; font-size:0.78rem;">·</span>
     <span style="color:#7f8c8d; font-size:0.78rem; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%;">{{ state.folder }}</span>
 </div>
 {% elif state.error %}
 <div id="norm-bar-inner" style="display:flex; align-items:center; gap:0.5rem; width:100%;">
-    <span style="color:#c0392b; font-weight:600;">❌ Ошибка:</span>
+    <span style="color:#c0392b; font-weight:600;">{% trans "❌ Error:" %}</span>
     <span style="color:#c0392b; font-family:monospace; font-size:0.78rem;">{{ state.error }}</span>
 </div>
 {% else %}
 <div id="norm-bar-inner" style="display:flex; align-items:center; gap:0.5rem; width:100%;">
-    <span style="color:#6c757d;">Готово к работе.</span>
-    <span style="color:#95a5a6; font-size:0.78rem;">Выберите папку и нажмите «Создать CSV».</span>
+    <span style="color:#6c757d;">{% trans "Ready." %}</span>
+    <span style="color:#95a5a6; font-size:0.78rem;">{% trans 'Select a folder and click "Create CSV".' %}</span>
 </div>
 {% endif %}

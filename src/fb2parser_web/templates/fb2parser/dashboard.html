@@ -1,17 +1,32 @@
 {% extends "fb2parser/base.html" %}
 {% load static %}
+{% load i18n %}
 {% block content %}
+<script>
+var JS_STR_LOADING_TREE = "{% trans 'Loading folder tree...' %}";
+var JS_STR_PREPARING = "{% trans 'Preparing...' %}";
+var JS_STR_APPLY_BTN = "{% trans '▶ Apply to selected folders' %}";
+var JS_STR_ERROR = "{% trans '⚠ error' %}";
+var JS_STR_UNKNOWN_ERROR = "{% trans 'Unknown error' %}";
+var JS_STR_DONE_PREFIX = "{% trans 'Done: ' %}";
+var JS_STR_FOLDERS_SUFFIX = "{% trans ' folders' %}";
+var JS_STR_ERRORS_SUFFIX = "{% trans ', errors: ' %}";
+var JS_STR_SELECTED = "{% trans 'selected' %}";
+var JS_STR_FOLDER_ONE = "{% trans 'folder' %}";
+var JS_STR_FOLDER_FEW = "{% trans 'folders' %}";
+var JS_STR_FOLDER_MANY = "{% trans 'folders' %}";
+</script>
 <div style="display:flex; flex-direction:column; height:calc(100vh - 112px); margin:-1.5rem 0 0;">
 
-    <!-- Тулбар -->
+    <!-- Toolbar -->
     <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.7rem; background:#f8f9fa; border-bottom:2px solid #dee2e6; flex-shrink:0;">
-        <span style="font-size:0.88rem; color:#495057; white-space:nowrap; font-weight:500;">Папка для обработки:</span>
+        <span style="font-size:0.88rem; color:#495057; white-space:nowrap; font-weight:500;">{% trans "Folder to process:" %}</span>
         <div style="flex:1; position:relative; display:flex; gap:0.4rem; min-width:0;">
             <input id="main-folder" type="text" name="root" value="{{ root }}"
                    style="margin:0; flex:1; font-family:monospace; font-size:0.83rem; min-width:0;"
                    placeholder="/path/to/library">
             <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap; padding:0.5rem 0.8rem;"
-                    onclick="openBrowser('main-folder')">📁 Обзор</button>
+                    onclick="openBrowser('main-folder')">{% trans "📁 Browse" %}</button>
             <div id="fb-browser-main-folder" class="fb-browser-wrap"
                  style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:500;"></div>
         </div>
@@ -21,84 +36,84 @@
                 hx-target="#main-statusbar"
                 hx-swap="innerHTML"
                 hx-indicator="#scan-spinner">
-            ▶ Сканировать
+            {% trans "▶ Scan" %}
         </button>
-        <span id="scan-spinner" class="htmx-indicator" style="font-size:0.82rem; color:#7f8c8d; white-space:nowrap;">Запуск...</span>
+        <span id="scan-spinner" class="htmx-indicator" style="font-size:0.82rem; color:#7f8c8d; white-space:nowrap;">{% trans "Starting..." %}</span>
         <button type="button" class="button secondary" style="margin:0; white-space:nowrap; flex-shrink:0;"
-                onclick="toggleMainView()">⇄ Вид</button>
+                onclick="toggleMainView()">{% trans "⇄ View" %}</button>
     </div>
 
-    <!-- Основная рабочая область -->
+    <!-- Main work area -->
     <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; min-height:0; position:relative;">
 
-        <!-- Режим дерева папок -->
+        <!-- Folder tree mode -->
         <div id="tree-view" style="flex:1; overflow-y:auto; padding:0.3rem 0; position:relative;">
             {% if root %}
             <div id="tree-content"
                  hx-get="{% url 'fb2parser:folder_tree' %}?path={{ root|urlencode }}"
                  hx-trigger="load"
                  hx-swap="outerHTML">
-                <div style="padding:1.5rem; color:#7f8c8d; text-align:center;">Загрузка дерева папок...</div>
+                <div style="padding:1.5rem; color:#7f8c8d; text-align:center;">{% trans "Loading folder tree..." %}</div>
             </div>
             {% else %}
             <div style="padding:2rem; text-align:center; color:#7f8c8d;">
                 <div style="font-size:1.5rem; margin-bottom:0.5rem;">📁</div>
-                Укажите папку для отображения структуры
+                {% trans "Specify a folder to display the structure" %}
             </div>
             {% endif %}
 
-            <!-- Панель выбора жанра (overlay поверх дерева, справа) -->
+            <!-- Genre picker panel (overlay over tree, on the right) -->
             <div id="genre-picker-panel" style="display:none; position:absolute; top:0; right:0; width:300px; height:100%; background:#fff; border-left:2px solid #dee2e6; box-shadow:-6px 0 18px rgba(0,0,0,0.12); display:none; flex-direction:column; z-index:200;">
                 <div style="background:#34495e; color:#ecf0f1; padding:0.4rem 0.7rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                    <strong style="font-size:0.88rem;">Выбор жанра</strong>
+                    <strong style="font-size:0.88rem;">{% trans "Genre Selection" %}</strong>
                     <button onclick="gpClose()" style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1rem; padding:0; line-height:1;">✕</button>
                 </div>
                 <div style="padding:0.4rem 0.5rem; border-bottom:1px solid #eee; flex-shrink:0;">
-                    <input id="gp-filter" type="text" placeholder="Фильтр жанров..."
+                    <input id="gp-filter" type="text" placeholder="{% trans 'Filter genres...' %}"
                            style="margin:0; font-size:0.82rem;"
                            oninput="gpFilter(this.value)">
                 </div>
                 <div id="gp-list" style="flex:1; overflow-y:auto;">
-                    <div style="padding:0.5rem; color:#7f8c8d; font-size:0.82rem;">Загрузка...</div>
+                    <div style="padding:0.5rem; color:#7f8c8d; font-size:0.82rem;">{% trans "Loading..." %}</div>
                 </div>
                 <div style="padding:0.5rem 0.7rem; border-top:1px solid #eee; flex-shrink:0; background:#f8f9fa;">
-                    <div id="gp-selected-label" style="font-size:0.78rem; color:#7f8c8d; margin-bottom:0.4rem;">Жанр не выбран</div>
+                    <div id="gp-selected-label" style="font-size:0.78rem; color:#7f8c8d; margin-bottom:0.4rem;">{% trans "No genre selected" %}</div>
                     <button id="gp-apply-btn" class="button warning" style="width:100%; margin:0;"
                             disabled onclick="gpApply()">
-                        ▶ Применить к выбранным папкам
+                        {% trans "▶ Apply to selected folders" %}
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Режим результатов: 3 панели -->
+        <!-- Results mode: 3 panels -->
         <div id="results-view" style="display:none; flex:1; overflow:hidden;">
             <div id="results-content" style="display:flex; height:100%; gap:0; border-top:1px solid #dee2e6;">
                 <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #dee2e6; min-width:0;">
-                    <div style="background:#34495e; color:#ecf0f1; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">Жанры</div>
-                    <div id="genres-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;"><div style="padding:0.5rem; color:#7f8c8d;">Выполните сканирование</div></div>
+                    <div style="background:#34495e; color:#ecf0f1; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">{% trans "Genres" %}</div>
+                    <div id="genres-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;"><div style="padding:0.5rem; color:#7f8c8d;">{% trans "Run a scan" %}</div></div>
                 </div>
                 <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #dee2e6; min-width:0;">
-                    <div style="background:#c0392b; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">Ошибки/Замечания</div>
-                    <div id="errors-panel" style="flex:1; overflow-y:auto; font-size:0.78rem; font-family:monospace;"><div style="padding:0.5rem; color:#7f8c8d; font-family:sans-serif;">Нет данных</div></div>
+                    <div style="background:#c0392b; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">{% trans "Errors/Notes" %}</div>
+                    <div id="errors-panel" style="flex:1; overflow-y:auto; font-size:0.78rem; font-family:monospace;"><div style="padding:0.5rem; color:#7f8c8d; font-family:sans-serif;">{% trans "No data" %}</div></div>
                 </div>
                 <div style="flex:1.5; display:flex; flex-direction:column; min-width:0;">
-                    <div style="background:#2980b9; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">Детали</div>
-                    <div id="details-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;"><div style="padding:0.5rem; color:#7f8c8d;">Выберите жанр слева</div></div>
+                    <div style="background:#2980b9; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">{% trans "Details" %}</div>
+                    <div id="details-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;"><div style="padding:0.5rem; color:#7f8c8d;">{% trans "Select a genre on the left" %}</div></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Бар выделения (появляется при выборе папок) -->
+    <!-- Selection bar (appears when folders are selected) -->
     <div id="selection-bar" style="display:none; align-items:center; gap:0.7rem; padding:0.4rem 0.8rem; background:#2c3e50; color:#ecf0f1; flex-shrink:0; border-top:2px solid #f39c12;">
         <span id="sel-count" style="font-size:0.85rem; font-weight:500;"></span>
         <button class="button warning" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
-                onclick="gpOpen()">🏷️ Присвоить жанр</button>
+                onclick="gpOpen()">{% trans "🏷️ Assign Genre" %}</button>
         <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
-                onclick="selAll()">☑ Выбрать все</button>
+                onclick="selAll()">{% trans "☑ Select All" %}</button>
         <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
-                onclick="selClear()">✕ Снять выделение</button>
+                onclick="selClear()">{% trans "✕ Clear Selection" %}</button>
         <div id="gp-progress" style="display:none; flex-direction:column; gap:0.2rem; max-width:360px;">
             <div style="background:rgba(255,255,255,0.2); border-radius:3px; height:6px; overflow:hidden;">
                 <div id="gp-progress-bar" style="width:0%; background:#f39c12; height:100%; transition:width 0.25s;"></div>
@@ -108,15 +123,15 @@
         <div id="sel-result" style="font-size:0.82rem; margin-left:auto; white-space:nowrap;"></div>
     </div>
 
-    <!-- Строка статуса -->
+    <!-- Status bar -->
     <div id="main-statusbar" style="border-top:1px solid #dee2e6; padding:0.3rem 0.7rem; font-size:0.8rem; background:#f8f9fa; flex-shrink:0; min-height:1.8rem; display:flex; align-items:center; gap:0.5rem;">
         {% if state.running %}
         {% include "fb2parser/main_scan_statusbar.html" with state=state pct=0 %}
         {% elif state.done %}
-        <span style="color:#27ae60;">✓ Сканирование завершено:</span>
-        <span>добавлено {{ state.books_added }}, пропущено {{ state.books_skipped }}, ошибок {{ state.bad_books }}</span>
+        <span style="color:#27ae60;">{% trans "✓ Scan complete:" %}</span>
+        <span>{% blocktrans with added=state.books_added skipped=state.books_skipped errors=state.bad_books %}added {{ added }}, skipped {{ skipped }}, errors {{ errors }}{% endblocktrans %}</span>
         {% else %}
-        <span style="color:#6c757d;">Готово к работе</span>
+        <span style="color:#6c757d;">{% trans "Ready" %}</span>
         {% endif %}
     </div>
 </div>
@@ -129,7 +144,7 @@ var _gpLoaded = false;
 var ASSIGN_URL = "{% url 'fb2parser:assign_genre_multi' %}";
 var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
 
-/* ── Вид (дерево / результаты) ─────────────────────────── */
+/* ── View (tree / results) ─────────────────────────── */
 function toggleMainView() {
     if (_currentView === 'tree') {
         document.getElementById('tree-view').style.display = 'none';
@@ -175,12 +190,12 @@ document.getElementById('main-folder').addEventListener('change', function() {
 function reloadTree(path) {
     selClear();
     document.getElementById('tree-view').innerHTML =
-        '<div style="padding:1.5rem; color:#7f8c8d; text-align:center;">Загрузка дерева папок...</div>';
+        '<div style="padding:1.5rem; color:#7f8c8d; text-align:center;">' + JS_STR_LOADING_TREE + '</div>';
     htmx.ajax('GET', fbFolderTreeUrl + '?path=' + encodeURIComponent(path),
               {target: '#tree-view', swap: 'innerHTML'});
 }
 
-/* ── Выделение папок ────────────────────────────────────── */
+/* ── Folder selection ────────────────────────────────────── */
 function _ftreeApplyCb(cb, checked) {
     var path = cb.dataset.path;
     var nodeId = cb.dataset.nodeId;
@@ -243,7 +258,7 @@ function selUpdateBar() {
     var bar = document.getElementById('selection-bar');
     if (n > 0) {
         bar.style.display = 'flex';
-        document.getElementById('sel-count').textContent = n + ' ' + _plural(n, 'папка', 'папки', 'папок') + ' выбрано';
+        document.getElementById('sel-count').textContent = n + ' ' + _plural(n, JS_STR_FOLDER_ONE, JS_STR_FOLDER_FEW, JS_STR_FOLDER_MANY) + ' ' + JS_STR_SELECTED;
         document.getElementById('sel-result').textContent = '';
     } else {
         bar.style.display = 'none';
@@ -252,7 +267,7 @@ function selUpdateBar() {
 }
 
 function selAll() {
-    // Только верхний уровень (не внутри .ftree-children) — каскад сам пойдёт вниз
+    // Top level only (not inside .ftree-children) — cascade will go down
     document.querySelectorAll('#tree-view .ftree-checkbox').forEach(function(cb) {
         if (!cb.closest('.ftree-children') && !cb.checked) {
             cb.checked = true;
@@ -280,7 +295,7 @@ function _plural(n, one, few, many) {
     return many;
 }
 
-/* ── Панель выбора жанра ────────────────────────────────── */
+/* ── Genre picker panel ────────────────────────────────── */
 function gpOpen() {
     var panel = document.getElementById('genre-picker-panel');
     panel.style.display = 'flex';
@@ -330,7 +345,7 @@ async function gpApply() {
     progressWrap.style.display = 'flex';
     progressBar.style.width = '0%';
     progressBar.style.background = '#f39c12';
-    progressLabel.textContent = 'Подготовка...';
+    progressLabel.textContent = JS_STR_PREPARING;
     resultEl.textContent = '';
 
     var ok = 0, fail = 0;
@@ -340,7 +355,7 @@ async function gpApply() {
         var nodeId = entries[i][1];
         var folderName = path.replace(/\\/g, '/').split('/').pop();
 
-        // Обновляем прогресс
+        // Update progress
         var pct = Math.round(i / total * 100);
         progressBar.style.width = pct + '%';
         progressLabel.textContent = folderName;
@@ -365,17 +380,17 @@ async function gpApply() {
             } else {
                 fail++;
                 if (badge) {
-                    badge.textContent = '⚠ ошибка';
+                    badge.textContent = JS_STR_ERROR;
                     badge.className = 'ftree-badge error';
                     badge.style.display = 'inline-block';
-                    badge.title = (res && res.error) || 'Неизвестная ошибка';
+                    badge.title = (res && res.error) || JS_STR_UNKNOWN_ERROR;
                 }
             }
         } catch(e) {
             fail++;
             var badge2 = document.getElementById('badge-' + nodeId);
             if (badge2) {
-                badge2.textContent = '⚠ ошибка';
+                badge2.textContent = JS_STR_ERROR;
                 badge2.className = 'ftree-badge error';
                 badge2.style.display = 'inline-block';
                 badge2.title = String(e);
@@ -383,14 +398,14 @@ async function gpApply() {
         }
     }
 
-    // Финальное состояние
+    // Final state
     progressBar.style.width = '100%';
     progressBar.style.background = fail ? '#c0392b' : '#27ae60';
-    progressLabel.textContent = 'Готово: ' + ok + ' папок' + (fail ? ', ошибок: ' + fail : '');
-    btn.textContent = '▶ Применить к выбранным папкам';
+    progressLabel.textContent = JS_STR_DONE_PREFIX + ok + JS_STR_FOLDERS_SUFFIX + (fail ? JS_STR_ERRORS_SUFFIX + fail : '');
+    btn.textContent = JS_STR_APPLY_BTN;
     btn.disabled = false;
 
-    // Закрываем через 2 секунды чтобы пользователь увидел итог
+    // Close after 2 seconds so user can see the result
     setTimeout(function() {
         progressWrap.style.display = 'none';
         progressBar.style.width = '0%';

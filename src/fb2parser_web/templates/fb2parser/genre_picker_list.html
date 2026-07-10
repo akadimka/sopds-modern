@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if error %}
 <div style="padding:0.7rem; color:#c0392b; font-size:0.82rem;">⚠ {{ error }}</div>
 {% elif names %}
@@ -9,5 +10,5 @@
 </div>
 {% endfor %}
 {% else %}
-<div style="padding:0.7rem; color:#7f8c8d; font-size:0.82rem;">Жанры не найдены</div>
+<div style="padding:0.7rem; color:#7f8c8d; font-size:0.82rem;">{% trans "Genres not found" %}</div>
 {% endif %}

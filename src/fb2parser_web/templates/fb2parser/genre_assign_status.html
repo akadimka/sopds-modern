@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if state.running %}
 <div id="assign-status"
      hx-get="{% url 'fb2parser:genre_assign_status' %}"
@@ -5,7 +6,7 @@
      hx-target="#assign-status"
      hx-swap="outerHTML">
     <div class="callout primary" style="margin-top:0.7rem;">
-        <strong>⏳ Присвоение жанра...</strong>
+        <strong>{% trans "⏳ Assigning genre..." %}</strong>
         {% if state.current %}<div style="font-size:0.78rem; color:#555; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.current }}</div>{% endif %}
     </div>
     {% if state.total > 0 %}
@@ -18,17 +19,17 @@
 {% elif state.done %}
 <div id="assign-status" style="margin-top:0.7rem;">
     <div class="callout success">
-        <strong>✅ Готово</strong> — обработано файлов: <strong>{{ state.count }}</strong>
+        <strong>{% trans "✅ Done" %}</strong> — {% trans "files processed:" %} <strong>{{ state.count }}</strong>
     </div>
 
 {% elif state.error %}
 <div id="assign-status" style="margin-top:0.7rem;">
     <div class="callout alert">
-        <strong>❌ Ошибка:</strong> {{ state.error }}
+        <strong>{% trans "❌ Error:" %}</strong> {{ state.error }}
     </div>
 
 {% else %}
 <div id="assign-status" style="margin-top:0.7rem;">
-    <div class="callout secondary" style="font-size:0.85rem;">Операция не запущена.</div>
+    <div class="callout secondary" style="font-size:0.85rem;">{% trans "Operation not started." %}</div>
 {% endif %}
 </div>

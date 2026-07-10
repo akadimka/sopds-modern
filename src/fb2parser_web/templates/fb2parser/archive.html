@@ -1,9 +1,10 @@
 {% extends "fb2parser/base.html" %}
+{% load i18n %}
 {% block content %}
-<h2> Заархивировать</h2>
+<h2>{% trans "Archive" %}</h2>
 <div class="fb2-stub">
-    <h3>Заархивировать</h3>
-    <p>Архивация файлов библиотеки.</p>
-    <p><em>— В разработке —</em></p>
+    <h3>{% trans "Archive" %}</h3>
+    <p>{% trans "Library file archiving." %}</p>
+    <p><em>{% trans "— Under development —" %}</em></p>
 </div>
 {% endblock %}

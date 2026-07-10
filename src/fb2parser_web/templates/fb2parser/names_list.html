@@ -1,23 +1,24 @@
+{% load i18n %}
 {% if rows %}
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0; gap:0.4rem; flex-wrap:wrap;">
     <span style="font-size:0.82rem; color:#495057;">
-        Найдено <strong>{{ rows|length }}</strong> авторов с неопределённым полом.
+        {% trans "Found" %} <strong>{{ rows|length }}</strong> {% trans "authors with undetermined gender." %}
     </span>
     <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
         <button class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem;"
-                onclick="namesMassSet('М')">Все — Муж.</button>
+                onclick="namesMassSet('М')">{% trans "All — Male" %}</button>
         <button class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem;"
-                onclick="namesMassSet('Ж')">Все — Жен.</button>
+                onclick="namesMassSet('Ж')">{% trans "All — Female" %}</button>
         <button id="names-check-btn" class="button" style="margin:0; padding:0.3rem 0.8rem; font-size:0.8rem; background:#2980b9;"
-                onclick="namesCheckOnline()">🌐 Сверить онлайн</button>
+                onclick="namesCheckOnline()">{% trans "🌐 Check online" %}</button>
         <button id="names-retry-btn" class="button secondary" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem; display:none;"
-                onclick="namesRetryErrors()">↺ Повторить ошибочные</button>
+                onclick="namesRetryErrors()">{% trans "↺ Retry errors" %}</button>
     </div>
 </div>
 
 <!-- Прогресс онлайн-проверки -->
 <div id="names-check-progress" style="display:none; font-size:0.79rem; color:#555; margin-bottom:0.3rem; flex-shrink:0;">
-    <span id="names-check-cnt">0</span> / <span id="names-check-total">0</span> проверено
+    <span id="names-check-cnt">0</span> / <span id="names-check-total">0</span> {% trans "checked" %}
     <span id="names-check-status" style="margin-left:0.5rem;"></span>
 </div>
 
@@ -25,10 +26,10 @@
     <table style="border-collapse:collapse; font-size:0.8rem; width:100%;">
         <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
             <tr>
-                <th style="padding:0.3rem 0.5rem; text-align:left; width:100px;">Источник</th>
-                <th style="padding:0.3rem 0.5rem; text-align:left;">Автор</th>
-                <th style="padding:0.3rem 0.5rem; text-align:left; width:150px;">Имя</th>
-                <th style="padding:0.3rem 0.5rem; text-align:center; width:90px;">Пол</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left; width:100px;">{% trans "Source" %}</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left;">{% trans "Author" %}</th>
+                <th style="padding:0.3rem 0.5rem; text-align:left; width:150px;">{% trans "First name" %}</th>
+                <th style="padding:0.3rem 0.5rem; text-align:center; width:90px;">{% trans "Gender" %}</th>
             </tr>
         </thead>
         <tbody id="names-tbody">
@@ -39,7 +40,7 @@
                 title="{{ r.file_path }}">{{ r.source }}</td>
             <td style="padding:0 0.5rem; white-space:nowrap; line-height:1.4rem;">
                 {% for word in r.author.split %}
-                <span class="names-word" style="cursor:pointer; padding:0 1px;" title="Нажмите — скопировать в «Имя»"
+                <span class="names-word" style="cursor:pointer; padding:0 1px;" title="{% trans 'Click — copy to «First name»' %}"
                       onclick="namesWordClick(this, '{{ word|escapejs }}')">{{ word }}</span>
                 {% endfor %}
             </td>
@@ -50,8 +51,8 @@
             <td style="padding:0 0.5rem; text-align:center;">
                 <select class="names-gender-sel" style="margin:0; font-size:0.78rem; padding:0; width:80px; height:1.4rem;">
                     <option value="">—</option>
-                    <option value="М">Муж.</option>
-                    <option value="Ж">Жен.</option>
+                    <option value="М">{% trans "Male" %}</option>
+                    <option value="Ж">{% trans "Female" %}</option>
                 </select>
             </td>
         </tr>
@@ -73,6 +74,10 @@
     var checkUrl = "{% url 'fb2parser:names_check_online' %}";
     var csrfToken = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
     var _checkRunning = false;
+
+    var MSG_CONN_ERROR  = "{% trans '❌ Connection error' %}";
+    var MSG_HAS_ERRORS  = "{% trans '⚠ Has errors' %}";
+    var MSG_DONE        = "{% trans '✓ Done' %}";
 
     window.namesWordClick = function(span, word) {
         var row = span.closest('.names-row');
@@ -136,7 +141,7 @@
             }
             read();
         }).catch(function(e) {
-            document.getElementById('names-check-status').textContent = '❌ Ошибка соединения';
+            document.getElementById('names-check-status').textContent = MSG_CONN_ERROR;
             _checkRunning = false;
             document.getElementById('names-check-btn').disabled = false;
         });
@@ -145,7 +150,7 @@
     function _finishCheck(has_errors) {
         _checkRunning = false;
         document.getElementById('names-check-btn').disabled = false;
-        document.getElementById('names-check-status').textContent = has_errors ? '⚠ Есть ошибки' : '✓ Готово';
+        document.getElementById('names-check-status').textContent = has_errors ? MSG_HAS_ERRORS : MSG_DONE;
         if (has_errors) document.getElementById('names-retry-btn').style.display = 'inline-block';
     }
 
@@ -210,6 +215,6 @@
 </script>
 {% else %}
 <div style="padding:2rem; text-align:center; color:#27ae60; font-size:0.9rem;">
-    ✓ Все авторы уже имеют определённый пол — ничего добавлять не нужно.
+    {% trans "✓ All authors already have a defined gender — nothing to add." %}
 </div>
 {% endif %}

@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if diag %}
 <div style="font-size:0.72rem; color:#546e7a; background:#f5f5f5; padding:0.3rem 0.5rem; border-radius:3px; margin-bottom:0.4rem; word-break:break-all; flex-shrink:0;">
     🔍 DIAG: {{ diag }}
@@ -8,22 +9,20 @@
 
 {% elif not groups %}
 <div style="padding:2rem; text-align:center; color:#27ae60; font-size:0.9rem;">
-    ✓ Дубликаты не найдены ({{ total_files }} файлов проверено).
+    {% trans "✓ No duplicates found" %} ({{ total_files }} {% trans "files checked" %}).
 </div>
 
 {% else %}
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0; gap:0.5rem; flex-wrap:wrap;">
     <span style="font-size:0.83rem; color:#495057;">
-        Найдено <strong>{{ total_dups }}</strong> дублик{{ total_dups|pluralize:"ат,ата,атов" }}
-        из <strong>{{ total_files }}</strong> файлов —
-        можно освободить <strong>{{ total_size }}</strong>.
+        {% trans "Found" %} <strong>{{ total_dups }}</strong> {% trans "duplicate(s) out of" %} <strong>{{ total_files }}</strong> {% trans "files — can free up" %} <strong>{{ total_size }}</strong>.
     </span>
     <div style="display:flex; gap:0.5rem; align-items:center;">
         <button onclick="dupCheckAll()" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem; background:#546e7a; color:#fff; border:none; border-radius:3px; cursor:pointer;">
-            ☑ Снять/Отметить все
+            {% trans "☑ Select/Deselect all" %}
         </button>
         <button id="dup-del-btn" onclick="dupDelete()" style="margin:0; padding:0.3rem 0.7rem; font-size:0.8rem; background:#c0392b; color:#fff; border:none; border-radius:3px; cursor:pointer;">
-            🗑 Удалить отмеченные (<span id="dup-del-cnt">{{ total_dups }}</span>)
+            {% trans "🗑 Delete selected" %} (<span id="dup-del-cnt">{{ total_dups }}</span>)
         </button>
     </div>
 </div>
@@ -31,8 +30,8 @@
 
 <!-- Фильтр по оригиналу -->
 <div style="margin-bottom:0.4rem; flex-shrink:0; display:flex; align-items:center; gap:0.5rem;">
-    <label style="font-size:0.8rem; color:#546e7a; white-space:nowrap;">Фильтр по оригиналу:</label>
-    <input id="dup-src-filter" type="text" placeholder="Введите часть пути оригинала…"
+    <label style="font-size:0.8rem; color:#546e7a; white-space:nowrap;">{% trans "Filter by original:" %}</label>
+    <input id="dup-src-filter" type="text" placeholder="{% trans 'Enter part of original path…' %}"
            oninput="dupFilterSrc(this.value)"
            style="flex:1; font-size:0.8rem; padding:0.2rem 0.4rem; border:1px solid #ccc; border-radius:3px;">
     <button onclick="document.getElementById('dup-src-filter').value=''; dupFilterSrc('');"
@@ -52,18 +51,18 @@
         <tr>
             <th style="padding:0.25rem 0.4rem; text-align:center; overflow:hidden;">✓</th>
             <th style="padding:0.25rem 0.4rem; text-align:left; overflow:hidden; position:relative;">
-                Дубликат (путь)
+                {% trans "Duplicate (path)" %}
                 <span class="dt-resizer" data-col="1" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:rgba(255,255,255,0.15);"></span>
             </th>
             <th style="padding:0.25rem 0.4rem; text-align:left; overflow:hidden; position:relative;">
-                Тип
+                {% trans "Type" %}
                 <span class="dt-resizer" data-col="2" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:rgba(255,255,255,0.15);"></span>
             </th>
             <th style="padding:0.25rem 0.4rem; text-align:left; overflow:hidden; position:relative;">
-                Серия
+                {% trans "Series" %}
                 <span class="dt-resizer" data-col="3" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:rgba(255,255,255,0.15);"></span>
             </th>
-            <th style="padding:0.25rem 0.4rem; text-align:right; overflow:hidden;">Размер</th>
+            <th style="padding:0.25rem 0.4rem; text-align:right; overflow:hidden;">{% trans "Size" %}</th>
         </tr>
     </thead>
     <tbody>
@@ -71,7 +70,7 @@
     <tr class="dup-src-row" data-source="{{ group.source_full }}"
         style="background:#e8f4fd; border-top:2px solid #b0c4d8;">
         <td colspan="5" style="padding:0.2rem 0.5rem; font-size:0.77rem; color:#2c3e50; font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:0;"
-            title="Оригинал: {{ group.source_full }}">
+            title="{% trans 'Original:' %} {{ group.source_full }}">
             📄 {{ group.source_rel }}
         </td>
     </tr>
@@ -108,6 +107,15 @@
 (function(){
     var deleteUrl = "{% url 'fb2parser:duplicates_delete' %}";
     var csrfToken = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+
+    var MSG_CONFIRM_PRE  = "{% trans 'Delete' %}";
+    var MSG_CONFIRM_POST = "{% trans 'file(s) from disk? This action is irreversible.' %}";
+    var MSG_DELETING     = "{% trans 'Deleting...' %}";
+    var MSG_DELETED_PRE  = "{% trans '✓ Deleted:' %}";
+    var MSG_DELETED_POST = "{% trans 'files.' %}";
+    var MSG_ERRORS       = "{% trans 'Errors:' %}";
+    var MSG_ERROR        = "{% trans 'Error' %}";
+    var MSG_CONN_ERROR   = "{% trans '❌ Connection error' %}";
 
     window.dupUpdateCount = function() {
         var cnt = document.querySelectorAll('#dup-table .dup-check:checked').length;
@@ -146,12 +154,12 @@
             if (cb && cb.checked && tr.dataset.fullPath) paths.push(tr.dataset.fullPath);
         });
         if (!paths.length) return;
-        if (!confirm('Удалить ' + paths.length + ' файл(а/ов) с диска? Действие необратимо.')) return;
+        if (!confirm(MSG_CONFIRM_PRE + ' ' + paths.length + ' ' + MSG_CONFIRM_POST)) return;
 
         var btn = document.getElementById('dup-del-btn');
         if (btn) btn.disabled = true;
         var res = document.getElementById('dup-result');
-        if (res) res.textContent = 'Удаление...';
+        if (res) res.textContent = MSG_DELETING;
 
         fetch(deleteUrl, {
             method: 'POST',
@@ -183,16 +191,16 @@
                 });
                 if (res) {
                     res.style.color = '#27ae60';
-                    res.textContent = '✓ Удалено: ' + data.deleted + ' файлов.'
-                        + (data.errors && data.errors.length ? ' Ошибок: ' + data.errors.length : '');
+                    res.textContent = MSG_DELETED_PRE + ' ' + data.deleted + ' ' + MSG_DELETED_POST
+                        + (data.errors && data.errors.length ? ' ' + MSG_ERRORS + ' ' + data.errors.length : '');
                 }
                 dupUpdateCount();
             } else {
-                if (res) { res.style.color = '#c0392b'; res.textContent = '❌ ' + (data.error || 'Ошибка'); }
+                if (res) { res.style.color = '#c0392b'; res.textContent = '❌ ' + (data.error || MSG_ERROR); }
                 if (btn) btn.disabled = false;
             }
         }).catch(function() {
-            if (res) { res.style.color = '#c0392b'; res.textContent = '❌ Ошибка соединения'; }
+            if (res) { res.style.color = '#c0392b'; res.textContent = MSG_CONN_ERROR; }
             if (btn) btn.disabled = false;
         });
     };

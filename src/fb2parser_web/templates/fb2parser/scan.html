@@ -1,21 +1,22 @@
 {% extends "fb2parser/base.html" %}
 {% load static %}
+{% load i18n %}
 {% block content %}
-<h2>🔍 Сканирование библиотеки</h2>
+<h2>{% trans "🔍 Library Scan" %}</h2>
 
 <div class="grid-x grid-margin-x">
     <div class="cell medium-6">
         <div class="card">
-            <div class="card-divider"><strong>Параметры сканирования</strong></div>
+            <div class="card-divider"><strong>{% trans "Scan parameters" %}</strong></div>
             <div class="card-section">
                 {% csrf_token %}
-                <label>Папка с книгами</label>
+                <label>{% trans "Books folder" %}</label>
                 <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                     <input id="scan-root" type="text" name="root" value="{{ root }}"
                            placeholder="/path/to/library"
                            style="font-family:monospace; font-size:0.85rem; margin:0; flex:1;">
                     <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;"
-                            onclick="openBrowser('scan-root')">📁 Обзор</button>
+                            onclick="openBrowser('scan-root')">{% trans "📁 Browse" %}</button>
                 </div>
                 <div id="fb-browser-scan-root" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
                 <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
@@ -27,10 +28,10 @@
                             hx-swap="outerHTML"
                             hx-include="#scan-root"
                             hx-indicator="#scan-spinner">
-                        ▶ Запустить сканирование
+                        {% trans "▶ Start scan" %}
                     </button>
                     <span id="scan-spinner" class="htmx-indicator" style="font-size:0.85rem; color:#7f8c8d;">
-                        Запускаем...
+                        {% trans "Starting..." %}
                     </span>
                 </div>
             </div>
@@ -39,7 +40,7 @@
 
     <div class="cell medium-6">
         <div class="card">
-            <div class="card-divider"><strong>Прогресс</strong></div>
+            <div class="card-divider"><strong>{% trans "Progress" %}</strong></div>
             <div class="card-section">
                 {% include "fb2parser/scan_status.html" with state=state pct=0 %}
             </div>
@@ -50,7 +51,7 @@
 
 {% block extra_js %}
 <script>
-// Если при загрузке страницы сканирование уже идёт — запускаем поллинг
+// If a scan is already running on page load — start polling
 document.addEventListener("DOMContentLoaded", function () {
     htmx.process(document.getElementById("scan-status"));
 });

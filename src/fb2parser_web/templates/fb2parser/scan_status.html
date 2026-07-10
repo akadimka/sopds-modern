@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if state.running %}
 <div id="scan-status"
      hx-get="{% url 'fb2parser:scan_status' %}"
@@ -6,17 +7,17 @@
      hx-swap="outerHTML">
 
     <div class="callout primary" style="margin-bottom:1rem;">
-        <strong>⏳ Сканирование...</strong>
+        <strong>{% trans "⏳ Scanning..." %}</strong>
         {% if state.current %}
         <div style="font-size:0.8rem; color:#555; margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-            Файл: {{ state.current }}
+            {% trans "File:" %} {{ state.current }}
         </div>
         {% endif %}
     </div>
 
     <div style="margin-bottom:0.5rem; font-size:0.85rem;">
-        Обработано: <strong>{{ state.processed }}</strong>
-        {% if state.total > 0 %} из {{ state.total }} ({{ pct }}%){% endif %}
+        {% trans "Processed:" %} <strong>{{ state.processed }}</strong>
+        {% if state.total > 0 %} {% trans "of" %} {{ state.total }} ({{ pct }}%){% endif %}
     </div>
     <div class="progress" style="height:1.5rem; margin-bottom:1rem;">
         <span class="progress-meter" style="width:{{ pct }}%; background:#f39c12;">
@@ -27,17 +28,17 @@
 {% elif state.done %}
 <div id="scan-status">
     <div class="callout success">
-        <strong>✅ Сканирование завершено</strong>
+        <strong>{% trans "✅ Scan complete" %}</strong>
     </div>
     <table class="unstriped" style="max-width:400px; font-size:0.9rem;">
-        <tr><td>Добавлено книг:</td><td><strong>{{ state.books_added }}</strong></td></tr>
-        <tr><td>Пропущено (уже есть):</td><td>{{ state.books_skipped }}</td></tr>
-        <tr><td>Ошибок:</td><td style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</td></tr>
-        <tr><td>Всего обработано:</td><td>{{ state.processed }}</td></tr>
+        <tr><td>{% trans "Books added:" %}</td><td><strong>{{ state.books_added }}</strong></td></tr>
+        <tr><td>{% trans "Skipped (already exist):" %}</td><td>{{ state.books_skipped }}</td></tr>
+        <tr><td>{% trans "Errors:" %}</td><td style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</td></tr>
+        <tr><td>{% trans "Total processed:" %}</td><td>{{ state.processed }}</td></tr>
     </table>
     {% if state.bad_list %}
     <details style="margin-top:1rem;">
-        <summary style="cursor:pointer; font-size:0.9rem; color:#c0392b;">▶ Показать ошибки ({{ state.bad_list|length }})</summary>
+        <summary style="cursor:pointer; font-size:0.9rem; color:#c0392b;">▶ {% trans "Show errors" %} ({{ state.bad_list|length }})</summary>
         <div style="margin-top:0.5rem; max-height:300px; overflow-y:auto; font-size:0.78rem; font-family:monospace; background:#fff5f5; padding:0.5rem; border:1px solid #f5c6cb; border-radius:4px;">
             {% for msg in state.bad_list %}
             <div style="border-bottom:1px solid #f5c6cb; padding:0.2rem 0;">{{ msg }}</div>
@@ -49,13 +50,13 @@
 {% elif state.error %}
 <div id="scan-status">
     <div class="callout alert">
-        <strong>❌ Ошибка:</strong> {{ state.error }}
+        <strong>{% trans "❌ Error:" %}</strong> {{ state.error }}
     </div>
 
 {% else %}
 <div id="scan-status">
     <div class="callout secondary" style="font-size:0.9rem;">
-        Сканирование не запущено.
+        {% trans "Scan not started." %}
     </div>
 {% endif %}
 </div>

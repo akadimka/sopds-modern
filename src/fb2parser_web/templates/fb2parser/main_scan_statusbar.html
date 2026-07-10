@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if state.running %}
 <div hx-get="{% url 'fb2parser:main_scan_status' %}"
      hx-trigger="every 2s"
@@ -12,10 +13,10 @@
     <span style="color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%;">{{ state.current }}</span>
 </div>
 {% elif state.done %}
-<span data-scan-done="1" style="color:#27ae60;">✓ Готово:</span>
-<span>добавлено <strong>{{ state.books_added }}</strong>, пропущено {{ state.books_skipped }}, ошибок <strong style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</strong></span>
+<span data-scan-done="1" style="color:#27ae60;">{% trans "✓ Done:" %}</span>
+<span>{% trans "added" %} <strong>{{ state.books_added }}</strong>, {% trans "skipped" %} {{ state.books_skipped }}, {% trans "errors" %} <strong style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</strong></span>
 {% elif state.error %}
 <span style="color:#c0392b;">❌ {{ state.error }}</span>
 {% else %}
-<span style="color:#6c757d;">Готово к работе</span>
+<span style="color:#6c757d;">{% trans "Ready" %}</span>
 {% endif %}

@@ -1,6 +1,6 @@
-{% load static %}
+{% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -56,71 +56,76 @@
 <body>
 <div class="grid-container fluid">
 
-    <!-- Топ-бар -->
+    <!-- Language switcher hidden forms (outside top bar) -->
+    <form id="fp-lang-en" method="post" action="/i18n/setlang/" style="display:none;">{% csrf_token %}<input type="hidden" name="language" value="en"><input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
+    <form id="fp-lang-ru" method="post" action="/i18n/setlang/" style="display:none;">{% csrf_token %}<input type="hidden" name="language" value="ru"><input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
+
+    <!-- Top bar -->
     <div class="fb2-topbar">
         <div class="fb2-topbar-title">FB2PARSER</div>
         <div class="fb2-topbar-links">
             <a href="{% url 'web:main' %}">→ SOPDS</a>
             {% if user.is_superuser %}
-            <a href="{% url 'fb2parser:fb2parser_settings' %}">Настройки</a>
+            <a href="{% url 'fb2parser:fb2parser_settings' %}">{% trans "Settings" %}</a>
             {% endif %}
+            <span style="font-size:85%;white-space:nowrap;margin:0 0.5rem;">{% if LANGUAGE_CODE == 'en' %}<span style="font-weight:bold;color:#f15a23;">EN</span>{% else %}<a href="#" onclick="document.getElementById('fp-lang-en').submit();return false;">EN</a>{% endif %}<span style="opacity:0.4;margin:0 1px;">/</span>{% if LANGUAGE_CODE == 'ru' %}<span style="font-weight:bold;color:#f15a23;">RU</span>{% else %}<a href="#" onclick="document.getElementById('fp-lang-ru').submit();return false;">RU</a>{% endif %}</span>
             <span id="restart-btn"
                   style="cursor:pointer; color:#e67e22; margin-left:1.2rem; font-size:0.9rem;"
                   hx-post="{% url 'fb2parser:server_restart' %}"
                   hx-target="#restart-btn"
                   hx-swap="innerHTML"
-                  hx-confirm="Перезагрузить сервер?"
-                  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>⟳ Рестарт</span>
+                  hx-confirm="{% trans 'Restart server?' %}"
+                  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>{% trans "⟳ Restart" %}</span>
             <a href="{% url 'web:logout' %}">Logout ({{ user.username }})</a>
         </div>
     </div>
 
-    <!-- Навигационная строка -->
+    <!-- Navigation bar -->
     <div class="fb2-navbar">
         <div class="grid-container fluid">
             <ul class="menu" data-responsive-menu="dropdown">
 
-                <!-- Главная -->
-                <li><a href="{% url 'fb2parser:dashboard' %}">Главная</a></li>
+                <!-- Home -->
+                <li><a href="{% url 'fb2parser:dashboard' %}">{% trans "Home" %}</a></li>
 
-                <!-- Действия -->
+                <!-- Actions -->
                 <li class="is-dropdown-submenu-parent" data-is-click="true">
-                    <a href="#">Действия</a>
+                    <a href="#">{% trans "Actions" %}</a>
                     <ul class="menu is-dropdown-submenu">
-                        <li><a href="{% url 'fb2parser:genre_assign' %}">Присвоение жанра</a></li>
-                        <li><a href="{% url 'fb2parser:normalize' %}">Нормализация</a></li>
-                        <li><a href="#" onclick="openSyncModal(); return false;">Синхронизация</a></li>
-                        <li><a href="{% url 'fb2parser:archive' %}">Заархивировать</a></li>
+                        <li><a href="{% url 'fb2parser:genre_assign' %}">{% trans "Genre Assignment" %}</a></li>
+                        <li><a href="{% url 'fb2parser:normalize' %}">{% trans "Normalization" %}</a></li>
+                        <li><a href="#" onclick="openSyncModal(); return false;">{% trans "Synchronization" %}</a></li>
+                        <li><a href="{% url 'fb2parser:archive' %}">{% trans "Archive" %}</a></li>
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
-                        <li><a href="{% url 'fb2parser:database' %}">База данных</a></li>
+                        <li><a href="{% url 'fb2parser:database' %}">{% trans "Database" %}</a></li>
                     </ul>
                 </li>
 
-                <!-- Жанры -->
-                <li><a href="{% url 'fb2parser:genres' %}">Жанры</a></li>
+                <!-- Genres -->
+                <li><a href="{% url 'fb2parser:genres' %}">{% trans "Genres" %}</a></li>
 
-                <!-- Библиотека -->
+                <!-- Library -->
                 <li class="is-dropdown-submenu-parent" data-is-click="true">
-                    <a href="#">Библиотека</a>
+                    <a href="#">{% trans "Library" %}</a>
                     <ul class="menu is-dropdown-submenu">
-                        <li><a href="{% url 'fb2parser:statistics' %}">Статистика</a></li>
-                        <li><a href="{% url 'fb2parser:search' %}">Поиск по метаданным</a></li>
+                        <li><a href="{% url 'fb2parser:statistics' %}">{% trans "Statistics" %}</a></li>
+                        <li><a href="{% url 'fb2parser:search' %}">{% trans "Metadata Search" %}</a></li>
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
-                        <li><a href="{% url 'fb2parser:new_books' %}">Новые книги</a></li>
-                        <li><a href="{% url 'fb2parser:series_gaps' %}">Серии с пробелами</a></li>
+                        <li><a href="{% url 'fb2parser:new_books' %}">{% trans "New Books" %}</a></li>
+                        <li><a href="{% url 'fb2parser:series_gaps' %}">{% trans "Series with Gaps" %}</a></li>
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
-                        <li><a href="{% url 'fb2parser:integrity' %}">Проверка целостности FB2</a></li>
+                        <li><a href="{% url 'fb2parser:integrity' %}">{% trans "FB2 Integrity Check" %}</a></li>
                     </ul>
                 </li>
 
-                <!-- Лог -->
-                <li><a href="{% url 'fb2parser:log' %}">Лог</a></li>
+                <!-- Log -->
+                <li><a href="{% url 'fb2parser:log' %}">{% trans "Log" %}</a></li>
 
             </ul>
         </div>
     </div>
 
-    <!-- Основной контент -->
+    <!-- Main content -->
     <div class="grid-container fluid fb2-content">
         {% block content %}{% endblock %}
     </div>
@@ -199,7 +204,7 @@ document.addEventListener('htmx:afterSwap', function(e) {
     if (e.target && e.target.classList && e.target.classList.contains('fb-browser-wrap')) {
         htmx.process(e.target);
     }
-    // Активировать hx-trigger="load" на новых узлах дерева папок
+    // Activate hx-trigger="load" on new folder tree nodes
     if (e.target && e.target.classList && e.target.classList.contains('ftree-children')) {
         htmx.process(e.target);
     }
@@ -233,11 +238,11 @@ document.addEventListener('keydown', function(e) {
 <div id="sync-modal-overlay" onclick="if(event.target===this) closeSyncModal();">
     <div id="sync-modal-box">
         <div id="sync-modal-header">
-            <h5>🔄 Синхронизация</h5>
+            <h5>{% trans "🔄 Synchronization" %}</h5>
             <button id="sync-modal-close" onclick="closeSyncModal()">×</button>
         </div>
         <div id="sync-modal-body">
-            <div style="padding:2rem; text-align:center; color:#7f8c8d;">Загрузка...</div>
+            <div style="padding:2rem; text-align:center; color:#7f8c8d;">{% trans "Loading..." %}</div>
         </div>
     </div>
 </div>

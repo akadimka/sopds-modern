@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if records %}
 {% for r in records %}
 <tr class="norm-row">
@@ -19,13 +20,13 @@
                 hx-get="{% url 'fb2parser:normalize_table' %}?offset={{ next_offset }}&q={{ q }}"
                 hx-target="#load-more-row"
                 hx-swap="outerHTML">
-            Загрузить ещё (показано {{ records|length }} из {{ total }})
+            {% blocktrans with count=records|length total=total %}Load more (showing {{ count }} of {{ total }}){% endblocktrans %}
         </button>
     </td>
 </tr>
 {% endif %}
 {% else %}
 <tr><td colspan="9" style="text-align:center; padding:1.5rem; color:#7f8c8d;">
-    {% if q %}Ничего не найдено по запросу «{{ q }}»{% else %}Нет данных — запустите «Создать CSV»{% endif %}
+    {% if q %}{% blocktrans with q=q %}Nothing found for query "{{ q }}"{% endblocktrans %}{% else %}{% trans 'No data — run "Create CSV"' %}{% endif %}
 </td></tr>
 {% endif %}

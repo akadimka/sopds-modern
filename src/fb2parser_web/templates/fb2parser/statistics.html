@@ -1,9 +1,10 @@
 {% extends "fb2parser/base.html" %}
+{% load i18n %}
 {% block content %}
-<h2>📊 Статистика библиотеки</h2>
+<h2>{% trans "📊 Library Statistics" %}</h2>
 
 {% if last_scan %}
-<p style="color:#6c757d; font-size:0.85rem;">Последнее сканирование: <strong>{{ last_scan }}</strong></p>
+<p style="color:#6c757d; font-size:0.85rem;">{% trans "Last scan:" %} <strong>{{ last_scan }}</strong></p>
 {% endif %}
 
 <div class="grid-x grid-margin-x" style="margin-bottom:1.5rem;">
@@ -11,7 +12,7 @@
         <div class="card text-center" style="border-top:4px solid #f39c12;">
             <div class="card-section">
                 <div style="font-size:2rem; font-weight:bold; color:#f39c12;">{{ stats.books }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Книг</div>
+                <div style="font-size:0.85rem; color:#6c757d;">{% trans "Books" %}</div>
             </div>
         </div>
     </div>
@@ -19,7 +20,7 @@
         <div class="card text-center" style="border-top:4px solid #2980b9;">
             <div class="card-section">
                 <div style="font-size:2rem; font-weight:bold; color:#2980b9;">{{ stats.authors }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Авторов</div>
+                <div style="font-size:0.85rem; color:#6c757d;">{% trans "Authors" %}</div>
             </div>
         </div>
     </div>
@@ -27,7 +28,7 @@
         <div class="card text-center" style="border-top:4px solid #27ae60;">
             <div class="card-section">
                 <div style="font-size:2rem; font-weight:bold; color:#27ae60;">{{ stats.genres }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Жанров</div>
+                <div style="font-size:0.85rem; color:#6c757d;">{% trans "Genres" %}</div>
             </div>
         </div>
     </div>
@@ -35,7 +36,7 @@
         <div class="card text-center" style="border-top:4px solid #8e44ad;">
             <div class="card-section">
                 <div style="font-size:2rem; font-weight:bold; color:#8e44ad;">{{ stats.series }}</div>
-                <div style="font-size:0.85rem; color:#6c757d;">Серий</div>
+                <div style="font-size:0.85rem; color:#6c757d;">{% trans "Series" %}</div>
             </div>
         </div>
     </div>
@@ -45,7 +46,7 @@
 <div class="grid-x grid-margin-x">
     <div class="cell medium-4">
         <div class="card">
-            <div class="card-divider"><strong>🏷️ Топ жанров</strong></div>
+            <div class="card-divider"><strong>{% trans "🏷️ Top genres" %}</strong></div>
             <div class="card-section" style="padding:0.5rem;">
                 <table class="unstriped" style="font-size:0.85rem; margin:0;">
                     <tbody>
@@ -62,11 +63,11 @@
     </div>
     <div class="cell medium-8">
         <div class="card">
-            <div class="card-divider"><strong>🆕 Последние добавленные</strong></div>
+            <div class="card-divider"><strong>{% trans "🆕 Recently added" %}</strong></div>
             <div class="card-section" style="padding:0.5rem;">
                 <table class="unstriped" style="font-size:0.82rem; margin:0;">
                     <thead>
-                        <tr><th>Название</th><th>Формат</th><th>Жанр</th></tr>
+                        <tr><th>{% trans "Title" %}</th><th>{% trans "Format" %}</th><th>{% trans "Genre" %}</th></tr>
                     </thead>
                     <tbody>
                     {% for b in recent_books %}

@@ -1,6 +1,7 @@
 {% extends "fb2parser/base.html" %}
+{% load i18n %}
 {% block content %}
-<h2>🎭 Менеджер жанров</h2>
+<h2>🎭 {% trans "🎭 Genre Manager" %}</h2>
 
 {% if error %}
 <div class="callout alert">❌ {{ error }}</div>
@@ -10,11 +11,11 @@
     <div class="cell medium-4">
         <div class="card" style="height:72vh; display:flex; flex-direction:column;">
             <div class="card-divider">
-                <strong>Дерево жанров</strong>
-                <span style="float:right; font-size:0.8rem; color:#7f8c8d;">{{ genre_list|length }} узлов</span>
+                <strong>{% trans "Genre Tree" %}</strong>
+                <span style="float:right; font-size:0.8rem; color:#7f8c8d;">{{ genre_list|length }} {% trans "nodes" %}</span>
             </div>
             <div style="padding:0.4rem 0.7rem;">
-                <input type="text" id="genre-filter" placeholder="Фильтр..." style="margin:0; font-size:0.82rem;">
+                <input type="text" id="genre-filter" placeholder="{% trans "Filter..." %}" style="margin:0; font-size:0.82rem;">
             </div>
             <div style="flex:1; overflow-y:auto; padding:0 0.5rem 0.5rem;">
                 <ul class="no-bullet" id="genre-tree" style="font-size:0.83rem; margin:0;">
@@ -36,28 +37,28 @@
 
     <div class="cell medium-4">
         <div class="card" style="height:72vh; display:flex; flex-direction:column;">
-            <div class="card-divider"><strong>Ассоциированные строки жанра</strong></div>
+            <div class="card-divider"><strong>{% trans "Associated Genre Strings" %}</strong></div>
             <div style="flex:1; overflow-y:auto; padding:0.5rem;" id="assigned-panel">
-                <div style="color:#7f8c8d; font-size:0.85rem;">Выберите жанр слева</div>
+                <div style="color:#7f8c8d; font-size:0.85rem;">{% trans "Select a genre on the left" %}</div>
             </div>
         </div>
     </div>
 
     <div class="cell medium-4">
         <div class="card">
-            <div class="card-divider"><strong>Присвоить жанр папке</strong></div>
+            <div class="card-divider"><strong>{% trans "Assign Genre to Folder" %}</strong></div>
             <div class="card-section">
                 <p style="font-size:0.82rem; color:#555; margin-bottom:0.7rem;">
-                    Выберите жанр слева, укажите папку.<br>
-                    Операция заменяет &lt;genre&gt; во всех FB2 в папке.
+                    {% trans "Select a genre on the left and specify a folder." %}<br>
+                    {% trans "This operation replaces &lt;genre&gt; in all FB2 files in the folder." %}
                 </p>
                 <label style="font-size:0.85rem;">
-                    Жанр
+                    {% trans "Genre" %}
                     <input id="selected-genre" name="genre" type="text" readonly
                            style="background:#f8f9fa; font-family:monospace; font-size:0.82rem;"
-                           placeholder="(не выбран)">
+                           placeholder="{% trans "(not selected)" %}">
                 </label>
-                <label style="font-size:0.85rem;">Папка</label>
+                <label style="font-size:0.85rem;">{% trans "Folder" %}</label>
                 <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                     <input id="assign-folder" name="folder" type="text"
                            style="font-family:monospace; font-size:0.82rem; margin:0; flex:1;"
@@ -71,7 +72,7 @@
                         hx-target="#assign-status"
                         hx-swap="outerHTML"
                         hx-include="#selected-genre,#assign-folder">
-                    ▶ Присвоить жанр
+                    {% trans "▶ Assign Genre" %}
                 </button>
             </div>
         </div>
@@ -83,6 +84,8 @@
 {% endif %}
 
 <script>
+const i18n_noAssociations = "{% trans 'No associations' %}";
+
 const GENRE_DATA = {
 {% for g in genre_list %}"{{ g.name|escapejs }}": [{% for a in g.assigned %}"{{ a|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
 {% endfor %}};
@@ -94,7 +97,7 @@ function selectGenre(name, el) {
     const assigned = GENRE_DATA[name] || [];
     const panel = document.getElementById('assigned-panel');
     panel.innerHTML = assigned.length === 0
-        ? '<div style="color:#7f8c8d; font-size:0.85rem;">Нет ассоциаций</div>'
+        ? '<div style="color:#7f8c8d; font-size:0.85rem;">' + i18n_noAssociations + '</div>'
         : '<ul class="no-bullet" style="font-size:0.82rem; margin:0;">' +
           assigned.map(a => `<li style="padding:0.15rem 0; border-bottom:1px solid #f0f0f0;">${a}</li>`).join('') +
           '</ul>';

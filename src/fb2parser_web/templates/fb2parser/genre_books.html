@@ -1,6 +1,7 @@
+{% load i18n %}
 {% if books %}
 <div style="padding:0.3rem 0.5rem; font-size:0.78rem; color:#7f8c8d; border-bottom:1px solid #eee;">
-    Жанр: <strong>{{ genre }}</strong> — {{ books|length }} книг
+    {% trans "Genre:" %} <strong>{{ genre }}</strong> — {{ books|length }} {% trans "books" %}
 </div>
 <ul class="no-bullet" style="margin:0;">
     {% for b in books %}
@@ -13,5 +14,5 @@
     {% endfor %}
 </ul>
 {% else %}
-<div style="padding:1rem; color:#7f8c8d; text-align:center;">Книги не найдены</div>
+<div style="padding:1rem; color:#7f8c8d; text-align:center;">{% trans "Books not found" %}</div>
 {% endif %}

@@ -1,9 +1,10 @@
 {% extends "fb2parser/base.html" %}
+{% load i18n %}
 {% block content %}
-<h2> База данных</h2>
+<h2>{% trans "Database" %}</h2>
 <div class="fb2-stub">
-    <h3>База данных</h3>
-    <p>Просмотр и редактирование записей базы данных.</p>
-    <p><em>— В разработке —</em></p>
+    <h3>{% trans "Database" %}</h3>
+    <p>{% trans "View and edit database records." %}</p>
+    <p><em>{% trans "— Under development —" %}</em></p>
 </div>
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends "fb2parser/base.html" %}
+{% load i18n %}
 {% block content %}
 <style>
 .s-tabs { display:flex; gap:0; border-bottom:2px solid #2c3e50; margin-bottom:1.2rem; }
@@ -56,60 +57,59 @@
 .s-msg.err { background:#f8d7da; color:#721c24; }
 </style>
 
-<h2 style="font-size:1.2rem; margin-bottom:1rem; color:#2c3e50;">⚙ Настройки FB2Parser</h2>
+<h2 style="font-size:1.2rem; margin-bottom:1rem; color:#2c3e50;">{% trans "⚙ FB2Parser Settings" %}</h2>
 
 {% if saved %}
-<div class="s-msg ok" style="margin-bottom:0.8rem;">✓ Настройки сохранены.</div>
+<div class="s-msg ok" style="margin-bottom:0.8rem;">{% trans "✓ Settings saved." %}</div>
 {% endif %}
 
-<!-- Вкладки -->
 <div class="s-tabs">
-    <div class="s-tab active" onclick="sTab('general')">Общие</div>
-    <div class="s-tab" onclick="sTab('lists')">Списки</div>
-    <div class="s-tab" onclick="sTab('conversions')">Конвертация авторов</div>
+    <div class="s-tab active" onclick="sTab('general')">{% trans "General" %}</div>
+    <div class="s-tab" onclick="sTab('lists')">{% trans "Lists" %}</div>
+    <div class="s-tab" onclick="sTab('conversions')">{% trans "Author conversions" %}</div>
 </div>
 
-<!-- ═══════════════════════════════ Вкладка: Общие ══════════════════════════════ -->
+<!-- ═══════════════════════════════ General tab ══════════════════════════════ -->
 <div id="s-pane-general" class="s-pane active">
 <form method="post">
 {% csrf_token %}
 <div class="s-field">
-    <label>Путь к библиотеке</label>
+    <label>{% trans "Library path" %}</label>
     <div class="s-row">
-        <input type="text" name="library_path" id="library_path" value="{{ library_path }}" placeholder="Корневой путь к FB2-файлам">
+        <input type="text" name="library_path" id="library_path" value="{{ library_path }}" placeholder="{% trans 'Root path to FB2 files' %}">
         <button type="button" class="fb-browse-btn" onclick="openBrowser('library_path')"
-                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
+                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">{% trans "📁 Browse" %}</button>
     </div>
     <div class="fb-browser-wrap" id="fb-browser-library_path" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
-    <div class="s-hint">Корневой каталог, с которого начинается обход библиотеки FB2-файлов.</div>
+    <div class="s-hint">{% trans "Root directory to start scanning FB2 files from." %}</div>
 </div>
 
 <div class="s-field">
-    <label>Путь к файлу жанров (genres.xml)</label>
+    <label>{% trans "Path to genres file (genres.xml)" %}</label>
     <div class="s-row">
-        <input type="text" name="genres_file_path" id="genres_file_path" value="{{ genres_file_path }}" placeholder="Путь к genres.xml">
+        <input type="text" name="genres_file_path" id="genres_file_path" value="{{ genres_file_path }}" placeholder="{% trans 'Path to genres.xml' %}">
         <button type="button" class="fb-browse-btn" onclick="openBrowser('genres_file_path')"
-                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
+                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">{% trans "📁 Browse" %}</button>
     </div>
     <div class="fb-browser-wrap" id="fb-browser-genres_file_path" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
-    <div class="s-hint">Путь к XML-файлу с определениями жанров.</div>
+    <div class="s-hint">{% trans "Path to the XML file with genre definitions." %}</div>
 </div>
 
 <div class="s-field">
-    <label>Папка для CSV-файлов нормализатора</label>
+    <label>{% trans "Normalizer CSV folder" %}</label>
     <div class="s-row">
-        <input type="text" name="normalizer_folder" id="normalizer_folder" value="{{ normalizer_folder }}" placeholder="Куда сохранять CSV-файлы нормализации">
+        <input type="text" name="normalizer_folder" id="normalizer_folder" value="{{ normalizer_folder }}" placeholder="{% trans 'Where to save normalization CSV files' %}">
         <button type="button" class="fb-browse-btn" onclick="openBrowser('normalizer_folder')"
-                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">📁 Обзор</button>
+                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">{% trans "📁 Browse" %}</button>
     </div>
     <div class="fb-browser-wrap" id="fb-browser-normalizer_folder" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
-    <div class="s-hint">Сюда будут сохраняться CSV-файлы при нормализации (по умолчанию: <code>fb2_data/csv/</code>).</div>
+    <div class="s-hint">{% trans "Normalization CSV files will be saved here (default:" %} <code>fb2_data/csv/</code>).</div>
 </div>
 
 <div class="s-field">
-    <label>Предел количества папок при парсинге</label>
+    <label>{% trans "Folder parse limit" %}</label>
     <input type="number" name="folder_parse_limit" value="{{ folder_parse_limit }}" min="1" max="100" style="max-width:120px;">
-    <div class="s-hint">Глубина обхода папок при парсинге, начиная от файла (по умолчанию 5).</div>
+    <div class="s-hint">{% trans "Folder traversal depth during parsing, starting from the file (default: 5)." %}</div>
 </div>
 
 
@@ -117,19 +117,19 @@
     <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal; cursor:pointer;">
         <input type="checkbox" name="generate_csv" {% if generate_csv %}checked{% endif %}
                style="width:16px; height:16px; accent-color:#27ae60; cursor:pointer;">
-        <span style="font-weight:600;">Генерировать CSV-файл при нормализации</span>
+        <span style="font-weight:600;">{% trans "Generate CSV file on normalization" %}</span>
     </label>
-    <div class="s-hint">Если включено, при нормализации создаётся CSV-отчёт.</div>
+    <div class="s-hint">{% trans "If enabled, a CSV report is created during normalization." %}</div>
 </div>
 
-<button type="submit" class="s-save-btn">💾 Сохранить</button>
+<button type="submit" class="s-save-btn">{% trans "💾 Save" %}</button>
 </form>
 </div>
 
-<!-- ═══════════════════════════════ Вкладка: Списки ══════════════════════════════ -->
+<!-- ═══════════════════════════════ Lists tab ══════════════════════════════ -->
 <div id="s-pane-lists" class="s-pane">
 <div class="sl-selector">
-    <label for="sl-select">Список:</label>
+    <label for="sl-select">{% trans "List:" %}</label>
     <select id="sl-select" onchange="slLoad(this.value)">
         {% for key, desc in lists_meta %}
         <option value="{{ key }}" {% if key == first_list_key %}selected{% endif %}>{{ key }}</option>
@@ -140,48 +140,55 @@
     {% for key, desc in lists_meta %}{% if key == first_list_key %}{{ desc }}{% endif %}{% endfor %}
 </div>
 <div id="sl-list" class="sl-list">
-    <!-- заполняется при инициализации -->
 </div>
 <div class="sl-add-row">
-    <input type="text" id="sl-new-val" placeholder="Новое значение…" onkeydown="if(event.key==='Enter')slAdd()">
-    <button onclick="slAdd()">+ Добавить</button>
+    <input type="text" id="sl-new-val" placeholder="{% trans 'New value…' %}" onkeydown="if(event.key==='Enter')slAdd()">
+    <button onclick="slAdd()">{% trans "+ Add" %}</button>
 </div>
 <div id="sl-msg" style="font-size:0.8rem; min-height:1.2em; margin-top:0.3rem;"></div>
 </div>
 
-<!-- ═══════════════════════════ Вкладка: Конвертация авторов ═══════════════════════════ -->
+<!-- ═══════════════════════════ Author conversions tab ═══════════════════════════ -->
 <div id="s-pane-conversions" class="s-pane">
 <p style="font-size:0.85rem; color:#546e7a; margin-bottom:0.8rem;">
-    Правила транслитерации/замены фамилий авторов. Ключ — оригинальная фамилия, значение — целевая.
+    {% trans "Transliteration/replacement rules for author surnames. Key — original surname, value — target." %}
 </p>
 <div style="overflow-x:auto; max-width:700px;">
 <table class="cv-table" id="cv-table">
-    <thead><tr><th>Оригинальная</th><th>Конвертированная</th><th style="width:2rem;"></th></tr></thead>
+    <thead><tr><th>{% trans "Original" %}</th><th>{% trans "Converted" %}</th><th style="width:2rem;"></th></tr></thead>
     <tbody id="cv-tbody">
     {% for from_val, to_val in conversions.items %}
     <tr data-from="{{ from_val }}">
         <td style="font-family:monospace;">{{ from_val }}</td>
         <td style="font-family:monospace;">{{ to_val }}</td>
-        <td><button onclick="cvDelete('{{ from_val|escapejs }}')" title="Удалить"
+        <td><button onclick="cvDelete('{{ from_val|escapejs }}')" title="{% trans 'Delete' %}"
                     style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:1rem;padding:0 0.3rem;">✕</button></td>
     </tr>
     {% empty %}
-    <tr id="cv-empty"><td colspan="3" style="color:#7f8c8d; text-align:center; padding:1rem;">Нет правил конвертации.</td></tr>
+    <tr id="cv-empty"><td colspan="3" style="color:#7f8c8d; text-align:center; padding:1rem;">{% trans "No conversion rules." %}</td></tr>
     {% endfor %}
     </tbody>
 </table>
 </div>
 <div class="cv-add-row" style="margin-top:0.8rem;">
-    <input type="text" id="cv-from" placeholder="Оригинальная фамилия">
+    <input type="text" id="cv-from" placeholder="{% trans 'Original surname' %}">
     <span style="font-size:1rem; color:#7f8c8d;">→</span>
-    <input type="text" id="cv-to" placeholder="Конвертированная фамилия"
+    <input type="text" id="cv-to" placeholder="{% trans 'Converted surname' %}"
            onkeydown="if(event.key==='Enter')cvAdd()">
-    <button onclick="cvAdd()">+ Добавить</button>
+    <button onclick="cvAdd()">{% trans "+ Add" %}</button>
 </div>
 <div id="cv-msg" style="font-size:0.8rem; min-height:1.2em; margin-top:0.3rem;"></div>
 </div>
 
 <script>
+var _t = {
+    listEmpty:     "{% trans 'List is empty.' %}",
+    added:         "{% trans '✓ Added' %}",
+    deleted:       "{% trans '✓ Deleted' %}",
+    error:         "{% trans '❌ Error' %}",
+    fillBoth:      "{% trans 'Fill in both fields' %}",
+    noConversions: "{% trans 'No conversion rules.' %}"
+};
 (function(){
     var listUrl = "{% url 'fb2parser:settings_list_op' %}";
     var convUrl = "{% url 'fb2parser:settings_conv_op' %}";
@@ -204,7 +211,7 @@
     function slRender(key) {
         var items = _listsData[key] || [];
         var el = document.getElementById('sl-list');
-        if (!items.length) { el.innerHTML = '<div style="color:#7f8c8d;padding:0.5rem;">Список пуст.</div>'; return; }
+        if (!items.length) { el.innerHTML = '<div style="color:#7f8c8d;padding:0.5rem;">'+_t.listEmpty+'</div>'; return; }
         el.innerHTML = items.map(function(v) {
             var esc = v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             var escJ = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -231,9 +238,9 @@
                 _listsData[key] = d.list;
                 slRender(key);
                 document.getElementById('sl-new-val').value = '';
-                _slMsg('✓ Добавлено', '#155724');
+                _slMsg(_t.added, '#155724');
             } else { _slMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _slMsg('❌ Ошибка', '#721c24'); });
+        }).catch(function(){ _slMsg(_t.error, '#721c24'); });
     };
 
     window.slDelete = function(val) {
@@ -241,9 +248,9 @@
         fetch(listUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({key:key, value:val, action:'delete'})})
         .then(function(r){return r.json();}).then(function(d){
-            if (d.ok) { _listsData[key] = d.list; slRender(key); _slMsg('✓ Удалено', '#155724'); }
+            if (d.ok) { _listsData[key] = d.list; slRender(key); _slMsg(_t.deleted, '#155724'); }
             else { _slMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _slMsg('❌ Ошибка', '#721c24'); });
+        }).catch(function(){ _slMsg(_t.error, '#721c24'); });
     };
 
     function _slMsg(txt, color) {
@@ -257,7 +264,7 @@
     window.cvAdd = function() {
         var fromVal = document.getElementById('cv-from').value.trim();
         var toVal   = document.getElementById('cv-to').value.trim();
-        if (!fromVal || !toVal) { _cvMsg('Заполните оба поля', '#721c24'); return; }
+        if (!fromVal || !toVal) { _cvMsg(_t.fillBoth, '#721c24'); return; }
         fetch(convUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({action:'add', from_val:fromVal, to_val:toVal})})
         .then(function(r){return r.json();}).then(function(d){
@@ -265,25 +272,25 @@
                 cvRender(d.conversions);
                 document.getElementById('cv-from').value = '';
                 document.getElementById('cv-to').value = '';
-                _cvMsg('✓ Добавлено', '#155724');
+                _cvMsg(_t.added, '#155724');
             } else { _cvMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _cvMsg('❌ Ошибка', '#721c24'); });
+        }).catch(function(){ _cvMsg(_t.error, '#721c24'); });
     };
 
     window.cvDelete = function(fromVal) {
         fetch(convUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({action:'delete', from_val:fromVal})})
         .then(function(r){return r.json();}).then(function(d){
-            if (d.ok) { cvRender(d.conversions); _cvMsg('✓ Удалено', '#155724'); }
+            if (d.ok) { cvRender(d.conversions); _cvMsg(_t.deleted, '#155724'); }
             else { _cvMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _cvMsg('❌ Ошибка', '#721c24'); });
+        }).catch(function(){ _cvMsg(_t.error, '#721c24'); });
     };
 
     function cvRender(convs) {
         var tbody = document.getElementById('cv-tbody');
         var keys = Object.keys(convs);
         if (!keys.length) {
-            tbody.innerHTML = '<tr id="cv-empty"><td colspan="3" style="color:#7f8c8d;text-align:center;padding:1rem;">Нет правил конвертации.</td></tr>';
+            tbody.innerHTML = '<tr id="cv-empty"><td colspan="3" style="color:#7f8c8d;text-align:center;padding:1rem;">'+_t.noConversions+'</td></tr>';
             return;
         }
         tbody.innerHTML = keys.map(function(k) {
@@ -305,7 +312,7 @@
         setTimeout(function(){ el.textContent=''; }, 3000);
     }
 
-    // Инициализация вкладки Списки
+    // Initialize Lists tab
     slLoad(document.getElementById('sl-select').value);
 })();
 </script>

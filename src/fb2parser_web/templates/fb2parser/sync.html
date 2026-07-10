@@ -1,11 +1,12 @@
+{% load i18n %}
 <p style="font-size:0.85rem; color:#555; margin-bottom:0.7rem;">
-    Синхронизация перемещает FB2-файлы в библиотеку по структуре <em>жанр/автор/серия/</em>.
-    Обрабатываются только папки с назначенным жанром.
+    {% trans "Sync moves FB2 files into the library using the genre/author/series/ structure." %}
+    {% trans "Only folders with an assigned genre are processed." %}
 </p>
 
 {% if scan_path %}
 <div style="font-size:0.82rem; color:#555; margin-bottom:0.6rem;">
-    <strong>Рабочая папка:</strong>
+    <strong>{% trans "Working folder:" %}</strong>
     <code style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:3px; padding:0.1rem 0.4rem; word-break:break-all;">{{ scan_path }}</code>
 </div>
 {% endif %}
@@ -13,7 +14,7 @@
 {% if assignments %}
 <div style="margin-bottom:0.8rem;">
     <div style="font-size:0.82rem; font-weight:600; color:#2c3e50; margin-bottom:0.4rem;">
-        Папки для синхронизации ({{ assignments|length }}):
+        {% trans "Folders to synchronize" %} ({{ assignments|length }}):
     </div>
     <div style="max-height:160px; overflow-y:auto; border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa;">
         {% for path, genre in assignments.items %}
@@ -26,7 +27,7 @@
 </div>
 
 <div class="callout warning" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem;">
-    ⚠️ Операция перемещает и переименовывает файлы на диске!
+    {% trans "⚠️ This operation moves and renames files on disk!" %}
 </div>
 
 <button class="button success" style="margin-bottom:1rem;"
@@ -34,13 +35,13 @@
         hx-vals='{"scan_path": "{{ scan_path }}"}'
         hx-target="#sync-status"
         hx-swap="outerHTML">
-    ▶ Запустить синхронизацию
+    {% trans "▶ Start Synchronization" %}
 </button>
 
 {% else %}
 <div class="callout secondary" style="font-size:0.85rem; padding:0.6rem 0.9rem;">
-    ℹ️ Ни одной папке не назначен жанр.<br>
-    Вернитесь в главное окно, выберите папки и назначьте им жанр — после этого синхронизация станет доступна.
+    {% trans "ℹ️ No folder has been assigned a genre." %}<br>
+    {% trans "Return to the main window, select folders and assign genres — then synchronization will become available." %}
 </div>
 {% endif %}
 

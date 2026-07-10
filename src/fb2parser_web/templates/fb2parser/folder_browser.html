@@ -1,8 +1,9 @@
+{% load i18n %}
 <div style="border:1px solid #ccc; border-radius:4px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:380px; max-width:520px; font-size:0.82rem; z-index:1000;">
 
-    <!-- Текущий путь -->
+    <!-- Current path -->
     <div style="background:#34495e; color:#ecf0f1; padding:0.4rem 0.7rem; border-radius:4px 4px 0 0; font-family:monospace; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
-        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ path|default:"Выберите диск" }}</span>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ path|default:"{% trans "Select drive" %}" }}</span>
         <button type="button" onclick="closeBrowser('{{ target }}')"
                 style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1rem; padding:0; line-height:1;">✕</button>
     </div>
@@ -11,36 +12,36 @@
     <div style="padding:0.5rem 0.7rem; color:#c0392b;">⚠ {{ error }}</div>
     {% endif %}
 
-    <!-- Ручной ввод пути -->
+    <!-- Manual path input -->
     <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid #ddd; background:#f8f9fa;">
         <input type="text" id="fb-path-input-{{ target }}"
                value="{{ path|default:'' }}"
-               placeholder="\\server\share или C:\path\to\folder"
+               placeholder="\\server\share or C:\path\to\folder"
                style="margin:0; flex:1; font-family:monospace; font-size:0.78rem; padding:0.25rem 0.4rem;"
                onkeydown="if(event.key==='Enter'){ fbNavigateTo('{{ target }}', this.value{% if show_files %}, '1', '{{ ext_filter|escapejs }}'{% endif %}); }">
         <button type="button" class="button tiny secondary" style="margin:0; white-space:nowrap;"
                 onclick="fbNavigateTo('{{ target }}', document.getElementById('fb-path-input-{{ target }}').value{% if show_files %}, '1', '{{ ext_filter|escapejs }}'{% endif %})">→</button>
     </div>
 
-    <!-- Кнопки навигации -->
+    <!-- Navigation buttons -->
     <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid #eee;">
         {% if parent %}
         <button type="button" class="button tiny secondary" style="margin:0;"
                 hx-get="{% url 'fb2parser:browse' %}?path={{ parent|urlencode }}&target={{ target }}{% if show_files %}&show_files=1&ext={{ ext_filter|urlencode }}{% endif %}"
                 hx-target="#fb-browser-{{ target }}"
                 hx-swap="innerHTML">
-            ↑ Вверх
+            {% trans "↑ Up" %}
         </button>
         {% endif %}
         {% if not show_files %}
         <button type="button" class="button tiny success" style="margin:0;"
                 onclick="selectFolder('{{ target }}', '{{ path|escapejs }}')">
-            ✓ Выбрать эту папку
+            {% trans "✓ Select this folder" %}
         </button>
         {% endif %}
     </div>
 
-    <!-- Список папок и файлов -->
+    <!-- Folder and file list -->
     <ul class="no-bullet" style="margin:0; max-height:260px; overflow-y:auto;">
         {% if entries %}
             {% for entry in entries %}
@@ -66,7 +67,7 @@
             </li>
             {% endfor %}
         {% else %}
-            <li style="padding:0.5rem 0.7rem; color:#7f8c8d;">{% if show_files %}Нет файлов{% else %}Нет подпапок{% endif %}</li>
+            <li style="padding:0.5rem 0.7rem; color:#7f8c8d;">{% if show_files %}{% trans "No files" %}{% else %}{% trans "No subfolders" %}{% endif %}</li>
         {% endif %}
     </ul>
 </div>

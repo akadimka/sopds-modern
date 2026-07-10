@@ -1,10 +1,11 @@
+{% load i18n %}
 {% if state.running %}
 <div id="norm-status"
      hx-get="{% url 'fb2parser:normalize_status' %}"
      hx-trigger="every 2s"
      hx-target="#norm-status"
      hx-swap="outerHTML">
-    <div class="callout primary"><strong>⏳ Нормализация...</strong></div>
+    <div class="callout primary"><strong>{% trans "⏳ Normalization..." %}</strong></div>
     {% if state.total > 0 %}
     <div style="font-size:0.82rem; margin-bottom:0.3rem;">{{ state.processed }} / {{ state.total }} ({{ pct }}%)</div>
     <div class="progress" style="height:1rem;">
@@ -14,15 +15,15 @@
 
 {% elif state.done %}
 <div id="norm-status">
-    <div class="callout success"><strong>✅ Нормализация завершена</strong> — записей: {{ state.processed }}</div>
+    <div class="callout success"><strong>{% trans "✅ Normalization complete" %}</strong> — {% trans "records:" %} {{ state.processed }}</div>
 
 {% elif state.error %}
 <div id="norm-status">
-    <div class="callout alert"><strong>❌ Ошибка:</strong> {{ state.error }}</div>
+    <div class="callout alert"><strong>{% trans "❌ Error:" %}</strong> {{ state.error }}</div>
 
 {% else %}
 <div id="norm-status">
-    <div class="callout secondary" style="font-size:0.85rem;">Нормализация не запущена.</div>
+    <div class="callout secondary" style="font-size:0.85rem;">{% trans "Normalization not started." %}</div>
 {% endif %}
 
 {% if state.log %}

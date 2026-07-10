@@ -1,0 +1,837 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: sopds-modern fb2parser_web\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-10 00:00+0000\n"
+"PO-Revision-Date: 2026-07-10 00:00+0000\n"
+"Last-Translator: aKaDiMkA\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
+
+# --- Navigation / base.html ---
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Restart server?"
+msgstr "Перезагрузить сервер?"
+
+msgid "⟳ Restart"
+msgstr "⟳ Рестарт"
+
+msgid "Home"
+msgstr "Главная"
+
+msgid "Actions"
+msgstr "Действия"
+
+msgid "Genre Assignment"
+msgstr "Присвоение жанра"
+
+msgid "Normalization"
+msgstr "Нормализация"
+
+msgid "Synchronization"
+msgstr "Синхронизация"
+
+msgid "Archive"
+msgstr "Заархивировать"
+
+msgid "Database"
+msgstr "База данных"
+
+msgid "Library"
+msgstr "Библиотека"
+
+msgid "Statistics"
+msgstr "Статистика"
+
+msgid "Metadata Search"
+msgstr "Поиск по метаданным"
+
+msgid "New Books"
+msgstr "Новые книги"
+
+msgid "Series with Gaps"
+msgstr "Серии с пробелами"
+
+msgid "FB2 Integrity Check"
+msgstr "Проверка целостности FB2"
+
+msgid "Log"
+msgstr "Лог"
+
+msgid "🔄 Synchronization"
+msgstr "🔄 Синхронизация"
+
+msgid "Loading..."
+msgstr "Загрузка..."
+
+# --- dashboard.html ---
+msgid "Folder to process:"
+msgstr "Папка для обработки:"
+
+msgid "📁 Browse"
+msgstr "📁 Обзор"
+
+msgid "▶ Scan"
+msgstr "▶ Сканировать"
+
+msgid "Starting..."
+msgstr "Запуск..."
+
+msgid "⇄ View"
+msgstr "⇄ Вид"
+
+msgid "Loading folder tree..."
+msgstr "Загрузка дерева папок..."
+
+msgid "Specify a folder to display the structure"
+msgstr "Укажите папку для отображения структуры"
+
+msgid "Genre Selection"
+msgstr "Выбор жанра"
+
+msgid "Filter genres..."
+msgstr "Фильтр жанров..."
+
+msgid "No genre selected"
+msgstr "Жанр не выбран"
+
+msgid "▶ Apply to selected folders"
+msgstr "▶ Применить к выбранным папкам"
+
+msgid "Run a scan"
+msgstr "Выполните сканирование"
+
+msgid "Errors/Notes"
+msgstr "Ошибки/Замечания"
+
+msgid "No data"
+msgstr "Нет данных"
+
+msgid "Details"
+msgstr "Детали"
+
+msgid "Select a genre on the left"
+msgstr "Выберите жанр слева"
+
+msgid "🏷️ Assign Genre"
+msgstr "🏷️ Присвоить жанр"
+
+msgid "☑ Select All"
+msgstr "☑ Выбрать все"
+
+msgid "✕ Clear Selection"
+msgstr "✕ Снять выделение"
+
+msgid "✓ Scan complete:"
+msgstr "✓ Сканирование завершено:"
+
+msgid "Ready"
+msgstr "Готово к работе"
+
+msgid "Preparing..."
+msgstr "Подготовка..."
+
+msgid "⚠ error"
+msgstr "⚠ ошибка"
+
+msgid "Unknown error"
+msgstr "Неизвестная ошибка"
+
+msgid "selected"
+msgstr "выбрано"
+
+msgid "folder"
+msgstr "папка"
+
+msgid "folders"
+msgstr "папок"
+
+# --- settings.html ---
+msgid "⚙ FB2Parser Settings"
+msgstr "⚙ Настройки FB2Parser"
+
+msgid "✓ Settings saved."
+msgstr "✓ Настройки сохранены."
+
+msgid "General"
+msgstr "Общие"
+
+msgid "Lists"
+msgstr "Списки"
+
+msgid "Author conversions"
+msgstr "Конвертация авторов"
+
+msgid "Library path"
+msgstr "Путь к библиотеке"
+
+msgid "Root path to FB2 files"
+msgstr "Корневой путь к FB2-файлам"
+
+msgid "Root directory to start scanning FB2 files from."
+msgstr "Корневой каталог, с которого начинается обход библиотеки FB2-файлов."
+
+msgid "Path to genres file (genres.xml)"
+msgstr "Путь к файлу жанров (genres.xml)"
+
+msgid "Path to genres.xml"
+msgstr "Путь к genres.xml"
+
+msgid "Path to the XML file with genre definitions."
+msgstr "Путь к XML-файлу с определениями жанров."
+
+msgid "Normalizer CSV folder"
+msgstr "Папка для CSV-файлов нормализатора"
+
+msgid "Where to save normalization CSV files"
+msgstr "Куда сохранять CSV-файлы нормализации"
+
+msgid "Normalization CSV files will be saved here (default:"
+msgstr "Сюда будут сохраняться CSV-файлы при нормализации (по умолчанию:"
+
+msgid "Folder parse limit"
+msgstr "Предел количества папок при парсинге"
+
+msgid "Folder traversal depth during parsing, starting from the file (default: 5)."
+msgstr "Глубина обхода папок при парсинге, начиная от файла (по умолчанию 5)."
+
+msgid "Generate CSV file on normalization"
+msgstr "Генерировать CSV-файл при нормализации"
+
+msgid "If enabled, a CSV report is created during normalization."
+msgstr "Если включено, при нормализации создаётся CSV-отчёт."
+
+msgid "💾 Save"
+msgstr "💾 Сохранить"
+
+msgid "List:"
+msgstr "Список:"
+
+msgid "New value…"
+msgstr "Новое значение…"
+
+msgid "+ Add"
+msgstr "+ Добавить"
+
+msgid "Transliteration/replacement rules for author surnames. Key — original surname, value — target."
+msgstr "Правила транслитерации/замены фамилий авторов. Ключ — оригинальная фамилия, значение — целевая."
+
+msgid "Original"
+msgstr "Оригинальная"
+
+msgid "Converted"
+msgstr "Конвертированная"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "No conversion rules."
+msgstr "Нет правил конвертации."
+
+msgid "Original surname"
+msgstr "Оригинальная фамилия"
+
+msgid "Converted surname"
+msgstr "Конвертированная фамилия"
+
+msgid "List is empty."
+msgstr "Список пуст."
+
+msgid "✓ Added"
+msgstr "✓ Добавлено"
+
+msgid "✓ Deleted"
+msgstr "✓ Удалено"
+
+msgid "❌ Error"
+msgstr "❌ Ошибка"
+
+msgid "Fill in both fields"
+msgstr "Заполните оба поля"
+
+# --- statistics.html ---
+msgid "📊 Library Statistics"
+msgstr "📊 Статистика библиотеки"
+
+msgid "Last scan:"
+msgstr "Последнее сканирование:"
+
+msgid "Books"
+msgstr "Книги"
+
+msgid "Authors"
+msgstr "Авторы"
+
+msgid "Genres"
+msgstr "Жанры"
+
+msgid "Series"
+msgstr "Серии"
+
+msgid "🏷️ Top genres"
+msgstr "🏷️ Топ жанров"
+
+msgid "🆕 Recently added"
+msgstr "🆕 Последние добавленные"
+
+msgid "Title"
+msgstr "Название"
+
+msgid "Format"
+msgstr "Формат"
+
+msgid "Genre"
+msgstr "Жанр"
+
+# --- scan.html ---
+msgid "🔍 Library Scan"
+msgstr "🔍 Сканирование библиотеки"
+
+msgid "Scan parameters"
+msgstr "Параметры сканирования"
+
+msgid "Books folder"
+msgstr "Папка с книгами"
+
+msgid "▶ Start scan"
+msgstr "▶ Запустить сканирование"
+
+msgid "Progress"
+msgstr "Прогресс"
+
+# --- scan_status.html ---
+msgid "⏳ Scanning..."
+msgstr "⏳ Сканирование..."
+
+msgid "File:"
+msgstr "Файл:"
+
+msgid "Processed:"
+msgstr "Обработано:"
+
+msgid "of"
+msgstr "из"
+
+msgid "✅ Scan complete"
+msgstr "✅ Сканирование завершено"
+
+msgid "Books added:"
+msgstr "Добавлено книг:"
+
+msgid "Skipped (already exist):"
+msgstr "Пропущено (уже есть):"
+
+msgid "Errors:"
+msgstr "Ошибок:"
+
+msgid "Total processed:"
+msgstr "Всего обработано:"
+
+msgid "Show errors"
+msgstr "Показать ошибки"
+
+msgid "❌ Error:"
+msgstr "❌ Ошибка:"
+
+msgid "Scan not started."
+msgstr "Сканирование не запущено."
+
+# --- main_scan_statusbar.html ---
+msgid "✓ Done:"
+msgstr "✓ Готово:"
+
+msgid "added"
+msgstr "добавлено"
+
+msgid "skipped"
+msgstr "пропущено"
+
+msgid "errors"
+msgstr "ошибок"
+
+# --- normalize.html ---
+msgid "Input folder:"
+msgstr "Папка для Input:"
+
+msgid "Filter:"
+msgstr "Фильтр:"
+
+msgid "Search across all columns..."
+msgstr "Поиск по всем колонкам..."
+
+msgid "No data — click \"Create CSV\""
+msgstr "Нет данных — нажмите «Создать CSV»"
+
+msgid "Create CSV"
+msgstr "Создать CSV"
+
+msgid "⚠ Path changed — data is stale. Recreate CSV."
+msgstr "⚠ Путь изменён — данные устарели. Пересоздайте CSV."
+
+msgid "Get names"
+msgstr "Получить имена"
+
+msgid "Names from CSV"
+msgstr "Имена из CSV"
+
+msgid "Broken files"
+msgstr "Битые файлы"
+
+msgid "Martyrs"
+msgstr "Великомученницы"
+
+msgid "Duplicates"
+msgstr "Дубликаты"
+
+msgid "Delete empty folders"
+msgstr "Удалить пустые папки"
+
+msgid "Compile"
+msgstr "Скомпилировать"
+
+msgid "Logs"
+msgstr "Логи"
+
+msgid "Authors with undetermined gender"
+msgstr "Авторы с неопределённым полом"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "CSV path:"
+msgstr "Путь к CSV:"
+
+msgid "Load"
+msgstr "Загрузить"
+
+msgid "Enter the CSV path and click \"Load\"."
+msgstr "Укажите путь к CSV и нажмите «Загрузить»."
+
+msgid "Martyrs — files with female authors"
+msgstr "Великомученницы — файлы с авторами-женщинами"
+
+msgid "Compile series"
+msgstr "Скомпилировать серии"
+
+msgid "🔍 Scan groups"
+msgstr "🔍 Сканировать группы"
+
+msgid "Click \"Scan groups\" to search for series."
+msgstr "Нажмите «Сканировать группы» для поиска серий."
+
+msgid "Normalization log"
+msgstr "Лог нормализации"
+
+msgid "Log is empty"
+msgstr "Лог пуст"
+
+msgid "rows"
+msgstr "строк"
+
+msgid "No names selected."
+msgstr "Не выбрано ни одного имени."
+
+msgid "✓ Added:"
+msgstr "✓ Добавлено:"
+
+msgid "Scanning…"
+msgstr "Сканирование…"
+
+msgid "Searching groups… (may take several seconds)"
+msgstr "Поиск групп… (может занять несколько секунд)"
+
+msgid "Searching duplicates… (may take several seconds)"
+msgstr "Поиск дубликатов… (может занять несколько секунд)"
+
+# --- normalize_status.html ---
+msgid "⏳ Normalization..."
+msgstr "⏳ Нормализация..."
+
+msgid "✅ Normalization complete"
+msgstr "✅ Нормализация завершена"
+
+msgid "records:"
+msgstr "записей:"
+
+msgid "Normalization not started."
+msgstr "Нормализация не запущена."
+
+# --- normalize_bar.html ---
+msgid "Done:"
+msgstr "Готово:"
+
+msgid "records"
+msgstr "записей"
+
+msgid "Ready."
+msgstr "Готово к работе."
+
+msgid "Select a folder and click \"Create CSV\"."
+msgstr "Выберите папку и нажмите «Создать CSV»."
+
+# --- normalize_table.html ---
+msgid "No data — run \"Create CSV\""
+msgstr "Нет данных — запустите «Создать CSV»"
+
+# --- genres.html ---
+msgid "🎭 Genre Manager"
+msgstr "🎭 Менеджер жанров"
+
+msgid "Genre Tree"
+msgstr "Дерево жанров"
+
+msgid "Filter..."
+msgstr "Фильтр..."
+
+msgid "Associated Genre Strings"
+msgstr "Ассоциированные строки жанра"
+
+msgid "Assign Genre to Folder"
+msgstr "Присвоить жанр папке"
+
+msgid "Select a genre on the left and specify a folder."
+msgstr "Выберите жанр слева, укажите папку."
+
+msgid "(not selected)"
+msgstr "(не выбран)"
+
+msgid "Folder"
+msgstr "Папка"
+
+msgid "▶ Assign Genre"
+msgstr "▶ Присвоить жанр"
+
+msgid "No associations"
+msgstr "Нет ассоциаций"
+
+# --- genre_assign.html ---
+msgid "🎯 Genre Assignment"
+msgstr "🎯 Присвоение жанра"
+
+msgid "Operation Parameters"
+msgstr "Параметры операции"
+
+msgid "Selected Genre"
+msgstr "Выбранный жанр"
+
+msgid "Books Folder"
+msgstr "Папка с книгами"
+
+# --- genre_assign_status.html ---
+msgid "⏳ Assigning genre..."
+msgstr "⏳ Присвоение жанра..."
+
+msgid "✅ Done"
+msgstr "✅ Готово"
+
+msgid "files processed:"
+msgstr "обработано файлов:"
+
+msgid "Operation not started."
+msgstr "Операция не запущена."
+
+# --- sync.html ---
+msgid "Sync moves FB2 files into the library using the genre/author/series/ structure."
+msgstr "Синхронизация перемещает FB2-файлы в библиотеку по структуре жанр/автор/серия/."
+
+msgid "Only folders with an assigned genre are processed."
+msgstr "Обрабатываются только папки с назначенным жанром."
+
+msgid "Working folder:"
+msgstr "Рабочая папка:"
+
+msgid "Folders to synchronize"
+msgstr "Папки для синхронизации"
+
+msgid "⚠️ This operation moves and renames files on disk!"
+msgstr "⚠️ Операция перемещает и переименовывает файлы на диске!"
+
+msgid "▶ Start Synchronization"
+msgstr "▶ Запустить синхронизацию"
+
+msgid "ℹ️ No folder has been assigned a genre."
+msgstr "ℹ️ Ни одной папке не назначен жанр."
+
+msgid "Return to the main window, select folders and assign genres — then synchronization will become available."
+msgstr "Вернитесь в главное окно, выберите папки и назначьте им жанр — после этого синхронизация станет доступна."
+
+# --- sync_status.html ---
+msgid "⏳ Synchronizing..."
+msgstr "⏳ Синхронизация..."
+
+msgid "⏹ Stop"
+msgstr "⏹ Остановить"
+
+msgid "✅ Synchronization complete"
+msgstr "✅ Синхронизация завершена"
+
+msgid "Synchronization not started."
+msgstr "Синхронизация не запущена."
+
+msgid "Operation log"
+msgstr "Лог операции"
+
+msgid "lines"
+msgstr "строк"
+
+# --- folder_tree.html ---
+msgid "Expand"
+msgstr "Развернуть"
+
+msgid "No folders with FB2 files"
+msgstr "Нет папок с FB2-файлами"
+
+# --- folder_browser.html ---
+msgid "Select drive"
+msgstr "Выберите диск"
+
+msgid "↑ Up"
+msgstr "↑ Вверх"
+
+msgid "✓ Select this folder"
+msgstr "✓ Выбрать эту папку"
+
+msgid "No files"
+msgstr "Нет файлов"
+
+msgid "No subfolders"
+msgstr "Нет подпапок"
+
+# --- stub pages ---
+msgid "Advanced search by books, authors, series."
+msgstr "Расширенный поиск по книгам, авторам, сериям."
+
+msgid "— Under development —"
+msgstr "— В разработке —"
+
+msgid "Operation history log."
+msgstr "Журнал выполненных операций."
+
+msgid "Library file archiving."
+msgstr "Архивация файлов библиотеки."
+
+msgid "View and edit database records."
+msgstr "Просмотр и редактирование записей базы данных."
+
+msgid "Check FB2 files for correct structure and metadata."
+msgstr "Проверка FB2-файлов на корректность структуры и метаданных."
+
+msgid "Books added since the last session."
+msgstr "Книги, добавленные с момента последней сессии."
+
+msgid "Series missing volumes or with broken numbering."
+msgstr "Серии, в которых не хватает томов или нарушена нумерация."
+
+# --- names_list.html ---
+msgid "authors with undetermined gender."
+msgstr "авторов с неопределённым полом."
+
+msgid "All — Male"
+msgstr "Все — Муж."
+
+msgid "All — Female"
+msgstr "Все — Жен."
+
+msgid "🌐 Check online"
+msgstr "🌐 Сверить онлайн"
+
+msgid "↺ Retry errors"
+msgstr "↺ Повторить ошибочные"
+
+msgid "checked"
+msgstr "проверено"
+
+msgid "Source"
+msgstr "Источник"
+
+msgid "Author"
+msgstr "Автор"
+
+msgid "First name"
+msgstr "Имя"
+
+msgid "Gender"
+msgstr "Пол"
+
+msgid "Click — copy to «First name»"
+msgstr "Нажмите — скопировать в «Имя»"
+
+msgid "Male"
+msgstr "Муж."
+
+msgid "Female"
+msgstr "Жен."
+
+msgid "❌ Connection error"
+msgstr "❌ Ошибка соединения"
+
+msgid "⚠ Has errors"
+msgstr "⚠ Есть ошибки"
+
+msgid "✓ Done"
+msgstr "✓ Готово"
+
+msgid "✓ All authors already have a defined gender — nothing to add."
+msgstr "✓ Все авторы уже имеют определённый пол — ничего добавлять не нужно."
+
+# --- martyrs.html ---
+msgid "files where all authors are female."
+msgstr "файлов, где все авторы — женщины."
+
+msgid "🗑 Delete all"
+msgstr "🗑 Удалить всё"
+
+msgid "File"
+msgstr "Файл"
+
+msgid "Author(s)"
+msgstr "Автор(ы)"
+
+msgid "files from disk? This action is irreversible."
+msgstr "файлов с диска? Это действие необратимо."
+
+msgid "Deleting..."
+msgstr "Удаление..."
+
+msgid "✓ Deleted:"
+msgstr "✓ Удалено:"
+
+msgid "files."
+msgstr "файлов."
+
+msgid "✓ No files with female-only authors found."
+msgstr "✓ Файлов с авторами-только-женщинами не найдено."
+
+# --- duplicates.html ---
+msgid "✓ No duplicates found"
+msgstr "✓ Дубликаты не найдены"
+
+msgid "files checked"
+msgstr "файлов проверено"
+
+msgid "☑ Select/Deselect all"
+msgstr "☑ Снять/Отметить все"
+
+msgid "🗑 Delete selected"
+msgstr "🗑 Удалить отмеченные"
+
+msgid "Filter by original:"
+msgstr "Фильтр по оригиналу:"
+
+msgid "Enter part of original path…"
+msgstr "Введите часть пути оригинала…"
+
+msgid "Duplicate (path)"
+msgstr "Дубликат (путь)"
+
+msgid "Type"
+msgstr "Тип"
+
+msgid "Size"
+msgstr "Размер"
+
+msgid "Original:"
+msgstr "Оригинал:"
+
+msgid "file(s) from disk? This action is irreversible."
+msgstr "файл(а/ов) с диска? Действие необратимо."
+
+# --- compiler_groups.html ---
+msgid "Compiler groups not found."
+msgstr "Группы для компиляции не найдены."
+
+msgid "groups"
+msgstr "групп"
+
+msgid "☑ All / Deselect"
+msgstr "☑ Все / Снять"
+
+msgid "Delete source files"
+msgstr "Удалять исходники"
+
+msgid "▶ Compile"
+msgstr "▶ Скомпилировать"
+
+msgid "● Order defined"
+msgstr "● Порядок определён"
+
+msgid "● Partially unknown"
+msgstr "● Частично неизвестен"
+
+msgid "● Alphabetical"
+msgstr "● По алфавиту"
+
+msgid "● Already compiled"
+msgstr "● Уже скомп."
+
+msgid "Bks."
+msgstr "Кн."
+
+msgid "Range"
+msgstr "Диапазон"
+
+msgid "compiled"
+msgstr "скомп."
+
+msgid "Drag to resize"
+msgstr "Перетащи для изменения высоты"
+
+msgid "← Select a group"
+msgstr "← Выберите группу"
+
+msgid "Click a group to see its composition."
+msgstr "Кликни по группе чтобы увидеть состав."
+
+msgid "Vol."
+msgstr "Том"
+
+msgid "keep"
+msgstr "оставить"
+
+msgid "delete"
+msgstr "удалить"
+
+msgid "auto-excl."
+msgstr "авто-искл."
+
+msgid "Starting…"
+msgstr "Запуск…"
+
+msgid "Error:"
+msgstr "Ошибка:"
+
+msgid "Connection error:"
+msgstr "Ошибка соединения:"
+
+msgid "▶ Compile again"
+msgstr "▶ Скомпилировать снова"
+
+# --- genre_picker_list.html ---
+msgid "Genres not found"
+msgstr "Жанры не найдены"
+
+# --- genre_books.html ---
+msgid "Genre:"
+msgstr "Жанр:"
+
+msgid "books"
+msgstr "книг"
+
+msgid "Books not found"
+msgstr "Книги не найдены"
+
+# --- main_results.html ---
+msgid "No data — run a scan"
+msgstr "Нет данных — выполните сканирование"
+
+msgid "Errors"
+msgstr "Ошибки"
+
+msgid "No errors"
+msgstr "Ошибок нет"

@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if folders %}
 {% for f in folders %}
 <div class="ftree-node">
@@ -12,7 +13,7 @@
                 data-node-id="{{ f.node_id }}"
                 data-path="{{ f.path }}"
                 onclick="ftreeToggle(this)"
-                title="Развернуть">▶</button>
+                title="{% trans "Expand" %}">▶</button>
         {% else %}
         <span class="ftree-leaf-indent"></span>
         {% endif %}
@@ -31,5 +32,5 @@
 </div>
 {% endfor %}
 {% else %}
-<div style="padding:0.5rem 1rem; color:#7f8c8d; font-size:0.83rem;">Нет папок с FB2-файлами</div>
+<div style="padding:0.5rem 1rem; color:#7f8c8d; font-size:0.83rem;">{% trans "No folders with FB2 files" %}</div>
 {% endif %}
