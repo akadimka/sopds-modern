@@ -1,36 +1,19 @@
-{% extends "fb2parser/base.html" %}
-{% block content %}
-<h2>🔄 Синхронизация</h2>
-
-<div class="grid-x grid-margin-x">
-    <div class="cell medium-5">
-        <div class="card">
-            <div class="card-divider"><strong>Запуск синхронизации</strong></div>
-            <div class="card-section">
-                <p style="font-size:0.85rem; color:#555;">
-                    Синхронизация перемещает FB2-файлы из рабочей папки в библиотеку,
-                    сортируя их по структуре <em>жанр/автор/серия/</em>.
-                    Пути настраиваются в <code>config.json</code> fb2parser проекта.
-                </p>
-                <div class="callout warning" style="font-size:0.82rem; padding:0.5rem 0.8rem;">
-                    ⚠️ Операция перемещает и переименовывает файлы на диске!<br>
-                    Убедитесь что <strong>library_path</strong> и <strong>last_scan_path</strong>
-                    правильно настроены в fb2parser/config.json.
-                </div>
-                <div style="margin-top:0.8rem;">
-                    <button class="button success" style="margin:0;"
-                            hx-post="{% url 'fb2parser:sync_start' %}"
-                            hx-target="#sync-status"
-                            hx-swap="outerHTML">
-                        ▶ Запустить синхронизацию
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="cell medium-7">
-        {% include "fb2parser/sync_status.html" with state=state pct=0 %}
-    </div>
+<p style="font-size:0.85rem; color:#555; margin-bottom:0.7rem;">
+    Синхронизация перемещает FB2-файлы из рабочей папки в библиотеку,
+    сортируя их по структуре <em>жанр/автор/серия/</em>.
+    Пути настраиваются в разделе <strong>Настройки</strong>.
+</p>
+<div class="callout warning" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem;">
+    ⚠️ Операция перемещает и переименовывает файлы на диске!<br>
+    Убедитесь что <strong>library_path</strong> и <strong>last_scan_path</strong>
+    правильно настроены в config.json.
 </div>
-{% endblock %}
+
+<button class="button success" style="margin-bottom:1rem;"
+        hx-post="{% url 'fb2parser:sync_start' %}"
+        hx-target="#sync-status"
+        hx-swap="outerHTML">
+    ▶ Запустить синхронизацию
+</button>
+
+{% include "fb2parser/sync_status.html" with state=state pct=0 %}

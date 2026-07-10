@@ -1666,7 +1666,10 @@ _sync_state: dict = {
 def sync(request):
     with _sync_lock:
         state = dict(_sync_state)
-    return render(request, "fb2parser/sync.html", _ctx("sync", "Синхронизация", state=state))
+    pct = 0
+    if state["total"] > 0:
+        pct = min(100, int(state["processed"] / state["total"] * 100))
+    return render(request, "fb2parser/sync.html", {"state": state, "pct": pct})
 
 
 def _run_sync_thread():

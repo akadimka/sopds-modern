@@ -43,6 +43,14 @@
         /* Genre picker */
         .gp-item:hover { background: #f0f4f8; }
         .gp-item.selected { background: #fef3e2; font-weight: 600; }
+        /* Sync modal */
+        #sync-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; }
+        #sync-modal-overlay.open { display:flex; align-items:center; justify-content:center; }
+        #sync-modal-box { background:#fff; border-radius:6px; width:min(560px,95vw); max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.25); }
+        #sync-modal-header { background:#34495e; color:#fff; padding:0.7rem 1rem; display:flex; justify-content:space-between; align-items:center; border-radius:6px 6px 0 0; }
+        #sync-modal-header h5 { margin:0; font-size:1rem; }
+        #sync-modal-close { background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; line-height:1; padding:0; }
+        #sync-modal-body { padding:1rem; }
     </style>
 </head>
 <body>
@@ -81,7 +89,7 @@
                     <ul class="menu is-dropdown-submenu">
                         <li><a href="{% url 'fb2parser:genre_assign' %}">Присвоение жанра</a></li>
                         <li><a href="{% url 'fb2parser:normalize' %}">Нормализация</a></li>
-                        <li><a href="{% url 'fb2parser:sync' %}">Синхронизация</a></li>
+                        <li><a href="#" onclick="openSyncModal(); return false;">Синхронизация</a></li>
                         <li><a href="{% url 'fb2parser:archive' %}">Заархивировать</a></li>
                         <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
                         <li><a href="{% url 'fb2parser:database' %}">База данных</a></li>
@@ -202,6 +210,38 @@ document.addEventListener('click', function(e) {
         document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
     }
 });
+
+// Sync modal
+var _syncModalLoaded = false;
+function openSyncModal() {
+    document.getElementById('sync-modal-overlay').classList.add('open');
+    if (!_syncModalLoaded) {
+        _syncModalLoaded = true;
+        htmx.ajax('GET', '{% url "fb2parser:sync" %}', {target: '#sync-modal-body', swap: 'innerHTML'}).then(function() {
+            htmx.process(document.getElementById('sync-modal-body'));
+        });
+    }
+}
+function closeSyncModal() {
+    document.getElementById('sync-modal-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSyncModal();
+});
 </script>
+
+<!-- Sync modal -->
+<div id="sync-modal-overlay" onclick="if(event.target===this) closeSyncModal();">
+    <div id="sync-modal-box">
+        <div id="sync-modal-header">
+            <h5>🔄 Синхронизация</h5>
+            <button id="sync-modal-close" onclick="closeSyncModal()">×</button>
+        </div>
+        <div id="sync-modal-body">
+            <div style="padding:2rem; text-align:center; color:#7f8c8d;">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
