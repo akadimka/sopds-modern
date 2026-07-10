@@ -1715,6 +1715,41 @@ def sync_clear_assignments(request):
     return HttpResponse("ok")
 
 
+def _run_auto_compile(library_path, on_log):
+    from fb2parser_core.auto_compile_service import auto_compile_library
+    on_log("─" * 40)
+    on_log("🔧 Авто-компиляция серий...")
+    with _sync_lock:
+        _sync_state["running"] = True
+        _sync_state["current"] = "Авто-компиляция серий..."
+
+    ok_cnt = fail_cnt = 0
+
+    def _on_group(author, series, success):
+        nonlocal ok_cnt, fail_cnt
+        if success:
+            ok_cnt += 1
+        else:
+            fail_cnt += 1
+        on_log(f"{'✓' if success else '✗'} {author} — {series}")
+        with _sync_lock:
+            _sync_state["current"] = f"{author} — {series}"
+
+    try:
+        result = auto_compile_library(str(library_path), on_group=_on_group)
+        ok_cnt, fail_cnt = result["ok"], result["fail"]
+        on_log(f"✅ Компиляция завершена: {ok_cnt} групп, ошибок: {fail_cnt}")
+    except Exception as exc:
+        on_log(f"❌ Ошибка компиляции: {exc}")
+    finally:
+        with _sync_lock:
+            _sync_state["running"] = False
+            stats = dict(_sync_state.get("stats") or {})
+            stats["compiled_groups"] = ok_cnt
+            stats["compile_errors"] = fail_cnt
+            _sync_state["stats"] = stats
+
+
 def _run_sync_thread():
     from .fb2parser_bridge import get_sync_service
     from django import db
@@ -1746,7 +1781,13 @@ def _run_sync_thread():
             allowed_folders=allowed_folders,
         )
         with _sync_lock:
+            auto_compile = _sync_state.get("auto_compile", False)
             _sync_state.update({"done": True, "running": False, "stats": stats or {}})
+
+        files_moved = (stats or {}).get("files_moved", 0)
+        if auto_compile and files_moved > 0:
+            _run_auto_compile(svc.library_path, on_log)
+
     except Exception as exc:
         with _sync_lock:
             _sync_state.update({"error": str(exc), "running": False})
@@ -1764,13 +1805,15 @@ def sync_start(request):
         if _sync_state["running"]:
             return _render_sync_status(dict(_sync_state))
         scan_path = request.POST.get("scan_path", "").strip() or None
+        auto_compile = request.POST.get("auto_compile") == "1"
         with _genre_assignments_lock:
             allowed = set(_genre_assignments.keys()) if _genre_assignments else None
         _sync_stop_event.clear()
         _sync_state.update({"running": True, "done": False, "error": None,
                             "processed": 0, "total": 0, "current": "",
                             "stats": {}, "log": [],
-                            "scan_path": scan_path, "allowed_folders": allowed})
+                            "scan_path": scan_path, "allowed_folders": allowed,
+                            "auto_compile": auto_compile})
     threading.Thread(target=_run_sync_thread, daemon=True).start()
     return _render_sync_status(dict(_sync_state))
 

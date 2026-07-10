@@ -43,13 +43,23 @@
     {% trans "⚠️ This operation moves and renames files on disk!" %}
 </div>
 
+<label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; margin-bottom:0.8rem; cursor:pointer;">
+    <input type="checkbox" id="sync-auto-compile" style="width:15px; height:15px; accent-color:#f39c12; cursor:pointer; flex-shrink:0;">
+    <span>{% trans "Automatically compile series after sync (deletes source files)" %}</span>
+</label>
+
 <button class="button success" style="margin-bottom:1rem;"
-        hx-post="{% url 'fb2parser:sync_start' %}"
-        hx-vals='{"scan_path": "{{ scan_path|escapejs }}"}'
-        hx-target="#sync-status"
-        hx-swap="outerHTML">
+        onclick="syncStart('{{ scan_path|escapejs }}')">
     {% trans "▶ Start Synchronization" %}
 </button>
+<script>
+function syncStart(scanPath) {
+    var autoCompile = document.getElementById('sync-auto-compile').checked ? '1' : '0';
+    htmx.ajax('POST', '{% url "fb2parser:sync_start" %}',
+              {target: '#sync-status', swap: 'outerHTML',
+               values: {scan_path: scanPath, auto_compile: autoCompile}});
+}
+</script>
 
 {% else %}
 <div class="callout secondary" style="font-size:0.85rem; padding:0.6rem 0.9rem;">
