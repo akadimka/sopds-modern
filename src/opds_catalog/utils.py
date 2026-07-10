@@ -255,14 +255,6 @@ def getFileDataConv(book, convert_type):
     return dio
 
 
-def getFileDataEpub(book):
-    return getFileDataConv(book, "epub")
-
-
-def getFileDataMobi(book):
-    return getFileDataConv(book, "mobi")
-
-
 def get_infolist_filename(infolist: list[ZipInfo], filename: str) -> str | None:
     """Поиск имени файла в ZIP архиве.
 

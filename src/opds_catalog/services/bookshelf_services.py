@@ -2,7 +2,7 @@
 
 from django.contrib.auth.models import User
 
-from opds_catalog.models import Book, bookshelf
+from opds_catalog.models import bookshelf
 
 
 def get_bookshelf_books_count(user: User) -> int:
@@ -17,6 +17,3 @@ def get_bookshelf_books_count(user: User) -> int:
     return bookshelf.objects.filter(user=user).count()
 
 
-def add_book_to_bookshelf(user: User, book: Book) -> None:
-    """Добавляет книгу на книжную полку пользователя, если такой книги еще нет."""
-    bookshelf.objects.get_or_create(user=user, book=book)

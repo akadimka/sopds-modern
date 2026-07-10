@@ -33,11 +33,6 @@ from opds_catalog.services import (
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.utils import get_lang_name, to_int
 
-BREADCRUMBS = {
-    "m": [_("Books"), _("Search by title")],
-    "b": [_("Books"), _("Search by title")],
-}
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,14 +47,6 @@ def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None
     return actual_decorator
 
 
-def get_breadcrumbs(searchtype: str, append: str | None = None) -> list[str]:
-    """Возвращает "хлебные крошки" для варианта поиска."""
-    result = BREADCRUMBS[searchtype]
-    if append is not None:
-        result.append(append)
-    return result
-
-
 def _extract_input_parameters(request) -> dict[str, str]:
     args = {}
     args["searchtype"] = request.GET.get("searchtype", "m")
@@ -68,11 +55,6 @@ def _extract_input_parameters(request) -> dict[str, str]:
     args["page_num"] = request.GET.get("page")
     args["user"] = request.user.username
     return args
-
-
-def search_book_by_title_match(args):
-    args["breadcrumbs"] = [_("Books"), _("Search by title"), args["searchterms"]]
-    args["searchobject"] = "title"
 
 
 # Create your views here.
