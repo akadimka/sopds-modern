@@ -375,6 +375,8 @@ def assign_genre_multi(request):
         try:
             count = service.assign_genre_to_folder(path, genre)
             results.append({"path": path, "success": True, "count": count})
+            with _genre_assignments_lock:
+                _genre_assignments[os.path.abspath(path)] = genre
         except Exception as e:
             results.append({"path": path, "success": False, "error": str(e)})
     return JsonResponse({"results": results})
@@ -1660,6 +1662,9 @@ _sync_state: dict = {
     "stats": {},
     "log": [],
 }
+# {abs_path: genre_name} — папки с назначенным жанром в текущей сессии
+_genre_assignments: dict = {}
+_genre_assignments_lock = threading.Lock()
 
 
 @staff_member_required(login_url="/web/login/")
@@ -1670,7 +1675,25 @@ def sync(request):
     if state["total"] > 0:
         pct = min(100, int(state["processed"] / state["total"] * 100))
     scan_path = request.GET.get("scan_path", "").strip()
-    return render(request, "fb2parser/sync.html", {"state": state, "pct": pct, "scan_path": scan_path})
+    with _genre_assignments_lock:
+        assignments = dict(_genre_assignments)
+    return render(request, "fb2parser/sync.html", {
+        "state": state, "pct": pct,
+        "scan_path": scan_path,
+        "assignments": assignments,
+    })
+
+
+@staff_member_required(login_url="/web/login/")
+def sync_clear_assignments(request):
+    """Сбросить список папок с назначенными жанрами (при смене scan_path)."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    with _genre_assignments_lock:
+        _genre_assignments.clear()
+    from django.http import HttpResponse
+    return HttpResponse("ok")
 
 
 def _run_sync_thread():
@@ -1681,6 +1704,7 @@ def _run_sync_thread():
         svc = get_sync_service()
         with _sync_lock:
             scan_path = _sync_state.get("scan_path")
+            allowed_folders = _sync_state.get("allowed_folders")
         if scan_path:
             from pathlib import Path as _Path
             svc.last_scan_path = _Path(scan_path)
@@ -1695,7 +1719,11 @@ def _run_sync_thread():
             with _sync_lock:
                 _sync_state["log"] = log_lines[-200:]
 
-        stats = svc.synchronize(progress_callback=on_progress, log_callback=on_log)
+        stats = svc.synchronize(
+            progress_callback=on_progress,
+            log_callback=on_log,
+            allowed_folders=allowed_folders,
+        )
         with _sync_lock:
             _sync_state.update({"done": True, "running": False, "stats": stats or {}})
     except Exception as exc:
@@ -1715,9 +1743,12 @@ def sync_start(request):
         if _sync_state["running"]:
             return _render_sync_status(dict(_sync_state))
         scan_path = request.POST.get("scan_path", "").strip() or None
+        with _genre_assignments_lock:
+            allowed = set(_genre_assignments.keys()) if _genre_assignments else None
         _sync_state.update({"running": True, "done": False, "error": None,
                             "processed": 0, "total": 0, "current": "",
-                            "stats": {}, "log": [], "scan_path": scan_path})
+                            "stats": {}, "log": [],
+                            "scan_path": scan_path, "allowed_folders": allowed})
     threading.Thread(target=_run_sync_thread, daemon=True).start()
     return _render_sync_status(dict(_sync_state))
 

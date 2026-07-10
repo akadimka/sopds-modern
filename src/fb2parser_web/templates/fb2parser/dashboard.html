@@ -152,11 +152,24 @@ document.addEventListener('htmx:afterSwap', function(e) {
 var _origSelectFolder = window.selectFolder;
 window.selectFolder = function(targetId, path) {
     _origSelectFolder(targetId, path);
-    if (targetId === 'main-folder') reloadTree(path);
+    if (targetId === 'main-folder') {
+        reloadTree(path);
+        fetch("{% url 'fb2parser:sync_clear_assignments' %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': _getCsrf()},
+        });
+    }
 };
 
 document.getElementById('main-folder').addEventListener('change', function() {
-    if (this.value.trim()) reloadTree(this.value.trim());
+    var path = this.value.trim();
+    if (path) {
+        reloadTree(path);
+        fetch("{% url 'fb2parser:sync_clear_assignments' %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': _getCsrf()},
+        });
+    }
 });
 
 function reloadTree(path) {

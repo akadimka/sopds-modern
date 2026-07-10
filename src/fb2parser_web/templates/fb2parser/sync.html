@@ -1,29 +1,47 @@
 <p style="font-size:0.85rem; color:#555; margin-bottom:0.7rem;">
-    Синхронизация перемещает FB2-файлы из рабочей папки в библиотеку,
-    сортируя их по структуре <em>жанр/автор/серия/</em>.
+    Синхронизация перемещает FB2-файлы в библиотеку по структуре <em>жанр/автор/серия/</em>.
+    Обрабатываются только папки с назначенным жанром.
 </p>
 
-<div style="font-size:0.85rem; margin-bottom:0.5rem; display:flex; align-items:baseline; gap:0.4rem;">
-    <span style="color:#495057; white-space:nowrap;">Папка для обработки:</span>
-    {% if scan_path %}
-    <code style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:3px; padding:0.1rem 0.4rem; font-size:0.8rem; word-break:break-all;">{{ scan_path }}</code>
-    {% else %}
-    <span style="color:#c0392b;">не задана (откройте главное окно и выберите папку)</span>
-    {% endif %}
+{% if scan_path %}
+<div style="font-size:0.82rem; color:#555; margin-bottom:0.6rem;">
+    <strong>Рабочая папка:</strong>
+    <code style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:3px; padding:0.1rem 0.4rem; word-break:break-all;">{{ scan_path }}</code>
+</div>
+{% endif %}
+
+{% if assignments %}
+<div style="margin-bottom:0.8rem;">
+    <div style="font-size:0.82rem; font-weight:600; color:#2c3e50; margin-bottom:0.4rem;">
+        Папки для синхронизации ({{ assignments|length }}):
+    </div>
+    <div style="max-height:160px; overflow-y:auto; border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa;">
+        {% for path, genre in assignments.items %}
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid #e9ecef; font-size:0.8rem;">
+            <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; margin-right:0.5rem; color:#2c3e50;">{{ path }}</span>
+            <span style="background:#27ae60; color:#fff; border-radius:10px; padding:0.05rem 0.5rem; font-size:0.75rem; white-space:nowrap; flex-shrink:0;">{{ genre }}</span>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
 <div class="callout warning" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem;">
-    ⚠️ Операция перемещает и переименовывает файлы на диске!<br>
-    Убедитесь что <strong>library_path</strong> правильно настроен в Настройках.
+    ⚠️ Операция перемещает и переименовывает файлы на диске!
 </div>
 
 <button class="button success" style="margin-bottom:1rem;"
-        {% if not scan_path %}disabled title="Выберите папку в главном окне"{% endif %}
         hx-post="{% url 'fb2parser:sync_start' %}"
         hx-vals='{"scan_path": "{{ scan_path }}"}'
         hx-target="#sync-status"
         hx-swap="outerHTML">
     ▶ Запустить синхронизацию
 </button>
+
+{% else %}
+<div class="callout secondary" style="font-size:0.85rem; padding:0.6rem 0.9rem;">
+    ℹ️ Ни одной папке не назначен жанр.<br>
+    Вернитесь в главное окно, выберите папки и назначьте им жанр — после этого синхронизация станет доступна.
+</div>
+{% endif %}
 
 {% include "fb2parser/sync_status.html" with state=state pct=0 %}
