@@ -51,7 +51,8 @@ class SynchronizationService:
         
         # Get paths from config
         self.library_path = Path(self.settings.get_library_path())
-        self.last_scan_path = Path(self.settings.get_last_scan_path())
+        _last = self.settings.get_last_scan_path()
+        self.last_scan_path = Path(_last) if _last else None
         
         # Database is in project root, not in library
         self.db_path = Path(__file__).parent / '.library_cache.db'
@@ -187,7 +188,11 @@ class SynchronizationService:
         """
         self.stats['start_time'] = datetime.now()
         self.log_callback = log_callback  # Store for use in other methods
-        
+
+        if not self.last_scan_path:
+            self._log("⚠ Папка для сканирования не задана. Выберите папку на главном экране и повторите.")
+            return self.stats
+
         self._log("=" * 60)
         self._log("НАЧАЛО СИНХРОНИЗАЦИИ")
         self._log("=" * 60)

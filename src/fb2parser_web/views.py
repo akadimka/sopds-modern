@@ -124,9 +124,12 @@ def dashboard(request):
 @require_http_methods(["POST"])
 def dashboard_set_root(request):
     from django.http import JsonResponse
+    from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
     path = request.POST.get("path", "").strip()
     if path and os.path.isdir(path):
         request.session['dashboard_root'] = path
+        SettingsManager(_config_path()).set_last_scan_path(path)
     return JsonResponse({"ok": True})
 
 
@@ -1689,9 +1692,13 @@ def sync(request):
     scan_path = request.GET.get("scan_path", "").strip()
     with _genre_assignments_lock:
         assignments = dict(_genre_assignments)
+    from fb2parser_core.settings_manager import SettingsManager
+    from .fb2parser_bridge import _config_path
+    sm = SettingsManager(_config_path())
     return render(request, "fb2parser/sync.html", {
         "state": state, "pct": pct,
         "scan_path": scan_path,
+        "library_path": sm.get_library_path(),
         "assignments": assignments,
     })
 
