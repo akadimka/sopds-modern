@@ -147,6 +147,11 @@ cd /opt/sopds-modern/src
 # поэтому явно задаём переменную окружения перед запуском команд:
 export DJANGO_SETTINGS_MODULE=sopds.settings.base
 
+# Скомпилировать переводы (.po → .mo). Без этого шага переключение
+# языка визуально ничего не меняет: gettext молча падает обратно
+# на исходные строки, если .mo нет.
+../.venv/bin/python compile_messages.py
+
 # Собрать статику
 ../.venv/bin/python manage.py collectstatic --noinput
 
@@ -286,6 +291,7 @@ git pull
 uv sync --no-dev
 cd src
 export DJANGO_SETTINGS_MODULE=sopds.settings.base
+../.venv/bin/python compile_messages.py
 ../.venv/bin/python manage.py migrate
 ../.venv/bin/python manage.py collectstatic --noinput
 systemctl restart sopds-modern
