@@ -234,4 +234,4 @@ class Counter(models.Model):
     value = models.IntegerField(null=False, default=0)
     update_time = models.DateTimeField(null=False, default=timezone.now)
     obj = models.Manager()
-    objects = CounterManager()
+    objects: CounterManager = CounterManager()  # type: ignore[assignment]

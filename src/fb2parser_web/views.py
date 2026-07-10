@@ -987,8 +987,8 @@ def names_check_online(request):
             except Exception as e:
                 payload = json.dumps({"author": author, "gender": "", "status": "error",
                                       "detail": str(e)}, ensure_ascii=False)
-            yield f"data: {payload}\n\n"
-        yield "data: {\"done\": true}\n\n"
+            yield f"data: {payload}\n\n".encode()
+        yield b'data: {"done": true}\n\n'
 
     resp = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     resp["Cache-Control"] = "no-cache"
