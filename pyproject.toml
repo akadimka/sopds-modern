@@ -16,6 +16,7 @@ dependencies = [
     "psycopg[binary]==3.2.6",
     "pymemcache==4",
     "python-telegram-bot==22",
+    "tqdm>=4.68.4",
     "whitenoise==6.11",
 ]
 
