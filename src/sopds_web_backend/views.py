@@ -515,14 +515,13 @@ def BSClearView(request):
 def hello(request):
     from django.db.models import Count
 
-    from opds_catalog.models import Counter, counter_allauthors, counter_allbooks, counter_allgenres, counter_allseries
     args = {}
     args["breadcrumbs"] = []
     args["stats"] = {
-        "allbooks":   Counter.objects.get_counter(counter_allbooks),
-        "allauthors": Counter.objects.get_counter(counter_allauthors),
-        "allgenres":  Counter.objects.get_counter(counter_allgenres),
-        "allseries":  Counter.objects.get_counter(counter_allseries),
+        "allbooks":   Book.objects.count(),
+        "allauthors": Author.objects.count(),
+        "allgenres":  Genre.objects.count(),
+        "allseries":  Series.objects.count(),
     }
     args["top_genres"]   = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
     args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
