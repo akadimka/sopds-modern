@@ -1662,6 +1662,7 @@ _sync_state: dict = {
     "stats": {},
     "log": [],
 }
+_sync_stop_event = threading.Event()
 # {abs_path: genre_name} — папки с назначенным жанром в текущей сессии
 _genre_assignments: dict = {}
 _genre_assignments_lock = threading.Lock()
@@ -1711,6 +1712,8 @@ def _run_sync_thread():
         log_lines = []
 
         def on_progress(cur, tot, msg):
+            if _sync_stop_event.is_set():
+                raise InterruptedError("Остановлено пользователем")
             with _sync_lock:
                 _sync_state.update({"processed": cur, "total": tot, "current": msg})
 
@@ -1745,6 +1748,7 @@ def sync_start(request):
         scan_path = request.POST.get("scan_path", "").strip() or None
         with _genre_assignments_lock:
             allowed = set(_genre_assignments.keys()) if _genre_assignments else None
+        _sync_stop_event.clear()
         _sync_state.update({"running": True, "done": False, "error": None,
                             "processed": 0, "total": 0, "current": "",
                             "stats": {}, "log": [],
@@ -1755,6 +1759,17 @@ def sync_start(request):
 
 @staff_member_required(login_url="/web/login/")
 def sync_status(request):
+    with _sync_lock:
+        state = dict(_sync_state)
+    return _render_sync_status(state)
+
+
+@staff_member_required(login_url="/web/login/")
+def sync_stop(request):
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    _sync_stop_event.set()
     with _sync_lock:
         state = dict(_sync_state)
     return _render_sync_status(state)

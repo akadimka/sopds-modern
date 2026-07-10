@@ -35,6 +35,7 @@ urlpatterns = [
     path("sync/",              views.sync,                   name="sync"),
     path("sync/start/",        views.sync_start,             name="sync_start"),
     path("sync/status/",       views.sync_status,            name="sync_status"),
+    path("sync/stop/",         views.sync_stop,              name="sync_stop"),
     path("sync/clear/",        views.sync_clear_assignments, name="sync_clear_assignments"),
     path("server-restart/",    views.server_restart,     name="server_restart"),
     path("browse/",            views.browse_folders,     name="browse"),

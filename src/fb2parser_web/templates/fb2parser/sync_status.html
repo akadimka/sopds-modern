@@ -4,9 +4,17 @@
      hx-trigger="every 2s"
      hx-target="#sync-status"
      hx-swap="outerHTML">
-    <div class="callout primary">
-        <strong>⏳ Синхронизация...</strong>
-        {% if state.current %}<div style="font-size:0.78rem; color:#555; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.current }}</div>{% endif %}
+    <div class="callout primary" style="display:flex; align-items:center; justify-content:space-between; gap:0.8rem; flex-wrap:wrap;">
+        <div>
+            <strong>⏳ Синхронизация...</strong>
+            {% if state.current %}<div style="font-size:0.78rem; color:#555; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:340px;">{{ state.current }}</div>{% endif %}
+        </div>
+        <button class="button alert" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem; flex-shrink:0;"
+                hx-post="{% url 'fb2parser:sync_stop' %}"
+                hx-target="#sync-status"
+                hx-swap="outerHTML">
+            ⏹ Остановить
+        </button>
     </div>
     {% if state.total > 0 %}
     <div style="font-size:0.82rem; margin-bottom:0.3rem;">{{ state.processed }} / {{ state.total }} ({{ pct }}%)</div>
