@@ -270,6 +270,7 @@ cd /opt/sopds-modern
 git pull
 uv sync --no-dev
 cd src
+export DJANGO_SETTINGS_MODULE=sopds.settings.base
 ../.venv/bin/python manage.py migrate
 ../.venv/bin/python manage.py collectstatic --noinput
 systemctl restart sopds-modern
