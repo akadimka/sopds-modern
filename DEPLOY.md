@@ -161,7 +161,7 @@ export DJANGO_SETTINGS_MODULE=sopds.settings.base
 
 ---
 
-## 10. Настройка папки fb2_data
+## 10. Настройка папки fb2_data и логов
 
 ```bash
 # Скопируйте ваш genres.xml
@@ -169,6 +169,10 @@ cp /path/to/genres.xml /opt/sopds-modern/src/fb2_data/genres.xml
 
 # Убедитесь что папка для CSV существует
 mkdir -p /opt/sopds-modern/src/fb2_data/csv
+
+# Папка для логов (log/sopds-ng.log, log/sopds-scaner.log) — не создаётся
+# автоматически, gunicorn упадёт с FileNotFoundError без неё
+mkdir -p /opt/sopds-modern/src/log
 ```
 
 > Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 13 «Проверка».
@@ -301,3 +305,4 @@ systemctl restart sopds-modern
 | Apache: `AH00961: failed to make connection`  | Gunicorn не запущен — `systemctl start sopds-modern`                                  |
 | Apache: `403 Forbidden` на статику            | Whitenoise обслуживает статику через gunicorn — `ProxyPass /` должен покрывать всё    |
 | `systemd`: `status=203/EXEC`                  | `www-data` не может выполнить Python из `.venv` — Python установлен под `/root` (см. шаг 2, `UV_PYTHON_INSTALL_DIR`) |
+| `500` при открытии страницы + `FileNotFoundError: .../log/sopds-ng.log` | Создать папку `mkdir -p /opt/sopds-modern/src/log` (см. шаг 10) и повторить `chown -R www-data:www-data /opt/sopds-modern` |
