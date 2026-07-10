@@ -8,7 +8,6 @@ dependencies = [
     "apscheduler==3.11",
     "chardet>=5.2.0",
     "django==5.2",
-    "django-constance[database]==4.3.2",
     "django-environ==0.12",
     "gunicorn>=23.0.0",
     "lxml>=6.0.2",

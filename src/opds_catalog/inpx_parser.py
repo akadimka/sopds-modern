@@ -6,7 +6,6 @@ Created on 14 нояб. 2016 г.
 
 # -*- coding: utf-8 -*-
 # from opds_catalog import settings
-# from constance import config
 import logging
 import os
 import zipfile

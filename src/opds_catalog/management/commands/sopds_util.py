@@ -6,8 +6,7 @@ from django.db import transaction
 # from django.conf import settings as main_settings
 from opds_catalog import models, opdsdb
 from opds_catalog.models import Counter
-
-# from constance import config
+from opds_catalog.sopds_config import sopds_cfg, _KEY_MAP
 
 
 class Command(BaseCommand):
@@ -120,14 +119,23 @@ class Command(BaseCommand):
 
     def setconf(self, confparam, confvalue):
         if confparam and confvalue:
-            call_command("constance", "set", confparam, confvalue)
+            if confparam not in _KEY_MAP:
+                self.stdout.write("Unknown config key: %s" % confparam)
+                return
+            setattr(sopds_cfg, confparam, confvalue)
             self.stdout.write("Config parameter %s set to %s" % (confparam, confvalue))
 
     def getconf(self, confparam):
         if confparam:
-            call_command("constance", "get", confparam)
+            if confparam not in _KEY_MAP:
+                self.stdout.write("Unknown config key: %s" % confparam)
+                return
+            value = getattr(sopds_cfg, confparam)
+            self.stdout.write("%s = %s" % (confparam, value))
         else:
-            call_command("constance", "list")
+            for key in _KEY_MAP:
+                value = getattr(sopds_cfg, key)
+                self.stdout.write("%s = %s" % (key, value))
 
     def pg_optimize(self):
         opdsdb.pg_optimize(True)
