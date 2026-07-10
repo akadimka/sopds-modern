@@ -22,6 +22,7 @@ urlpatterns = [
     re_path(r"^$", views.hello, name="main"),
     re_path(r"^scan/start/$", views.sopds_scan_start, name="scan_start"),
     re_path(r"^scan/status/$", views.sopds_scan_status, name="scan_status"),
+    re_path(r"^settings/$", views.sopds_settings, name="settings"),
 ]
 
 # handler403 = 'views.handler403'

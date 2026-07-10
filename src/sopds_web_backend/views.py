@@ -556,6 +556,48 @@ def _render_sopds_scan_status(request):
     return render(request, "sopds_scan_status.html", {"state": state})
 
 
+@require_http_methods(["GET", "POST"])
+def sopds_settings(request):
+    import os
+    from fb2parser_core.settings_manager import SettingsManager
+    _config_path = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json")
+    )
+    sm = SettingsManager(_config_path)
+
+    _BOOL_FIELDS = [
+        'auth', 'alphabet_menu', 'doubles_hide', 'title_as_filename',
+        'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
+        'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
+    ]
+    _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min']
+    _STR_FIELDS = ['book_extensions', 'fb2toepub', 'fb2tomobi', 'temp_dir', 'scanner_pid', 'scanner_log', 'language']
+
+    if request.method == 'POST':
+        sopds = sm.settings.setdefault('sopds', {})
+        for f in _BOOL_FIELDS:
+            sopds[f] = request.POST.get(f) == 'on'
+        for f in _INT_FIELDS:
+            try:
+                sopds[f] = int(request.POST.get(f, 0))
+            except ValueError:
+                pass
+        for f in _STR_FIELDS:
+            sopds[f] = request.POST.get(f, '').strip()
+        sm.save()
+        return redirect(reverse('web:settings') + '?saved=1')
+
+    sopds = sm.settings.get('sopds', {})
+    comments = sopds.get('_comments', {})
+    args = {
+        'breadcrumbs': [_('Settings')],
+        'saved': request.GET.get('saved') == '1',
+        'sopds': sopds,
+        'comments': comments,
+    }
+    return render(request, 'sopds_settings.html', args)
+
+
 def hello(request):
     from django.db.models import Count
 

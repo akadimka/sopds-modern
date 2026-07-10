@@ -69,6 +69,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "sopds_web_backend.processors.sopds_processor",
@@ -146,7 +147,14 @@ STORAGES = {
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LOCALE_PATH = os.path.join(BASE_DIR, "sopds/locale")
+LANGUAGES = [
+    ('en', 'English'),
+    ('ru', 'Russian'),
+]
+
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, "sopds/locale"),
+]
 
 LANGUAGE_CODE = "en-us"
 

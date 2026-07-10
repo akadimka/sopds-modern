@@ -3,16 +3,15 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: sopds-modern\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-31 10:50+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2026-07-10 00:00+0000\n"
+"Last-Translator: aKaDiMkA\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -394,6 +393,175 @@ msgstr "Учетная запись не активна!"
 #: sopds_web_backend/views.py:693
 msgid "User does not exist or the password is incorrect!"
 msgstr "Пользователь не существует или введен неправильный пароль!"
+
+# sopds_hello.html
+msgid "Books"
+msgstr "Книги"
+
+msgid "Authors"
+msgstr "Авторы"
+
+msgid "Genres"
+msgstr "Жанры"
+
+msgid "Series"
+msgstr "Серии"
+
+msgid "Random Book"
+msgstr "Случайная книга"
+
+msgid "Top genres"
+msgstr "Топ жанров"
+
+msgid "Recently added"
+msgstr "Недавно добавленные"
+
+msgid "Title"
+msgstr "Название"
+
+msgid "Format"
+msgstr "Формат"
+
+# sopds_top.html
+msgid "FB2Parser"
+msgstr "FB2Parser"
+
+# sopds_settings.html
+msgid "SOPDS Settings"
+msgstr "Настройки SOPDS"
+
+msgid "Settings saved."
+msgstr "Настройки сохранены."
+
+msgid "General"
+msgstr "Общие"
+
+msgid "Scanner"
+msgstr "Сканер"
+
+msgid "Schedule"
+msgstr "Расписание"
+
+msgid "Access"
+msgstr "Доступ"
+
+msgid "Enable authentication"
+msgstr "Включить авторизацию"
+
+msgid "Interface"
+msgstr "Интерфейс"
+
+msgid "Items per page"
+msgstr "Элементов на странице"
+
+msgid "Alphabet submenu"
+msgstr "Алфавитное подменю"
+
+msgid "Split threshold"
+msgstr "Порог разбивки"
+
+msgid "Hide duplicates"
+msgstr "Скрывать дубликаты"
+
+msgid "Use book title as download filename"
+msgstr "Использовать заголовок книги как имя файла при скачивании"
+
+msgid "Interface language"
+msgstr "Язык интерфейса"
+
+msgid "Conversion"
+msgstr "Конвертация"
+
+msgid "fb2→epub converter path"
+msgstr "Путь к конвертеру fb2→epub"
+
+msgid "fb2→mobi converter path"
+msgstr "Путь к конвертеру fb2→mobi"
+
+msgid "Temp directory"
+msgstr "Временная директория"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "File types"
+msgstr "Типы файлов"
+
+msgid "Book extensions"
+msgstr "Расширения книг"
+
+msgid "Scan inside ZIP archives"
+msgstr "Сканировать внутри ZIP-архивов"
+
+msgid "Use SAX parser for FB2"
+msgstr "Использовать SAX-парсер для FB2"
+
+msgid "Deletion"
+msgstr "Удаление"
+
+msgid "Logical deletion (mark, don't remove from DB)"
+msgstr "Логическое удаление (пометить, не удалять из БД)"
+
+msgid "INPX support"
+msgstr "Поддержка INPX"
+
+msgid "Enable INPX indexes"
+msgstr "Включить INPX-индексы"
+
+msgid "Skip unchanged INPX archives"
+msgstr "Пропускать неизменённые INPX-архивы"
+
+msgid "Test ZIP integrity inside INPX"
+msgstr "Проверять целостность ZIP внутри INPX"
+
+msgid "Test file integrity inside INPX"
+msgstr "Проверять целостность файлов внутри INPX"
+
+msgid "Logs"
+msgstr "Логи"
+
+msgid "Scanner PID file"
+msgstr "PID-файл сканера"
+
+msgid "Scanner log file"
+msgstr "Лог-файл сканера"
+
+msgid "Scheduled scan"
+msgstr "Плановое сканирование"
+
+msgid "Day of month"
+msgstr "День месяца"
+
+msgid "Day of week"
+msgstr "День недели"
+
+msgid "Hour"
+msgstr "Час"
+
+msgid "Minute"
+msgstr "Минута"
+
+msgid "Start scan immediately on server startup"
+msgstr "Запускать сканирование сразу при старте сервера"
+
+# scan
+msgid "Scan"
+msgstr "Сканировать"
+
+msgid "Read"
+msgstr "Читать"
+
+msgid "View cover"
+msgstr "Просмотр обложки"
+
+msgid "Download:"
+msgstr "Скачать:"
+
+msgid "Delete this book from bookshelf?"
+msgstr "Удалить эту книгу с книжной полки?"
+
+msgid "Loading..."
+msgstr "Загрузка..."
 
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"

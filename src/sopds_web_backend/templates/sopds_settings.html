@@ -1,0 +1,273 @@
+{% extends "sopds_main.html" %}
+{% load i18n %}
+
+{% block ext-body %}
+<div class="cell small-12">
+
+<style>
+.s-tabs { display:flex; gap:0; border-bottom:2px solid #f15a23; margin-bottom:1.2rem; }
+.s-tab  { padding:0.5rem 1.2rem; cursor:pointer; font-size:0.9rem; border:1px solid transparent;
+          border-bottom:none; border-radius:4px 4px 0 0; color:#495057; background:#f8f9fa; }
+.s-tab.active { background:#f15a23; color:#fff; border-color:#f15a23; }
+.s-pane { display:none; }
+.s-pane.active { display:block; }
+
+.s-field { margin-bottom:1rem; }
+.s-field label { display:block; font-size:0.85rem; color:#495057; margin-bottom:0.25rem; font-weight:600; }
+.s-field input[type=text], .s-field input[type=number] {
+    width:100%; max-width:520px; font-size:0.88rem; padding:0.35rem 0.5rem;
+    border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
+.s-hint { font-size:0.77rem; color:#7f8c8d; margin-top:0.2rem; }
+.s-row { display:flex; gap:0.5rem; align-items:center; max-width:520px; }
+.s-row input[type=text] { flex:1; }
+.s-section-title { font-size:0.8rem; font-weight:700; color:#f15a23; text-transform:uppercase;
+                   letter-spacing:0.05em; margin:1.4rem 0 0.7rem; border-bottom:1px solid #f0e8e4; padding-bottom:0.3rem; }
+.s-save-btn { padding:0.45rem 1.4rem; font-size:0.9rem; background:#f15a23;
+              color:#fff; border:none; border-radius:4px; cursor:pointer; margin-top:0.5rem; }
+.s-save-btn:hover { background:#d4501f; }
+.s-msg { font-size:0.85rem; padding:0.35rem 0.7rem; border-radius:4px; margin-bottom:0.8rem; display:inline-block; }
+.s-msg.ok  { background:#d4edda; color:#155724; }
+.s-check { display:flex; align-items:center; gap:0.5rem; max-width:520px; }
+.s-check input[type=checkbox] { width:16px; height:16px; accent-color:#f15a23; cursor:pointer; flex-shrink:0; }
+.s-check span { font-size:0.88rem; cursor:pointer; }
+.s-shed { display:grid; grid-template-columns: repeat(4, 1fr); gap:0.5rem; max-width:420px; }
+.s-shed label { font-size:0.78rem; color:#495057; }
+.s-shed input { width:100%; font-size:0.88rem; padding:0.3rem 0.4rem; border:1px solid #ccc; border-radius:4px; }
+</style>
+
+<h2 style="font-size:1.2rem; margin-bottom:1rem; color:#f15a23;">⚙ {% trans "SOPDS Settings" %}</h2>
+
+{% if saved %}
+<div class="s-msg ok">✓ {% trans "Settings saved." %}</div>
+{% endif %}
+
+<div class="s-tabs">
+    <div class="s-tab active" onclick="sTab('general')">{% trans "General" %}</div>
+    <div class="s-tab" onclick="sTab('scanner')">{% trans "Scanner" %}</div>
+    <div class="s-tab" onclick="sTab('schedule')">{% trans "Schedule" %}</div>
+</div>
+
+<form method="post">
+{% csrf_token %}
+
+<!-- ═══════════ Вкладка: Общие ═══════════ -->
+<div id="s-pane-general" class="s-pane active">
+
+    <div class="s-section-title">{% trans "Access" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="auth" {% if sopds.auth %}checked{% endif %}>
+            <span>{% trans "Enable authentication" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.auth }}</div>
+    </div>
+
+    <div class="s-section-title">{% trans "Interface" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "Items per page" %}</label>
+        <input type="number" name="maxitems" value="{{ sopds.maxitems }}" min="5" max="500" style="max-width:100px;">
+        <div class="s-hint">{{ comments.maxitems }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="alphabet_menu" {% if sopds.alphabet_menu %}checked{% endif %}>
+            <span>{% trans "Alphabet submenu" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.alphabet_menu }}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Split threshold" %}</label>
+        <input type="number" name="splititems" value="{{ sopds.splititems }}" min="10" max="10000" style="max-width:100px;">
+        <div class="s-hint">{{ comments.splititems }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="doubles_hide" {% if sopds.doubles_hide %}checked{% endif %}>
+            <span>{% trans "Hide duplicates" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.doubles_hide }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="title_as_filename" {% if sopds.title_as_filename %}checked{% endif %}>
+            <span>{% trans "Use book title as download filename" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.title_as_filename }}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Interface language" %}</label>
+        <input type="text" name="language" value="{{ sopds.language }}" style="max-width:120px;">
+        <div class="s-hint">{{ comments.language }}</div>
+    </div>
+
+    <div class="s-section-title">{% trans "Conversion" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "fb2→epub converter path" %}</label>
+        <input type="text" name="fb2toepub" value="{{ sopds.fb2toepub }}" placeholder="/usr/bin/fb2toepub">
+        <div class="s-hint">{{ comments.fb2toepub }}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "fb2→mobi converter path" %}</label>
+        <input type="text" name="fb2tomobi" value="{{ sopds.fb2tomobi }}" placeholder="/usr/bin/fb2tomobi">
+        <div class="s-hint">{{ comments.fb2tomobi }}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Temp directory" %}</label>
+        <input type="text" name="temp_dir" value="{{ sopds.temp_dir }}" placeholder="/tmp">
+        <div class="s-hint">{{ comments.temp_dir }}</div>
+    </div>
+
+    <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
+</div>
+
+<!-- ═══════════ Вкладка: Сканер ═══════════ -->
+<div id="s-pane-scanner" class="s-pane">
+
+    <div class="s-section-title">{% trans "File types" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "Book extensions" %}</label>
+        <input type="text" name="book_extensions" value="{{ sopds.book_extensions }}" placeholder=".fb2 .epub .mobi .pdf .djvu">
+        <div class="s-hint">{{ comments.book_extensions }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="zipscan" {% if sopds.zipscan %}checked{% endif %}>
+            <span>{% trans "Scan inside ZIP archives" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.zipscan }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="fb2sax" {% if sopds.fb2sax %}checked{% endif %}>
+            <span>{% trans "Use SAX parser for FB2" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.fb2sax }}</div>
+    </div>
+
+    <div class="s-section-title">{% trans "Deletion" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="delete_logical" {% if sopds.delete_logical %}checked{% endif %}>
+            <span>{% trans "Logical deletion (mark, don't remove from DB)" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.delete_logical }}</div>
+    </div>
+
+    <div class="s-section-title">{% trans "INPX support" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="inpx_enable" {% if sopds.inpx_enable %}checked{% endif %}>
+            <span>{% trans "Enable INPX indexes" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.inpx_enable }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="inpx_skip_unchanged" {% if sopds.inpx_skip_unchanged %}checked{% endif %}>
+            <span>{% trans "Skip unchanged INPX archives" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.inpx_skip_unchanged }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="inpx_test_zip" {% if sopds.inpx_test_zip %}checked{% endif %}>
+            <span>{% trans "Test ZIP integrity inside INPX" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.inpx_test_zip }}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="inpx_test_files" {% if sopds.inpx_test_files %}checked{% endif %}>
+            <span>{% trans "Test file integrity inside INPX" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.inpx_test_files }}</div>
+    </div>
+
+    <div class="s-section-title">{% trans "Logs" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "Scanner PID file" %}</label>
+        <input type="text" name="scanner_pid" value="{{ sopds.scanner_pid }}">
+        <div class="s-hint">{{ comments.scanner_pid }}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Scanner log file" %}</label>
+        <input type="text" name="scanner_log" value="{{ sopds.scanner_log }}">
+        <div class="s-hint">{{ comments.scanner_log }}</div>
+    </div>
+
+    <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
+</div>
+
+<!-- ═══════════ Вкладка: Расписание ═══════════ -->
+<div id="s-pane-schedule" class="s-pane">
+
+    <div class="s-section-title">{% trans "Scheduled scan" %}</div>
+
+    <div class="s-field">
+        <div class="s-shed">
+            <div>
+                <label>{% trans "Day of month" %}</label>
+                <input type="number" name="scan_shed_day" value="{{ sopds.scan_shed_day }}" min="0" max="31">
+            </div>
+            <div>
+                <label>{% trans "Day of week" %}</label>
+                <input type="number" name="scan_shed_dow" value="{{ sopds.scan_shed_dow }}" min="-1" max="6">
+            </div>
+            <div>
+                <label>{% trans "Hour" %}</label>
+                <input type="number" name="scan_shed_hour" value="{{ sopds.scan_shed_hour }}" min="0" max="23">
+            </div>
+            <div>
+                <label>{% trans "Minute" %}</label>
+                <input type="number" name="scan_shed_min" value="{{ sopds.scan_shed_min }}" min="0" max="59">
+            </div>
+        </div>
+        <div class="s-hint" style="margin-top:0.5rem;">
+            {{ comments.scan_shed_day }} / {{ comments.scan_shed_dow }} (-1 = каждый день, 0=пн…6=вс)
+        </div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="scan_start_directly" {% if sopds.scan_start_directly %}checked{% endif %}>
+            <span>{% trans "Start scan immediately on server startup" %}</span>
+        </label>
+        <div class="s-hint">{{ comments.scan_start_directly }}</div>
+    </div>
+
+    <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
+</div>
+
+</form>
+</div>
+
+<script>
+window.sTab = function(name) {
+    document.querySelectorAll('.s-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.s-pane').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('.s-tab[onclick="sTab(\''+name+'\')"]').classList.add('active');
+    document.getElementById('s-pane-'+name).classList.add('active');
+};
+</script>
+
+{% endblock %}

@@ -13,19 +13,41 @@
     </div>
 
     <div class="top-bar-right">
-        {% if sopds_auth %}
         <ul class="menu" style="font-size:90%;">
+            {% if sopds_auth %}
             {% if user.is_authenticated %}
             {% if user.is_superuser %}
                 <li><a href="{% url "fb2parser:dashboard" %}"><i class="fi-list"></i> FB2Parser</a></li>
-            	<li><a href="{% url "admin:index" %}"><i class="fi-widget"></i>{% trans "Settings" %}</a></li>
+                <li><a href="{% url "web:settings" %}"><i class="fi-widget"></i>{% trans "Settings" %}</a></li>
             {% endif %}
+            {% endif %}
+            {% endif %}
+            <!-- Language switcher -->
+            <li>
+                <form id="lang-form-en" method="post" action="{% url 'set_language' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="language" value="en">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" style="background:none;border:none;cursor:pointer;padding:0;
+                        color:#fff;font-size:90%;{% if LANGUAGE_CODE == 'en' %}font-weight:bold;{% endif %}">EN</button>
+                </form>
+                <span style="color:#fff; opacity:0.5; margin:0 2px;">/</span>
+                <form id="lang-form-ru" method="post" action="{% url 'set_language' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="language" value="ru">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" style="background:none;border:none;cursor:pointer;padding:0;
+                        color:#fff;font-size:90%;{% if LANGUAGE_CODE == 'ru' %}font-weight:bold;{% endif %}">RU</button>
+                </form>
+            </li>
+            {% if sopds_auth %}
+            {% if user.is_authenticated %}
                 <li><a href="{% url "web:logout" %}"><i class="fi-torsos"></i>{% trans "Logout" %} ({{ user.username }})</a></li>
             {% else %}
                 <li><a href="{% url "web:login" %}"><i class="fi-torsos"></i>{% trans "Login" %}</a></li>
             {% endif %}
+            {% endif %}
         </ul>
-        {% endif %}
     </div>
 
 </div>

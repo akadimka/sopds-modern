@@ -19,13 +19,13 @@ from django.urls import include
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from django.views.generic import RedirectView
+from django.conf.urls.i18n import set_language
 
 urlpatterns = [
+    path("i18n/setlang/", set_language, name="set_language"),
     path("opds/", include("opds_catalog.urls", namespace="opds")),
     path("web/", include("sopds_web_backend.urls", namespace="web")),
     path("fb2parser/", include("fb2parser_web.urls", namespace="fb2parser")),
     path("admin/", admin.site.urls),
-    # url(r'^logout/$', logout, {'next_page':'/web/'},name='logout'),
-    # url(r'^', include('sopds_web_backend.urls', namespace='web', app_name='opds_web_backend')),
     path("", RedirectView.as_view(url=reverse_lazy("web:main"))),
 ]
