@@ -24,9 +24,9 @@
 
     <div class="top-bar-right" style="display:flex;align-items:center;">
         <span style="font-size:85%;white-space:nowrap;padding:0 0.5rem;">
-            <a href="#" onclick="document.getElementById('lang-form-en').submit();return false;" style="{% if LANGUAGE_CODE == 'en' %}font-weight:bold;text-decoration:underline;{% endif %}">EN</a>
+            {% if LANGUAGE_CODE == 'en' %}<span style="font-weight:bold;color:#f15a23;">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
             <span style="opacity:0.4;margin:0 1px;">/</span>
-            <a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;" style="{% if LANGUAGE_CODE == 'ru' %}font-weight:bold;text-decoration:underline;{% endif %}">RU</a>
+            {% if LANGUAGE_CODE == 'ru' %}<span style="font-weight:bold;color:#f15a23;">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
         </span>
         <ul class="menu" style="font-size:90%;">
             {% if sopds_auth %}{% if user.is_authenticated %}{% if user.is_superuser %}
