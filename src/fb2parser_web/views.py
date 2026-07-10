@@ -1681,6 +1681,9 @@ def _run_sync_thread():
         svc = get_sync_service()
         with _sync_lock:
             scan_path = _sync_state.get("scan_path")
+        if scan_path:
+            from pathlib import Path as _Path
+            svc.last_scan_path = _Path(scan_path)
         log_lines = []
 
         def on_progress(cur, tot, msg):
@@ -1692,10 +1695,7 @@ def _run_sync_thread():
             with _sync_lock:
                 _sync_state["log"] = log_lines[-200:]
 
-        kwargs = {"progress_callback": on_progress, "log_callback": on_log}
-        if scan_path:
-            kwargs["scan_path"] = scan_path
-        stats = svc.synchronize(**kwargs)
+        stats = svc.synchronize(progress_callback=on_progress, log_callback=on_log)
         with _sync_lock:
             _sync_state.update({"done": True, "running": False, "stats": stats or {}})
     except Exception as exc:
