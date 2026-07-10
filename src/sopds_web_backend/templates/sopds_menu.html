@@ -9,7 +9,7 @@
 	    <li {% if current == "author" %} class="active" {% endif %}><a href="{% url "web:author" %}?lang=0">{% trans "Authors" %}</a></li>
 	    <li {% if current == "genre" %} class="active" {% endif %}><a href="{% url "web:genre" %}">{% trans "Genres" %}</a></li>
 	    <li {% if current == "series" %} class="active" {% endif %}><a href="{% url "web:series" %}?lang=0">{% trans "Series" %}</a></li>
-	    <li style="margin-left:auto;">
+	    <li style="margin-left:auto; display:flex; align-items:center; gap:0.5rem;">
 	      <span id="sopds-scan-status" style="font-size:0.82rem; color:#fde68a;"></span>
 	      <a href="#" hx-post="{% url 'web:scan_start' %}" hx-target="#sopds-scan-status" hx-swap="innerHTML">🔄 {% trans "Scan" %}</a>
 	    </li>
@@ -42,7 +42,7 @@
 	        {% endfor %}
 	        </ul>
 	    </li>
-	    <li style="margin-left:auto;">
+	    <li style="margin-left:auto; display:flex; align-items:center; gap:0.5rem;">
 	      <span id="sopds-scan-status" style="font-size:0.82rem; color:#fde68a;"></span>
 	      <a href="#" hx-post="{% url 'web:scan_start' %}" hx-target="#sopds-scan-status" hx-swap="innerHTML">🔄 {% trans "Scan" %}</a>
 	    </li>
