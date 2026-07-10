@@ -4,9 +4,6 @@ from constance import config
 
 # from django.contrib import auth
 # from django.http import HttpResponse
-from django.middleware.cache import (
-    FetchFromCacheMiddleware as DjangoFetchFromCacheMiddleware,
-)
 from django.utils import translation
 from django.utils.deprecation import MiddlewareMixin
 
@@ -63,11 +60,3 @@ class SOPDSLocaleMiddleware(MiddlewareMixin):
         request.LANGUAGE_CODE = request.LANG
 
 
-class FetchFromCacheMiddleware(DjangoFetchFromCacheMiddleware):
-    """Включаем кэширование только для авторизованных пользователей"""
-
-    def process_request(self, request):
-        if not request.user.is_authenticated:
-            return None
-        else:
-            return super(FetchFromCacheMiddleware, self).process_request(request)
