@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import codecs
+import importlib.util
 import io
 import logging
 import os
 import subprocess
-import sys
 import zipfile
 
 from constance import config
@@ -168,14 +168,13 @@ def ViewHtml(request, book_id):
     if fb2_data is None:
         raise Http404
 
-    # Импортируем конвертер из src/convert/
-    convert_dir = os.path.join(os.path.dirname(__file__), "..", "convert")
-    convert_dir = os.path.normpath(convert_dir)
-    if convert_dir not in sys.path:
-        sys.path.insert(0, convert_dir)
-
-    from fb2_to_html import convert_bytes_to_html_string  # noqa: PLC0415
-    html_content = convert_bytes_to_html_string(fb2_data.read())
+    convert_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "convert"))
+    spec = importlib.util.spec_from_file_location(
+        "fb2_to_html", os.path.join(convert_dir, "fb2_to_html.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    html_content = module.convert_bytes_to_html_string(fb2_data.read())
 
     return HttpResponse(html_content, content_type="text/html; charset=utf-8")
 
@@ -232,7 +231,8 @@ def ConvertFB2(request, book_id, convert_type):
         [converter_path, file_path, tmp_conv_path],
         stdout=subprocess.PIPE,
     )
-    out = proc.stdout.readlines()  # noqa: F841
+    proc.stdout.read()
+    proc.wait()
 
     if os.path.isfile(tmp_conv_path):
         fo = codecs.open(tmp_conv_path, "rb")
