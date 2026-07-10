@@ -198,6 +198,7 @@ function selectFolder(targetId, path) {
     var inp = document.getElementById(targetId);
     if (inp) inp.value = path;
     closeBrowser(targetId);
+    if (typeof window._onSelectFolder === 'function') window._onSelectFolder(targetId, path);
 }
 // re-process htmx after folder browser navigation (hx-get buttons inside injected HTML)
 document.addEventListener('htmx:afterSwap', function(e) {
