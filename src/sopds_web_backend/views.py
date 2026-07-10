@@ -47,6 +47,8 @@ def _run_sopds_scan():
     with _sopds_scan_lock:
         _sopds_scan_state.update({"running": True, "done": False, "error": None})
     try:
+        from opds_catalog.opdsdb import clear_all
+        clear_all()
         scanner = opdsScanner()
         scanner.scan_all()
         with _sopds_scan_lock:
