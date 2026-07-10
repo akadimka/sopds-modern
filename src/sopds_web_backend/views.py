@@ -47,6 +47,11 @@ def _run_sopds_scan():
     with _sopds_scan_lock:
         _sopds_scan_state.update({"running": True, "done": False, "error": None})
     try:
+        from fb2parser_core.settings_manager import SettingsManager
+        sm = SettingsManager()
+        library_path = sm.get_library_path()
+        if library_path:
+            config.SOPDS_ROOT_LIB = library_path
         from opds_catalog.opdsdb import clear_all
         clear_all()
         scanner = opdsScanner()
