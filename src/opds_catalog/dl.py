@@ -7,7 +7,7 @@ import os
 import subprocess
 import zipfile
 
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.http import (
     Http404,
     HttpRequest,

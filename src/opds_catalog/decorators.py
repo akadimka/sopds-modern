@@ -3,7 +3,7 @@
 import base64
 from functools import wraps
 
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib import auth
 from django.http import HttpResponse
 

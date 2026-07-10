@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, TypeVar
 
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator

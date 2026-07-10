@@ -32,7 +32,7 @@ class _SafeFileHandler(_SafeMixin, logging.FileHandler):
     pass
 
 from apscheduler.schedulers.blocking import BlockingScheduler
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand
 from django.db import connection, connections, transaction

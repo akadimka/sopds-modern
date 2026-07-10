@@ -4,7 +4,7 @@ import zipfile
 from enum import StrEnum
 from io import BytesIO
 
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2, FB2sax

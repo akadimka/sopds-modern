@@ -3,7 +3,7 @@ import os
 import re
 import threading
 
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -506,7 +506,7 @@ _assign_state: dict = {
 def genre_assign(request):
     """Страница присвоения жанра папке."""
     from .fb2parser_bridge import get_genres_manager
-    from constance import config as cfg
+    from opds_catalog.sopds_config import sopds_cfg as cfg
     error = None
     genre_names = []
     try:
@@ -612,7 +612,7 @@ _norm_state: dict = {
 
 @staff_member_required(login_url="/web/login/")
 def normalize(request):
-    from constance import config as cfg
+    from opds_catalog.sopds_config import sopds_cfg as cfg
     with _norm_lock:
         state = dict(_norm_state)
     # Если после перезапуска сервера память пуста — пробуем восстановить кэш
@@ -1272,7 +1272,7 @@ def duplicates_find(request):
         folder = _norm_state.get("folder", "")
 
     if not records and not folder:
-        from constance import config as _cfg
+        from opds_catalog.sopds_config import sopds_cfg as _cfg
         folder = _cfg.SOPDS_ROOT_LIB or ""
     if not records and folder:
         _norm_restore_from_cache(folder)
@@ -1441,7 +1441,7 @@ def compiler_scan(request):
         folder = _norm_state.get("folder", "")
 
     if not records and not folder:
-        from constance import config as _cfg
+        from opds_catalog.sopds_config import sopds_cfg as _cfg
         folder = _cfg.SOPDS_ROOT_LIB or ""
     if not records and folder:
         _norm_restore_from_cache(folder)

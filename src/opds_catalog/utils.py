@@ -6,7 +6,7 @@ from typing import Any
 from zipfile import ZipInfo
 
 import chardet
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.conf import settings
 
 from opds_catalog import opdsdb

@@ -7,7 +7,7 @@ import re
 import time
 import zipfile
 
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 
 # from django.db import transaction
 from django.utils.translation import gettext as _
