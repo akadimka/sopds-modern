@@ -1669,7 +1669,8 @@ def sync(request):
     pct = 0
     if state["total"] > 0:
         pct = min(100, int(state["processed"] / state["total"] * 100))
-    return render(request, "fb2parser/sync.html", {"state": state, "pct": pct})
+    scan_path = request.GET.get("scan_path", "").strip()
+    return render(request, "fb2parser/sync.html", {"state": state, "pct": pct, "scan_path": scan_path})
 
 
 def _run_sync_thread():
@@ -1678,6 +1679,8 @@ def _run_sync_thread():
     db.connections.close_all()
     try:
         svc = get_sync_service()
+        with _sync_lock:
+            scan_path = _sync_state.get("scan_path")
         log_lines = []
 
         def on_progress(cur, tot, msg):
@@ -1689,10 +1692,10 @@ def _run_sync_thread():
             with _sync_lock:
                 _sync_state["log"] = log_lines[-200:]
 
-        stats = svc.synchronize(
-            progress_callback=on_progress,
-            log_callback=on_log,
-        )
+        kwargs = {"progress_callback": on_progress, "log_callback": on_log}
+        if scan_path:
+            kwargs["scan_path"] = scan_path
+        stats = svc.synchronize(**kwargs)
         with _sync_lock:
             _sync_state.update({"done": True, "running": False, "stats": stats or {}})
     except Exception as exc:
@@ -1711,9 +1714,10 @@ def sync_start(request):
     with _sync_lock:
         if _sync_state["running"]:
             return _render_sync_status(dict(_sync_state))
+        scan_path = request.POST.get("scan_path", "").strip() or None
         _sync_state.update({"running": True, "done": False, "error": None,
                             "processed": 0, "total": 0, "current": "",
-                            "stats": {}, "log": []})
+                            "stats": {}, "log": [], "scan_path": scan_path})
     threading.Thread(target=_run_sync_thread, daemon=True).start()
     return _render_sync_status(dict(_sync_state))
 

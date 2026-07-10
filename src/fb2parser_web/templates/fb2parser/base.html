@@ -212,15 +212,14 @@ document.addEventListener('click', function(e) {
 });
 
 // Sync modal
-var _syncModalLoaded = false;
 function openSyncModal() {
     document.getElementById('sync-modal-overlay').classList.add('open');
-    if (!_syncModalLoaded) {
-        _syncModalLoaded = true;
-        htmx.ajax('GET', '{% url "fb2parser:sync" %}', {target: '#sync-modal-body', swap: 'innerHTML'}).then(function() {
-            htmx.process(document.getElementById('sync-modal-body'));
-        });
-    }
+    var folderEl = document.getElementById('main-folder');
+    var path = folderEl ? folderEl.value.trim() : '';
+    var url = '{% url "fb2parser:sync" %}' + (path ? '?scan_path=' + encodeURIComponent(path) : '');
+    htmx.ajax('GET', url, {target: '#sync-modal-body', swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('sync-modal-body'));
+    });
 }
 function closeSyncModal() {
     document.getElementById('sync-modal-overlay').classList.remove('open');
