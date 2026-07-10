@@ -12,6 +12,7 @@ dependencies = [
     "gunicorn>=23.0.0",
     "lxml>=6.0.2",
     "pillow>=2.9.0",
+    "polib>=1.2.0",
     "psycopg[binary]==3.2.6",
     "pymemcache==4",
     "python-telegram-bot==22",
