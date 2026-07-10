@@ -8,7 +8,6 @@ from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
-from django.utils.html import strip_tags
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
@@ -31,7 +30,7 @@ from opds_catalog.services import (
     series_services,
 )
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
-from opds_catalog.utils import get_lang_name, to_int
+from opds_catalog.utils import to_int
 
 logger = logging.getLogger(__name__)
 
@@ -249,18 +248,6 @@ def SearchAuthorsView(request):
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
-        # if searchtype == "m":
-        #     authors = Author.objects.filter(
-        #         search_full_name__contains=searchterms.upper()
-        #     ).order_by("search_full_name")
-        # elif searchtype == "b":
-        #     authors = Author.objects.filter(
-        #         search_full_name__startswith=searchterms.upper()
-        #     ).order_by("search_full_name")
-        # elif searchtype == "e":
-        #     authors = Author.objects.filter(
-        #         search_full_name=searchterms.upper()
-        #     ).order_by("search_full_name")
         authors = authors_services.search_authors_with_counts(searchtype, searchterms)
         paginator = Paginator(authors, config.SOPDS_MAXITEMS)
         try:

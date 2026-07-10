@@ -1,12 +1,5 @@
-#######################################################################
-#
-# Вспомогательные функции
-#
-# import unicodedata
-import codecs
 import logging
 import os
-import subprocess
 import zipfile
 from io import BytesIO
 from typing import Any
@@ -183,76 +176,6 @@ def getFileData(book: Book) -> BytesIO | None:
     elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
         logger.info(f"Reading file {book.filename} from zipped catalog")
         return read_from_zipped_file(full_path, book.filename)
-
-
-def getFileDataZip(book: Book) -> BytesIO:
-    """Читает файл из ФС и упаковывает его в zip"""
-    transname = getFileName(book)
-    fo = getFileData(book)
-    dio = BytesIO()
-    if fo is not None:
-        with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
-            zo.writestr(transname, fo.read())
-        dio.seek(0)
-    return dio
-
-
-def getFileDataConv(book, convert_type):
-    # TODO: необходимо настроить конверторы
-    # TODO: дополнить тесты
-    if book.format != "fb2":
-        return None
-
-    fo = getFileData(book)
-
-    if not fo:
-        return None
-
-    transname = getFileName(book)
-
-    (n, e) = os.path.splitext(transname)
-    dlfilename = f"{n}.{convert_type}"
-
-    if convert_type == "epub":
-        converter_path = config.SOPDS_FB2TOEPUB
-    elif convert_type == "mobi":
-        converter_path = config.SOPDS_FB2TOMOBI
-    else:
-        fo.close()
-        return None
-    if not converter_path:
-        fo.close()
-        return None
-
-    tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
-    tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
-    fw = open(tmp_fb2_path, "wb")
-    fw.write(fo.read())
-    fw.close()
-    fo.close()
-
-    proc = subprocess.Popen(
-        [converter_path, tmp_fb2_path, tmp_conv_path],
-        stdout=subprocess.PIPE,
-    )
-    # У следующий строки 2 функции 1-получение информации по конвертации и 2- ожидание конца конвертации
-    # В силу 2й функции ее удаление приведет к ошибке выдачи сконвертированного файла
-    out = proc.stdout.readlines()  # noqa: F841
-
-    if not os.path.isfile(tmp_conv_path):
-        return None
-
-    fo = codecs.open(tmp_conv_path, "rb")
-
-    dio = BytesIO(fo.read())
-    # dio.write(fo.read())
-    dio.seek(0)
-
-    fo.close()
-    os.remove(tmp_fb2_path)
-    os.remove(tmp_conv_path)
-
-    return dio
 
 
 def get_infolist_filename(infolist: list[ZipInfo], filename: str) -> str | None:

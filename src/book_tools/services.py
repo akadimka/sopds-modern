@@ -2,7 +2,6 @@
 import logging
 import re
 import zipfile
-from datetime import date
 from io import BytesIO
 from typing import Callable, Optional
 
@@ -24,10 +23,10 @@ from .exceptions import (
     UnsupportedFormatException,
 )
 from .format.bookfile import BookFile
-from .format.ebook_parsers.dto import Author, BookMetadata, Cover, Series
+from .format.ebook_parsers.dto import Author, BookMetadata, Series
 from .format.epub import EPub as EPubOld
 from .format.mimetype import Mimetype
-from .format.parsers import FB2, EpubParser
+from .format.parsers import FB2
 from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
 

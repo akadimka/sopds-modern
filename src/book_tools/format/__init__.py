@@ -1,18 +1,11 @@
-# import magic
 import logging
 import os
-import zipfile
-from contextlib import suppress
-from io import BytesIO
-from xml import sax
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos
 from book_tools.mime_detector import detect_mime_service
 from book_tools.services import create_bookfile_service
-
-# from constance import config
 
 logger = logging.getLogger(__name__)
 
@@ -50,40 +43,6 @@ class mime_detector:
         return mime_detector.fmt(e[1:])
 
 
-# def detect_mime(file, original_filename):
-#     FB2_ROOT = "FictionBook"
-#     mime = mime_detector.file(original_filename)
-#
-#     # try:
-#     with suppress(Exception):
-#         if mime == Mimetype.XML:
-#             if FB2_ROOT == __xml_root_tag(file):
-#                 return Mimetype.FB2
-#         elif mime == Mimetype.ZIP:
-#             with zipfile.ZipFile(file) as zip_file:
-#                 if not zip_file.testzip():
-#                     infolist = list_zip_file_infos(zip_file)
-#                     if len(infolist) == 1:
-#                         if FB2_ROOT == __xml_root_tag(zip_file.open(infolist[0])):
-#                             return Mimetype.FB2_ZIP
-#                     with suppress(Exception):
-#                         with zip_file.open("mimetype") as mimetype_file:
-#                             if (
-#                                 mimetype_file.read(30).decode().rstrip("\n\r")
-#                                 == Mimetype.EPUB
-#                             ):
-#                                 return Mimetype.EPUB
-#                     # except Exception:
-#                     #     pass
-#         elif mime == Mimetype.OCTET_STREAM:
-#             mobiflag = file.read(68)
-#             mobiflag = mobiflag[60:]
-#             if mobiflag.decode() == "BOOKMOBI":
-#                 return Mimetype.MOBI
-#     # except Exception:
-#     #     pass
-#
-#     return mime
 
 
 def create_bookfile(path, original_filename=None) -> BookFile:
@@ -114,17 +73,3 @@ def create_bookfile(path, original_filename=None) -> BookFile:
         return create_bookfile_service(data, original_filename)
 
 
-# def __xml_root_tag(file):
-#     class XMLRootFound(Exception):
-#         def __init__(self, name):
-#             self.name = name
-#
-#     class RootTagFinder(sax.handler.ContentHandler):
-#         def startElement(self, name, attributes):
-#             raise XMLRootFound(name)
-#
-#     try:
-#         sax.parse(file, RootTagFinder())
-#     except XMLRootFound as e:
-#         return e.name
-#     return None

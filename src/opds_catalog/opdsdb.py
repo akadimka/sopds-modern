@@ -333,15 +333,6 @@ def addbook(
     return book
 
 
-def findauthor(full_name):
-    try:
-        author = Author.objects.filter(full_name=full_name[:SIZE_AUTHOR_NAME])[:1]
-    except Author.DoesNotExist:
-        author = None
-
-    return author
-
-
 def addauthor(full_name):
     author, created = Author.objects.get_or_create(
         full_name=full_name[:SIZE_AUTHOR_NAME],
@@ -394,11 +385,3 @@ def addbseries(book, ser, ser_no):
     bs.save()
 
 
-def set_autocommit(autocommit):
-    # TODO: функция set_autocommit не используется
-    transaction.set_autocommit(autocommit)
-
-
-def commit():
-    # TODO: функция commit не используется
-    transaction.commit()
