@@ -301,14 +301,14 @@ systemctl restart sopds-modern
 
 ## Устранение неполадок
 
-| Проблема                                      | Решение                                                                               |
-|-----------------------------------------------|---------------------------------------------------------------------------------------|
-| `502 Bad Gateway`                             | `systemctl status sopds-modern` — проверить ошибки gunicorn                           |
-| `ALLOWED_HOSTS` ошибка                        | Добавить IP сервера в `.env` → `ALLOWED_HOSTS`                                        |
-| Статика не грузится                           | Проверить `collectstatic`, убедиться что `whitenoise` в MIDDLEWARE                    |
-| Нет доступа к `/fb2parser/`                   | Войти как суперпользователь (`is_superuser=True`)                                     |
-| Ошибка прав на файлы                          | `chown -R www-data:www-data /opt/sopds-modern`                                        |
-| Apache: `AH00961: failed to make connection`  | Gunicorn не запущен — `systemctl start sopds-modern`                                  |
-| Apache: `403 Forbidden` на статику            | Whitenoise обслуживает статику через gunicorn — `ProxyPass /` должен покрывать всё    |
-| `systemd`: `status=203/EXEC`                  | `www-data` не может выполнить Python из `.venv` — Python установлен под `/root` (см. шаг 2, `UV_PYTHON_INSTALL_DIR`) |
-| `500` при открытии страницы + `FileNotFoundError: .../log/sopds-ng.log` | Создать папку `mkdir -p /opt/sopds-modern/src/log` (см. шаг 10) и повторить `chown -R www-data:www-data /opt/sopds-modern` |
+| Проблема                                                                  | Решение                                                                                                                       |
+|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `502 Bad Gateway`                                                         | `systemctl status sopds-modern` — проверить ошибки gunicorn                                                                   |
+| `ALLOWED_HOSTS` ошибка                                                    | Добавить IP сервера в `.env` → `ALLOWED_HOSTS`                                                                                |
+| Статика не грузится                                                       | Проверить `collectstatic`, убедиться что `whitenoise` в MIDDLEWARE                                                            |
+| Нет доступа к `/fb2parser/`                                               | Войти как суперпользователь (`is_superuser=True`)                                                                             |
+| Ошибка прав на файлы                                                      | `chown -R www-data:www-data /opt/sopds-modern`                                                                                |
+| Apache: `AH00961: failed to make connection`                              | Gunicorn не запущен — `systemctl start sopds-modern`                                                                          |
+| Apache: `403 Forbidden` на статику                                        | Whitenoise обслуживает статику через gunicorn — `ProxyPass /` должен покрывать всё                                            |
+| `systemd`: `status=203/EXEC`                                              | `www-data` не может выполнить Python из `.venv` — Python установлен под `/root` (см. шаг 2, `UV_PYTHON_INSTALL_DIR`)          |
+| `500` при открытии страницы + `FileNotFoundError: .../log/sopds-ng.log`   | Создать папку `mkdir -p /opt/sopds-modern/src/log` (см. шаг 10) и повторить `chown -R www-data:www-data /opt/sopds-modern`    |
