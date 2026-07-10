@@ -164,8 +164,17 @@ document.addEventListener('htmx:afterSwap', function(e) {
     }
 });
 
+var SAVE_ROOT_URL = "{% url 'fb2parser:dashboard_set_root' %}";
+
+function _saveDashboardRoot(path) {
+    var fd = new FormData();
+    fd.append('path', path);
+    fetch(SAVE_ROOT_URL, {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}, body: fd});
+}
+
 window._onSelectFolder = function(targetId, path) {
     if (targetId === 'main-folder') {
+        _saveDashboardRoot(path);
         reloadTree(path);
         fetch("{% url 'fb2parser:sync_clear_assignments' %}", {
             method: 'POST',
@@ -177,6 +186,7 @@ window._onSelectFolder = function(targetId, path) {
 document.getElementById('main-folder').addEventListener('change', function() {
     var path = this.value.trim();
     if (path) {
+        _saveDashboardRoot(path);
         reloadTree(path);
         fetch("{% url 'fb2parser:sync_clear_assignments' %}", {
             method: 'POST',

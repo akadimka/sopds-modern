@@ -5,6 +5,7 @@ app_name = "fb2parser"
 
 urlpatterns = [
     path("",                    views.dashboard,          name="dashboard"),
+    path("set-root/",           views.dashboard_set_root, name="dashboard_set_root"),
     path("statistics/",         views.statistics,         name="statistics"),
     path("folder-tree/",        views.folder_tree,        name="folder_tree"),
     path("folder-count/",       views.folder_count,       name="folder_count"),

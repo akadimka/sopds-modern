@@ -7,6 +7,7 @@ from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
 
 from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
 from opds_catalog.sopdscan import opdsScanner
@@ -109,7 +110,7 @@ def _ctx(page_id, title, **kwargs):
 
 @staff_member_required(login_url="/web/login/")
 def dashboard(request):
-    root = config.SOPDS_ROOT_LIB or ""
+    root = request.session.get('dashboard_root') or config.SOPDS_ROOT_LIB or ""
     with _scan_lock:
         state = dict(_scan_state)
     return render(request, "fb2parser/dashboard.html", _ctx(
@@ -117,6 +118,16 @@ def dashboard(request):
         root=root,
         state=state,
     ))
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def dashboard_set_root(request):
+    from django.http import JsonResponse
+    path = request.POST.get("path", "").strip()
+    if path and os.path.isdir(path):
+        request.session['dashboard_root'] = path
+    return JsonResponse({"ok": True})
 
 
 @staff_member_required(login_url="/web/login/")
