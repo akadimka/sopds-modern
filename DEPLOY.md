@@ -32,6 +32,14 @@ apt install -y git curl build-essential libssl-dev zlib1g-dev \
 ```bash
 curl -Lsf https://astral.sh/uv/install.sh | sh
 source $HOME/.local/bin/env   # добавляет uv в PATH
+
+# gunicorn будет запускаться от www-data и должен иметь доступ к
+# интерпретатору Python. По умолчанию uv ставит его в ~/.local/share/uv,
+# т.е. под /root — а туда www-data попасть не может (drwx------ на /root).
+# Поэтому кладём managed-Python в общедоступный каталог:
+export UV_PYTHON_INSTALL_DIR=/opt/uv/python
+echo 'export UV_PYTHON_INSTALL_DIR=/opt/uv/python' >> /root/.bashrc
+
 uv --version
 ```
 
@@ -42,6 +50,7 @@ uv --version
 Python 3.13 отсутствует в стандартных репозиториях Debian 11, а PPA (например, deadsnakes) не всегда доступен на конкретном дистрибутиве/релизе. Вместо системного пакета используем uv — он скачивает собственный переносимый билд Python:
 
 ```bash
+mkdir -p /opt/uv/python
 uv python install 3.13
 uv python list   # убедиться, что 3.13.x установлен
 ```
@@ -289,3 +298,4 @@ systemctl restart sopds-modern
 | Ошибка прав на файлы                          | `chown -R www-data:www-data /opt/sopds-modern`                                        |
 | Apache: `AH00961: failed to make connection`  | Gunicorn не запущен — `systemctl start sopds-modern`                                  |
 | Apache: `403 Forbidden` на статику            | Whitenoise обслуживает статику через gunicorn — `ProxyPass /` должен покрывать всё    |
+| `systemd`: `status=203/EXEC`                  | `www-data` не может выполнить Python из `.venv` — Python установлен под `/root` (см. шаг 2, `UV_PYTHON_INSTALL_DIR`) |
