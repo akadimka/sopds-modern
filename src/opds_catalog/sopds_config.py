@@ -14,6 +14,7 @@ _CONFIG_PATH = os.path.normpath(
 )
 
 _DEFAULTS: dict = {
+    'root_lib': '',
     'auth': True,
     'maxitems': 10,
     'alphabet_menu': True,
@@ -85,9 +86,9 @@ class SopdsConfig:
     """
 
     def __getattr__(self, name: str):
-        # Специальный случай: путь к библиотеке хранится в корне config.json
         if name == 'SOPDS_ROOT_LIB':
-            return _get_sm().get_library_path()
+            sm = _get_sm()
+            return sm.settings.get('sopds', {}).get('root_lib', '')
 
         # Мёртвая константа
         if name in _KEY_MAP and _KEY_MAP[name] is None:
@@ -104,7 +105,7 @@ class SopdsConfig:
     def __setattr__(self, name: str, value):
         if name == 'SOPDS_ROOT_LIB':
             sm = _get_sm()
-            sm.set_library_path(value)
+            sm.settings.setdefault('sopds', {})['root_lib'] = value
             sm.save()
             return
 

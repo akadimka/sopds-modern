@@ -41,21 +41,48 @@ _sopds_scan_state: dict = {"running": False, "done": False, "error": None}
 
 
 def _run_sopds_scan():
+    import logging
+    import traceback as _tb
     from opds_catalog.sopdscan import opdsScanner
+    from opds_catalog.sopds_config import sopds_cfg as _cfg
     from django import db
     db.connections.close_all()
+    root = _cfg.SOPDS_ROOT_LIB
     with _sopds_scan_lock:
-        _sopds_scan_state.update({"running": True, "done": False, "error": None})
+        _sopds_scan_state.update({"running": True, "done": False, "error": None,
+                                  "root": root, "added": 0, "bad": 0, "deleted": 0,
+                                  "first_error": None})
+
+    # Capture first error from scanner logger
+    _first_err = []
+    class _ErrCapture(logging.Handler):
+        def emit(self, record):
+            if record.levelno >= logging.ERROR and not _first_err:
+                _first_err.append(self.format(record))
+    _handler = _ErrCapture()
+    _log = logging.getLogger("scanner")
+    _log.addHandler(_handler)
+
     try:
         from opds_catalog.opdsdb import clear_all
         clear_all()
         scanner = opdsScanner()
         scanner.scan_all()
         with _sopds_scan_lock:
-            _sopds_scan_state.update({"running": False, "done": True, "error": None})
+            _sopds_scan_state.update({
+                "running": False, "done": True, "error": None,
+                "added": scanner.books_added,
+                "bad": scanner.bad_books,
+                "deleted": scanner.books_deleted,
+                "first_error": _first_err[0] if _first_err else None,
+            })
     except Exception as e:
         with _sopds_scan_lock:
-            _sopds_scan_state.update({"running": False, "done": True, "error": str(e)})
+            _sopds_scan_state.update({"running": False, "done": True,
+                                      "error": str(e), "traceback": _tb.format_exc(),
+                                      "first_error": _first_err[0] if _first_err else None})
+    finally:
+        _log.removeHandler(_handler)
 
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
@@ -571,7 +598,7 @@ def sopds_settings(request):
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
     ]
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min']
-    _STR_FIELDS = ['book_extensions', 'fb2toepub', 'fb2tomobi', 'temp_dir', 'scanner_pid', 'scanner_log', 'language']
+    _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'temp_dir', 'scanner_pid', 'scanner_log', 'language']
 
     if request.method == 'POST':
         sopds = sm.settings.setdefault('sopds', {})

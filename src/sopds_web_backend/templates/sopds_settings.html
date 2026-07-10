@@ -133,6 +133,19 @@
 <!-- ═══════════ Вкладка: Сканер ═══════════ -->
 <div id="s-pane-scanner" class="s-pane">
 
+    <div class="s-section-title">{% trans "Library" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "Library path (SOPDS root)" %}</label>
+        <div class="s-row">
+            <input type="text" name="root_lib" id="sopds-root-lib" value="{{ sopds.root_lib }}" placeholder="C:\Books or /home/user/books">
+            <button type="button" class="button secondary tiny" style="margin:0; white-space:nowrap;"
+                    onclick="openBrowser('sopds-root-lib')">{% trans "Browse" %}</button>
+        </div>
+        <div class="fb-browser-wrap" id="fb-browser-sopds-root-lib" style="display:none; position:absolute; z-index:500;"></div>
+        <div class="s-hint">{% trans "Root directory that SOPDS scanner will index. Independent from fb2parser library." %}</div>
+    </div>
+
     <div class="s-section-title">{% trans "File types" %}</div>
 
     <div class="s-field">
@@ -268,6 +281,47 @@ window.sTab = function(name) {
     document.querySelector('.s-tab[onclick="sTab(\''+name+'\')"]').classList.add('active');
     document.getElementById('s-pane-'+name).classList.add('active');
 };
+
+/* Folder browser for path fields */
+var _fbBrowseUrl = "{% url 'fb2parser:browse' %}";
+function openBrowser(targetId) {
+    var wrap = document.getElementById('fb-browser-' + targetId);
+    if (!wrap) return;
+    var isOpen = wrap.style.display !== 'none';
+    document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
+    if (isOpen) return;
+    wrap.style.display = 'block';
+    if (!wrap.querySelector('div')) {
+        htmx.ajax('GET', _fbBrowseUrl + '?target=' + encodeURIComponent(targetId),
+                  {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
+            htmx.process(document.getElementById('fb-browser-' + targetId));
+        });
+    }
+}
+function closeBrowser(targetId) {
+    var wrap = document.getElementById('fb-browser-' + targetId);
+    if (wrap) wrap.style.display = 'none';
+}
+function fbNavigateTo(targetId, path) {
+    if (!path) return;
+    var url = _fbBrowseUrl + '?path=' + encodeURIComponent(path) + '&target=' + encodeURIComponent(targetId);
+    htmx.ajax('GET', url, {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('fb-browser-' + targetId));
+    });
+}
+function selectFolder(targetId, path) {
+    var inp = document.getElementById(targetId);
+    if (inp) inp.value = path;
+    closeBrowser(targetId);
+}
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('fb-browser-wrap'))
+        htmx.process(e.target);
+});
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.fb-browser-wrap') && !e.target.closest('[onclick^="openBrowser"]'))
+        document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
+});
 </script>
 
 {% endblock %}

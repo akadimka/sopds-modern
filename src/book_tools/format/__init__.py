@@ -1,5 +1,6 @@
 import logging
 import os
+from io import BytesIO
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
