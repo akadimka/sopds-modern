@@ -388,9 +388,13 @@ def assign_genre_multi(request):
             continue
         try:
             count = service.assign_genre_to_folder(path, genre)
-            results.append({"path": path, "success": True, "count": count})
-            with _genre_assignments_lock:
-                _genre_assignments[os.path.abspath(path)] = genre
+            if count > 0:
+                results.append({"path": path, "success": True, "count": count})
+                with _genre_assignments_lock:
+                    _genre_assignments[os.path.abspath(path)] = genre
+            else:
+                results.append({"path": path, "success": False, "count": 0,
+                                 "error": "FB2-файлы не найдены или не изменены"})
         except Exception as e:
             results.append({"path": path, "success": False, "error": str(e)})
     return JsonResponse({"results": results})

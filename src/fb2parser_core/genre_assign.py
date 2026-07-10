@@ -150,9 +150,11 @@ class GenreAssignmentService:
             self.logger.log("ОШИБКА: genre_name не задан или пуст!")
             return 0
         
-        # Normalize path - convert mixed slashes to backslashes on Windows
-        folder_path_normalized = str(folder_path).strip().replace('/', '\\')
-        
+        # pathlib.Path already handles '/' on both Windows and POSIX; forcing
+        # backslashes here broke every lookup on Linux deployments (folder.exists()
+        # always False, since '\' is just a regular filename character on POSIX).
+        folder_path_normalized = str(folder_path).strip()
+
         folder = Path(folder_path_normalized)
         
         if not folder.exists():
