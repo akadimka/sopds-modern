@@ -8,6 +8,7 @@
 ### Local dev
 src/.env
 src/sopds.db
+src/metadata_cache.db*
 src/log/
 src/fb2parser_web/_norm_cache/
 src/fb2_data/settings/config.json
