@@ -20,6 +20,8 @@ urlpatterns = [
     re_path(r"^bs/delete/$", views.BSDelView, name="bsdel"),
     re_path(r"^bs/clear/$", views.BSClearView, name="bsclear"),
     re_path(r"^$", views.hello, name="main"),
+    re_path(r"^scan/start/$", views.sopds_scan_start, name="scan_start"),
+    re_path(r"^scan/status/$", views.sopds_scan_status, name="scan_status"),
 ]
 
 # handler403 = 'views.handler403'

@@ -1,0 +1,17 @@
+{% load i18n %}
+<span id="sopds-scan-status"
+  {% if state.running %}
+  hx-get="{% url 'web:scan_status' %}"
+  hx-trigger="every 2s"
+  hx-target="#sopds-scan-status"
+  hx-swap="outerHTML"
+  {% endif %}
+  style="display:inline-flex; align-items:center; gap:0.4rem;">
+  {% if state.running %}
+    <span style="color:#fde68a; font-size:0.82rem;">⏳ Сканирование...</span>
+  {% elif state.done and state.error %}
+    <span style="color:#fca5a5; font-size:0.82rem;" title="{{ state.error }}">✗ Ошибка</span>
+  {% elif state.done %}
+    <span style="color:#86efac; font-size:0.82rem;">✓ Готово</span>
+  {% endif %}
+</span>

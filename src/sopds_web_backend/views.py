@@ -1,4 +1,5 @@
 import logging
+import threading
 
 from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
@@ -33,6 +34,26 @@ from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.utils import to_int
 
 logger = logging.getLogger(__name__)
+
+# ── Состояние сканирования SOPDS ─────────────────────────────────────────────
+_sopds_scan_lock = threading.Lock()
+_sopds_scan_state: dict = {"running": False, "done": False, "error": None}
+
+
+def _run_sopds_scan():
+    from opds_catalog.sopdscan import opdsScanner
+    from django import db
+    db.connections.close_all()
+    with _sopds_scan_lock:
+        _sopds_scan_state.update({"running": True, "done": False, "error": None})
+    try:
+        scanner = opdsScanner()
+        scanner.scan_all()
+        with _sopds_scan_lock:
+            _sopds_scan_state.update({"running": False, "done": True, "error": None})
+    except Exception as e:
+        with _sopds_scan_lock:
+            _sopds_scan_state.update({"running": False, "done": True, "error": str(e)})
 
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
@@ -510,6 +531,27 @@ def BSDelView(request):
 def BSClearView(request):
     bookshelf.objects.filter(user=request.user).delete()
     return redirect("%s?searchtype=u" % reverse("web:searchbooks"))
+
+
+def sopds_scan_start(request):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    with _sopds_scan_lock:
+        already = _sopds_scan_state["running"]
+    if not already:
+        t = threading.Thread(target=_run_sopds_scan, daemon=True)
+        t.start()
+    return _render_sopds_scan_status(request)
+
+
+def sopds_scan_status(request):
+    return _render_sopds_scan_status(request)
+
+
+def _render_sopds_scan_status(request):
+    with _sopds_scan_lock:
+        state = dict(_sopds_scan_state)
+    return render(request, "sopds_scan_status.html", {"state": state})
 
 
 def hello(request):
