@@ -283,23 +283,19 @@ label { color: var(--text); font-weight: 500; }
 }
 
 /* ---- Tables ---------------------------------------------- */
-table { color: var(--text); }
-thead, thead tr, thead th {
-    background: var(--bg-muted) !important;
-    color: var(--text) !important;
-    border-color: var(--border) !important;
-}
-tbody tr, tbody td, tbody th {
-    background: var(--bg-card) !important;
-    color: var(--text) !important;
-    border: none !important;
-}
-tbody tr:hover td { background: var(--bg-hover) !important; }
-.unstriped tbody tr { background: var(--bg-card) !important; }
-.unstriped tbody td {
-    color: var(--text) !important;
-    border: none !important;
-}
+table { color: var(--text); border: none !important; border-collapse: collapse !important; }
+table thead,
+table tbody,
+table tfoot { border: none !important; background: transparent !important; }
+table thead th { background: var(--bg-muted) !important; color: var(--text) !important; border: none !important; }
+table tbody tr { background: var(--bg-card) !important; }
+table tbody tr:hover td { background: var(--bg-hover) !important; }
+table td,
+table th { color: var(--text) !important; border: none !important; border-width: 0 !important; }
+.unstriped tbody,
+.unstriped tbody tr { border: none !important; background: var(--bg-card) !important; }
+.unstriped tbody td,
+.unstriped tbody th { border: none !important; }
 
 /* ---- Tabs (Foundation) ----------------------------------- */
 .tabs {
