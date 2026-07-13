@@ -272,7 +272,7 @@ label { color: var(--text); font-weight: 500; }
 .card-divider {
     background: var(--bg-muted) !important;
     border-bottom: 1px solid var(--border) !important;
-    color: var(--text) !important;
+    color: var(--sp-accent) !important;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
     padding: 0.6rem 1rem !important;
     font-size: 0.9rem;
@@ -281,6 +281,8 @@ label { color: var(--text); font-weight: 500; }
     background: var(--bg-card) !important;
     color: var(--text) !important;
 }
+.card-section a { color: var(--text) !important; }
+.card-section a:hover { color: var(--sp-accent) !important; }
 
 /* ---- Tables ---------------------------------------------- */
 table { color: var(--text); border: none !important; border-collapse: collapse !important; }
