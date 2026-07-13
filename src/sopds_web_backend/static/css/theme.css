@@ -62,9 +62,9 @@
     /* ---- SOPDS Section (teal/emerald) ---- */
     --sp-header-bg:     #022c22;
     --sp-header-text:   #d1fae5;
-    --sp-nav-bg:        #064e3b;
+    --sp-nav-bg:        #022c22;
     --sp-nav-text:      #a7f3d0;
-    --sp-nav-hover-bg:  #10b981;
+    --sp-nav-hover-bg:  #065f46;
     --sp-nav-hover-text:#ffffff;
     --sp-accent:        #10b981;
     --sp-accent-hover:  #059669;
@@ -118,7 +118,7 @@
     /* SOPDS dark */
     --sp-header-bg:     #011a14;
     --sp-header-text:   #a7f3d0;
-    --sp-nav-bg:        #022c22;
+    --sp-nav-bg:        #011a14;
     --sp-nav-text:      #6ee7b7;
     --sp-accent-soft:   #064e3b;
     --sp-accent-text:   #6ee7b7;
@@ -292,11 +292,17 @@ thead, thead tr, thead th {
 tbody tr, tbody td, tbody th {
     background: var(--bg-card) !important;
     color: var(--text) !important;
-    border-color: var(--border) !important;
+    border-bottom: none !important;
+    border-top: none !important;
 }
 tbody tr:hover td { background: var(--bg-hover) !important; }
 .unstriped tbody tr { background: var(--bg-card) !important; }
-.unstriped tbody td { color: var(--text) !important; border-color: var(--border) !important; }
+.unstriped tbody td {
+    color: var(--text) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+.unstriped tbody tr:last-child td { border-bottom: none !important; }
 
 /* ---- Tabs (Foundation) ----------------------------------- */
 .tabs {
@@ -610,9 +616,9 @@ tbody tr:hover td { background: var(--bg-hover) !important; }
 
 /* --- Logo / Search bar ------------------------------------ */
 .sopds-logo-row {
-    background: var(--sp-nav-bg);
+    background: var(--sp-header-bg);
     padding: 0.6rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .sopds-logo-row input[type="search"],
 .sopds-logo-row input[type="text"] {
@@ -650,7 +656,7 @@ tbody tr:hover td { background: var(--bg-hover) !important; }
 
 /* --- Navigation menu -------------------------------------- */
 #main_menu {
-    background: var(--sp-nav-bg);
+    background: var(--sp-header-bg);
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 #main_menu .sopdsmenu { background: transparent; flex-wrap: wrap; }
