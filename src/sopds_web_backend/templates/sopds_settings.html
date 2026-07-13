@@ -2,56 +2,25 @@
 {% load i18n %}
 
 {% block ext-body %}
-<div class="cell small-12">
+<div class="cell small-12 sopds-settings">
 
-<style>
-.s-tabs { display:flex; gap:0; border-bottom:2px solid #f15a23; margin-bottom:1.2rem; }
-.s-tab  { padding:0.5rem 1.2rem; cursor:pointer; font-size:0.9rem; border:1px solid transparent;
-          border-bottom:none; border-radius:4px 4px 0 0; color:#495057; background:#f8f9fa; }
-.s-tab.active { background:#f15a23; color:#fff; border-color:#f15a23; }
-.s-pane { display:none; }
-.s-pane.active { display:block; }
-
-.s-field { margin-bottom:1rem; }
-.s-field label { display:block; font-size:0.85rem; color:#495057; margin-bottom:0.25rem; font-weight:600; }
-.s-field input[type=text], .s-field input[type=number] {
-    width:100%; max-width:520px; font-size:0.88rem; padding:0.35rem 0.5rem;
-    border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
-.s-hint { font-size:0.77rem; color:#7f8c8d; margin-top:0.2rem; }
-.s-row { display:flex; gap:0.5rem; align-items:center; max-width:520px; }
-.s-row input[type=text] { flex:1; }
-.s-section-title { font-size:0.8rem; font-weight:700; color:#f15a23; text-transform:uppercase;
-                   letter-spacing:0.05em; margin:1.4rem 0 0.7rem; border-bottom:1px solid #f0e8e4; padding-bottom:0.3rem; }
-.s-save-btn { padding:0.45rem 1.4rem; font-size:0.9rem; background:#f15a23;
-              color:#fff; border:none; border-radius:4px; cursor:pointer; margin-top:0.5rem; }
-.s-save-btn:hover { background:#d4501f; }
-.s-msg { font-size:0.85rem; padding:0.35rem 0.7rem; border-radius:4px; margin-bottom:0.8rem; display:inline-block; }
-.s-msg.ok  { background:#d4edda; color:#155724; }
-.s-check { display:flex; align-items:center; gap:0.5rem; max-width:520px; }
-.s-check input[type=checkbox] { width:16px; height:16px; accent-color:#f15a23; cursor:pointer; flex-shrink:0; }
-.s-check span { font-size:0.88rem; cursor:pointer; }
-.s-shed { display:grid; grid-template-columns: repeat(4, 1fr); gap:0.5rem; max-width:420px; }
-.s-shed label { font-size:0.78rem; color:#495057; }
-.s-shed input { width:100%; font-size:0.88rem; padding:0.3rem 0.4rem; border:1px solid #ccc; border-radius:4px; }
-</style>
-
-<h2 style="font-size:1.2rem; margin-bottom:1rem; color:#f15a23;">⚙ {% trans "SOPDS Settings" %}</h2>
+<h2 style="font-size:1.2rem; margin-bottom:1rem; color:var(--sp-accent);">⚙ {% trans "SOPDS Settings" %}</h2>
 
 {% if saved %}
 <div class="s-msg ok">✓ {% trans "Settings saved." %}</div>
 {% endif %}
 
 <div class="s-tabs">
-    <div class="s-tab active" onclick="sTab('general')">{% trans "General" %}</div>
-    <div class="s-tab" onclick="sTab('scanner')">{% trans "Scanner" %}</div>
-    <div class="s-tab" onclick="sTab('schedule')">{% trans "Schedule" %}</div>
+    <button class="s-tab-btn active" onclick="sTab('general')">{% trans "General" %}</button>
+    <button class="s-tab-btn" onclick="sTab('scanner')">{% trans "Scanner" %}</button>
+    <button class="s-tab-btn" onclick="sTab('schedule')">{% trans "Schedule" %}</button>
 </div>
 
 <form method="post">
 {% csrf_token %}
 
 <!-- ═══════════ Вкладка: Общие ═══════════ -->
-<div id="s-pane-general" class="s-pane active">
+<div id="s-pane-general" class="s-tab-panel active">
 
     <div class="s-section-title">{% trans "Access" %}</div>
 
@@ -131,7 +100,7 @@
 </div>
 
 <!-- ═══════════ Вкладка: Сканер ═══════════ -->
-<div id="s-pane-scanner" class="s-pane">
+<div id="s-pane-scanner" class="s-tab-panel">
 
     <div class="s-section-title">{% trans "Library" %}</div>
 
@@ -232,7 +201,7 @@
 </div>
 
 <!-- ═══════════ Вкладка: Расписание ═══════════ -->
-<div id="s-pane-schedule" class="s-pane">
+<div id="s-pane-schedule" class="s-tab-panel">
 
     <div class="s-section-title">{% trans "Scheduled scan" %}</div>
 
@@ -276,9 +245,9 @@
 
 <script>
 window.sTab = function(name) {
-    document.querySelectorAll('.s-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.s-pane').forEach(function(p) { p.classList.remove('active'); });
-    document.querySelector('.s-tab[onclick="sTab(\''+name+'\')"]').classList.add('active');
+    document.querySelectorAll('.s-tab-btn').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.s-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('.s-tab-btn[onclick="sTab(\''+name+'\')"]').classList.add('active');
     document.getElementById('s-pane-'+name).classList.add('active');
 };
 

@@ -4,15 +4,15 @@
 
     <div class="sopds-top-bar-title">
         <span data-responsive-toggle="main_menu" data-hide-for="medium">
-          <button class="menu-icon" type="button" data-toggle></button>
+            <button class="menu-icon" type="button" data-toggle></button>
         </span>
-       <div class="sopds-title-bar-title">
-           <div class="show-for-small-only">SIMPLE OPDS CATALOG MODERN VERSION</div>
-           <div class="show-for-medium">SOPDS-MODERN MODERN VERSION</div>
-       </div>
+        <div class="sopds-title-bar-title">
+            <span class="show-for-small-only">SOPDS</span>
+            <span class="show-for-medium">SOPDS-MODERN</span>
+        </div>
     </div>
 
-    <!-- hidden lang forms outside the menu -->
+    <!-- hidden lang forms -->
     <form id="lang-form-en" method="post" action="{% url 'set_language' %}" style="display:none;">
         {% csrf_token %}<input type="hidden" name="language" value="en">
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -22,24 +22,37 @@
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
     </form>
 
-    <div class="top-bar-right" style="display:flex;align-items:center;">
-        <span style="font-size:85%;white-space:nowrap;padding:0 0.5rem;">
-            {% if LANGUAGE_CODE == 'en' %}<span style="font-weight:bold;color:#f15a23;">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
-            <span style="opacity:0.4;margin:0 1px;">/</span>
-            {% if LANGUAGE_CODE == 'ru' %}<span style="font-weight:bold;color:#f15a23;">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
+    <div class="top-bar-right">
+        <span class="sp-lang-switcher">
+            {% if LANGUAGE_CODE == 'en' %}<span class="active-lang">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
+            <span class="sep">/</span>
+            {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
         </span>
-        <ul class="menu" style="font-size:90%;">
+        <ul class="menu">
             {% if sopds_auth %}{% if user.is_authenticated %}{% if user.is_superuser %}
-                <li><a href="{% url "fb2parser:dashboard" %}"><i class="fi-list"></i> FB2Parser</a></li>
-                <li><a href="{% url "web:settings" %}"><i class="fi-widget"></i>{% trans "Settings" %}</a></li>
+                <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
+                <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
             {% endif %}{% endif %}{% endif %}
             {% if sopds_auth %}{% if user.is_authenticated %}
-                <li><a href="{% url "web:logout" %}"><i class="fi-torsos"></i>{% trans "Logout" %} ({{ user.username }})</a></li>
+                <li><a href="{% url "web:logout" %}">{% trans "Logout" %} ({{ user.username }})</a></li>
             {% else %}
-                <li><a href="{% url "web:login" %}"><i class="fi-torsos"></i>{% trans "Login" %}</a></li>
+                <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>
             {% endif %}{% endif %}
         </ul>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
+            <span class="icon-moon">🌙</span>
+            <span class="icon-sun">☀️</span>
+        </button>
     </div>
 
 </div>
 </div>
+
+<script>
+function toggleTheme() {
+    var html = document.documentElement;
+    var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+</script>

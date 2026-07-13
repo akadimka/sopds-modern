@@ -3,12 +3,12 @@
   hx-trigger="every 2s"
   hx-target="#sopds-scan-status"
   hx-swap="innerHTML"
-  style="color:#fde68a; font-size:0.82rem;">⏳ Сканирование...{% if state.root %} <code style="font-size:0.78rem;">{{ state.root }}</code>{% endif %}</span>
+  class="sopds-scan-running">⏳ Сканирование...{% if state.root %} <code class="sopds-scan-code">{{ state.root }}</code>{% endif %}</span>
 <script>sessionStorage._sopdsWasRunning = '1';</script>
 {% elif state.done and state.error %}
-<div style="font-size:0.82rem;">
-  <span style="color:#fca5a5;">✗ Ошибка: {{ state.error }}</span>
-  {% if state.traceback %}<pre style="font-size:0.72rem; color:#fca5a5; white-space:pre-wrap; margin-top:0.3rem; max-height:120px; overflow-y:auto;">{{ state.traceback }}</pre>{% endif %}
+<div class="sopds-scan-error" style="font-size:0.82rem;">
+  ✗ Ошибка: {{ state.error }}
+  {% if state.traceback %}<pre class="sopds-scan-pre" style="color:var(--status-error);">{{ state.traceback }}</pre>{% endif %}
 </div>
 {% elif state.done %}
 <script>
@@ -17,13 +17,13 @@ if (sessionStorage._sopdsWasRunning === '1') {
     setTimeout(function(){ location.reload(); }, 800);
 }
 </script>
-<div style="font-size:0.82rem; color:#86efac;">
+<div class="sopds-scan-ok" style="font-size:0.82rem;">
   ✓ Готово —
   добавлено: <strong>{{ state.added }}</strong>,
   ошибок: <strong>{{ state.bad }}</strong>{% if state.root %},
-  путь: <code style="font-size:0.78rem; color:#a3e635;">{{ state.root }}</code>{% endif %}
+  путь: <code class="sopds-scan-code" style="color:#a3e635;">{{ state.root }}</code>{% endif %}
 </div>
 {% if state.first_error %}
-<pre style="font-size:0.72rem; color:#fde68a; white-space:pre-wrap; margin-top:0.3rem; max-height:80px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:0.3rem;">{{ state.first_error }}</pre>
+<pre class="sopds-scan-pre" style="color:#fde68a;">{{ state.first_error }}</pre>
 {% endif %}
 {% endif %}

@@ -1,86 +1,30 @@
 {% extends "fb2parser/base.html" %}
 {% load i18n %}
 {% block content %}
-<style>
-.s-tabs { display:flex; gap:0; border-bottom:2px solid #2c3e50; margin-bottom:1.2rem; }
-.s-tab  { padding:0.5rem 1.2rem; cursor:pointer; font-size:0.9rem; border:1px solid transparent;
-          border-bottom:none; border-radius:4px 4px 0 0; color:#495057; background:#f8f9fa; }
-.s-tab.active { background:#2c3e50; color:#fff; border-color:#2c3e50; }
-.s-pane { display:none; }
-.s-pane.active { display:block; }
 
-.s-field { margin-bottom:1rem; }
-.s-field label { display:block; font-size:0.85rem; color:#495057; margin-bottom:0.25rem; font-weight:600; }
-.s-field input[type=text], .s-field input[type=number] {
-    width:100%; max-width:600px; font-size:0.88rem; padding:0.35rem 0.5rem;
-    border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
-.s-hint { font-size:0.77rem; color:#7f8c8d; margin-top:0.2rem; }
-.s-row { display:flex; gap:0.5rem; align-items:center; max-width:600px; }
-.s-row input[type=text] { flex:1; }
-
-/* Lists tab */
-.sl-selector { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; }
-.sl-selector label { font-size:0.85rem; font-weight:600; color:#495057; white-space:nowrap; }
-.sl-selector select { font-size:0.85rem; padding:0.3rem 0.5rem; border:1px solid #ccc; border-radius:4px; min-width:260px; }
-.sl-desc { font-size:0.8rem; color:#546e7a; background:#f5f5f5; padding:0.4rem 0.7rem;
-           border-radius:4px; margin-bottom:0.7rem; border-left:3px solid #78909c; }
-.sl-list { border:1px solid #dee2e6; border-radius:4px; min-height:180px; max-height:360px;
-           overflow-y:auto; background:#fff; padding:0.3rem; font-family:monospace; font-size:0.82rem; }
-.sl-item { display:flex; justify-content:space-between; align-items:center;
-           padding:0.2rem 0.4rem; border-radius:3px; }
-.sl-item:hover { background:#f0f4f8; }
-.sl-item span { flex:1; word-break:break-all; }
-.sl-item button { background:none; border:none; cursor:pointer; color:#c0392b; font-size:1rem;
-                  padding:0 0.3rem; line-height:1; flex-shrink:0; }
-.sl-add-row { display:flex; gap:0.5rem; margin-top:0.6rem; }
-.sl-add-row input { flex:1; font-size:0.85rem; padding:0.3rem 0.5rem;
-                    border:1px solid #ccc; border-radius:4px; }
-.sl-add-row button { padding:0.3rem 0.8rem; font-size:0.85rem; background:#2c3e50;
-                     color:#fff; border:none; border-radius:4px; cursor:pointer; }
-
-/* Conversions tab */
-.cv-table { border-collapse:collapse; width:100%; max-width:700px; font-size:0.85rem; }
-.cv-table th { background:#2c3e50; color:#fff; padding:0.3rem 0.6rem; text-align:left; }
-.cv-table td { padding:0.25rem 0.6rem; border-bottom:1px solid #f0f0f0; }
-.cv-table tr:hover td { background:#f8f9fa; }
-.cv-add-row { display:flex; gap:0.5rem; margin-top:0.8rem; max-width:700px; align-items:center; }
-.cv-add-row input { flex:1; font-size:0.85rem; padding:0.3rem 0.5rem;
-                    border:1px solid #ccc; border-radius:4px; }
-.cv-add-row button { padding:0.3rem 0.8rem; font-size:0.85rem; background:#2c3e50;
-                     color:#fff; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; }
-
-.s-save-btn { padding:0.45rem 1.4rem; font-size:0.9rem; background:#27ae60;
-              color:#fff; border:none; border-radius:4px; cursor:pointer; margin-top:0.5rem; }
-.s-save-btn:hover { background:#219a52; }
-.s-msg { font-size:0.85rem; padding:0.35rem 0.7rem; border-radius:4px; margin-top:0.5rem; display:inline-block; }
-.s-msg.ok  { background:#d4edda; color:#155724; }
-.s-msg.err { background:#f8d7da; color:#721c24; }
-</style>
-
-<h2 style="font-size:1.2rem; margin-bottom:1rem; color:#2c3e50;">{% trans "⚙ FB2Parser Settings" %}</h2>
+<h2 style="font-size:1.2rem; margin-bottom:1rem; color:var(--text);">{% trans "⚙ FB2Parser Settings" %}</h2>
 
 {% if saved %}
 <div class="s-msg ok" style="margin-bottom:0.8rem;">{% trans "✓ Settings saved." %}</div>
 {% endif %}
 
 <div class="s-tabs">
-    <div class="s-tab active" onclick="sTab('general')">{% trans "General" %}</div>
-    <div class="s-tab" onclick="sTab('lists')">{% trans "Lists" %}</div>
-    <div class="s-tab" onclick="sTab('conversions')">{% trans "Author conversions" %}</div>
+    <button class="s-tab-btn active" onclick="sTab('general')">{% trans "General" %}</button>
+    <button class="s-tab-btn" onclick="sTab('lists')">{% trans "Lists" %}</button>
+    <button class="s-tab-btn" onclick="sTab('conversions')">{% trans "Author conversions" %}</button>
 </div>
 
 <!-- ═══════════════════════════════ General tab ══════════════════════════════ -->
-<div id="s-pane-general" class="s-pane active">
+<div id="s-pane-general" class="s-tab-panel active">
 <form method="post">
 {% csrf_token %}
 <div class="s-field">
     <label>{% trans "Library path" %}</label>
     <div class="s-row">
         <input type="text" name="library_path" id="library_path" value="{{ library_path }}" placeholder="{% trans 'Root path to FB2 files' %}">
-        <button type="button" class="fb-browse-btn" onclick="openBrowser('library_path')"
-                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">{% trans "📁 Browse" %}</button>
+        <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;" onclick="openBrowser('library_path')">{% trans "📁 Browse" %}</button>
     </div>
-    <div class="fb-browser-wrap" id="fb-browser-library_path" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
+    <div class="fb-browser-wrap" id="fb-browser-library_path" style="display:none; margin-top:0.3rem; max-width:600px;"></div>
     <div class="s-hint">{% trans "Root directory to start scanning FB2 files from." %}</div>
 </div>
 
@@ -88,10 +32,9 @@
     <label>{% trans "Path to genres file (genres.xml)" %}</label>
     <div class="s-row">
         <input type="text" name="genres_file_path" id="genres_file_path" value="{{ genres_file_path }}" placeholder="{% trans 'Path to genres.xml' %}">
-        <button type="button" class="fb-browse-btn" onclick="openBrowser('genres_file_path')"
-                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">{% trans "📁 Browse" %}</button>
+        <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;" onclick="openBrowser('genres_file_path')">{% trans "📁 Browse" %}</button>
     </div>
-    <div class="fb-browser-wrap" id="fb-browser-genres_file_path" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
+    <div class="fb-browser-wrap" id="fb-browser-genres_file_path" style="display:none; margin-top:0.3rem; max-width:600px;"></div>
     <div class="s-hint">{% trans "Path to the XML file with genre definitions." %}</div>
 </div>
 
@@ -99,10 +42,9 @@
     <label>{% trans "Normalizer CSV folder" %}</label>
     <div class="s-row">
         <input type="text" name="normalizer_folder" id="normalizer_folder" value="{{ normalizer_folder }}" placeholder="{% trans 'Where to save normalization CSV files' %}">
-        <button type="button" class="fb-browse-btn" onclick="openBrowser('normalizer_folder')"
-                style="padding:0.35rem 0.7rem; font-size:0.85rem; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#f8f9fa; white-space:nowrap;">{% trans "📁 Browse" %}</button>
+        <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;" onclick="openBrowser('normalizer_folder')">{% trans "📁 Browse" %}</button>
     </div>
-    <div class="fb-browser-wrap" id="fb-browser-normalizer_folder" style="display:none; border:1px solid #ccc; border-radius:4px; max-height:260px; overflow-y:auto; margin-top:0.3rem; max-width:600px;"></div>
+    <div class="fb-browser-wrap" id="fb-browser-normalizer_folder" style="display:none; margin-top:0.3rem; max-width:600px;"></div>
     <div class="s-hint">{% trans "Normalization CSV files will be saved here (default:" %} <code>fb2_data/csv/</code>).</div>
 </div>
 
@@ -112,11 +54,10 @@
     <div class="s-hint">{% trans "Folder traversal depth during parsing, starting from the file (default: 5)." %}</div>
 </div>
 
-
 <div class="s-field">
     <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal; cursor:pointer;">
         <input type="checkbox" name="generate_csv" {% if generate_csv %}checked{% endif %}
-               style="width:16px; height:16px; accent-color:#27ae60; cursor:pointer;">
+               style="width:16px; height:16px; accent-color:var(--fp-accent); cursor:pointer;">
         <span style="font-weight:600;">{% trans "Generate CSV file on normalization" %}</span>
     </label>
     <div class="s-hint">{% trans "If enabled, a CSV report is created during normalization." %}</div>
@@ -127,7 +68,7 @@
 </div>
 
 <!-- ═══════════════════════════════ Lists tab ══════════════════════════════ -->
-<div id="s-pane-lists" class="s-pane">
+<div id="s-pane-lists" class="s-tab-panel">
 <div class="sl-selector">
     <label for="sl-select">{% trans "List:" %}</label>
     <select id="sl-select" onchange="slLoad(this.value)">
@@ -139,8 +80,7 @@
 <div id="sl-desc" class="sl-desc">
     {% for key, desc in lists_meta %}{% if key == first_list_key %}{{ desc }}{% endif %}{% endfor %}
 </div>
-<div id="sl-list" class="sl-list">
-</div>
+<div id="sl-list" class="sl-list"></div>
 <div class="sl-add-row">
     <input type="text" id="sl-new-val" placeholder="{% trans 'New value…' %}" onkeydown="if(event.key==='Enter')slAdd()">
     <button onclick="slAdd()">{% trans "+ Add" %}</button>
@@ -149,8 +89,8 @@
 </div>
 
 <!-- ═══════════════════════════ Author conversions tab ═══════════════════════════ -->
-<div id="s-pane-conversions" class="s-pane">
-<p style="font-size:0.85rem; color:#546e7a; margin-bottom:0.8rem;">
+<div id="s-pane-conversions" class="s-tab-panel">
+<p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.8rem;">
     {% trans "Transliteration/replacement rules for author surnames. Key — original surname, value — target." %}
 </p>
 <div style="overflow-x:auto; max-width:700px;">
@@ -159,20 +99,20 @@
     <tbody id="cv-tbody">
     {% for from_val, to_val in conversions.items %}
     <tr data-from="{{ from_val }}">
-        <td style="font-family:monospace;">{{ from_val }}</td>
-        <td style="font-family:monospace;">{{ to_val }}</td>
+        <td style="font-family:var(--font-mono);">{{ from_val }}</td>
+        <td style="font-family:var(--font-mono);">{{ to_val }}</td>
         <td><button onclick="cvDelete('{{ from_val|escapejs }}')" title="{% trans 'Delete' %}"
-                    style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:1rem;padding:0 0.3rem;">✕</button></td>
+                    style="background:none;border:none;cursor:pointer;color:var(--status-error);font-size:1rem;padding:0 0.3rem;">✕</button></td>
     </tr>
     {% empty %}
-    <tr id="cv-empty"><td colspan="3" style="color:#7f8c8d; text-align:center; padding:1rem;">{% trans "No conversion rules." %}</td></tr>
+    <tr id="cv-empty"><td colspan="3" style="color:var(--text-muted); text-align:center; padding:1rem;">{% trans "No conversion rules." %}</td></tr>
     {% endfor %}
     </tbody>
 </table>
 </div>
-<div class="cv-add-row" style="margin-top:0.8rem;">
+<div class="cv-add-row">
     <input type="text" id="cv-from" placeholder="{% trans 'Original surname' %}">
-    <span style="font-size:1rem; color:#7f8c8d;">→</span>
+    <span style="font-size:1rem; color:var(--text-muted);">→</span>
     <input type="text" id="cv-to" placeholder="{% trans 'Converted surname' %}"
            onkeydown="if(event.key==='Enter')cvAdd()">
     <button onclick="cvAdd()">{% trans "+ Add" %}</button>
@@ -194,15 +134,13 @@ var _t = {
     var convUrl = "{% url 'fb2parser:settings_conv_op' %}";
     var csrf    = (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value||'';
 
-    // ── Tabs ──────────────────────────────────────────────────────────────────
     window.sTab = function(name) {
-        document.querySelectorAll('.s-tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.s-pane').forEach(function(p) { p.classList.remove('active'); });
-        document.querySelector('.s-tab[onclick="sTab(\''+name+'\')"]').classList.add('active');
+        document.querySelectorAll('.s-tab-btn').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.s-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.querySelector('.s-tab-btn[onclick="sTab(\''+name+'\')"]').classList.add('active');
         document.getElementById('s-pane-'+name).classList.add('active');
     };
 
-    // ── Lists tab ─────────────────────────────────────────────────────────────
     var _listsData = {{ lists_data_json|safe }};
     var _listsMeta = {
         {% for key, desc in lists_meta %}'{{ key }}': '{{ desc|escapejs }}',{% endfor %}
@@ -211,7 +149,7 @@ var _t = {
     function slRender(key) {
         var items = _listsData[key] || [];
         var el = document.getElementById('sl-list');
-        if (!items.length) { el.innerHTML = '<div style="color:#7f8c8d;padding:0.5rem;">'+_t.listEmpty+'</div>'; return; }
+        if (!items.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:0.5rem;">'+_t.listEmpty+'</div>'; return; }
         el.innerHTML = items.map(function(v) {
             var esc = v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             var escJ = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -234,13 +172,9 @@ var _t = {
         fetch(listUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({key:key, value:val, action:'add'})})
         .then(function(r){return r.json();}).then(function(d){
-            if (d.ok) {
-                _listsData[key] = d.list;
-                slRender(key);
-                document.getElementById('sl-new-val').value = '';
-                _slMsg(_t.added, '#155724');
-            } else { _slMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _slMsg(_t.error, '#721c24'); });
+            if (d.ok) { _listsData[key] = d.list; slRender(key); document.getElementById('sl-new-val').value=''; _slMsg(_t.added, true); }
+            else { _slMsg('❌ '+d.error, false); }
+        }).catch(function(){ _slMsg(_t.error, false); });
     };
 
     window.slDelete = function(val) {
@@ -248,49 +182,48 @@ var _t = {
         fetch(listUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({key:key, value:val, action:'delete'})})
         .then(function(r){return r.json();}).then(function(d){
-            if (d.ok) { _listsData[key] = d.list; slRender(key); _slMsg(_t.deleted, '#155724'); }
-            else { _slMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _slMsg(_t.error, '#721c24'); });
+            if (d.ok) { _listsData[key] = d.list; slRender(key); _slMsg(_t.deleted, true); }
+            else { _slMsg('❌ '+d.error, false); }
+        }).catch(function(){ _slMsg(_t.error, false); });
     };
 
-    function _slMsg(txt, color) {
+    function _slMsg(txt, ok) {
         var el = document.getElementById('sl-msg');
-        el.style.color = color;
+        el.style.color = ok ? 'var(--status-ok)' : 'var(--status-error)';
         el.textContent = txt;
         setTimeout(function(){ el.textContent=''; }, 3000);
     }
 
-    // ── Conversions tab ───────────────────────────────────────────────────────
     window.cvAdd = function() {
         var fromVal = document.getElementById('cv-from').value.trim();
         var toVal   = document.getElementById('cv-to').value.trim();
-        if (!fromVal || !toVal) { _cvMsg(_t.fillBoth, '#721c24'); return; }
+        if (!fromVal || !toVal) { _cvMsg(_t.fillBoth, false); return; }
         fetch(convUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({action:'add', from_val:fromVal, to_val:toVal})})
         .then(function(r){return r.json();}).then(function(d){
             if (d.ok) {
                 cvRender(d.conversions);
-                document.getElementById('cv-from').value = '';
-                document.getElementById('cv-to').value = '';
-                _cvMsg(_t.added, '#155724');
-            } else { _cvMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _cvMsg(_t.error, '#721c24'); });
+                document.getElementById('cv-from').value='';
+                document.getElementById('cv-to').value='';
+                _cvMsg(_t.added, true);
+            } else { _cvMsg('❌ '+d.error, false); }
+        }).catch(function(){ _cvMsg(_t.error, false); });
     };
 
     window.cvDelete = function(fromVal) {
         fetch(convUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf},
               body: JSON.stringify({action:'delete', from_val:fromVal})})
         .then(function(r){return r.json();}).then(function(d){
-            if (d.ok) { cvRender(d.conversions); _cvMsg(_t.deleted, '#155724'); }
-            else { _cvMsg('❌ '+d.error, '#721c24'); }
-        }).catch(function(){ _cvMsg(_t.error, '#721c24'); });
+            if (d.ok) { cvRender(d.conversions); _cvMsg(_t.deleted, true); }
+            else { _cvMsg('❌ '+d.error, false); }
+        }).catch(function(){ _cvMsg(_t.error, false); });
     };
 
     function cvRender(convs) {
         var tbody = document.getElementById('cv-tbody');
         var keys = Object.keys(convs);
         if (!keys.length) {
-            tbody.innerHTML = '<tr id="cv-empty"><td colspan="3" style="color:#7f8c8d;text-align:center;padding:1rem;">'+_t.noConversions+'</td></tr>';
+            tbody.innerHTML = '<tr id="cv-empty"><td colspan="3" style="color:var(--text-muted);text-align:center;padding:1rem;">'+_t.noConversions+'</td></tr>';
             return;
         }
         tbody.innerHTML = keys.map(function(k) {
@@ -298,21 +231,20 @@ var _t = {
             var escV = convs[k].replace(/&/g,'&amp;').replace(/</g,'&lt;');
             var escJ = k.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             return '<tr data-from="'+escK+'">'
-                 + '<td style="font-family:monospace;">'+escK+'</td>'
-                 + '<td style="font-family:monospace;">'+escV+'</td>'
-                 + '<td><button onclick="cvDelete(\''+escJ+'\')" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:1rem;padding:0 0.3rem;">✕</button></td>'
+                 + '<td style="font-family:var(--font-mono);">'+escK+'</td>'
+                 + '<td style="font-family:var(--font-mono);">'+escV+'</td>'
+                 + '<td><button onclick="cvDelete(\''+escJ+'\')" style="background:none;border:none;cursor:pointer;color:var(--status-error);font-size:1rem;padding:0 0.3rem;">✕</button></td>'
                  + '</tr>';
         }).join('');
     }
 
-    function _cvMsg(txt, color) {
+    function _cvMsg(txt, ok) {
         var el = document.getElementById('cv-msg');
-        el.style.color = color;
+        el.style.color = ok ? 'var(--status-ok)' : 'var(--status-error)';
         el.textContent = txt;
         setTimeout(function(){ el.textContent=''; }, 3000);
     }
 
-    // Initialize Lists tab
     slLoad(document.getElementById('sl-select').value);
 })();
 </script>

@@ -1,82 +1,54 @@
 {% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="light">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="shortcut icon" type="image/icon" href="{% static "images/favicon.ico" %}"/>
     <title>FB2Parser — {{ fb2_title }}</title>
     <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
-    <link rel="stylesheet" type="text/css" href="{% static "css/sopds-htmx.css" %}">
-    <style>
-        .fb2-topbar { background: #2c3e50; color: #fff; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; }
-        .fb2-topbar-title { font-weight: bold; font-size: 1.1rem; letter-spacing: 0.05em; }
-        .fb2-topbar-links a { color: #ecf0f1; margin-left: 1.2rem; font-size: 0.9rem; text-decoration: none; }
-        .fb2-topbar-links a:hover { color: #f39c12; }
-        .fb2-navbar { background: #34495e; }
-        .fb2-navbar .menu > li > a { color: #ecf0f1; font-size: 0.9rem; padding: 0.7rem 1rem; }
-        .fb2-navbar .menu > li > a:hover { background: #f39c12; color: #fff; }
-        .fb2-navbar .is-dropdown-submenu { background: #2c3e50; border: none; min-width: 200px; z-index: 1000 !important; position: absolute; }
-        .fb2-navbar .is-dropdown-submenu a { color: #ecf0f1; padding: 0.5rem 1rem; font-size: 0.85rem; }
-        .fb2-navbar .is-dropdown-submenu a:hover { background: #f39c12; color: #fff; }
-        .fb2-content { padding: 1.5rem 0; min-height: 60vh; }
-        .fb2-stub { background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 6px; padding: 3rem; text-align: center; color: #6c757d; margin-top: 1rem; }
-        .fb2-stub h3 { color: #495057; }
-
-        /* Folder tree */
-        .ftree-node { font-size: 0.83rem; font-family: monospace; }
-        .ftree-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.18rem 0.5rem; cursor: default; border-bottom: 1px solid #f5f5f5; user-select: none; transition: background 0.1s; }
-        .ftree-row.hover { background: #f0f4f8; }
-        .ftree-row.selected { background: #fef3e2 !important; }
-        .ftree-checkbox { cursor: pointer; flex-shrink: 0; accent-color: #f39c12; width: 13px; height: 13px; }
-        .ftree-toggle { background: none; border: none; cursor: pointer; font-size: 0.68rem; color: #7f8c8d; padding: 0; width: 1.1rem; flex-shrink: 0; transition: transform 0.15s; }
-        .ftree-toggle.open { transform: rotate(90deg); }
-        .ftree-leaf-indent { display: inline-block; width: 1.1rem; flex-shrink: 0; }
-        .ftree-icon { flex-shrink: 0; }
-        .ftree-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #2c3e50; }
-        .ftree-name:hover { text-decoration: underline dotted; cursor: pointer; }
-        .ftree-count { font-size: 0.75rem; color: #7f8c8d; white-space: nowrap; flex-shrink: 0; }
-        .ftree-badge { font-size: 0.71rem; padding: 0.08rem 0.45rem; border-radius: 10px; background: #27ae60; color: #fff; white-space: nowrap; flex-shrink: 0; font-family: sans-serif; }
-        .ftree-badge.error { background: #c0392b; }
-        .ftree-children { padding-left: 1.4rem; border-left: 1px solid #e9ecef; margin-left: 0.55rem; }
-        .ftree-loading { padding: 0.3rem 0.5rem; color: #7f8c8d; font-size: 0.8rem; }
-        /* Genre picker */
-        .gp-item:hover { background: #f0f4f8; }
-        .gp-item.selected { background: #fef3e2; font-weight: 600; }
-        /* Sync modal */
-        #sync-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; }
-        #sync-modal-overlay.open { display:flex; align-items:center; justify-content:center; }
-        #sync-modal-box { background:#fff; border-radius:6px; width:min(560px,95vw); max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.25); }
-        #sync-modal-header { background:#34495e; color:#fff; padding:0.7rem 1rem; display:flex; justify-content:space-between; align-items:center; border-radius:6px 6px 0 0; }
-        #sync-modal-header h5 { margin:0; font-size:1rem; }
-        #sync-modal-close { background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; line-height:1; padding:0; }
-        #sync-modal-body { padding:1rem; }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{% static "css/theme.css" %}">
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
 <div class="grid-container fluid">
 
-    <!-- Language switcher hidden forms (outside top bar) -->
+    <!-- Language switcher hidden forms -->
     <form id="fp-lang-en" method="post" action="/i18n/setlang/" style="display:none;">{% csrf_token %}<input type="hidden" name="language" value="en"><input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
     <form id="fp-lang-ru" method="post" action="/i18n/setlang/" style="display:none;">{% csrf_token %}<input type="hidden" name="language" value="ru"><input type="hidden" name="next" value="{{ request.get_full_path }}"></form>
 
     <!-- Top bar -->
     <div class="fb2-topbar">
-        <div class="fb2-topbar-title">FB2PARSER</div>
+        <div class="fb2-topbar-title">
+            <span class="fp-logo-dot"></span>
+            FB2PARSER
+        </div>
         <div class="fb2-topbar-links">
             <a href="{% url 'web:main' %}">→ SOPDS</a>
             {% if user.is_superuser %}
             <a href="{% url 'fb2parser:fb2parser_settings' %}">{% trans "Settings" %}</a>
             {% endif %}
-            <span style="font-size:85%;white-space:nowrap;margin:0 0.5rem;">{% if LANGUAGE_CODE == 'en' %}<span style="font-weight:bold;color:#f15a23;">EN</span>{% else %}<a href="#" onclick="document.getElementById('fp-lang-en').submit();return false;">EN</a>{% endif %}<span style="opacity:0.4;margin:0 1px;">/</span>{% if LANGUAGE_CODE == 'ru' %}<span style="font-weight:bold;color:#f15a23;">RU</span>{% else %}<a href="#" onclick="document.getElementById('fp-lang-ru').submit();return false;">RU</a>{% endif %}</span>
+            <span class="fp-lang-switcher">
+                {% if LANGUAGE_CODE == 'en' %}<span class="active-lang">EN</span>{% else %}<a href="#" onclick="document.getElementById('fp-lang-en').submit();return false;">EN</a>{% endif %}
+                <span class="sep">/</span>
+                {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('fp-lang-ru').submit();return false;">RU</a>{% endif %}
+            </span>
             <span id="restart-btn"
-                  style="cursor:pointer; color:#e67e22; margin-left:1.2rem; font-size:0.9rem;"
                   hx-post="{% url 'fb2parser:server_restart' %}"
                   hx-target="#restart-btn"
                   hx-swap="innerHTML"
                   hx-confirm="{% trans 'Restart server?' %}"
                   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>{% trans "⟳ Restart" %}</span>
-            <a href="{% url 'web:logout' %}">Logout ({{ user.username }})</a>
+            <a href="{% url 'web:logout' %}">{% trans "Logout" %} ({{ user.username }})</a>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
+                <span class="icon-moon">🌙</span>
+                <span class="icon-sun">☀️</span>
+            </button>
         </div>
     </div>
 
@@ -85,10 +57,8 @@
         <div class="grid-container fluid">
             <ul class="menu" data-responsive-menu="dropdown">
 
-                <!-- Home -->
                 <li><a href="{% url 'fb2parser:dashboard' %}">{% trans "Home" %}</a></li>
 
-                <!-- Actions -->
                 <li class="is-dropdown-submenu-parent" data-is-click="true">
                     <a href="#">{% trans "Actions" %}</a>
                     <ul class="menu is-dropdown-submenu">
@@ -96,29 +66,26 @@
                         <li><a href="{% url 'fb2parser:normalize' %}">{% trans "Normalization" %}</a></li>
                         <li><a href="#" onclick="openSyncModal(); return false;">{% trans "Synchronization" %}</a></li>
                         <li><a href="{% url 'fb2parser:archive' %}">{% trans "Archive" %}</a></li>
-                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li class="menu-text"><hr></li>
                         <li><a href="{% url 'fb2parser:database' %}">{% trans "Database" %}</a></li>
                     </ul>
                 </li>
 
-                <!-- Genres -->
                 <li><a href="{% url 'fb2parser:genres' %}">{% trans "Genres" %}</a></li>
 
-                <!-- Library -->
                 <li class="is-dropdown-submenu-parent" data-is-click="true">
                     <a href="#">{% trans "Library" %}</a>
                     <ul class="menu is-dropdown-submenu">
                         <li><a href="{% url 'fb2parser:statistics' %}">{% trans "Statistics" %}</a></li>
                         <li><a href="{% url 'fb2parser:search' %}">{% trans "Metadata Search" %}</a></li>
-                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li class="menu-text"><hr></li>
                         <li><a href="{% url 'fb2parser:new_books' %}">{% trans "New Books" %}</a></li>
                         <li><a href="{% url 'fb2parser:series_gaps' %}">{% trans "Series with Gaps" %}</a></li>
-                        <li class="menu-text"><hr style="margin:0.2rem 0; border-color:#4a6278;"></li>
+                        <li class="menu-text"><hr></li>
                         <li><a href="{% url 'fb2parser:integrity' %}">{% trans "FB2 Integrity Check" %}</a></li>
                     </ul>
                 </li>
 
-                <!-- Log -->
                 <li><a href="{% url 'fb2parser:log' %}">{% trans "Log" %}</a></li>
 
             </ul>
@@ -139,13 +106,19 @@
 <script src="{% static "js/htmx-config.js" %}"></script>
 <script>
     $(document).foundation();
+
+    function toggleTheme() {
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
 </script>
 {% block extra_js %}{% endblock %}
 <script>
 var fbBrowseUrl = "{% url 'fb2parser:browse' %}";
 var fbFolderTreeUrl = "{% url 'fb2parser:folder_tree' %}";
 
-/* Collapsible folder tree */
 function ftreeToggle(btn) {
     var nodeId = btn.dataset.nodeId;
     var path = btn.dataset.path;
@@ -166,16 +139,14 @@ function ftreeToggle(btn) {
         }
     }
 }
-/* Folder browser helpers — global, available on every fb2parser page */
+
 function openBrowser(targetId) {
     var wrap = document.getElementById('fb-browser-' + targetId);
     if (!wrap) return;
     var isOpen = wrap.style.display !== 'none';
-    // close all open browsers first
     document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
     if (isOpen) return;
     wrap.style.display = 'block';
-    // load drives/root if empty
     if (!wrap.querySelector('div')) {
         htmx.ajax('GET', fbBrowseUrl + '?target=' + encodeURIComponent(targetId), {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
             htmx.process(document.getElementById('fb-browser-' + targetId));
@@ -200,24 +171,22 @@ function selectFolder(targetId, path) {
     closeBrowser(targetId);
     if (typeof window._onSelectFolder === 'function') window._onSelectFolder(targetId, path);
 }
-// re-process htmx after folder browser navigation (hx-get buttons inside injected HTML)
+
 document.addEventListener('htmx:afterSwap', function(e) {
     if (e.target && e.target.classList && e.target.classList.contains('fb-browser-wrap')) {
         htmx.process(e.target);
     }
-    // Activate hx-trigger="load" on new folder tree nodes
     if (e.target && e.target.classList && e.target.classList.contains('ftree-children')) {
         htmx.process(e.target);
     }
 });
-// close browser when clicking outside
+
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.fb-browser-wrap') && !e.target.closest('.fb-browse-btn')) {
         document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
     }
 });
 
-// Sync modal
 function openSyncModal() {
     document.getElementById('sync-modal-overlay').classList.add('open');
     var folderEl = document.getElementById('main-folder');
@@ -243,7 +212,7 @@ document.addEventListener('keydown', function(e) {
             <button id="sync-modal-close" onclick="closeSyncModal()">×</button>
         </div>
         <div id="sync-modal-body">
-            <div style="padding:2rem; text-align:center; color:#7f8c8d;">{% trans "Loading..." %}</div>
+            <div style="padding:2rem; text-align:center; color:var(--text-muted);">{% trans "Loading..." %}</div>
         </div>
     </div>
 </div>
