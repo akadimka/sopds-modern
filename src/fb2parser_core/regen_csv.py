@@ -278,7 +278,18 @@ class RegenCSVService:
         if match:
             if not any(c.isdigit() for c in match.group(2)):
                 return match.group(1).strip()
-        
+
+        # ШАГ 2.5: Формат "Серия. Хвост" (например "За гранью. Мистические
+        # триллеры Альбины Нури") — хвост после точки часто описание/жанр/имя
+        # автора, а не часть названия серии. Берём часть до первой ". ", если
+        # она похожа на название (не голые инициалы, не число).
+        if '. ' in folder_name:
+            head, _, tail = folder_name.partition('. ')
+            head = head.strip()
+            if (head and tail.strip() and not head.isdigit()
+                    and not re.fullmatch(r'[А-ЯA-ZЁ]\.?\s*[А-ЯA-ZЁ]?\.?', head)):
+                return head
+
         # ШАГ 3: Если ничего не помогло, берём всё имя
         return folder_name.strip()
     
