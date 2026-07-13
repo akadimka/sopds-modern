@@ -292,17 +292,14 @@ thead, thead tr, thead th {
 tbody tr, tbody td, tbody th {
     background: var(--bg-card) !important;
     color: var(--text) !important;
-    border-bottom: none !important;
-    border-top: none !important;
+    border: none !important;
 }
 tbody tr:hover td { background: var(--bg-hover) !important; }
 .unstriped tbody tr { background: var(--bg-card) !important; }
 .unstriped tbody td {
     color: var(--text) !important;
     border: none !important;
-    border-bottom: 1px solid var(--border) !important;
 }
-.unstriped tbody tr:last-child td { border-bottom: none !important; }
 
 /* ---- Tabs (Foundation) ----------------------------------- */
 .tabs {
