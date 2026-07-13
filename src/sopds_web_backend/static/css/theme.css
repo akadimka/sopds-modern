@@ -1201,14 +1201,14 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sopdsitem:hover {
     background: var(--bg-hover) !important;
 }
-.sopdsitem a {
+.sopdsitem a, .sopdsitem a:link, .sopdsitem a:visited {
     color: var(--sp-accent) !important;
     font-weight: 600;
     font-size: 1.05rem;
     text-decoration: none;
     min-width: 2.2rem;
 }
-.sopdsitem a:hover {
+.sopdsitem a:hover, .sopdsitem a:active {
     color: var(--sp-accent-hover) !important;
     text-decoration: underline;
 }
