@@ -219,6 +219,11 @@ def browse_folders(request):
     error = None
     parent = None
 
+    # Поле может хранить путь к файлу (например genres_file_path) — открываем
+    # его содержащую папку, а не пытаемся os.listdir() сам файл.
+    if path and os.path.isfile(path):
+        path = os.path.dirname(path.rstrip("/\\")) or path
+
     if not path:
         import string
         if os.name == "nt":

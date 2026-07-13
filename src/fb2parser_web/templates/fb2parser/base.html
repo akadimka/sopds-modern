@@ -148,7 +148,11 @@ function openBrowser(targetId) {
     if (isOpen) return;
     wrap.style.display = 'block';
     if (!wrap.querySelector('div')) {
-        htmx.ajax('GET', fbBrowseUrl + '?target=' + encodeURIComponent(targetId), {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
+        var inputEl = document.getElementById(targetId);
+        var startPath = inputEl ? inputEl.value.trim() : '';
+        var url = fbBrowseUrl + '?target=' + encodeURIComponent(targetId);
+        if (startPath) url += '&path=' + encodeURIComponent(startPath);
+        htmx.ajax('GET', url, {target: '#fb-browser-' + targetId, swap: 'innerHTML'}).then(function() {
             htmx.process(document.getElementById('fb-browser-' + targetId));
         });
     }
