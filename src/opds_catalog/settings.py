@@ -14,7 +14,7 @@ loglevels = {
     "critical": logging.CRITICAL,
     "none": logging.NOTSET,
 }
-NOZIP_FORMATS = ["epub", "mobi"]
+NOZIP_FORMATS = ["epub", "mobi", "azw3"]
 
 VERSION = getattr(settings, "VERSION", "develop")
 TITLE = getattr(settings, "SOPDS_TITLE", "SimpleOPDS NG")

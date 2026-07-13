@@ -85,8 +85,14 @@
     </div>
 
     <div class="s-field">
+        <label>{% trans "fb2→azw3 converter path (Kindle)" %}</label>
+        <input type="text" name="fb2toazw3" value="{{ sopds.fb2toazw3 }}" placeholder="/usr/bin/ebook-convert">
+        <div class="s-hint">{{ comments.fb2toazw3 }}</div>
+    </div>
+
+    <div class="s-field">
         <label>{% trans "fb2→mobi converter path" %}</label>
-        <input type="text" name="fb2tomobi" value="{{ sopds.fb2tomobi }}" placeholder="/usr/bin/fb2tomobi">
+        <input type="text" name="fb2tomobi" value="{{ sopds.fb2tomobi }}" placeholder="/usr/bin/ebook-convert">
         <div class="s-hint">{{ comments.fb2tomobi }}</div>
     </div>
 

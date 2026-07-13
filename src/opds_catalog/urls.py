@@ -94,7 +94,7 @@ urlpatterns = [
     ),
     re_path(r"^view/(?P<book_id>[0-9]+)/$", dl.ViewHtml, name="view_html"),
     re_path(
-        r"^convert/(?P<book_id>[0-9]+)/(?P<convert_type>epub|mobi)/$",
+        r"^convert/(?P<book_id>[0-9]+)/(?P<convert_type>epub|mobi|azw3)/$",
         dl.ConvertFB2,
         name="convert",
     ),

@@ -92,6 +92,9 @@ function openBookModal(bookId) {
                         {% if b.format == 'fb2' and fb2toepub %}
                         <i><a href="{% url 'opds_catalog:convert' b.id 'epub' %}" title="epub"><img src="{% static "images/sopds-ng-download-epub.svg" %}" width="30" alt="epub"></a></i>
                         {% endif %}
+                        {% if b.format == 'fb2' and fb2toazw3 %}
+                        <i><a href="{% url 'opds_catalog:convert' b.id 'azw3' %}" title="azw3 (Kindle)"><img src="{% static "images/sopds-ng-download-epub.svg" %}" width="30" alt="azw3"></a></i>
+                        {% endif %}
                         {% if b.format == 'fb2' and fb2tomobi %}
                         <i><a href="{% url 'opds_catalog:convert' b.id 'mobi' %}" title="mobi"><img src="{% static "images/sopds-ng-download-mobi.svg" %}" width="30" alt="mobi"></a></i>&nbsp;
                         {% endif %}

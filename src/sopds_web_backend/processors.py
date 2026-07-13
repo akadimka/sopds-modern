@@ -15,6 +15,7 @@ def sopds_processor(request):
     args["splititems"] = config.SOPDS_SPLITITEMS
     args["fb2tomobi"] = config.SOPDS_FB2TOMOBI != ""
     args["fb2toepub"] = config.SOPDS_FB2TOEPUB != ""
+    args["fb2toazw3"] = config.SOPDS_FB2TOAZW3 != ""
     args["nozip"] = settings.NOZIP_FORMATS
     args["cache_t"] = 0
 

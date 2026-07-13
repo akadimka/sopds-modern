@@ -53,8 +53,9 @@
         <div class="button-group expanded" style="margin:0;">
             <a href="{% url 'opds_catalog:download' random_book.id 0 %}" class="button secondary small">&#x2B07; {{ random_book.format|upper }}</a>
             {% if random_book.format not in nozip %}<a href="{% url 'opds_catalog:download' random_book.id 1 %}" class="button secondary small">&#x2B07; FB2.ZIP</a>{% endif %}
-            {% if random_book.format == 'fb2' and fb2toepub %}<a href="{% url 'opds_catalog:convert' random_book.id 'epub' %}" class="button secondary small">EPUB</a>{% endif %}
-            {% if random_book.format == 'fb2' and fb2tomobi %}<a href="{% url 'opds_catalog:convert' random_book.id 'mobi' %}" class="button secondary small">MOBI</a>{% endif %}
+            {% if random_book.format == 'fb2' and fb2toepub %}<a href="{% url 'opds_catalog:convert' random_book.id 'epub' %}" class="button secondary small">&#x2B07; EPUB</a>{% endif %}
+            {% if random_book.format == 'fb2' and fb2toazw3 %}<a href="{% url 'opds_catalog:convert' random_book.id 'azw3' %}" class="button secondary small">&#x2B07; AZW3</a>{% endif %}
+            {% if random_book.format == 'fb2' and fb2tomobi %}<a href="{% url 'opds_catalog:convert' random_book.id 'mobi' %}" class="button secondary small">&#x2B07; MOBI</a>{% endif %}
             {% if random_book.format == 'fb2' %}<a href="{% url 'opds_catalog:view_html' random_book.id %}" target="_blank" class="button primary small">&#x1F4D6; {% trans "Read" %}</a>{% endif %}
         </div>
     </div>

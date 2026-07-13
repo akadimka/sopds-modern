@@ -184,7 +184,8 @@ def ViewHtml(request, book_id):
 
 
 def ConvertFB2(request, book_id, convert_type):
-    """Выдача файла книги после конвертации в EPUB или mobi"""
+    """Выдача файла книги после конвертации в EPUB, MOBI или AZW3."""
+    from urllib.parse import quote
     book = Book.objects.get(id=book_id)
 
     if book.format != "fb2":
@@ -195,25 +196,29 @@ def ConvertFB2(request, book_id, convert_type):
 
     full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
     if book.cat_type == opdsdb.CAT_INP:
-        # Убираем из пути INPX и INP файл
+        # Убираем из пути INPX и INП файл
         inp_path, zip_name = os.path.split(full_path)
         inpx_path, inp_name = os.path.split(inp_path)
         path, inpx_name = os.path.split(inpx_path)
         full_path = os.path.join(path, zip_name)
 
-    transname = getFileName(book)
-
-    (n, e) = os.path.splitext(transname)
-    dlfilename = "%s.%s" % (n, convert_type)
+    base_name = os.path.splitext(getFileName(book))[0]
+    dlfilename = f"{base_name}.{convert_type}"
 
     if convert_type == "epub":
         converter_path = config.SOPDS_FB2TOEPUB
     elif convert_type == "mobi":
         converter_path = config.SOPDS_FB2TOMOBI
+    elif convert_type == "azw3":
+        converter_path = config.SOPDS_FB2TOAZW3
     else:
         raise Http404
     if not converter_path:
         raise Http404
+
+    if not config.SOPDS_TEMP_DIR:
+        raise Http404
+
     content_type = mime_detector.fmt(convert_type)
 
     if book.cat_type == opdsdb.CAT_NORMAL:
@@ -241,10 +246,13 @@ def ConvertFB2(request, book_id, convert_type):
     if os.path.isfile(tmp_conv_path):
         fo = codecs.open(tmp_conv_path, "rb")
         s = fo.read()
-        # HTTP Header
+        encoded_name = quote(dlfilename, safe='')
+        ascii_name = dlfilename.encode('ascii', 'replace').decode()
         response = HttpResponse()
-        response["Content-Type"] = '%s; name="%s"' % (content_type, dlfilename)
-        response["Content-Disposition"] = 'attachment; filename="%s"' % (dlfilename)
+        response["Content-Type"] = content_type
+        response["Content-Disposition"] = (
+            f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded_name}'
+        )
         response["Content-Transfer-Encoding"] = "binary"
         response["Content-Length"] = str(len(s))
         response.write(s)

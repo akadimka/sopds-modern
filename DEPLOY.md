@@ -269,7 +269,58 @@ systemctl reload apache2
 
 ---
 
-## 13. Проверка
+## 13. Конвертация книг (EPUB / AZW3 / MOBI)
+
+Для конвертации FB2 в другие форматы используется **Calibre** (`ebook-convert`).
+
+### Установка
+
+```bash
+apt install -y calibre
+which ebook-convert   # → /usr/bin/ebook-convert
+```
+
+> Calibre — крупный пакет (~500 МБ). На TurnKey/Debian он доступен прямо из репозитория, дополнительных источников не нужно.
+
+### Настройка в SOPDS
+
+После запуска сервиса войдите как суперпользователь и откройте **Settings** (`/web/settings/`):
+
+| Поле | Значение |
+|------|----------|
+| fb2→epub converter path | `/usr/bin/ebook-convert` |
+| fb2→azw3 converter path | `/usr/bin/ebook-convert` |
+| fb2→mobi converter path | `/usr/bin/ebook-convert` |
+| **Temp directory** | `/tmp` |
+
+> **Temp directory обязателен.** Без него конвертация завершится ошибкой 404 — конвертер не знает куда записать временный файл. Рекомендуется `/tmp` или отдельная папка с правами записи для `www-data`.
+
+Убедитесь что `/tmp` доступен для записи пользователю `www-data`:
+
+```bash
+ls -ld /tmp   # должно быть drwxrwxrwt
+```
+
+Если используете отдельную папку:
+
+```bash
+mkdir -p /opt/sopds-modern/tmp
+chown www-data:www-data /opt/sopds-modern/tmp
+```
+
+### Форматы и Kindle
+
+| Формат | Назначение |
+|--------|------------|
+| EPUB | Универсальный — PocketBook, Kobo, iOS, Android |
+| AZW3 | Kindle (новые устройства, лучше MOBI) |
+| MOBI | Kindle (старые устройства) |
+
+> Calibre 6+ официально рекомендует AZW3 вместо MOBI для Kindle. Кнопка AZW3 отображается только когда путь конвертера заполнен.
+
+---
+
+## 14. Проверка
 
 Откройте в браузере: `http://<IP-адрес сервера>:8008/` (без Apache) или `http://<IP-адрес сервера>/` (если настроили Apache на шаге 12)
 
