@@ -58,4 +58,28 @@
   .pagination li {
     display: inline-block;
   }
+
+  /* Top bar: wrap EN/RU and menu links below title */
+  .sopds-top-bar {
+    flex-wrap: wrap;
+  }
+  .sopds-top-bar .top-bar-right {
+    width: 100%;
+    justify-content: flex-end;
+    padding: 0.2rem 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  /* Main menu: stack vertically, hide scan button text */
+  .sopdsmenu {
+    flex-direction: column;
+  }
+  .sopdsmenu > li {
+    width: 100%;
+  }
+  .sopdsmenu > li[style*="margin-left:auto"] {
+    margin-left: 0 !important;
+    justify-content: flex-start;
+  }
 }
