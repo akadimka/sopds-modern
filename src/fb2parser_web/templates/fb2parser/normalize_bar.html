@@ -21,6 +21,10 @@
     <span style="font-weight:600;">{{ state.records_total }} {% trans "records" %}</span>
     <span style="color:var(--text-muted); font-size:0.78rem;">·</span>
     <span style="color:var(--text-muted); font-size:0.78rem; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%;">{{ state.folder }}</span>
+    {% if state.csv_path %}
+    <span style="color:var(--text-muted); font-size:0.78rem;">·</span>
+    <span title="{% trans "CSV file saved" %}" style="color:var(--text-muted); font-size:0.78rem; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:30%;">💾 {{ state.csv_path }}</span>
+    {% endif %}
 </div>
 {% elif state.error %}
 <div id="norm-bar-inner" style="display:flex; align-items:center; gap:0.5rem; width:100%;">

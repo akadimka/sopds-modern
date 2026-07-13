@@ -708,9 +708,20 @@ def _run_normalize_thread(folder_path):
     db.connections.close_all()
     try:
         from fb2parser_core import regen_csv
-        from .fb2parser_bridge import _config_path
+        from .fb2parser_bridge import _config_path, get_normalization_settings, _csv_dir
         config_path = _config_path()
         service = regen_csv.RegenCSVService(config_path)
+
+        # regen_csv.generate_csv() only writes an actual .csv file to disk when
+        # given an explicit output_csv_path — otherwise it silently skips saving,
+        # regardless of the "generate_csv" checkbox in Settings. Honor it here.
+        output_csv_path = None
+        sm = get_normalization_settings()
+        if sm.get_generate_csv():
+            csv_dir = sm.get_normalizer_folder() or _csv_dir()
+            os.makedirs(csv_dir, exist_ok=True)
+            safe_name = re.sub(r'[^\w-]+', '_', os.path.basename(folder_path.rstrip('/\\')) or 'root')
+            output_csv_path = os.path.join(csv_dir, f"regen_{safe_name}.csv")
 
         def _progress(current, total, status=""):
             with _norm_lock:
@@ -721,7 +732,7 @@ def _run_normalize_thread(folder_path):
                     _norm_state["log"].append(str(status))
                     _norm_state["log"] = _norm_state["log"][-200:]
 
-        records = service.generate_csv(folder_path, progress_callback=_progress) or []
+        records = service.generate_csv(folder_path, output_csv_path=output_csv_path, progress_callback=_progress) or []
 
         recs_dicts = []
         for r in records:
@@ -742,6 +753,7 @@ def _run_normalize_thread(folder_path):
                 "done": True, "running": False,
                 "processed": len(recs_dicts), "total": len(recs_dicts),
                 "records": recs_dicts, "records_total": len(recs_dicts),
+                "csv_path": str(output_csv_path) if output_csv_path else "",
             })
         # Сохраняем кэш на диск — переживёт перезапуск сервера
         _norm_cache_save(folder_path, recs_dicts)
