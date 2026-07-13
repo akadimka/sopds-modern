@@ -1180,6 +1180,43 @@ table th { color: var(--text) !important; border: none !important; border-width:
 }
 
 /* ============================================================
+   SOPDS — SELECT PAGES (book/author/series/genre alphabet list)
+   Override hardcoded app.css colors
+   ============================================================ */
+.sopdsitem {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0.55rem 1rem !important;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 2px;
+    transition: background var(--transition);
+}
+.sopdsitem:nth-child(odd) {
+    background: var(--bg-muted) !important;
+}
+.sopdsitem:hover {
+    background: var(--bg-hover) !important;
+}
+.sopdsitem a {
+    color: var(--sp-accent) !important;
+    font-weight: 600;
+    font-size: 1.05rem;
+    text-decoration: none;
+    min-width: 2.2rem;
+}
+.sopdsitem a:hover {
+    color: var(--sp-accent-hover) !important;
+    text-decoration: underline;
+}
+.sopdsitem span {
+    color: var(--text-muted) !important;
+}
+
+/* ============================================================
    UTILITY HELPERS
    ============================================================ */
 .text-muted   { color: var(--text-muted) !important; }
