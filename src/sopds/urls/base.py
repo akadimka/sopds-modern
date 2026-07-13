@@ -20,6 +20,7 @@ from django.contrib import admin
 from django.urls import path, reverse_lazy
 from django.views.generic import RedirectView
 from django.conf.urls.i18n import set_language
+from sopds_web_backend import views as web_views
 
 urlpatterns = [
     path("i18n/setlang/", set_language, name="set_language"),
@@ -27,5 +28,6 @@ urlpatterns = [
     path("web/", include("sopds_web_backend.urls", namespace="web")),
     path("fb2parser/", include("fb2parser_web.urls", namespace="fb2parser")),
     path("admin/", admin.site.urls),
+    path("sw.js", web_views.service_worker, name="service_worker"),
     path("", RedirectView.as_view(url=reverse_lazy("web:main"))),
 ]

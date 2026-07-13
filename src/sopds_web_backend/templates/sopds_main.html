@@ -7,7 +7,14 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="theme-color" content="#1e3a4a"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="SOPDS"/>
     <link rel="shortcut icon" type="image/icon" href="{% static "images/favicon.ico" %}"/>
+    <link rel="apple-touch-icon" href="{% static "images/pwa-icon-192.png" %}"/>
+    <link rel="manifest" href="{% static "manifest.json" %}"/>
     <title>{{ app_title }} {% if breadcrumbs.0 %} / {{ breadcrumbs.0 }} {% endif %}</title>
     <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "css/theme.css" %}">
@@ -94,5 +101,11 @@
   {% endspaceless %}
 
  {% block block-js %}{% endblock %}
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/web/' })
+    .catch(function(err) { console.warn('SW registration failed:', err); });
+}
+</script>
 </body>
 </html>

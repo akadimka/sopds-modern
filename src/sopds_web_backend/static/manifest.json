@@ -1,0 +1,43 @@
+{
+  "name": "SOPDS — Библиотека",
+  "short_name": "SOPDS",
+  "description": "Личная электронная библиотека OPDS",
+  "start_url": "/web/",
+  "scope": "/web/",
+  "display": "standalone",
+  "background_color": "#1e3a4a",
+  "theme_color": "#1e3a4a",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/static/images/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["books", "education"],
+  "shortcuts": [
+    {
+      "name": "Книги",
+      "url": "/web/book/?lang=0",
+      "description": "Все книги"
+    },
+    {
+      "name": "Авторы",
+      "url": "/web/author/?lang=0",
+      "description": "По авторам"
+    },
+    {
+      "name": "Серии",
+      "url": "/web/series/?lang=0",
+      "description": "По сериям"
+    }
+  ]
+}

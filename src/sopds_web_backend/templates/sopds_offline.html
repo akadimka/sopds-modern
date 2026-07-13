@@ -1,0 +1,26 @@
+{% load static %}
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOPDS — Нет соединения</title>
+<link rel="stylesheet" href="{% static 'css/theme.css' %}">
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; font-family:sans-serif; background:var(--bg); color:var(--text); }
+  .box { text-align:center; padding:2rem; max-width:400px; }
+  .icon { font-size:4rem; margin-bottom:1rem; }
+  h1 { font-size:1.5rem; margin-bottom:0.5rem; }
+  p { color:var(--text-muted); margin-bottom:1.5rem; }
+  a { display:inline-block; padding:0.6rem 1.5rem; background:var(--sp-accent); color:#fff; border-radius:4px; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">📚</div>
+  <h1>Нет соединения</h1>
+  <p>Страница недоступна офлайн. Проверьте подключение к интернету и попробуйте снова.</p>
+  <a href="/web/">На главную</a>
+</div>
+</body>
+</html>

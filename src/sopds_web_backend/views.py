@@ -625,6 +625,19 @@ def sopds_settings(request):
     return render(request, 'sopds_settings.html', args)
 
 
+def service_worker(request):
+    """Отдать Service Worker с корневого URL /sw.js (нужен для правильного scope)."""
+    import os
+    sw_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'sw.js')
+    with open(sw_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return HttpResponse(content, content_type='application/javascript')
+
+
+def offline_page(request):
+    return render(request, 'sopds_offline.html')
+
+
 def hello(request):
     from django.db.models import Count
 
