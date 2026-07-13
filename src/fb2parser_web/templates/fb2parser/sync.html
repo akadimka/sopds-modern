@@ -1,21 +1,21 @@
 {% load i18n %}
-<p style="font-size:0.85rem; color:#555; margin-bottom:0.7rem;">
+<p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.7rem;">
     {% trans "Sync moves FB2 files into the library using the genre/author/series/ structure." %}
     {% trans "Only folders with an assigned genre are processed." %}
 </p>
 
-<div style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:5px; padding:0.55rem 0.8rem; margin-bottom:0.8rem; font-size:0.82rem; display:flex; flex-direction:column; gap:0.3rem;">
+<div style="background:var(--bg-muted); border:1px solid var(--border); border-radius:5px; padding:0.55rem 0.8rem; margin-bottom:0.8rem; font-size:0.82rem; display:flex; flex-direction:column; gap:0.3rem;">
     <div style="display:flex; align-items:baseline; gap:0.5rem;">
-        <span style="color:#7f8c8d; white-space:nowrap; min-width:5rem;">{% trans "Source:" %}</span>
+        <span style="color:var(--text-muted); white-space:nowrap; min-width:5rem;">{% trans "Source:" %}</span>
         {% if scan_path %}
-        <code style="overflow-wrap:anywhere; color:#2c3e50;">{{ scan_path }}</code>
+        <code style="overflow-wrap:anywhere; color:var(--text);">{{ scan_path }}</code>
         {% else %}
         <span style="color:#c0392b; font-style:italic;">{% trans "not set — select a folder on the main screen" %}</span>
         {% endif %}
     </div>
-    <div style="display:flex; align-items:center; padding-left:5rem; color:#7f8c8d; font-size:0.75rem;">↓ {% trans "moves to" %}</div>
+    <div style="display:flex; align-items:center; padding-left:5rem; color:var(--text-muted); font-size:0.75rem;">↓ {% trans "moves to" %}</div>
     <div style="display:flex; align-items:baseline; gap:0.5rem;">
-        <span style="color:#7f8c8d; white-space:nowrap; min-width:5rem;">{% trans "Library:" %}</span>
+        <span style="color:var(--text-muted); white-space:nowrap; min-width:5rem;">{% trans "Library:" %}</span>
         {% if library_path %}
         <code style="overflow-wrap:anywhere; color:#27ae60;">{{ library_path }}</code>
         {% else %}
@@ -26,13 +26,13 @@
 
 {% if assignments %}
 <div style="margin-bottom:0.8rem;">
-    <div style="font-size:0.82rem; font-weight:600; color:#2c3e50; margin-bottom:0.4rem;">
+    <div style="font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:0.4rem;">
         {% trans "Folders to synchronize" %} ({{ assignments|length }}):
     </div>
-    <div style="max-height:160px; overflow-y:auto; border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa;">
+    <div style="max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; background:var(--bg-muted);">
         {% for path, genre in assignments.items %}
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid #e9ecef; font-size:0.8rem;">
-            <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; margin-right:0.5rem; color:#2c3e50;">{{ path }}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem;">
+            <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; margin-right:0.5rem; color:var(--text);">{{ path }}</span>
             <span style="background:#27ae60; color:#fff; border-radius:10px; padding:0.05rem 0.5rem; font-size:0.75rem; white-space:nowrap; flex-shrink:0;">{{ genre }}</span>
         </div>
         {% endfor %}

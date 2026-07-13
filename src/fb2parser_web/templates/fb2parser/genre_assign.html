@@ -15,7 +15,7 @@
             <div style="height:60vh; overflow-y:auto; padding:0 0.5rem 0.5rem;">
                 <ul class="no-bullet" style="margin:0; font-size:0.83rem;">
                 {% for name in genre_names %}
-                <li style="padding:0.2rem 0.3rem; border-bottom:1px solid #f0f0f0; cursor:pointer;"
+                <li style="padding:0.2rem 0.3rem; border-bottom:1px solid var(--border); cursor:pointer;"
                     data-genre="{{ name|lower }}"
                     onclick="selectGenre('{{ name|escapejs }}', this)">{{ name }}</li>
                 {% endfor %}
@@ -33,7 +33,7 @@
                         <label style="font-size:0.85rem;">
                             {% trans "Selected Genre" %}
                             <input id="selected-genre" name="genre" type="text" readonly
-                                   style="background:#fef9e7; font-family:monospace; font-size:0.82rem;"
+                                   style="background:var(--status-warn-bg); font-family:monospace; font-size:0.82rem;"
                                    placeholder="{% trans "(not selected)" %}">
                         </label>
                     </div>
@@ -69,7 +69,7 @@
 <script>
 function selectGenre(name, el) {
     document.querySelectorAll('[data-genre]').forEach(n => n.style.background = '');
-    el.style.background = '#fef9e7';
+    el.style.background = 'var(--status-warn-bg)';
     document.getElementById('selected-genre').value = name;
 }
 

@@ -8,7 +8,7 @@
     <div class="callout primary" style="display:flex; align-items:center; justify-content:space-between; gap:0.8rem; flex-wrap:wrap;">
         <div>
             <strong>{% trans "⏳ Synchronizing..." %}</strong>
-            {% if state.current %}<div style="font-size:0.78rem; color:#555; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:340px;">{{ state.current }}</div>{% endif %}
+            {% if state.current %}<div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:340px;">{{ state.current }}</div>{% endif %}
         </div>
         <button class="button alert" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem; flex-shrink:0;"
                 hx-post="{% url 'fb2parser:sync_stop' %}"
@@ -47,7 +47,7 @@
 {% if state.log %}
 <details style="margin-top:0.5rem;">
     <summary style="cursor:pointer; font-size:0.85rem;">▶ {% trans "Operation log" %} ({{ state.log|length }} {% trans "lines" %})</summary>
-    <div style="margin-top:0.3rem; max-height:250px; overflow-y:auto; font-size:0.75rem; font-family:monospace; background:#f8f9fa; padding:0.4rem; border:1px solid #dee2e6; border-radius:4px;">
+    <div style="margin-top:0.3rem; max-height:250px; overflow-y:auto; font-size:0.75rem; font-family:monospace; background:var(--bg-muted); padding:0.4rem; border:1px solid var(--border); border-radius:4px;">
         {% for line in state.log %}<div>{{ line }}</div>{% endfor %}
     </div>
 </details>

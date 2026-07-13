@@ -3,7 +3,7 @@
 <div style="padding:1rem; color:#c0392b; font-size:0.85rem; white-space:pre-wrap; overflow:auto;">❌ {{ error }}</div>
 
 {% elif not groups %}
-<div style="padding:2rem; text-align:center; color:#7f8c8d; font-size:0.9rem;">
+<div style="padding:2rem; text-align:center; color:var(--text-muted); font-size:0.9rem;">
     {% trans "Compiler groups not found." %}
 </div>
 
@@ -14,7 +14,7 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 
 <!-- Тулбар -->
 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; flex-shrink:0; margin-bottom:0.3rem;">
-    <span style="font-size:0.82rem; color:#495057;">
+    <span style="font-size:0.82rem; color:var(--text-muted);">
         <strong>{{ total }}</strong> {% trans "groups" %}
     </span>
     <button onclick="cgCheckAll()" style="padding:0.25rem 0.6rem; font-size:0.79rem; background:#546e7a; color:#fff; border:none; border-radius:3px; cursor:pointer;">
@@ -31,18 +31,18 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 </div>
 
 <!-- Легенда -->
-<div style="font-size:0.73rem; color:#7f8c8d; margin-bottom:0.3rem; flex-shrink:0; display:flex; gap:0.5rem; flex-wrap:wrap;">
-    <span style="background:#d5f5e3; padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Order defined" %}</span>
-    <span style="background:#fef9e7; padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Partially unknown" %}</span>
-    <span style="background:#ebf5fb; padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Alphabetical" %}</span>
-    <span style="background:#f2f3f4; padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Already compiled" %}</span>
+<div style="font-size:0.73rem; color:var(--text-muted); margin-bottom:0.3rem; flex-shrink:0; display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <span style="background:var(--status-ok-bg); padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Order defined" %}</span>
+    <span style="background:var(--status-warn-bg); padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Partially unknown" %}</span>
+    <span style="background:var(--status-info-bg); padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Alphabetical" %}</span>
+    <span style="background:var(--bg-muted); padding:0.08rem 0.35rem; border-radius:2px;">{% trans "● Already compiled" %}</span>
 </div>
 
 <!-- Разделённый вид: верх — группы, низ — состав -->
 <div style="flex:1; display:flex; flex-direction:column; min-height:0; gap:0;">
 
     <!-- Верхняя панель: группы (55%) -->
-    <div style="flex:55; min-height:0; overflow-x:auto; overflow-y:auto; border:1px solid #dee2e6; border-radius:4px 4px 0 0;">
+    <div style="flex:55; min-height:0; overflow-x:auto; overflow-y:auto; border:1px solid var(--border); border-radius:4px 4px 0 0;">
         <table id="cg-table" style="border-collapse:collapse; font-size:0.8rem; table-layout:fixed; width:760px;">
             <colgroup>
                 <col id="cgc-0" style="width:30px;">
@@ -51,7 +51,7 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
                 <col id="cgc-3" style="width:46px;">
                 <col id="cgc-4" style="width:90px;">
             </colgroup>
-            <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
+            <thead style="position:sticky; top:0; background:var(--fp-header-bg); color:var(--fp-header-text); z-index:2;">
                 <tr>
                     <th style="padding:0.22rem 0.4rem; text-align:center; overflow:hidden;">✓</th>
                     <th style="padding:0.22rem 0.4rem; text-align:left; overflow:hidden; position:relative;">
@@ -73,8 +73,8 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
             {% for g in groups %}
             <tr class="cg-row" data-idx="{{ g.idx }}" data-status="{{ g.status }}"
                 onclick="cgSelectGroup({{ g.idx }}, this)"
-                style="border-bottom:1px solid #eee; cursor:pointer;
-                       background:{% if g.status == 'ok' %}#f0faf3{% elif g.status == 'partial' %}#fefdf0{% elif g.status == 'alpha' %}#f0f7fb{% else %}#f5f5f5{% endif %};">
+                style="border-bottom:1px solid var(--border); cursor:pointer;
+                       background:{% if g.status == 'ok' %}var(--status-ok-bg){% elif g.status == 'partial' %}var(--status-warn-bg){% elif g.status == 'alpha' %}var(--status-info-bg){% else %}var(--bg-muted){% endif %};">
                 <td style="padding:0 0.4rem; text-align:center; vertical-align:middle;" onclick="event.stopPropagation()">
                     <input type="checkbox" class="cg-check" checked
                            data-idx="{{ g.idx }}" onchange="cgUpdateCount()"
@@ -84,10 +84,10 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
                     title="{{ g.author }}">{{ g.author }}</td>
                 <td style="padding:0.1rem 0.4rem; overflow:hidden; text-overflow:ellipsis; max-width:0;"
                     title="{{ g.series }}">
-                    {{ g.series }}{% if g.cleanup_only %} <span style="color:#7f8c8d;font-size:0.71rem;">({% trans "compiled" %})</span>{% endif %}
+                    {{ g.series }}{% if g.cleanup_only %} <span style="color:var(--text-muted);font-size:0.71rem;">({% trans "compiled" %})</span>{% endif %}
                 </td>
-                <td style="padding:0.1rem 0.4rem; text-align:center; color:#546e7a;">{{ g.count }}</td>
-                <td style="padding:0.1rem 0.4rem; text-align:center; font-family:monospace; color:#546e7a; font-size:0.77rem;">{{ g.range }}</td>
+                <td style="padding:0.1rem 0.4rem; text-align:center; color:var(--text-muted);">{{ g.count }}</td>
+                <td style="padding:0.1rem 0.4rem; text-align:center; font-family:monospace; color:var(--text-muted); font-size:0.77rem;">{{ g.range }}</td>
             </tr>
             {% endfor %}
             </tbody>
@@ -95,32 +95,32 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
     </div>
 
     <!-- Разделитель -->
-    <div id="cg-splitter" style="height:5px; background:#dee2e6; cursor:row-resize; flex-shrink:0; border-left:1px solid #dee2e6; border-right:1px solid #dee2e6;"
+    <div id="cg-splitter" style="height:5px; background:var(--border); cursor:row-resize; flex-shrink:0; border-left:1px solid var(--border); border-right:1px solid var(--border);"
          title="{% trans 'Drag to resize' %}"></div>
 
     <!-- Нижняя панель: состав группы (45%) -->
-    <div style="flex:45; min-height:60px; display:flex; flex-direction:column; border:1px solid #dee2e6; border-top:none; border-radius:0 0 4px 4px; overflow:hidden;">
-        <div style="background:#2c3e50; color:#ecf0f1; font-size:0.79rem; padding:0.22rem 0.6rem; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+    <div style="flex:45; min-height:60px; display:flex; flex-direction:column; border:1px solid var(--border); border-top:none; border-radius:0 0 4px 4px; overflow:hidden;">
+        <div style="background:var(--fp-nav-bg); color:var(--fp-header-text); font-size:0.79rem; padding:0.22rem 0.6rem; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
             <span id="cg-detail-title" style="font-weight:600;">{% trans "← Select a group" %}</span>
             <span id="cg-detail-outname" style="font-size:0.73rem; color:#bdc3c7; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%;"></span>
         </div>
         <div id="cg-detail-body" style="flex:1; overflow-y:auto; min-height:0;">
-            <div style="padding:0.8rem; color:#7f8c8d; font-size:0.82rem;">{% trans "Click a group to see its composition." %}</div>
+            <div style="padding:0.8rem; color:var(--text-muted); font-size:0.82rem;">{% trans "Click a group to see its composition." %}</div>
         </div>
     </div>
 
 </div>
 
 <!-- Прогресс и лог (скрыт до запуска) -->
-<div id="cg-progress-wrap" style="display:none; flex-shrink:0; margin-top:0.4rem; border-top:1px solid #dee2e6; padding-top:0.4rem;">
+<div id="cg-progress-wrap" style="display:none; flex-shrink:0; margin-top:0.4rem; border-top:1px solid var(--border); padding-top:0.4rem;">
     <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.25rem;">
-        <div style="flex:1; background:#e9ecef; border-radius:3px; height:7px; overflow:hidden;">
+        <div style="flex:1; background:var(--bg-muted); border-radius:3px; height:7px; overflow:hidden;">
             <div id="cg-pbar" style="width:0%; background:#27ae60; height:100%; transition:width 0.4s;"></div>
         </div>
-        <span id="cg-pct" style="white-space:nowrap; font-size:0.79rem; color:#495057; min-width:40px; text-align:right;">0%</span>
+        <span id="cg-pct" style="white-space:nowrap; font-size:0.79rem; color:var(--text-muted); min-width:40px; text-align:right;">0%</span>
     </div>
-    <div id="cg-current" style="font-size:0.75rem; color:#7f8c8d; margin-bottom:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
-    <div id="cg-log" style="font-size:0.75rem; max-height:100px; overflow-y:auto; background:#f8f9fa; border-radius:3px; padding:0.25rem 0.5rem; font-family:monospace;"></div>
+    <div id="cg-current" style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+    <div id="cg-log" style="font-size:0.75rem; max-height:100px; overflow-y:auto; background:var(--bg-muted); border-radius:3px; padding:0.25rem 0.5rem; font-family:monospace;"></div>
 </div>
 
 <script>
@@ -186,7 +186,7 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 
         // Строим таблицу книг
         var html = '<table style="border-collapse:collapse; font-size:0.77rem; width:100%;">';
-        html += '<thead style="position:sticky;top:0;background:#ecf0f1;z-index:1;">';
+        html += '<thead style="position:sticky;top:0;background:var(--bg-muted);z-index:1;">';
         html += '<tr>'
               + '<th style="padding:0.18rem 0.4rem;text-align:center;width:28px;">#</th>'
               + '<th style="padding:0.18rem 0.4rem;text-align:left;">' + MSG_COL_TITLE_BOOK + '</th>'
@@ -198,22 +198,22 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 
         // Обычные книги
         (data.books || []).forEach(function(b) {
-            var warn  = b.ambiguous ? ' style="background:#fef9e7;"' : '';
-            var volStyle = b.ambiguous ? ' style="color:#e67e22;"' : ' style="color:#546e7a;"';
+            var warn  = b.ambiguous ? ' style="background:var(--status-warn-bg);"' : '';
+            var volStyle = b.ambiguous ? ' style="color:#e67e22;"' : ' style="color:var(--text-muted);"';
             html += '<tr' + warn + ' title="' + _esc(b.file) + '">'
-                  + '<td style="padding:0 0.4rem;text-align:center;color:#7f8c8d;">' + b.n + '</td>'
+                  + '<td style="padding:0 0.4rem;text-align:center;color:var(--text-muted);">' + b.n + '</td>'
                   + '<td style="padding:0 0.4rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="' + _esc(b.title) + '">' + _esc(b.title) + '</td>'
                   + '<td style="padding:0 0.4rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:0.72rem;" title="' + _esc(b.file) + '">' + _esc(b.file) + '</td>'
-                  + '<td style="padding:0 0.4rem;text-align:center;color:#546e7a;font-size:0.73rem;">' + _esc(b.sort_src) + '</td>'
+                  + '<td style="padding:0 0.4rem;text-align:center;color:var(--text-muted);font-size:0.73rem;">' + _esc(b.sort_src) + '</td>'
                   + '<td' + volStyle + ' style="padding:0 0.4rem;text-align:center;">' + _esc(b.vol) + '</td>'
-                  + '<td style="padding:0 0.4rem;text-align:right;color:#7f8c8d;">' + b.size + '</td>'
+                  + '<td style="padding:0 0.4rem;text-align:right;color:var(--text-muted);">' + b.size + '</td>'
                   + '</tr>';
         });
 
         // Оставляемые файлы — kept (серо-зелёные, для cleanup_only групп)
         (data.kept || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
-            html += '<tr style="background:#eafaf1;" title="' + MSG_TITLE_KEEP + ' ' + _esc(p) + '">'
+            html += '<tr style="background:var(--status-ok-bg);" title="' + MSG_TITLE_KEEP + ' ' + _esc(p) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:#27ae60;">✓</td>'
                   + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#27ae60;">' + _esc(name) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:#27ae60;font-size:0.73rem;">' + MSG_ACTION_KEEP + '</td>'
@@ -223,7 +223,7 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
         // Дубликаты (красные)
         (data.dups || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
-            html += '<tr style="background:#fdecea;" title="' + MSG_TITLE_DUP + ' ' + _esc(p) + '">'
+            html += '<tr style="background:var(--status-err-bg);" title="' + MSG_TITLE_DUP + ' ' + _esc(p) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:#c0392b;">🗑</td>'
                   + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#c0392b;">' + _esc(name) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:#c0392b;font-size:0.73rem;">' + MSG_ACTION_DELETE + '</td>'
@@ -233,7 +233,7 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
         // Исключённые автоматически (светло-оранжевые)
         (data.auto_excluded || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
-            html += '<tr style="background:#fef5e7;" title="' + MSG_TITLE_AUTO_EXCL + ' ' + _esc(p) + '">'
+            html += '<tr style="background:var(--status-warn-bg);" title="' + MSG_TITLE_AUTO_EXCL + ' ' + _esc(p) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:#e67e22;">⊘</td>'
                   + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#e67e22;">' + _esc(name) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:#e67e22;font-size:0.73rem;">' + MSG_ACTION_AUTO_EXCL + '</td>'

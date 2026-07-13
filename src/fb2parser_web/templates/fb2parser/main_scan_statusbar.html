@@ -6,11 +6,11 @@
      hx-swap="innerHTML"
      style="display:flex; align-items:center; gap:0.6rem; width:100%;">
     <span style="color:#f39c12;">⏳</span>
-    <div style="flex:1; background:#e9ecef; border-radius:3px; height:6px; overflow:hidden;">
+    <div style="flex:1; background:var(--bg-muted); border-radius:3px; height:6px; overflow:hidden;">
         <div style="width:{{ pct }}%; background:#f39c12; height:100%; transition:width 0.3s;"></div>
     </div>
-    <span style="color:#495057; white-space:nowrap;">{{ pct }}%</span>
-    <span style="color:#6c757d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%;">{{ state.current }}</span>
+    <span style="color:var(--text-muted); white-space:nowrap;">{{ pct }}%</span>
+    <span style="color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%;">{{ state.current }}</span>
 </div>
 {% elif state.done %}
 <span data-scan-done="1" style="color:#27ae60;">{% trans "✓ Done:" %}</span>
@@ -18,5 +18,5 @@
 {% elif state.error %}
 <span style="color:#c0392b;">❌ {{ state.error }}</span>
 {% else %}
-<span style="color:#6c757d;">{% trans "Ready" %}</span>
+<span style="color:var(--text-muted);">{% trans "Ready" %}</span>
 {% endif %}

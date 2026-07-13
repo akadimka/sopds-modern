@@ -9,7 +9,7 @@
     <div class="callout primary" style="margin-bottom:1rem;">
         <strong>{% trans "⏳ Scanning..." %}</strong>
         {% if state.current %}
-        <div style="font-size:0.8rem; color:#555; margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
             {% trans "File:" %} {{ state.current }}
         </div>
         {% endif %}
@@ -39,9 +39,9 @@
     {% if state.bad_list %}
     <details style="margin-top:1rem;">
         <summary style="cursor:pointer; font-size:0.9rem; color:#c0392b;">▶ {% trans "Show errors" %} ({{ state.bad_list|length }})</summary>
-        <div style="margin-top:0.5rem; max-height:300px; overflow-y:auto; font-size:0.78rem; font-family:monospace; background:#fff5f5; padding:0.5rem; border:1px solid #f5c6cb; border-radius:4px;">
+        <div style="margin-top:0.5rem; max-height:300px; overflow-y:auto; font-size:0.78rem; font-family:monospace; background:var(--status-err-bg); padding:0.5rem; border:1px solid var(--border); border-radius:4px;">
             {% for msg in state.bad_list %}
-            <div style="border-bottom:1px solid #f5c6cb; padding:0.2rem 0;">{{ msg }}</div>
+            <div style="border-bottom:1px solid var(--border); padding:0.2rem 0;">{{ msg }}</div>
             {% endfor %}
         </div>
     </details>

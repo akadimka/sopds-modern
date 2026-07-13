@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if rows %}
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0; gap:0.4rem; flex-wrap:wrap;">
-    <span style="font-size:0.82rem; color:#495057;">
+    <span style="font-size:0.82rem; color:var(--text-muted);">
         {% trans "Found" %} <strong>{{ rows|length }}</strong> {% trans "authors with undetermined gender." %}
     </span>
     <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
@@ -17,14 +17,14 @@
 </div>
 
 <!-- Прогресс онлайн-проверки -->
-<div id="names-check-progress" style="display:none; font-size:0.79rem; color:#555; margin-bottom:0.3rem; flex-shrink:0;">
+<div id="names-check-progress" style="display:none; font-size:0.79rem; color:var(--text-muted); margin-bottom:0.3rem; flex-shrink:0;">
     <span id="names-check-cnt">0</span> / <span id="names-check-total">0</span> {% trans "checked" %}
     <span id="names-check-status" style="margin-left:0.5rem;"></span>
 </div>
 
 <div style="flex:1; overflow-y:auto; min-height:0;">
     <table style="border-collapse:collapse; font-size:0.8rem; width:100%;">
-        <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
+        <thead style="position:sticky; top:0; background:var(--fp-header-bg); color:var(--fp-header-text); z-index:2;">
             <tr>
                 <th style="padding:0.3rem 0.5rem; text-align:left; width:100px;">{% trans "Source" %}</th>
                 <th style="padding:0.3rem 0.5rem; text-align:left;">{% trans "Author" %}</th>
@@ -35,8 +35,8 @@
         <tbody id="names-tbody">
         {% for r in rows %}
         <tr class="names-row" data-author="{{ r.author }}" data-first-name="{{ r.first_name }}" data-status=""
-            style="border-bottom:1px solid #f0f0f0; transition:background 0.3s;">
-            <td style="padding:0 0.5rem; color:#7f8c8d; font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px; line-height:1.4rem;"
+            style="border-bottom:1px solid var(--border); transition:background 0.3s;">
+            <td style="padding:0 0.5rem; color:var(--text-muted); font-size:0.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px; line-height:1.4rem;"
                 title="{{ r.file_path }}">{{ r.source }}</td>
             <td style="padding:0 0.5rem; white-space:nowrap; line-height:1.4rem;">
                 {% for word in r.author.split %}
@@ -62,11 +62,11 @@
 </div>
 
 <style>
-.names-word:hover { background:#fef3e2; border-radius:2px; }
-.names-row[data-status="found"] { background:#C8F0C8 !important; }
-.names-row[data-status="unknown"] { background:#FFE4C4 !important; }
-.names-row[data-status="error"] { background:#FFCCCC !important; }
-.names-row[data-status="rate_limit"] { background:#FFD0FF !important; }
+.names-word:hover { background:var(--bg-hover); border-radius:2px; }
+.names-row[data-status="found"] { background:var(--status-ok-bg) !important; }
+.names-row[data-status="unknown"] { background:var(--status-warn-bg) !important; }
+.names-row[data-status="error"] { background:var(--status-err-bg) !important; }
+.names-row[data-status="rate_limit"] { background:rgba(155,89,182,0.25) !important; }
 </style>
 
 <script>

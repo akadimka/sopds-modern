@@ -27,7 +27,7 @@
 {% endif %}
 
 {% if state.log %}
-<div style="margin-top:0.5rem; max-height:200px; overflow-y:auto; font-size:0.78rem; font-family:monospace; background:#f8f9fa; padding:0.4rem; border:1px solid #dee2e6; border-radius:4px;">
+<div style="margin-top:0.5rem; max-height:200px; overflow-y:auto; font-size:0.78rem; font-family:monospace; background:var(--bg-muted); padding:0.4rem; border:1px solid var(--border); border-radius:4px;">
 {% for line in state.log %}<div>{{ line }}</div>{% endfor %}
 </div>
 {% endif %}

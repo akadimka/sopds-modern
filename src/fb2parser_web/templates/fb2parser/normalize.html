@@ -4,8 +4,8 @@
 <div style="display:flex; flex-direction:column; height:calc(100vh - 112px); margin:-1.5rem 0 0;">
 
     <!-- Тулбар: папка + обзор -->
-    <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.7rem; background:#f8f9fa; border-bottom:2px solid #dee2e6; flex-shrink:0;">
-        <span style="font-size:0.88rem; color:#495057; white-space:nowrap; font-weight:500;">{% trans "Input folder:" %}</span>
+    <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.7rem; background:var(--bg-muted); border-bottom:2px solid var(--border); flex-shrink:0;">
+        <span style="font-size:0.88rem; color:var(--text-muted); white-space:nowrap; font-weight:500;">{% trans "Input folder:" %}</span>
         <div style="flex:1; position:relative; display:flex; gap:0.4rem; min-width:0;">
             <input id="norm-folder" type="text" name="folder" value="{{ root }}"
                    style="margin:0; flex:1; font-family:monospace; font-size:0.83rem; min-width:0;"
@@ -18,14 +18,14 @@
     </div>
 
     <!-- Строка фильтра -->
-    <div style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0.7rem; background:#fff; border-bottom:1px solid #dee2e6; flex-shrink:0;">
-        <span style="font-size:0.85rem; color:#495057;">{% trans "Filter:" %}</span>
+    <div style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0.7rem; background:var(--bg-card); border-bottom:1px solid var(--border); flex-shrink:0;">
+        <span style="font-size:0.85rem; color:var(--text-muted);">{% trans "Filter:" %}</span>
         <input id="norm-filter" type="text" placeholder="{% trans "Search across all columns..." %}"
                style="margin:0; flex:1; font-size:0.82rem; max-width:400px;"
                oninput="normFilter(this.value)">
         <button type="button" class="button secondary" style="margin:0; padding:0.35rem 0.6rem; font-size:0.82rem;"
                 onclick="document.getElementById('norm-filter').value=''; normFilter('');">✕</button>
-        <span id="norm-row-count" style="font-size:0.78rem; color:#7f8c8d; margin-left:0.5rem;"></span>
+        <span id="norm-row-count" style="font-size:0.78rem; color:var(--text-muted); margin-left:0.5rem;"></span>
     </div>
 
     <!-- Таблица -->
@@ -42,7 +42,7 @@
                 <col id="ntc-7" style="width:180px;">
                 <col id="ntc-8" style="width:140px;">
             </colgroup>
-            <thead style="position:sticky; top:0; z-index:2; background:#34495e; color:#ecf0f1;">
+            <thead style="position:sticky; top:0; z-index:2; background:var(--fp-header-bg); color:var(--fp-header-text);">
                 <tr>
                     <th class="nt-th">file_path<div class="nt-resizer" data-col="0"></div></th>
                     <th class="nt-th">metadata_authors<div class="nt-resizer" data-col="1"></div></th>
@@ -62,7 +62,7 @@
                    hx-swap="innerHTML"
                 {% endif %}>
                 {% if not state.records %}
-                <tr><td colspan="9" style="text-align:center; padding:2rem; color:#7f8c8d;">
+                <tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">
                     {% trans 'No data — click "Create CSV"' %}
                 </td></tr>
                 {% endif %}
@@ -71,12 +71,12 @@
     </div>
 
     <!-- Строка статуса -->
-    <div id="norm-statusbar" style="border-top:1px solid #dee2e6; padding:0.3rem 0.7rem; font-size:0.8rem; background:#f8f9fa; flex-shrink:0; min-height:1.8rem; display:flex; align-items:center; gap:0.5rem;">
+    <div id="norm-statusbar" style="border-top:1px solid var(--border); padding:0.3rem 0.7rem; font-size:0.8rem; background:var(--bg-muted); flex-shrink:0; min-height:1.8rem; display:flex; align-items:center; gap:0.5rem;">
         {% include "fb2parser/normalize_bar.html" with state=state pct=0 %}
     </div>
 
     <!-- Кнопочная панель (аналог нижних кнопок десктопа) -->
-    <div style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.7rem; background:#2c3e50; flex-shrink:0; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.7rem; background:var(--fp-nav-bg); flex-shrink:0; flex-wrap:wrap;">
         <button class="button" style="margin:0; background:#8e44ad; font-size:0.82rem; padding:0.45rem 0.9rem;"
                 hx-post="{% url 'fb2parser:normalize_start' %}"
                 hx-include="#norm-folder"
@@ -126,18 +126,18 @@
 
 <!-- Панель «Получить имена» -->
 <div id="names-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(600px,90vh); display:flex; flex-direction:column; overflow:hidden;">
+    <div style="background:var(--bg-card); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(600px,90vh); display:flex; flex-direction:column; overflow:hidden;">
         <!-- Заголовок -->
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#34495e; color:#ecf0f1; flex-shrink:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:var(--fp-header-bg); color:var(--fp-header-text); flex-shrink:0;">
             <strong>{% trans "Authors with undetermined gender" %}</strong>
-            <button onclick="namesClose()" style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+            <button onclick="namesClose()" style="background:none; border:none; color:var(--fp-header-text); cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
         </div>
         <!-- Контент (загружается htmx) -->
         <div id="names-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
-            <div style="color:#7f8c8d; font-size:0.85rem;">{% trans "Loading..." %}</div>
+            <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Loading..." %}</div>
         </div>
         <!-- Футер -->
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0.8rem; border-top:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0.8rem; border-top:1px solid var(--border); flex-shrink:0; background:var(--bg-muted);">
             <span id="names-save-result" style="font-size:0.82rem;"></span>
             <div style="display:flex; gap:0.5rem;">
                 <button class="button secondary" style="margin:0; font-size:0.82rem;" onclick="namesClose()">{% trans "Cancel" %}</button>
@@ -149,15 +149,15 @@
 
 <!-- Панель «Имена из CSV» -->
 <div id="names-csv-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
+    <div style="background:var(--bg-card); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
         <!-- Заголовок -->
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#34495e; color:#ecf0f1; flex-shrink:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:var(--fp-header-bg); color:var(--fp-header-text); flex-shrink:0;">
             <strong>{% trans "Names from CSV" %}</strong>
-            <button onclick="namesCsvClose()" style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+            <button onclick="namesCsvClose()" style="background:none; border:none; color:var(--fp-header-text); cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
         </div>
         <!-- Поле пути к CSV -->
-        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.8rem; border-bottom:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
-            <span style="font-size:0.83rem; white-space:nowrap; color:#495057;">{% trans "CSV path:" %}</span>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.8rem; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--bg-muted);">
+            <span style="font-size:0.83rem; white-space:nowrap; color:var(--text-muted);">{% trans "CSV path:" %}</span>
             <div style="flex:1; position:relative; display:flex; gap:0.4rem;">
                 <input id="names-csv-path" type="text" placeholder="C:\path\to\regen.csv"
                        style="margin:0; flex:1; font-family:monospace; font-size:0.82rem;"
@@ -172,10 +172,10 @@
         </div>
         <!-- Контент -->
         <div id="names-csv-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
-            <div style="color:#7f8c8d; font-size:0.85rem;">{% trans 'Enter the CSV path and click "Load".' %}</div>
+            <div style="color:var(--text-muted); font-size:0.85rem;">{% trans 'Enter the CSV path and click "Load".' %}</div>
         </div>
         <!-- Футер -->
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0.8rem; border-top:1px solid #dee2e6; flex-shrink:0; background:#f8f9fa;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0.8rem; border-top:1px solid var(--border); flex-shrink:0; background:var(--bg-muted);">
             <span id="names-csv-save-result" style="font-size:0.82rem;"></span>
             <div style="display:flex; gap:0.5rem;">
                 <button class="button secondary" style="margin:0; font-size:0.82rem;" onclick="namesCsvClose()">{% trans "Cancel" %}</button>
@@ -187,47 +187,47 @@
 
 <!-- Панель «Великомученницы» -->
 <div id="martyrs-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
+    <div style="background:var(--bg-card); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#c0392b; color:#fff; flex-shrink:0;">
             <strong>{% trans "Martyrs — files with female authors" %}</strong>
             <button onclick="martyrsClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
         </div>
         <div id="martyrs-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
-            <div style="color:#7f8c8d; font-size:0.85rem;">{% trans "Loading..." %}</div>
+            <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Loading..." %}</div>
         </div>
     </div>
 </div>
 
 <!-- Панель «Дубликаты» -->
 <div id="duplicates-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(1060px,96vw); height:min(700px,94vh); display:flex; flex-direction:column; overflow:hidden;">
+    <div style="background:var(--bg-card); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(1060px,96vw); height:min(700px,94vh); display:flex; flex-direction:column; overflow:hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#546e7a; color:#fff; flex-shrink:0;">
             <strong>{% trans "Duplicates" %}</strong>
             <button onclick="duplicatesClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
         </div>
         <div id="duplicates-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
-            <div style="color:#7f8c8d; font-size:0.85rem;">{% trans "Loading..." %}</div>
+            <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Loading..." %}</div>
         </div>
     </div>
 </div>
 
 <!-- Панель «Скомпилировать» -->
 <div id="compiler-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(980px,96vw); height:min(720px,94vh); display:flex; flex-direction:column; overflow:hidden;">
+    <div style="background:var(--bg-card); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(980px,96vw); height:min(720px,94vh); display:flex; flex-direction:column; overflow:hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#27ae60; color:#fff; flex-shrink:0;">
             <strong>{% trans "Compile series" %}</strong>
             <button onclick="compilerClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
         </div>
         <!-- Кнопка сканирования (показывается только до первого скана) -->
-        <div id="compiler-scan-bar" style="flex-shrink:0; padding:0.5rem 0.8rem; background:#f8f9fa; border-bottom:1px solid #dee2e6; display:flex; align-items:center; gap:0.6rem;">
+        <div id="compiler-scan-bar" style="flex-shrink:0; padding:0.5rem 0.8rem; background:var(--bg-muted); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.6rem;">
             <button id="compiler-scan-btn" onclick="compilerScan()"
                     style="padding:0.35rem 0.9rem; font-size:0.83rem; background:#546e7a; color:#fff; border:none; border-radius:3px; cursor:pointer;">
                 {% trans "🔍 Scan groups" %}
             </button>
-            <span id="compiler-scan-status" style="font-size:0.8rem; color:#7f8c8d;"></span>
+            <span id="compiler-scan-status" style="font-size:0.8rem; color:var(--text-muted);"></span>
         </div>
         <div id="compiler-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
-            <div style="color:#7f8c8d; font-size:0.85rem; padding:1rem 0;">{% trans 'Click "Scan groups" to search for series.' %}</div>
+            <div style="color:var(--text-muted); font-size:0.85rem; padding:1rem 0;">{% trans 'Click "Scan groups" to search for series.' %}</div>
         </div>
     </div>
 </div>
@@ -242,7 +242,7 @@
         {% for line in state.log %}
         <div>{{ line }}</div>
         {% empty %}
-        <div style="color:#7f8c8d;">{% trans "Log is empty" %}</div>
+        <div style="color:var(--text-muted);">{% trans "Log is empty" %}</div>
         {% endfor %}
     </div>
 </div>
@@ -254,10 +254,10 @@
     .nt-resizer { position:absolute; right:0; top:0; width:5px; height:100%; cursor:col-resize; background:transparent; z-index:1; }
     .nt-resizer:hover, .nt-resizer.dragging { background:rgba(243,156,18,0.6); }
     .nt-proposed { background:rgba(241,196,15,0.08); }
-    .nt-src { color:#7f8c8d; font-size:0.74rem; }
-    .norm-row td { padding:0.18rem 0.6rem; border-bottom:1px solid #f0f0f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
-    .norm-row:nth-child(even) { background:#fafafa; }
-    .norm-row:hover td { background:#f0f4f8 !important; }
+    .nt-src { color:var(--text-muted); font-size:0.74rem; }
+    .norm-row td { padding:0.18rem 0.6rem; border-bottom:1px solid var(--border); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+    .norm-row:nth-child(even) { background:var(--bg-muted); }
+    .norm-row:hover td { background:var(--bg-hover) !important; }
     .norm-row.filtered-out { display:none; }
     body.col-resizing { cursor:col-resize !important; user-select:none !important; }
 </style>
@@ -428,7 +428,7 @@ var _martyrsUrl = "{% url 'fb2parser:martyrs_list' %}";
 function martyrsOpen() {
     var panel = document.getElementById('martyrs-panel');
     panel.style.display = 'flex';
-    document.getElementById('martyrs-body').innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;">' + MSG_LOADING + '</div>';
+    document.getElementById('martyrs-body').innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;">' + MSG_LOADING + '</div>';
     htmx.ajax('GET', _martyrsUrl, {target: '#martyrs-body', swap: 'innerHTML'}).then(function() {
         htmx.process(document.getElementById('martyrs-body'));
     });
@@ -442,7 +442,7 @@ function duplicatesOpen() {
     var panel = document.getElementById('duplicates-panel');
     if (!panel) { console.error('[duplicates] panel not found'); return; }
     panel.style.display = 'flex';
-    document.getElementById('duplicates-body').innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;">' + MSG_SEARCHING_DUPLICATES + '</div>';
+    document.getElementById('duplicates-body').innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;">' + MSG_SEARCHING_DUPLICATES + '</div>';
     htmx.ajax('GET', _duplicatesUrl, {target: '#duplicates-body', swap: 'innerHTML'}).then(function() {
         htmx.process(document.getElementById('duplicates-body'));
     });
@@ -463,7 +463,7 @@ function compilerScan() {
     var body = document.getElementById('compiler-body');
     if (btn) btn.disabled = true;
     if (status) status.textContent = MSG_SCANNING;
-    if (body) body.innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;padding:1rem 0;">' + MSG_SEARCHING_GROUPS + '</div>';
+    if (body) body.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:1rem 0;">' + MSG_SEARCHING_GROUPS + '</div>';
     htmx.ajax('GET', _compilerScanUrl, {target: '#compiler-body', swap: 'innerHTML'}).then(function() {
         htmx.process(document.getElementById('compiler-body'));
         if (btn) btn.disabled = false;
@@ -473,7 +473,7 @@ function compilerScan() {
 function namesCsvLoad() {
     var path = (document.getElementById('names-csv-path').value || '').trim();
     if (!path) return;
-    document.getElementById('names-csv-body').innerHTML = '<div style="color:#7f8c8d;font-size:0.85rem;padding:0.5rem;">' + MSG_LOADING + '</div>';
+    document.getElementById('names-csv-body').innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem;">' + MSG_LOADING + '</div>';
     htmx.ajax('GET', _namesCsvFromUrl + '?csv_path=' + encodeURIComponent(path),
               {target: '#names-csv-body', swap: 'innerHTML'}).then(function() {
         htmx.process(document.getElementById('names-csv-body'));

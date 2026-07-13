@@ -7,7 +7,7 @@
      hx-swap="outerHTML">
     <div class="callout primary" style="margin-top:0.7rem;">
         <strong>{% trans "⏳ Assigning genre..." %}</strong>
-        {% if state.current %}<div style="font-size:0.78rem; color:#555; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.current }}</div>{% endif %}
+        {% if state.current %}<div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.current }}</div>{% endif %}
     </div>
     {% if state.total > 0 %}
     <div style="font-size:0.82rem; margin-bottom:0.3rem;">{{ state.processed }} / {{ state.total }} ({{ pct }}%)</div>

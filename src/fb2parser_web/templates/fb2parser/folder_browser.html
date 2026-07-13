@@ -1,11 +1,11 @@
 {% load i18n %}
-<div style="border:1px solid #ccc; border-radius:4px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:380px; max-width:520px; font-size:0.82rem; z-index:1000;">
+<div style="border:1px solid var(--border); border-radius:4px; background:var(--bg-card); box-shadow:var(--shadow-md); min-width:380px; max-width:520px; font-size:0.82rem; z-index:1000;">
 
     <!-- Current path -->
-    <div style="background:#34495e; color:#ecf0f1; padding:0.4rem 0.7rem; border-radius:4px 4px 0 0; font-family:monospace; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
+    <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.4rem 0.7rem; border-radius:4px 4px 0 0; font-family:monospace; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
         <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{% if path %}{{ path }}{% else %}{% trans "Select drive" %}{% endif %}</span>
         <button type="button" onclick="closeBrowser('{{ target }}')"
-                style="background:none; border:none; color:#ecf0f1; cursor:pointer; font-size:1rem; padding:0; line-height:1;">✕</button>
+                style="background:none; border:none; color:var(--fp-header-text); cursor:pointer; font-size:1rem; padding:0; line-height:1;">✕</button>
     </div>
 
     {% if error %}
@@ -13,7 +13,7 @@
     {% endif %}
 
     <!-- Manual path input -->
-    <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid #ddd; background:#f8f9fa;">
+    <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid var(--border); background:var(--bg-muted);">
         <input type="text" id="fb-path-input-{{ target }}"
                value="{{ path|default:'' }}"
                placeholder="\\server\share or C:\path\to\folder"
@@ -24,7 +24,7 @@
     </div>
 
     <!-- Navigation buttons -->
-    <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid #eee;">
+    <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid var(--border);">
         {% if parent %}
         <button type="button" class="button tiny secondary" style="margin:0;"
                 hx-get="{% url 'fb2parser:browse' %}?path={{ parent|urlencode }}&target={{ target }}{% if show_files %}&show_files=1&ext={{ ext_filter|urlencode }}{% endif %}"
@@ -45,18 +45,18 @@
     <ul class="no-bullet" style="margin:0; max-height:260px; overflow-y:auto;">
         {% if entries %}
             {% for entry in entries %}
-            <li style="border-bottom:1px solid #f5f5f5;">
+            <li style="border-bottom:1px solid var(--border);">
                 {% if entry.is_file %}
                 <button type="button"
-                        style="width:100%; text-align:left; background:none; border:none; padding:0.3rem 0.7rem; cursor:pointer; font-family:monospace; font-size:0.8rem; color:#1a5276; display:flex; align-items:center; gap:0.4rem;"
-                        onmouseover="this.style.background='#eaf4fb'" onmouseout="this.style.background='none'"
+                        style="width:100%; text-align:left; background:none; border:none; padding:0.3rem 0.7rem; cursor:pointer; font-family:monospace; font-size:0.8rem; color:var(--fp-accent-text); display:flex; align-items:center; gap:0.4rem;"
+                        onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='none'"
                         onclick="selectFolder('{{ target }}', '{{ entry.path|escapejs }}')">
                     📄 {{ entry.name }}
                 </button>
                 {% else %}
                 <button type="button"
-                        style="width:100%; text-align:left; background:none; border:none; padding:0.35rem 0.7rem; cursor:pointer; font-family:monospace; font-size:0.8rem; color:#2c3e50; display:flex; align-items:center; gap:0.4rem;"
-                        onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'"
+                        style="width:100%; text-align:left; background:none; border:none; padding:0.35rem 0.7rem; cursor:pointer; font-family:monospace; font-size:0.8rem; color:var(--text); display:flex; align-items:center; gap:0.4rem;"
+                        onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='none'"
                         hx-get="{% url 'fb2parser:browse' %}?path={{ entry.path|urlencode }}&target={{ target }}{% if show_files %}&show_files=1&ext={{ ext_filter|urlencode }}{% endif %}"
                         hx-target="#fb-browser-{{ target }}"
                         hx-swap="innerHTML">
@@ -67,7 +67,7 @@
             </li>
             {% endfor %}
         {% else %}
-            <li style="padding:0.5rem 0.7rem; color:#7f8c8d;">{% if show_files %}{% trans "No files" %}{% else %}{% trans "No subfolders" %}{% endif %}</li>
+            <li style="padding:0.5rem 0.7rem; color:var(--text-muted);">{% if show_files %}{% trans "No files" %}{% else %}{% trans "No subfolders" %}{% endif %}</li>
         {% endif %}
     </ul>
 </div>

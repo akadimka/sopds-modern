@@ -12,7 +12,7 @@
         <div class="card" style="height:72vh; display:flex; flex-direction:column;">
             <div class="card-divider">
                 <strong>{% trans "Genre Tree" %}</strong>
-                <span style="float:right; font-size:0.8rem; color:#7f8c8d;">{{ genre_list|length }} {% trans "nodes" %}</span>
+                <span style="float:right; font-size:0.8rem; color:var(--text-muted);">{{ genre_list|length }} {% trans "nodes" %}</span>
             </div>
             <div style="padding:0.4rem 0.7rem;">
                 <input type="text" id="genre-filter" placeholder="{% trans "Filter..." %}" style="margin:0; font-size:0.82rem;">
@@ -23,11 +23,11 @@
                 <li class="genre-node" data-name="{{ g.name|lower }}"
                     style="padding:0.18rem 0 0.18rem {{ g.depth }}rem;
                            {% if g.has_children %}font-weight:600;{% endif %}
-                           border-bottom:1px solid #f0f0f0; cursor:pointer;"
+                           border-bottom:1px solid var(--border); cursor:pointer;"
                     onclick="selectGenre('{{ g.name|escapejs }}', this)">
-                    {% if g.depth > 0 %}<span style="color:#aaa;">└ </span>{% endif %}
+                    {% if g.depth > 0 %}<span style="color:var(--text-muted);">└ </span>{% endif %}
                     {{ g.name }}
-                    {% if g.assigned %}<span style="font-size:0.7rem; color:#7f8c8d; font-weight:normal;"> ({{ g.assigned|length }})</span>{% endif %}
+                    {% if g.assigned %}<span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;"> ({{ g.assigned|length }})</span>{% endif %}
                 </li>
                 {% endfor %}
                 </ul>
@@ -39,7 +39,7 @@
         <div class="card" style="height:72vh; display:flex; flex-direction:column;">
             <div class="card-divider"><strong>{% trans "Associated Genre Strings" %}</strong></div>
             <div style="flex:1; overflow-y:auto; padding:0.5rem;" id="assigned-panel">
-                <div style="color:#7f8c8d; font-size:0.85rem;">{% trans "Select a genre on the left" %}</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Select a genre on the left" %}</div>
             </div>
         </div>
     </div>
@@ -48,14 +48,14 @@
         <div class="card">
             <div class="card-divider"><strong>{% trans "Assign Genre to Folder" %}</strong></div>
             <div class="card-section">
-                <p style="font-size:0.82rem; color:#555; margin-bottom:0.7rem;">
+                <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.7rem;">
                     {% trans "Select a genre on the left and specify a folder." %}<br>
                     {% trans "This operation replaces &lt;genre&gt; in all FB2 files in the folder." %}
                 </p>
                 <label style="font-size:0.85rem;">
                     {% trans "Genre" %}
                     <input id="selected-genre" name="genre" type="text" readonly
-                           style="background:#f8f9fa; font-family:monospace; font-size:0.82rem;"
+                           style="background:var(--bg-muted); font-family:monospace; font-size:0.82rem;"
                            placeholder="{% trans "(not selected)" %}">
                 </label>
                 <label style="font-size:0.85rem;">{% trans "Folder" %}</label>
@@ -92,14 +92,14 @@ const GENRE_DATA = {
 
 function selectGenre(name, el) {
     document.querySelectorAll('.genre-node').forEach(n => n.style.background = '');
-    el.style.background = '#fef9e7';
+    el.style.background = 'var(--status-warn-bg)';
     document.getElementById('selected-genre').value = name;
     const assigned = GENRE_DATA[name] || [];
     const panel = document.getElementById('assigned-panel');
     panel.innerHTML = assigned.length === 0
-        ? '<div style="color:#7f8c8d; font-size:0.85rem;">' + i18n_noAssociations + '</div>'
+        ? '<div style="color:var(--text-muted); font-size:0.85rem;">' + i18n_noAssociations + '</div>'
         : '<ul class="no-bullet" style="font-size:0.82rem; margin:0;">' +
-          assigned.map(a => `<li style="padding:0.15rem 0; border-bottom:1px solid #f0f0f0;">${a}</li>`).join('') +
+          assigned.map(a => `<li style="padding:0.15rem 0; border-bottom:1px solid var(--border);">${a}</li>`).join('') +
           '</ul>';
 }
 

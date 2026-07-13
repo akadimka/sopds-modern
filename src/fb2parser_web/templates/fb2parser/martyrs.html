@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if rows %}
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; flex-shrink:0; gap:0.5rem; flex-wrap:wrap;">
-    <span style="font-size:0.83rem; color:#495057;">
+    <span style="font-size:0.83rem; color:var(--text-muted);">
         {% trans "Found" %} <strong>{{ rows|length }}</strong> {% trans "files where all authors are female." %}
     </span>
     <div style="display:flex; gap:0.5rem;">
@@ -13,7 +13,7 @@
 
 <div style="flex:1; overflow-y:auto; min-height:0;">
     <table id="martyrs-table" style="border-collapse:collapse; font-size:0.8rem; width:100%;">
-        <thead style="position:sticky; top:0; background:#34495e; color:#ecf0f1; z-index:2;">
+        <thead style="position:sticky; top:0; background:var(--fp-header-bg); color:var(--fp-header-text); z-index:2;">
             <tr>
                 <th style="padding:0.3rem 0.5rem; text-align:left;">{% trans "File" %}</th>
                 <th style="padding:0.3rem 0.5rem; text-align:left; width:200px;">{% trans "Author(s)" %}</th>
@@ -21,7 +21,7 @@
         </thead>
         <tbody>
         {% for r in rows %}
-        <tr class="martyrs-row" data-full-path="{{ r.full_path }}" style="border-bottom:1px solid #f0f0f0;">
+        <tr class="martyrs-row" data-full-path="{{ r.full_path }}" style="border-bottom:1px solid var(--border);">
             <td style="padding:0 0.5rem; font-family:monospace; font-size:0.76rem; line-height:1.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:500px;"
                 title="{{ r.full_path }}">{{ r.file_path }}</td>
             <td style="padding:0 0.5rem; line-height:1.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.authors }}</td>
