@@ -29,15 +29,13 @@
             {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
         </span>
         <ul class="menu">
-            {% if sopds_auth %}{% if user.is_authenticated %}{% if user.is_superuser %}
+            {% if user.is_authenticated %}{% if user.is_superuser %}
                 <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
                 <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
-            {% endif %}{% endif %}{% endif %}
-            {% if sopds_auth %}{% if user.is_authenticated %}
                 <li><a href="{% url "web:logout" %}">{% trans "Logout" %} ({{ user.username }})</a></li>
-            {% else %}
+            {% endif %}{% else %}
                 <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>
-            {% endif %}{% endif %}
+            {% endif %}
         </ul>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
             <span class="icon-moon">🌙</span>
