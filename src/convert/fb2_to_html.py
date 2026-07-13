@@ -110,11 +110,23 @@ def extract_description(root):
     return meta, annotation, coverpage
 
 
-def render_inline(elem, binaries, note_backrefs=None, current_anchor=None):
+def collect_note_ids(root):
+    """Собрать все id секций из body[@name='notes'] — они являются сносками."""
+    note_ids = set()
+    for body in root.findall(".//fb:body[@name='notes']", NS):
+        for sec in body.iter():
+            sec_id = xml_id(sec)
+            if sec_id:
+                note_ids.add(sec_id)
+    return note_ids
+
+
+def render_inline(elem, binaries, note_ids=None, note_backrefs=None, current_anchor=None):
     tag = local_name(elem.tag)
     text = html.escape(elem.text or "")
     children = "".join(
-        render_inline(child, binaries, note_backrefs, current_anchor) for child in elem
+        render_inline(child, binaries, note_ids, note_backrefs, current_anchor)
+        for child in elem
     )
     tail = html.escape(elem.tail or "")
 
@@ -133,16 +145,20 @@ def render_inline(elem, binaries, note_backrefs=None, current_anchor=None):
     if tag == "a":
         href = elem.attrib.get(f"{{{XLINK_NS}}}href", "#")
         if href.startswith("#"):
-            note_id = href[1:]
-            note_target = "note-" + note_id
-            if note_backrefs is not None and current_anchor:
-                note_backrefs.setdefault(note_id, [])
-                if current_anchor not in note_backrefs[note_id]:
-                    note_backrefs[note_id].append(current_anchor)
-            return (
-                f'<a href="#{html.escape(note_target)}" class="note-ref">'
-                f"{text}{children}</a>{tail}"
-            )
+            target_id = href[1:]
+            if note_ids and target_id in note_ids:
+                # Это ссылка на сноску — добавляем обратную ссылку
+                note_target = "note-" + target_id
+                if note_backrefs is not None and current_anchor:
+                    note_backrefs.setdefault(target_id, [])
+                    if current_anchor not in note_backrefs[target_id]:
+                        note_backrefs[target_id].append(current_anchor)
+                return (
+                    f'<a href="#{html.escape(note_target)}" class="note-ref">'
+                    f"{text}{children}</a>{tail}"
+                )
+            # Обычный якорь внутри документа — оставляем как есть
+            return f'<a href="{html.escape(href)}">{text}{children}</a>{tail}'
         return f'<a href="{html.escape(href)}">{text}{children}</a>{tail}'
     if tag == "image":
         href = elem.attrib.get(f"{{{XLINK_NS}}}href", "")
@@ -153,27 +169,7 @@ def render_inline(elem, binaries, note_backrefs=None, current_anchor=None):
     return f"{text}{children}{tail}"
 
 
-def build_toc(elem, binaries, toc_items, section_counter, level=1):
-    if local_name(elem.tag) != "section":
-        for child in elem:
-            build_toc(child, binaries, toc_items, section_counter, level)
-        return
-
-    section_counter["value"] += 1
-    section_id = f"section-{section_counter['value']}"
-    elem.attrib["_html_id"] = section_id
-
-    title_elem = elem.find("fb:title", NS)
-    title_text = plain_text(title_elem) if title_elem is not None else ""
-    if title_text:
-        toc_items.append({"level": level, "id": section_id, "title": title_text})
-
-    for child in elem:
-        if local_name(child.tag) == "section":
-            build_toc(child, binaries, toc_items, section_counter, level + 1)
-
-
-def render_block(elem, binaries, heading_level=2, note_backrefs=None,
+def render_block(elem, binaries, heading_level=2, note_ids=None, note_backrefs=None,
                  in_notes=False, anchor_counter=None):
     tag = local_name(elem.tag)
     elem_id = xml_id(elem)
@@ -182,7 +178,7 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
         if in_notes and elem_id:
             html_id = "note-" + elem_id
         else:
-            html_id = elem.attrib.get("_html_id") or elem_id
+            html_id = elem_id
         id_attr = f' id="{html.escape(html_id)}"' if html_id else ""
         back_link = ""
         note_number = ""
@@ -205,13 +201,13 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
                 continue
             children.append(
                 render_block(child, binaries, heading_level + 1,
-                             note_backrefs, in_notes, anchor_counter)
+                             note_ids, note_backrefs, in_notes, anchor_counter)
             )
         return (
             f"<section{id_attr}>\n" + back_link + "".join(children) + "</section>\n"
         )
 
-    html_id = elem.attrib.get("_html_id") or elem_id
+    html_id = elem_id
     id_attr = f' id="{html.escape(html_id)}"' if html_id else ""
 
     if tag == "title":
@@ -219,7 +215,7 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
         level = min(heading_level, 6)
         return f"<h{level}>{html.escape(text)}</h{level}>\n" if text else ""
     if tag == "subtitle":
-        return f"<h4>{render_inline(elem, binaries, note_backrefs, html_id)}</h4>\n"
+        return f"<h4>{render_inline(elem, binaries, note_ids, note_backrefs, html_id)}</h4>\n"
     if tag == "p":
         if not html_id and not in_notes:
             if anchor_counter is not None:
@@ -230,7 +226,7 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
             id_attr = f' id="{html.escape(html_id)}"'
         return (
             f"<p{id_attr}>"
-            f"{render_inline(elem, binaries, note_backrefs, html_id)}"
+            f"{render_inline(elem, binaries, note_ids, note_backrefs, html_id)}"
             f"</p>\n"
         )
     if tag == "empty-line":
@@ -239,7 +235,7 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
         return (
             "<blockquote>\n"
             + "".join(
-                render_block(child, binaries, heading_level, note_backrefs,
+                render_block(child, binaries, heading_level, note_ids, note_backrefs,
                              in_notes, anchor_counter)
                 for child in elem
             )
@@ -249,7 +245,7 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
         return (
             '<blockquote class="cite">\n'
             + "".join(
-                render_block(child, binaries, heading_level, note_backrefs,
+                render_block(child, binaries, heading_level, note_ids, note_backrefs,
                              in_notes, anchor_counter)
                 for child in elem
             )
@@ -264,10 +260,11 @@ def render_block(elem, binaries, heading_level=2, note_backrefs=None,
             lines.append("")
         return '<pre class="poem">' + html.escape("\n".join(lines).strip()) + "</pre>\n"
     if tag == "image":
-        return render_inline(elem, binaries, note_backrefs, html_id) + "\n"
+        return render_inline(elem, binaries, note_ids, note_backrefs, html_id) + "\n"
 
     return "".join(
-        render_block(child, binaries, heading_level, note_backrefs, in_notes, anchor_counter)
+        render_block(child, binaries, heading_level, note_ids, note_backrefs,
+                     in_notes, anchor_counter)
         for child in elem
     )
 
@@ -291,7 +288,7 @@ def render_description(meta, annotation, binaries):
     return result
 
 
-def render_notes(root, binaries, note_backrefs):
+def render_notes(root, binaries, note_ids, note_backrefs):
     notes_bodies = root.findall(".//fb:body[@name='notes']", NS)
     if not notes_bodies:
         return ""
@@ -299,7 +296,7 @@ def render_notes(root, binaries, note_backrefs):
     for body in notes_bodies:
         for child in body:
             html_parts.append(
-                render_block(child, binaries, 3, note_backrefs, in_notes=True)
+                render_block(child, binaries, 3, note_ids, note_backrefs, in_notes=True)
             )
     html_parts.append("</section>\n")
     return "".join(html_parts)
@@ -372,6 +369,7 @@ def _build_html(root, title_hint: str) -> str:
     meta, annotation, coverpage = extract_description(root)
     title = meta.get("Название") or title_hint
 
+    note_ids = collect_note_ids(root)
     note_backrefs: dict = {}
     anchor_counter = {"value": 0}
 
@@ -379,32 +377,15 @@ def _build_html(root, title_hint: str) -> str:
         b for b in root.findall("fb:body", NS) if b.attrib.get("name") != "notes"
     ]
 
-    toc_items: list = []
-    section_counter = {"value": 0}
-    for body in normal_bodies:
-        for child in body:
-            build_toc(child, binaries, toc_items, section_counter)
-
-    toc_html = ""
-    if toc_items:
-        toc_html = '<nav class="toc">\n<h2>Содержание</h2>\n<ul>\n'
-        for item in toc_items:
-            toc_html += (
-                f'<li class="toc-level-{item["level"]}">'
-                f'<a href="#{html.escape(item["id"])}">'
-                f'{html.escape(item["title"])}</a></li>\n'
-            )
-        toc_html += "</ul>\n</nav>\n"
-
     main_html = ""
     for body in normal_bodies:
         main_html += "<main>\n"
         for child in body:
-            main_html += render_block(child, binaries, 2, note_backrefs, False,
-                                      anchor_counter)
+            main_html += render_block(child, binaries, 2, note_ids, note_backrefs,
+                                      False, anchor_counter)
         main_html += "</main>\n"
 
-    notes_html = render_notes(root, binaries, note_backrefs)
+    notes_html = render_notes(root, binaries, note_ids, note_backrefs)
 
     return f"""<!doctype html>
 <html lang="ru">
@@ -419,7 +400,6 @@ def _build_html(root, title_hint: str) -> str:
 <h1>{html.escape(title)}</h1>
 {render_coverpage(coverpage, binaries)}
 {render_description(meta, annotation, binaries)}
-{toc_html}
 {main_html}
 {notes_html}
 </body>
