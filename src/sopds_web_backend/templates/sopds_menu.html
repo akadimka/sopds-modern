@@ -3,7 +3,7 @@
 <div class="cell">
 {% if not alphabet %}
 	<div id="main_menu">
-	  <ul class="menu sopdsmenu" style="font-size:100%;" data-responsive-menu="accordion">
+	  <ul class="menu sopdsmenu" style="font-size:100%;" data-responsive-menu="accordion medium-dropdown">
 	    <li {% if current == "catalog" %} class="active" {% endif %}><a href="{% url "web:catalog" %}">{% trans "Catalogs" %}</a></li>
 	    <li {% if current == "book" %} class="active" {% endif %}><a href="{% url "web:book" %}?lang=0">{% trans "Books" %}</a></li>
 	    <li {% if current == "author" %} class="active" {% endif %}><a href="{% url "web:author" %}?lang=0">{% trans "Authors" %}</a></li>

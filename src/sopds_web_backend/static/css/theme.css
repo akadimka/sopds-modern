@@ -653,6 +653,8 @@ table th { color: var(--text) !important; border: none !important; border-width:
 #main_menu {
     background: var(--sp-header-bg);
     border-bottom: 1px solid rgba(255,255,255,0.06);
+    height: auto !important;
+    overflow: visible !important;
 }
 #main_menu .sopdsmenu { background: transparent; flex-wrap: wrap; }
 #main_menu .sopdsmenu > li > a {
