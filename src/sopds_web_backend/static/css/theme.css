@@ -1015,6 +1015,11 @@ table th { color: var(--text) !important; border: none !important; border-width:
     font-size: 0.88rem;
     padding: 0.4rem 0.55rem;
 }
+.s-field input[type=text]::placeholder,
+.s-field input[type=number]::placeholder {
+    font-style: italic;
+    opacity: 0.45;
+}
 .s-hint { font-size: 0.77rem; color: var(--text-muted); margin-top: 0.25rem; }
 .s-row { display: flex; gap: 0.5rem; align-items: center; max-width: 600px; }
 .s-row input[type=text] { flex: 1; }
