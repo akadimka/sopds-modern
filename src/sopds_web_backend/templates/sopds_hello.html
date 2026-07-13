@@ -1,5 +1,6 @@
 {% extends "sopds_main.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block ext-body %}
 <div class="cell small-12" style="padding: 1rem 0.5rem;">
@@ -40,16 +41,22 @@
     </div>
 </div>
 
-<!-- Random Book -->
 {% if random_book %}
 <div class="card" style="margin-bottom:1.2rem;">
     <div class="card-divider"><strong>🎲 {% trans "Random Book" %}</strong></div>
     <div class="card-section clearfix" style="padding:0.8rem;">
-        <img class="float-left" src="{% url 'opds_catalog:thumb' random_book.id %}" type="image/jpeg" width="80px" style="padding:0.3rem; border-radius:var(--radius-sm);">
-        <p style="font-size:0.88rem; line-height:1.4; margin-bottom:0.25rem; margin-top:0.25rem; font-weight:600;">
-            <a href="{% url "web:searchbooks" %}?searchtype=i&searchterms={{ random_book.id }}" style="color:var(--sp-accent);">{{ random_book.title }}</a>
-        </p>
-        <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.5;">{{ random_book.annotation|truncatechars:400 }}</div>
+        <img class="float-left" src="{% url 'opds_catalog:thumb' random_book.id %}" width="80"
+             style="padding:0.3rem; border-radius:var(--radius-sm);">
+        <p style="font-size:0.88rem; font-weight:600; margin:0.25rem 0; color:var(--text);">{{ random_book.title }}</p>
+        <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.5; margin-bottom:0.6rem;">{{ random_book.annotation|truncatechars:400 }}</div>
+        <div class="clearfix"></div>
+        <div class="button-group expanded" style="margin:0;">
+            <a href="{% url 'opds_catalog:download' random_book.id 0 %}" class="button secondary small">&#x2B07; {{ random_book.format|upper }}</a>
+            {% if random_book.format not in nozip %}<a href="{% url 'opds_catalog:download' random_book.id 1 %}" class="button secondary small">&#x2B07; FB2.ZIP</a>{% endif %}
+            {% if random_book.format == 'fb2' and fb2toepub %}<a href="{% url 'opds_catalog:convert' random_book.id 'epub' %}" class="button secondary small">EPUB</a>{% endif %}
+            {% if random_book.format == 'fb2' and fb2tomobi %}<a href="{% url 'opds_catalog:convert' random_book.id 'mobi' %}" class="button secondary small">MOBI</a>{% endif %}
+            {% if random_book.format == 'fb2' %}<a href="{% url 'opds_catalog:view_html' random_book.id %}" target="_blank" class="button primary small">&#x1F4D6; {% trans "Read" %}</a>{% endif %}
+        </div>
     </div>
 </div>
 {% endif %}
