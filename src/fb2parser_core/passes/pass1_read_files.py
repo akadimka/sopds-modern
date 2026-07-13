@@ -3,6 +3,7 @@ PASS 1: Read FB2 files and determine initial authors from folder hierarchy.
 """
 
 import os
+import re
 import sys
 import threading
 import multiprocessing
@@ -115,6 +116,26 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
         return None
 
 
+def _split_series_head(folder_name: str) -> str:
+    """Формат "Серия. Хвост" (например "За гранью. Мистические триллеры
+    Альбины Нури") — хвост после точки часто описание/жанр/имя автора,
+    а не часть названия серии. Берём часть до первой ". ", если она
+    похожа на название (не голые инициалы, не число).
+
+    Дублирует ту же эвристику, что и RegenCSVService._extract_series_from_folder_name
+    в regen_csv.py — этот путь извлечения серии (по метаданным автора,
+    Pass 1) не проходит через тот код.
+    """
+    if '. ' not in folder_name:
+        return folder_name
+    head, _, tail = folder_name.partition('. ')
+    head = head.strip()
+    if (head and tail.strip() and not head.isdigit()
+            and not re.fullmatch(r'[А-ЯA-ZЁ]\.?\s*[А-ЯA-ZЁ]?\.?', head)):
+        return head
+    return folder_name
+
+
 def _find_author_series_by_metadata(
     fb2_file: Path, work_dir: Path,
     metadata_authors: str, folder_parse_limit: int
@@ -157,7 +178,7 @@ def _find_author_series_by_metadata(
             continue
         folder_words = _norm_words(current.name)
         if folder_words == meta_words:
-            series_name = child.name if child else ''
+            series_name = _split_series_head(child.name) if child else ''
             # Normalize folder name: replace hyphen-as-separator so "Фамилия-Имя" → "Фамилия Имя"
             folder_normalized = current.name.replace('-', ' ').strip() if '-' in current.name else current.name
             return folder_normalized, series_name
