@@ -78,13 +78,10 @@ def get_lang_name(lang: str) -> str:
 
 
 def getFileName(book: Book) -> str:
-    """Формирует название файла для сохранения книги в латинице."""
+    """Формирует название файла для скачивания."""
     if config.SOPDS_TITLE_AS_FILENAME:
-        transname = translit(book.title + "." + book.format)
-    else:
-        transname = translit(book.filename)
-
-    return to_ascii(transname)
+        return book.title + "." + book.format
+    return book.filename
 
 
 def get_fs_book_path(book: Book) -> str:

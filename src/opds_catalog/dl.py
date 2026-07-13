@@ -47,22 +47,26 @@ def Download(request, book_id, zip_flag):
             bookshelf.objects.get_or_create(user=request.user, book=book)
 
     logger.info("Prepare book filename and content type")
-    transname = getFileName(book)
-    transname = utils.to_ascii(transname)
-
+    from urllib.parse import quote
+    dlfilename = getFileName(book)
     if zip_flag == "1":
-        dlfilename = transname + ".zip"
+        dlfilename = dlfilename + ".zip"
         content_type = Mimetype.FB2_ZIP if book.format == "fb2" else Mimetype.ZIP
     else:
-        dlfilename = transname
         content_type = mime_detector.fmt(book.format)
 
     logger.debug(f"Filename: {dlfilename}")
     logger.debug(f"Content type: {content_type}")
 
+    # RFC 5987: filename*=UTF-8''<percent-encoded> — поддерживается всеми современными браузерами
+    encoded_name = quote(dlfilename, safe='')
+    ascii_name = dlfilename.encode('ascii', 'replace').decode()
+
     response = HttpResponse()
-    response["Content-Type"] = '%s; name="%s"' % (content_type, dlfilename)
-    response["Content-Disposition"] = 'attachment; filename="%s"' % (dlfilename)
+    response["Content-Type"] = content_type
+    response["Content-Disposition"] = (
+        f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded_name}'
+    )
     response["Content-Transfer-Encoding"] = "binary"
 
     s = getFileData(book)
@@ -77,7 +81,7 @@ def Download(request, book_id, zip_flag):
         logger.info("Packing content to ZIP")
         dio = io.BytesIO()
         with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
-            zo.writestr(transname, s.getvalue())
+            zo.writestr(getFileName(book), s.getvalue())
 
         response["Content-Length"] = str(dio.getbuffer().nbytes)
         response.write(dio.getvalue())
