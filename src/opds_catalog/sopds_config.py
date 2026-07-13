@@ -98,7 +98,10 @@ class SopdsConfig:
         if json_key is not None:
             sm = _get_sm()
             sopds = sm.settings.get('sopds', {})
-            return sopds.get(json_key, _DEFAULTS.get(json_key))
+            val = sopds.get(json_key, _DEFAULTS.get(json_key))
+            if not val and json_key in _DEFAULTS:
+                return _DEFAULTS[json_key]
+            return val
 
         raise AttributeError(f"SopdsConfig has no attribute {name!r}")
 
