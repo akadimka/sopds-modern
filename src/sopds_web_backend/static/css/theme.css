@@ -115,10 +115,10 @@
     --fp-badge-bg:      #1e3a5f;
     --fp-badge-text:    #93c5fd;
 
-    /* SOPDS dark */
-    --sp-header-bg:     #011a14;
+    /* SOPDS dark — header/nav match page background */
+    --sp-header-bg:     #0f172a;
     --sp-header-text:   #a7f3d0;
-    --sp-nav-bg:        #011a14;
+    --sp-nav-bg:        #0f172a;
     --sp-nav-text:      #6ee7b7;
     --sp-accent-soft:   #064e3b;
     --sp-accent-text:   #6ee7b7;
