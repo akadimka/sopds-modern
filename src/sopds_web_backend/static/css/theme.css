@@ -272,7 +272,7 @@ label { color: var(--text); font-weight: 500; }
 .card-divider {
     background: var(--bg-muted) !important;
     border-bottom: 1px solid var(--border) !important;
-    color: var(--sp-accent) !important;
+    color: var(--sp-nav-text) !important;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
     padding: 0.6rem 1rem !important;
     font-size: 0.9rem;
