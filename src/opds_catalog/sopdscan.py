@@ -338,24 +338,13 @@ class opdsScanner:
                         self.logger.info(
                             f"Store authors metadata for {name} in database"
                         )
-                        for a in book_data.authors:
-                            author_name = a.get("name", _("Unknown author")).strip(
-                                strip_symbols
-                            )
-                            # Если в имени автора нет запятой, то фамилию переносим из конца в начало
-                            # FIXME: информация об авторе не должна трансформироваться
-                            if author_name and author_name.find(",") < 0:
-                                author_names = author_name.split()
-                                author_name = " ".join(
-                                    [
-                                        author_names[-1],
-                                        " ".join(author_names[:-1]),
-                                    ]
-                                )
-                            self.logger.debug(f"Author: {author_name}")
-                            author = opdsdb.addauthor(author_name)
-                            self.logger.debug(f"Link {book} to {author}")
-                            opdsdb.addbauthor(book, author)
+                        # Author is taken from the folder structure (level 2: genre/author/...)
+                        path_parts = rel_path.replace("\\", "/").split("/")
+                        author_name = path_parts[1] if len(path_parts) >= 2 else _("Unknown author")
+                        self.logger.debug(f"Author from path: {author_name}")
+                        author = opdsdb.addauthor(author_name)
+                        self.logger.debug(f"Link {book} to {author}")
+                        opdsdb.addbauthor(book, author)
                         self.logger.info("Authors metadata stored succesfully")
 
                         self.logger.info(
