@@ -3,6 +3,27 @@
 {% load static %}
 
 {% block ext-body %}
+<!-- Books picker modal -->
+<div id="BooksPickerModal" class="reveal tiny" data-reveal
+     style="padding:1.2rem; border-radius:var(--radius-lg);">
+  <button class="close-button" data-close aria-label="{% trans 'Close' %}" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  <h6 style="color:var(--sp-accent); margin-bottom:0.9rem;">📚 {% trans "Books" %}</h6>
+  <div style="display:flex; flex-direction:column; gap:0.4rem;">
+    <a href="{% url 'web:book' %}?lang=0" class="button secondary expanded" style="margin:0; text-align:left;">
+      {% trans "Show all" %}
+    </a>
+    {% for key, value in lang_menu.items %}
+    {% if key != 0 %}
+    <a href="{% url 'web:book' %}?lang={{ key }}" class="button secondary expanded" style="margin:0; text-align:left;">
+      {{ value }}
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
 <!-- Book card modal -->
 <div id="BookCardModal" class="reveal" data-reveal
      style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow:hidden;">
@@ -37,7 +58,8 @@ document.addEventListener('htmx:afterSwap', function(e) {
         </a>
     </div>
     <div class="cell medium-3 small-3">
-        <div class="card text-center sopds-stat-card" style="border-top:3px solid #f59e0b;">
+        <div class="card text-center sopds-stat-card sopds-stat-clickable" style="border-top:3px solid #f59e0b;"
+             onclick="$('#BooksPickerModal').foundation('open')">
             <div class="card-section sopds-stat-section">
                 <div class="sopds-stat-num" style="color:#f59e0b;">{{ stats.allbooks }}</div>
                 <div class="sopds-stat-label">{% trans "Books" %}</div>

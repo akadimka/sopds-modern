@@ -1325,10 +1325,14 @@ table th { color: var(--text) !important; border: none !important; border-width:
     display: block;
     text-decoration: none;
 }
-.sopds-stat-catalog-btn:hover .sopds-stat-card {
+.sopds-stat-catalog-btn:hover .sopds-stat-card,
+.sopds-stat-clickable:hover {
     box-shadow: var(--shadow-md) !important;
     transform: translateY(-2px);
     transition: box-shadow var(--transition), transform var(--transition);
+}
+.sopds-stat-clickable {
+    cursor: pointer;
 }
 @media screen and (max-width: 39.9375em) {
     .sopds-stat-section { padding: 0.45rem 0.2rem !important; }
