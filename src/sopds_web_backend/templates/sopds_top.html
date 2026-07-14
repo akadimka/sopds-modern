@@ -30,19 +30,17 @@
                 <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
                 <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
             {% endif %}{% endif %}
-            <li>
-                <span class="sp-lang-switcher">
-                    {% if LANGUAGE_CODE == 'en' %}<span class="active-lang">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
-                    <span class="sep">/</span>
-                    {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
-                </span>
-            </li>
             {% if user.is_authenticated %}
                 <li><a href="{% url "web:logout" %}">{% trans "Logout" %} ({{ user.username }})</a></li>
             {% else %}
                 <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>
             {% endif %}
         </ul>
+        <span class="sp-lang-switcher">
+            {% if LANGUAGE_CODE == 'en' %}<span class="active-lang">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
+            <span class="sep">/</span>
+            {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
+        </span>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
             <span class="icon-moon">🌙</span>
             <span class="icon-sun">☀️</span>
