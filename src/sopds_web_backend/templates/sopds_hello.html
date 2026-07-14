@@ -118,18 +118,24 @@ function openBookCard(bookId) {
 </div>
 {% endif %}
 
-<!-- Топ жанров + Последние добавленные -->
+<!-- Жанры + Последние добавленные -->
 <div class="grid-x grid-margin-x">
     <div class="cell medium-4" style="margin-bottom:1rem;">
         <div class="card" style="height:100%;">
-            <div class="card-divider"><strong>🏷️ {% trans "Top genres" %}</strong></div>
-            <div class="card-section" style="padding:0.5rem;">
+            <div class="card-divider"><strong>🏷️ {% trans "Genres" %}</strong></div>
+            <div class="card-section" style="padding:0.8rem; display:flex; flex-direction:column; align-items:center; gap:0.8rem;">
+                <!-- Pie chart -->
+                <canvas id="genreChart" width="200" height="200" style="max-width:200px;"></canvas>
+                <!-- Топ-5 -->
                 <table class="unstriped" style="font-size:0.85rem; margin:0; width:100%;">
                     <tbody>
                     {% for g in top_genres %}
                     <tr>
-                        <td style="padding:0.3rem 0.5rem;">{{ g.subsection }}</td>
-                        <td style="text-align:right; color:var(--text-muted); padding:0.3rem 0.5rem;">{{ g.cnt }}</td>
+                        <td style="padding:0.25rem 0.5rem;">
+                            <span class="sopds-genre-dot" data-idx="{{ forloop.counter0 }}"></span>
+                            {{ g.subsection }}
+                        </td>
+                        <td style="text-align:right; color:var(--text-muted); padding:0.25rem 0.5rem;">{{ g.cnt }}</td>
                     </tr>
                     {% endfor %}
                     </tbody>
@@ -168,4 +174,55 @@ function openBookCard(bookId) {
 </div>
 
 </div>
+
+<script>
+(function(){
+    var data = [{% for g in chart_genres %}{ label: "{{ g.subsection|escapejs }}", cnt: {{ g.cnt }} }{% if not forloop.last %},{% endif %}{% endfor %}];
+    var COLORS = [
+        '#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6',
+        '#ec4899','#14b8a6','#f97316','#8b5cf6','#84cc16',
+        '#06b6d4','#e11d48','#d97706','#059669','#7c3aed'
+    ];
+    var total = data.reduce(function(s,d){ return s + d.cnt; }, 0);
+    if (!total) return;
+
+    var canvas = document.getElementById('genreChart');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var cx = W/2, cy = H/2, r = Math.min(W,H)/2 - 6;
+    var angle = -Math.PI/2;
+
+    data.forEach(function(d, i){
+        var slice = (d.cnt / total) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, angle, angle + slice);
+        ctx.closePath();
+        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        /* процент внутри сектора если > 8% */
+        if (slice > 0.5) {
+            var mid = angle + slice / 2;
+            var tx = cx + Math.cos(mid) * r * 0.65;
+            var ty = cy + Math.sin(mid) * r * 0.65;
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(Math.round(d.cnt/total*100)+'%', tx, ty);
+        }
+        angle += slice;
+    });
+
+    /* цветные точки рядом с названиями в таблице */
+    document.querySelectorAll('.sopds-genre-dot').forEach(function(el){
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        el.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;background:' + COLORS[idx % COLORS.length] + ';vertical-align:middle;flex-shrink:0;';
+    });
+})();
+</script>
 {% endblock %}
