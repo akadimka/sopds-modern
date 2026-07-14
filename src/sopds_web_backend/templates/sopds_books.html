@@ -49,7 +49,7 @@ function openBookCard(bookId) {
 <div class="cell sopdsitem"
      onclick="openBookCard({{ b.id }})"
      style="cursor:pointer;">
-    <span class="sopdsitem-key">{{ b.title }}</span>
+    <span class="sopdsitem-key">{{ b.title }}{% if b.samlib_rating and not b.samlib_rating.fetch_error and b.samlib_rating.rating %} <span style="color:#f59e0b; font-size:0.8rem; white-space:nowrap;">★ {{ b.samlib_rating.rating|floatformat:1 }}</span>{% endif %}</span>
     <span class="sopdsitem-count">
         {% if b.authors.all %}
         {% for a in b.authors.all %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %} ·

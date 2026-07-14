@@ -42,6 +42,7 @@ _DEFAULTS: dict = {
     'scan_start_directly': False,
     'language': 'en-US',
     'samlib_rating': False,
+    'samlib_method': 'series',
 }
 
 # Маппинг SOPDS_KEY -> json_key (None = мёртвая константа, возвращаем 0)
@@ -74,6 +75,7 @@ _KEY_MAP: dict[str, str | None] = {
     'SOPDS_SCAN_START_DIRECTLY': 'scan_start_directly',
     'SOPDS_LANGUAGE': 'language',
     'SOPDS_SAMLIB_RATING': 'samlib_rating',
+    'SOPDS_SAMLIB_METHOD': 'samlib_method',
 }
 
 

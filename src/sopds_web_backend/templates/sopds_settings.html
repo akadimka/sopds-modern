@@ -106,10 +106,16 @@
 
     <div class="s-field">
         <label class="s-check">
-            <input type="checkbox" name="samlib_rating" {% if sopds.samlib_rating %}checked{% endif %}>
+            <input type="checkbox" name="samlib_rating" id="id_samlib_rating" {% if sopds.samlib_rating %}checked{% endif %}>
             <span>{% trans "Fetch ratings from Samizdat (samlib.ru)" %}</span>
         </label>
         <div class="s-hint">{% trans "A background process will slowly crawl books and retrieve ratings. Run: python manage.py fetch_samlib_ratings" %}</div>
+    </div>
+
+    <div class="s-field" id="samlib-method-field" style="{% if not sopds.samlib_rating %}display:none;{% endif %}margin-left:1.5rem;">
+        <label>{% trans "Rating source method:" %}</label>
+        <label class="s-radio"><input type="radio" name="samlib_method" value="series" {% if sopds.samlib_method == 'series' or not sopds.samlib_method %}checked{% endif %}> {% trans "Author page on samlib.ru (find series → average)" %}</label>
+        <label class="s-radio"><input type="radio" name="samlib_method" value="fb2" {% if sopds.samlib_method == 'fb2' %}checked{% endif %}> {% trans "Parse FB2 file (extract section titles → search each)" %}</label>
     </div>
 
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
@@ -260,6 +266,15 @@
 </div>
 
 <script>
+(function() {
+    var cb = document.getElementById('id_samlib_rating');
+    var mf = document.getElementById('samlib-method-field');
+    if (cb && mf) {
+        cb.addEventListener('change', function() {
+            mf.style.display = cb.checked ? '' : 'none';
+        });
+    }
+})();
 window.sTab = function(name) {
     document.querySelectorAll('.s-tab-btn').forEach(function(t) { t.classList.remove('active'); });
     document.querySelectorAll('.s-tab-panel').forEach(function(p) { p.classList.remove('active'); });

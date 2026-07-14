@@ -52,6 +52,7 @@ function openBookCard(bookId) {
     <a href="#" onclick="openBookCard({{ b.id }}); return false;">
         {{ b.title }}
         {% if b.authors %}({% for a in b.authors %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}){% endif %}
+        {% if b.samlib_rating and not b.samlib_rating.fetch_error and b.samlib_rating.rating %}<span style="color:#f59e0b; font-size:0.8rem; white-space:nowrap;">★ {{ b.samlib_rating.rating|floatformat:1 }}</span>{% endif %}
     </a>
 {% endif %}
 

@@ -243,6 +243,8 @@ class SamlibRating(models.Model):
     votes = models.IntegerField(default=0)
     samlib_url = models.CharField(max_length=512, blank=True)
     fetched_at = models.DateTimeField(null=True, blank=True)
+    fetch_error = models.BooleanField(default=False)
+    individual_ratings = models.TextField(blank=True, default='')
 
     class Meta:
         app_label = 'opds_catalog'
