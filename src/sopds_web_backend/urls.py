@@ -23,6 +23,10 @@ urlpatterns = [
     re_path(r"^scan/start/$", views.sopds_scan_start, name="scan_start"),
     re_path(r"^scan/status/$", views.sopds_scan_status, name="scan_status"),
     re_path(r"^settings/$", views.sopds_settings, name="settings"),
+    re_path(r"^settings/users/$", views.users_list, name="users_list"),
+    re_path(r"^settings/users/create/$", views.user_create, name="user_create"),
+    re_path(r"^settings/users/(?P<user_id>\d+)/edit/$", views.user_edit, name="user_edit"),
+    re_path(r"^settings/users/(?P<user_id>\d+)/delete/$", views.user_delete, name="user_delete"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
 ]

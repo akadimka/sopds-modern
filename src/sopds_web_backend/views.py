@@ -95,6 +95,18 @@ def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None
     return actual_decorator
 
 
+def sopds_admin(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url="web:login"):
+    """Требует is_staff=True (роль Admin). Если auth выключен — пропускает всех."""
+    actual_decorator = user_passes_test(
+        lambda u: (u.is_authenticated and u.is_staff) if config.SOPDS_AUTH else True,
+        login_url=reverse_lazy(url),
+        redirect_field_name=redirect_field_name,
+    )
+    if function:
+        return actual_decorator(function)
+    return actual_decorator
+
+
 def _extract_input_parameters(request) -> dict[str, str]:
     args = {}
     args["searchtype"] = request.GET.get("searchtype", "m")
@@ -630,6 +642,7 @@ def BSClearView(request):
     return redirect("%s?searchtype=u" % reverse("web:searchbooks"))
 
 
+@sopds_admin(url="web:login")
 def sopds_scan_start(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -643,6 +656,7 @@ def sopds_scan_start(request):
     return _render_sopds_scan_status(request)
 
 
+@sopds_admin(url="web:login")
 def sopds_scan_status(request):
     return _render_sopds_scan_status(request)
 
@@ -653,6 +667,7 @@ def _render_sopds_scan_status(request):
     return render(request, "sopds_scan_status.html", {"state": state})
 
 
+@sopds_admin(url="web:login")
 @require_http_methods(["GET", "POST"])
 def sopds_settings(request):
     import os
@@ -821,3 +836,57 @@ def handler403(request, args):
     response = render(request, "sopds_login.html", args)
     response.status_code = 403
     return response
+
+
+# ── Управление пользователями (только Admin) ──────────────────────────────────
+
+@sopds_admin(url="web:login")
+@require_http_methods(["GET"])
+def users_list(request):
+    from django.contrib.auth.models import User as DjangoUser
+    users = DjangoUser.objects.all().order_by("username")
+    return render(request, "sopds_users.html", {"users": users})
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def user_create(request):
+    from django.contrib.auth.models import User as DjangoUser
+    username = request.POST.get("username", "").strip()
+    password = request.POST.get("password", "").strip()
+    role = request.POST.get("role", "user")
+    error = None
+    if not username or not password:
+        error = _("Username and password are required.")
+    elif DjangoUser.objects.filter(username=username).exists():
+        error = _("User with this username already exists.")
+    if error:
+        users = DjangoUser.objects.all().order_by("username")
+        return render(request, "sopds_users.html", {"users": users, "error": error}, status=422)
+    user = DjangoUser.objects.create_user(username=username, password=password)
+    user.is_staff = (role == "admin")
+    user.save()
+    return redirect(reverse("web:users_list"))
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def user_edit(request, user_id):
+    from django.contrib.auth.models import User as DjangoUser
+    user = DjangoUser.objects.get(pk=user_id)
+    role = request.POST.get("role", "user")
+    password = request.POST.get("password", "").strip()
+    user.is_staff = (role == "admin")
+    if password:
+        user.set_password(password)
+    user.save()
+    return redirect(reverse("web:users_list"))
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def user_delete(request, user_id):
+    from django.contrib.auth.models import User as DjangoUser
+    if str(user_id) != str(request.user.pk):
+        DjangoUser.objects.filter(pk=user_id).delete()
+    return redirect(reverse("web:users_list"))

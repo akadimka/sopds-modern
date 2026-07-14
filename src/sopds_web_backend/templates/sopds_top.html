@@ -20,7 +20,7 @@
 
     <div class="top-bar-right">
         <ul class="menu">
-            {% if user.is_authenticated %}{% if user.is_superuser %}
+            {% if user.is_authenticated %}{% if user.is_staff or user.is_superuser %}
                 <li>
                     <a href="#"
                        hx-post="{% url 'web:scan_start' %}"

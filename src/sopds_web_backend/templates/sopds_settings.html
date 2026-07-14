@@ -14,6 +14,7 @@
     <button class="s-tab-btn active" onclick="sTab('general')">{% trans "General" %}</button>
     <button class="s-tab-btn" onclick="sTab('scanner')">{% trans "Scanner" %}</button>
     <button class="s-tab-btn" onclick="sTab('schedule')">{% trans "Schedule" %}</button>
+    <a href="{% url 'web:users_list' %}" class="s-tab-btn" style="text-decoration:none;">{% trans "Users" %}</a>
 </div>
 
 <form method="post">

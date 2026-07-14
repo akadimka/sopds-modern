@@ -1,0 +1,105 @@
+{% extends "sopds_main.html" %}
+{% load i18n %}
+
+{% block ext-body %}
+<div class="cell">
+  <h4 style="color:var(--text); margin-bottom:1rem;">{% trans "User Management" %}</h4>
+
+  {% if error %}
+  <div class="callout alert" style="margin-bottom:1rem;">{{ error }}</div>
+  {% endif %}
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="callout success" style="margin-bottom:1rem;">{{ msg }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Таблица пользователей -->
+  <table style="width:100%; margin-bottom:2rem;">
+    <thead>
+      <tr>
+        <th>{% trans "Username" %}</th>
+        <th>{% trans "Role" %}</th>
+        <th>{% trans "Active" %}</th>
+        <th>{% trans "Actions" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username }}</strong></td>
+        <td>
+          {% if u.is_staff or u.is_superuser %}
+            <span style="color:var(--sp-accent); font-weight:600;">Admin</span>
+          {% else %}
+            <span style="color:var(--text-muted);">User</span>
+          {% endif %}
+        </td>
+        <td>{% if u.is_active %}✓{% else %}✗{% endif %}</td>
+        <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <!-- Редактировать роль/пароль -->
+          <form method="post" action="{% url 'web:user_edit' u.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <select name="role" style="width:auto; display:inline; margin:0; padding:0.2rem 0.4rem; font-size:0.82rem;">
+              <option value="user" {% if not u.is_staff %}selected{% endif %}>User</option>
+              <option value="admin" {% if u.is_staff %}selected{% endif %}>Admin</option>
+            </select>
+            <input type="password" name="password" placeholder="{% trans "New password" %}"
+                   style="width:130px; display:inline; margin:0; padding:0.2rem 0.4rem; font-size:0.82rem;">
+            <button type="submit" class="button small" style="margin:0; padding:0.3rem 0.7rem;">
+              {% trans "Save" %}
+            </button>
+          </form>
+          <!-- Удалить (нельзя удалить себя) -->
+          {% if u.pk != request.user.pk %}
+          <form method="post" action="{% url 'web:user_delete' u.pk %}"
+                onsubmit="return confirm('{% trans "Delete user" %} «{{ u.username }}»?');"
+                style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="button small alert" style="margin:0; padding:0.3rem 0.7rem;">
+              {% trans "Delete" %}
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Создание нового пользователя -->
+  <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.2rem; max-width:480px;">
+    <h6 style="color:var(--text); margin-bottom:0.8rem;">{% trans "Create new user" %}</h6>
+    <form method="post" action="{% url 'web:user_create' %}">
+      {% csrf_token %}
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-bottom:0.6rem;">
+        <label style="margin:0;">
+          <span style="font-size:0.82rem; color:var(--text-muted);">{% trans "Username" %}</span>
+          <input type="text" name="username" required style="margin:0;">
+        </label>
+        <label style="margin:0;">
+          <span style="font-size:0.82rem; color:var(--text-muted);">{% trans "Password" %}</span>
+          <input type="password" name="password" required style="margin:0;">
+        </label>
+      </div>
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <label style="margin:0; font-size:0.82rem; color:var(--text-muted);">{% trans "Role" %}:</label>
+        <label style="margin:0; display:flex; align-items:center; gap:0.3rem; font-size:0.9rem;">
+          <input type="radio" name="role" value="user" checked> User
+        </label>
+        <label style="margin:0; display:flex; align-items:center; gap:0.3rem; font-size:0.9rem;">
+          <input type="radio" name="role" value="admin"> Admin
+        </label>
+        <button type="submit" class="button" style="margin:0;">{% trans "Create" %}</button>
+      </div>
+    </form>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <a href="{% url 'web:settings' %}" style="color:var(--sp-accent);">← {% trans "Back to Settings" %}</a>
+  </div>
+</div>
+{% endblock %}
