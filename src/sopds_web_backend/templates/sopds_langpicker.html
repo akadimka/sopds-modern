@@ -4,7 +4,7 @@
 {% block body %}
 {% for key, value in lang_menu.items %}
 <div class="cell sopdsitem">
-    <a class="sopdsitem-link" href="{% url "web:book" %}?lang={{ key }}">
+    <a class="sopdsitem-link" href="{{ picker_url }}?lang={{ key }}">
         <span class="sopdsitem-key">{{ value }}</span>
     </a>
 </div>

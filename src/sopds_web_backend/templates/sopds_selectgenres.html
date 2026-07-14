@@ -6,12 +6,17 @@
 {% autoescape on %}
 {%  for g in items %}
 <div class="cell sopdsitem">
-	{% if not parent_id %}
-	   <a href="{% url "web:genre" %}?section={{g.section_id}}">{{ g.section }}</a>
-	{% else %}
-	   <a href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">{{ g.subsection }}</a>
-	{% endif %}
-	<span style="font-size:80%">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
+    {% if not parent_id %}
+    <a class="sopdsitem-link" href="{% url "web:genre" %}?section={{g.section_id}}">
+        <span class="sopdsitem-key">{{ g.section }}</span>
+        <span class="sopdsitem-count">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
+    </a>
+    {% else %}
+    <a class="sopdsitem-link" href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">
+        <span class="sopdsitem-key">{{ g.subsection }}</span>
+        <span class="sopdsitem-count">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
+    </a>
+    {% endif %}
 </div>
 {% endfor %}
 {% endautoescape %}

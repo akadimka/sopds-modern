@@ -357,9 +357,9 @@ def SearchAuthorsView(request):
         author_url = reverse("web:author")
         lang_code = to_int(request.GET.get("lang"), 0)
         lang_label = lang_menu.get(lang_code, _("Select"))
-        back_url = f"{author_url}?lang={lang_code}" if lang_code else f"{author_url}?lang=0"
+        back_url = f"{author_url}?lang={lang_code}" if lang_code else author_url
         args["breadcrumbs"] = [
-            {"label": _("Authors"), "url": f"{author_url}?lang=0"},
+            {"label": _("Authors"), "url": author_url},
             {"label": lang_label, "url": back_url},
             {"label": searchterms, "url": ""},
         ]
@@ -426,6 +426,7 @@ def BooksView(request):
     if "lang" not in request.GET:
         args["breadcrumbs"] = [{"label": _("Books"), "url": ""}]
         args["lang_menu"] = lang_menu
+        args["picker_url"] = book_url
         args["current"] = "book"
         return render(request, "sopds_langpicker.html", args)
 
@@ -456,13 +457,17 @@ def BooksView(request):
 @sopds_login(url="web:login")
 def AuthorsView(request):
     args = {}
+    author_url = reverse("web:author")
 
-    if request.GET:
-        lang_code = to_int(request.GET.get("lang"))
-        chars = request.GET.get("chars", "")
-    else:
-        lang_code = 0
-        chars = ""
+    if "lang" not in request.GET:
+        args["breadcrumbs"] = [{"label": _("Authors"), "url": ""}]
+        args["lang_menu"] = lang_menu
+        args["picker_url"] = author_url
+        args["current"] = "author"
+        return render(request, "sopds_langpicker.html", args)
+
+    lang_code = to_int(request.GET.get("lang"))
+    chars = request.GET.get("chars", "")
 
     length = len(chars) + 1
 
@@ -471,8 +476,7 @@ def AuthorsView(request):
     args["items"] = items
     args["current"] = "author"
     args["lang_code"] = lang_code
-    author_url = reverse("web:author")
-    crumbs = [{"label": _("Authors"), "url": f"{author_url}?lang=0"}]
+    crumbs = [{"label": _("Authors"), "url": author_url}]
     if chars:
         crumbs.append({"label": lang_menu[lang_code], "url": f"{author_url}?lang={lang_code}"})
         crumbs.append({"label": chars, "url": ""})
@@ -531,13 +535,12 @@ def GenresView(request):
     genre_url = reverse("web:genre")
     if section_id == 0:
         items = genre_services.get_genres()
-        args["breadcrumbs"] = [{"label": _("Genres"), "url": ""}, {"label": _("Select"), "url": ""}]
+        args["breadcrumbs"] = [{"label": _("Genres"), "url": ""}]
     else:
         section = genre_services.get_genre_section(section_id)
         items = genre_services.get_genre_details(section_id)
         args["breadcrumbs"] = [
             {"label": _("Genres"), "url": genre_url},
-            {"label": _("Select"), "url": ""},
             {"label": section, "url": ""},
         ]
 

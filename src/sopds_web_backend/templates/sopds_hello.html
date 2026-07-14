@@ -71,20 +71,24 @@ function openBookCard(bookId) {
         </div>
     </div>
     <div class="cell medium-3 small-3">
-        <div class="card text-center sopds-stat-card" style="border-top:3px solid var(--sp-accent);">
-            <div class="card-section sopds-stat-section">
-                <div class="sopds-stat-num" style="color:var(--sp-accent);">{{ stats.allauthors }}</div>
-                <div class="sopds-stat-label">{% trans "Authors" %}</div>
+        <a href="{% url 'web:author' %}" class="sopds-stat-catalog-btn">
+            <div class="card text-center sopds-stat-card" style="border-top:3px solid var(--sp-accent);">
+                <div class="card-section sopds-stat-section">
+                    <div class="sopds-stat-num" style="color:var(--sp-accent);">{{ stats.allauthors }}</div>
+                    <div class="sopds-stat-label">{% trans "Authors" %}</div>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="cell medium-3 small-3">
-        <div class="card text-center sopds-stat-card" style="border-top:3px solid #3b82f6;">
-            <div class="card-section sopds-stat-section">
-                <div class="sopds-stat-num" style="color:#3b82f6;">{{ stats.allgenres }}</div>
-                <div class="sopds-stat-label">{% trans "Genres" %}</div>
+        <a href="{% url 'web:genre' %}" class="sopds-stat-catalog-btn">
+            <div class="card text-center sopds-stat-card" style="border-top:3px solid #3b82f6;">
+                <div class="card-section sopds-stat-section">
+                    <div class="sopds-stat-num" style="color:#3b82f6;">{{ stats.allgenres }}</div>
+                    <div class="sopds-stat-label">{% trans "Genres" %}</div>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
