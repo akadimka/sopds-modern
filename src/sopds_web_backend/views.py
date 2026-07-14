@@ -655,6 +655,26 @@ def hello(request):
     return render(request, "sopds_hello.html", args)
 
 
+@sopds_login(url="web:login")
+def book_card(request, book_id):
+    from opds_catalog.models import Book
+    from django.http import Http404
+    try:
+        book = Book.objects.prefetch_related("authors", "genres", "series").get(pk=book_id)
+    except Book.DoesNotExist:
+        raise Http404
+    ser_no = None
+    first_series = book.series.first()
+    if first_series:
+        from opds_catalog.models import bseries
+        bs = bseries.objects.filter(book=book, ser=first_series).first()
+        ser_no = bs.ser_no if bs else None
+    return render(request, "sopds_book_card.html", {
+        "b": book,
+        "ser_no": ser_no,
+    })
+
+
 def LoginView(request):
     args = {}
     args["breadcrumbs"] = [_("Login")]

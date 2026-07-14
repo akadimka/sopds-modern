@@ -24,6 +24,7 @@ urlpatterns = [
     re_path(r"^scan/status/$", views.sopds_scan_status, name="scan_status"),
     re_path(r"^settings/$", views.sopds_settings, name="settings"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
+    re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
 ]
 
 # handler403 = 'views.handler403'

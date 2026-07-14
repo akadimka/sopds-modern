@@ -3,6 +3,28 @@
 {% load static %}
 
 {% block ext-body %}
+<!-- Book card modal -->
+<div id="BookCardModal" class="reveal" data-reveal
+     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow:hidden;">
+  <button class="close-button" data-close aria-label="{% trans 'Close' %}" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  <div id="BookCardContent" style="padding:1.2rem;">
+    <div class="text-center" style="padding:2rem; color:var(--text-muted);">{% trans "Loading..." %}</div>
+  </div>
+</div>
+
+<script>
+function openBookCard(bookId) {
+  htmx.ajax('GET', '/web/book/card/' + bookId + '/', {
+    target: '#BookCardContent',
+    swap: 'innerHTML'
+  }).then(function() {
+    $('#BookCardModal').foundation('open');
+  });
+}
+</script>
+
 <div class="cell small-12" style="padding: 1rem 0.5rem;">
 
 <!-- Счётчики -->
@@ -100,9 +122,9 @@
                     </thead>
                     <tbody>
                     {% for b in recent_books %}
-                    <tr>
+                    <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" title="{% trans 'Open book card' %}">
                         <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:50 }}</td>
-                        <td style="padding:0.3rem 0.5rem;">{{ b.format }}</td>
+                        <td style="padding:0.3rem 0.5rem; white-space:nowrap;">{{ b.format }}</td>
                         <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.subsection }}</td>
                     </tr>
                     {% endfor %}

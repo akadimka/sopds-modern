@@ -1,0 +1,90 @@
+{% load i18n %}
+{% load static %}
+{% load humanize %}
+<div class="sopds-card-modal">
+
+  <div class="sopds-card-hero">
+    <div class="sopds-card-cover">
+      <img src="{% url 'opds_catalog:cover' b.id %}"
+           onerror="this.src='{% static 'images/sopds-ng-nocover.png' %}'"
+           alt="{{ b.title }}">
+    </div>
+
+    <div class="sopds-card-meta">
+      <div class="sopds-card-title">{{ b.title }}</div>
+
+      {% if b.authors.all %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Authors" %}</span>
+        <span>{% for a in b.authors.all %}<a href="{% url 'web:searchbooks' %}?searchtype=a&searchterms={{ a.id }}">{{ a.full_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+      </div>
+      {% endif %}
+
+      {% if b.series.all %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Series" %}</span>
+        <span>{% for s in b.series.all %}<a href="{% url 'web:searchbooks' %}?searchtype=s&searchterms={{ s.id }}">{{ s.ser }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% if ser_no %} <span class="sopds-card-badge">#{{ ser_no }}</span>{% endif %}</span>
+      </div>
+      {% endif %}
+
+      {% if b.genres.all %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Genres" %}</span>
+        <span>{% for g in b.genres.all %}<a href="{% url 'web:searchbooks' %}?searchtype=g&searchterms={{ g.id }}">{{ g.subsection }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+      </div>
+      {% endif %}
+
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Language" %}</span>
+        <span>{{ b.lang|upper }}</span>
+      </div>
+
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Format" %}</span>
+        <span><span class="sopds-card-badge">{{ b.format|upper }}</span></span>
+      </div>
+
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "File size" %}</span>
+        <span>{{ b.filesize|filesizeformat }}</span>
+      </div>
+
+      {% if b.docdate %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Date" %}</span>
+        <span>{{ b.docdate }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if b.annotation %}
+  <div class="sopds-card-annotation">{{ b.annotation }}</div>
+  {% endif %}
+
+  <div class="sopds-card-actions">
+    {% if b.format == 'fb2' %}
+    <a href="{% url 'opds_catalog:view_html' b.id %}" target="_blank"
+       class="button primary small" style="margin:0;">📖 {% trans "Read" %}</a>
+    {% endif %}
+    <a href="{% url 'opds_catalog:download' b.id 0 %}"
+       class="button secondary small" style="margin:0;">⬇ {{ b.format|upper }}</a>
+    {% if b.format not in nozip %}
+    <a href="{% url 'opds_catalog:download' b.id 1 %}"
+       class="button secondary small" style="margin:0;">⬇ FB2.ZIP</a>
+    {% endif %}
+    {% if b.format == 'fb2' and fb2toepub %}
+    <a href="{% url 'opds_catalog:convert' b.id 'epub' %}"
+       class="button secondary small" style="margin:0;">⬇ EPUB</a>
+    {% endif %}
+    {% if b.format == 'fb2' and fb2toazw3 %}
+    <a href="{% url 'opds_catalog:convert' b.id 'azw3' %}"
+       class="button secondary small" style="margin:0;">⬇ AZW3</a>
+    {% endif %}
+    {% if b.format == 'fb2' and fb2tomobi %}
+    <a href="{% url 'opds_catalog:convert' b.id 'mobi' %}"
+       class="button secondary small" style="margin:0;">⬇ MOBI</a>
+    {% endif %}
+  </div>
+
+</div>
