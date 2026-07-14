@@ -1330,16 +1330,11 @@ table th { color: var(--text) !important; border: none !important; border-width:
     transform: translateY(-2px);
     transition: box-shadow var(--transition), transform var(--transition);
 }
-.sopds-stat-catalog-btn .sopds-stat-num {
-    font-size: 1.6rem;
-}
-
 @media screen and (max-width: 39.9375em) {
     .sopds-stat-section { padding: 0.45rem 0.2rem !important; }
     .sopds-stat-num     { font-size: 1.35rem; }
     .sopds-stat-label   { font-size: 0.68rem; margin-top: 0.15rem; }
     .sopds-stat-card    { border-top-width: 2px !important; }
-    .sopds-stat-catalog-btn .sopds-stat-num { font-size: 1.1rem; }
 }
 
 /* Recently added table — clickable rows */

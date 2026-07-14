@@ -27,6 +27,16 @@ document.addEventListener('htmx:afterSwap', function(e) {
 <!-- Счётчики -->
 <div class="grid-x grid-margin-x sopds-stats-row">
     <div class="cell medium-3 small-3">
+        <a href="{% url 'web:catalog' %}" class="sopds-stat-catalog-btn">
+            <div class="card text-center sopds-stat-card" style="border-top:3px solid #8b5cf6;">
+                <div class="card-section sopds-stat-section">
+                    <div class="sopds-stat-num" style="color:#8b5cf6;">🗂</div>
+                    <div class="sopds-stat-label">{% trans "Catalogs" %}</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="cell medium-3 small-3">
         <div class="card text-center sopds-stat-card" style="border-top:3px solid #f59e0b;">
             <div class="card-section sopds-stat-section">
                 <div class="sopds-stat-num" style="color:#f59e0b;">{{ stats.allbooks }}</div>
@@ -49,16 +59,6 @@ document.addEventListener('htmx:afterSwap', function(e) {
                 <div class="sopds-stat-label">{% trans "Genres" %}</div>
             </div>
         </div>
-    </div>
-    <div class="cell medium-3 small-3">
-        <a href="{% url 'web:catalog' %}" class="sopds-stat-catalog-btn">
-            <div class="card text-center sopds-stat-card" style="border-top:3px solid #8b5cf6;">
-                <div class="card-section sopds-stat-section">
-                    <div class="sopds-stat-num" style="color:#8b5cf6;">🗂</div>
-                    <div class="sopds-stat-label">{% trans "Catalogs" %}</div>
-                </div>
-            </div>
-        </a>
     </div>
 </div>
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'sopds-v5';
+const CACHE_VERSION = 'sopds-v6';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE   = CACHE_VERSION + '-pages';
 const OFFLINE_URL  = '/web/offline/';
