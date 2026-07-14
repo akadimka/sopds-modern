@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'sopds-v19';
+const CACHE_VERSION = 'sopds-v20';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE   = CACHE_VERSION + '-pages';
 const OFFLINE_URL  = '/web/offline/';
@@ -71,10 +71,20 @@ self.addEventListener('fetch', event => {
 
   // Страницы /web/ — Network First с офлайн-fallback
   if (url.pathname.startsWith('/web/')) {
+    // Страницы с персональным контентом / CSRF не кешируем
+    const NO_CACHE_PATHS = ['/web/login/', '/web/profile/', '/web/settings/', '/web/settings/users/'];
+    const noCache = NO_CACHE_PATHS.some(p => url.pathname.startsWith(p));
+
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          if (response.ok && event.request.method === 'GET') {
+          // Не кешируем: редиректы (auth), персональные страницы, не-GET
+          if (
+            response.ok &&
+            !response.redirected &&
+            event.request.method === 'GET' &&
+            !noCache
+          ) {
             const clone = response.clone();
             caches.open(PAGE_CACHE).then(c => c.put(event.request, clone));
           }
