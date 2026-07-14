@@ -36,11 +36,15 @@
 </div>
 
 <script>
-document.addEventListener('htmx:afterSwap', function(e) {
-  if (e.target && e.target.id === 'BookCardContent') {
-    $('#BookCardModal').foundation('open');
-  }
-});
+function openBookCard(bookId) {
+  var el = document.getElementById('BookCardContent');
+  el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted)">⏳</div>';
+  $('#BookCardModal').foundation('open');
+  fetch('/web/book/card/' + bookId + '/')
+    .then(function(r){ return r.text(); })
+    .then(function(html){ el.innerHTML = html; })
+    .catch(function(err){ el.innerHTML = '<div style="padding:1rem;color:red">' + err + '</div>'; });
+}
 </script>
 
 <div class="cell small-12" style="padding: 1rem 0.5rem;">
@@ -144,9 +148,7 @@ document.addEventListener('htmx:afterSwap', function(e) {
                     <tbody>
                     {% for b in recent_books %}
                     <tr class="sopds-recent-row"
-                        hx-get="{% url 'web:book_card' b.id %}"
-                        hx-target="#BookCardContent"
-                        hx-swap="innerHTML"
+                        onclick="openBookCard({{ b.id }})"
                         style="cursor:pointer;"
                         title="{% trans 'Open book card' %}">
                         <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:50 }}</td>

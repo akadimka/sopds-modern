@@ -16,11 +16,15 @@
 </div>
 
 <script>
-document.addEventListener('htmx:afterSwap', function(e) {
-    if (e.target && e.target.id === 'BookCardContent') {
-        $('#BookCardModal').foundation('open');
-    }
-});
+function openBookCard(bookId) {
+    var el = document.getElementById('BookCardContent');
+    el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted)">⏳</div>';
+    $('#BookCardModal').foundation('open');
+    fetch('/web/book/card/' + bookId + '/')
+        .then(function(r){ return r.text(); })
+        .then(function(html){ el.innerHTML = html; })
+        .catch(function(err){ el.innerHTML = '<div style="padding:1rem;color:red">' + err + '</div>'; });
+}
 </script>
 
 <div id="list-content" class="cell"
@@ -43,9 +47,7 @@ document.addEventListener('htmx:afterSwap', function(e) {
 
 {% for b in books %}
 <div class="cell sopdsitem"
-     hx-get="{% url 'web:book_card' b.id %}"
-     hx-target="#BookCardContent"
-     hx-swap="innerHTML"
+     onclick="openBookCard({{ b.id }})"
      style="cursor:pointer;">
     <span class="sopdsitem-key">{{ b.title }}</span>
     <span class="sopdsitem-count">
