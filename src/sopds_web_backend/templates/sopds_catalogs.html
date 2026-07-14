@@ -36,11 +36,11 @@ function openBookCard(bookId) {
 {% if b.is_catalog == 1 %}
     <div class="sopds-cat-thumb sopds-cat-folder">
         {% if b.cat_type == 1 or b.cat_type == 3 %}
-        <img src="{% static "images/sopds-ng-zip.svg" %}" width="36">
+        <img src="{% static "images/sopds-ng-zip.svg" %}" alt="">
         {% elif b.cat_type == 2 %}
-        <img src="{% static "images/sopds-ng-inpx.svg" %}" width="36">
+        <img src="{% static "images/sopds-ng-inpx.svg" %}" alt="">
         {% else %}
-        <img src="{% static "images/sopds-ng-folder.svg" %}" width="36">
+        <img src="{% static "images/sopds-ng-folder.svg" %}" alt="">
         {% endif %}
     </div>
     <a href="{% url "web:catalog" %}?cat={{b.id}}">{{ b.title }}</a>

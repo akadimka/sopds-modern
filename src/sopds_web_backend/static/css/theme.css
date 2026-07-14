@@ -1316,32 +1316,42 @@ table th { color: var(--text) !important; border: none !important; border-width:
 /* Recently added table — clickable rows */
 /* --- Catalog item thumbnail -------------------------------- */
 .sopds-cat-thumb {
-    position: relative;
-    width: 42px;
-    min-width: 42px;
-    height: 58px;
-    flex-shrink: 0;
+    position: relative !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 58px !important;
+    max-height: 58px !important;
+    flex-shrink: 0 !important;
     border-radius: var(--radius-sm);
-    overflow: hidden;
+    overflow: hidden !important;
     background: var(--bg-muted);
 }
 .sopds-cat-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+    width: 42px !important;
+    height: 58px !important;
+    max-width: 42px !important;
+    max-height: 58px !important;
+    object-fit: cover !important;
+    display: block !important;
 }
 .sopds-cat-folder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
 }
-.sopds-cat-folder img { width: 36px; height: auto; object-fit: unset; }
+.sopds-cat-folder img {
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    object-fit: contain !important;
+}
 .sopds-cat-fmt {
-    position: absolute;
-    bottom: 2px;
-    left: 2px;
+    position: absolute !important;
+    bottom: 2px !important;
+    left: 2px !important;
     font-size: 0.52rem;
     font-weight: 700;
     background: rgba(0,0,0,0.72);
@@ -1350,6 +1360,7 @@ table th { color: var(--text) !important; border: none !important; border-width:
     border-radius: 2px;
     letter-spacing: 0.02em;
     line-height: 1.3;
+    z-index: 1;
 }
 
 .sopds-recent-row {
