@@ -1168,6 +1168,8 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sopds-scan-code {
     font-family: var(--font-mono);
     font-size: 0.78rem;
+    color: var(--sp-nav-text);
+    word-break: break-all;
 }
 .sopds-scan-pre {
     font-size: 0.72rem;

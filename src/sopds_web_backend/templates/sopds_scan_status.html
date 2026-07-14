@@ -21,7 +21,7 @@ if (sessionStorage._sopdsWasRunning === '1') {
   ✓ Готово —
   добавлено: <strong>{{ state.added }}</strong>,
   ошибок: <strong>{{ state.bad }}</strong>{% if state.root %},
-  путь: <code class="sopds-scan-code" style="color:#a3e635;">{{ state.root }}</code>{% endif %}
+  путь: <code class="sopds-scan-code">{{ state.root }}</code>{% endif %}
 </div>
 {% if state.first_error %}
 <pre class="sopds-scan-pre" style="color:#fde68a;">{{ state.first_error }}</pre>
