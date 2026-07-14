@@ -51,12 +51,14 @@ document.addEventListener('htmx:afterSwap', function(e) {
         </div>
     </div>
     <div class="cell medium-3 small-3">
-        <div class="card text-center sopds-stat-card" style="border-top:3px solid #8b5cf6;">
-            <div class="card-section sopds-stat-section">
-                <div class="sopds-stat-num" style="color:#8b5cf6;">{{ stats.allseries }}</div>
-                <div class="sopds-stat-label">{% trans "Series" %}</div>
+        <a href="{% url 'web:catalog' %}" class="sopds-stat-catalog-btn">
+            <div class="card text-center sopds-stat-card" style="border-top:3px solid #8b5cf6;">
+                <div class="card-section sopds-stat-section">
+                    <div class="sopds-stat-num" style="color:#8b5cf6;">🗂</div>
+                    <div class="sopds-stat-label">{% trans "Catalogs" %}</div>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 

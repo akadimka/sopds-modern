@@ -648,7 +648,6 @@ def hello(request):
         "allbooks":   Book.objects.count(),
         "allauthors": Author.objects.count(),
         "allgenres":  Genre.objects.count(),
-        "allseries":  Series.objects.count(),
     }
     args["top_genres"]   = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
     args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
