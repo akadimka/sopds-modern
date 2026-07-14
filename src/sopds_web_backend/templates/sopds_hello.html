@@ -15,15 +15,11 @@
 </div>
 
 <script>
-function openBookCard(bookId) {
-  var content = document.getElementById('BookCardContent');
-  content.innerHTML = '<div class="text-center" style="padding:2rem; color:var(--text-muted);">⏳ {% trans "Loading..." %}</div>';
-  $('#BookCardModal').foundation('open');
-  htmx.ajax('GET', '/web/book/card/' + bookId + '/', {
-    target: '#BookCardContent',
-    swap: 'innerHTML'
-  });
-}
+document.addEventListener('htmx:afterSwap', function(e) {
+  if (e.target && e.target.id === 'BookCardContent') {
+    $('#BookCardModal').foundation('open');
+  }
+});
 </script>
 
 <div class="cell small-12" style="padding: 1rem 0.5rem;">
@@ -123,7 +119,12 @@ function openBookCard(bookId) {
                     </thead>
                     <tbody>
                     {% for b in recent_books %}
-                    <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" title="{% trans 'Open book card' %}">
+                    <tr class="sopds-recent-row"
+                        hx-get="{% url 'web:book_card' b.id %}"
+                        hx-target="#BookCardContent"
+                        hx-swap="innerHTML"
+                        style="cursor:pointer;"
+                        title="{% trans 'Open book card' %}">
                         <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:50 }}</td>
                         <td style="padding:0.3rem 0.5rem; white-space:nowrap;">{{ b.format }}</td>
                         <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.subsection }}</td>
