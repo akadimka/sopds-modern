@@ -19,26 +19,27 @@
     </form>
 
     <div class="top-bar-right">
-        <span class="sp-lang-switcher">
-            {% if LANGUAGE_CODE == 'en' %}<span class="active-lang">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
-            <span class="sep">/</span>
-            {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
-        </span>
         <ul class="menu">
             {% if user.is_authenticated %}{% if user.is_superuser %}
-                <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
-                <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
                 <li>
                     <a href="#"
                        hx-post="{% url 'web:scan_start' %}"
                        hx-target="#sopds-scan-toast"
-                       hx-swap="innerHTML"
-                       hx-on:htmx:after-request="console.log('scan-after-request', event.detail)"
-                       hx-on:htmx:send-error="console.warn('scan-send-error', event.detail)"
-                       hx-on:htmx:response-error="console.warn('scan-response-error', event.detail)">🔄 {% trans "Scan" %}</a>
+                       hx-swap="innerHTML">🔄 {% trans "Scan" %}</a>
                 </li>
+                <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
+                <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
+            {% endif %}{% endif %}
+            <li>
+                <span class="sp-lang-switcher">
+                    {% if LANGUAGE_CODE == 'en' %}<span class="active-lang">EN</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-en').submit();return false;">EN</a>{% endif %}
+                    <span class="sep">/</span>
+                    {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
+                </span>
+            </li>
+            {% if user.is_authenticated %}
                 <li><a href="{% url "web:logout" %}">{% trans "Logout" %} ({{ user.username }})</a></li>
-            {% endif %}{% else %}
+            {% else %}
                 <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>
             {% endif %}
         </ul>
