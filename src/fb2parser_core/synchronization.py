@@ -501,6 +501,11 @@ class SynchronizationService:
         if sn and re.match(r'^\d+$', sn):
             return 'single', {int(sn)}
 
+        # "Том N" / "том N" в заголовке или имени файла — явный признак одиночного тома
+        tom_m = re.search(r'\bтом\s+(\d{1,3})\b', combined, re.IGNORECASE)
+        if tom_m:
+            return 'single', {int(tom_m.group(1))}
+
         # Ключевые слова компиляции
         for kw, count in self._COMPILATION_KEYWORDS.items():
             if kw in combined:
