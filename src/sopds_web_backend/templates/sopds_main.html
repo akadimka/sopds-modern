@@ -15,7 +15,7 @@
     <link rel="shortcut icon" type="image/icon" href="{% static "images/favicon.ico" %}"/>
     <link rel="apple-touch-icon" href="{% static "images/pwa-icon-192.png" %}"/>
     <link rel="manifest" href="{% static "manifest.json" %}"/>
-    <title>{{ app_title }} {% if breadcrumbs.0 %} / {{ breadcrumbs.0 }} {% endif %}</title>
+    <title>{{ app_title }}{% if breadcrumbs.0 %} / {{ breadcrumbs.0.label }}{% endif %}</title>
     <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "css/theme.css" %}">
     <script>
@@ -34,10 +34,6 @@
 
     <div class="grid-x sopds-logo-row">
          {% include "sopds_logo.html" %}
-    </div>
-
-    <div class="grid-x">
-         {% include "sopds_menu.html" %}
     </div>
 
     <div class="grid-x">

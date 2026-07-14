@@ -606,9 +606,6 @@ table th { color: var(--text) !important; border: none !important; border-width:
 }
 .sopds-top-bar .menu li a:hover { color: #fff; background: rgba(255,255,255,0.1); }
 
-/* Hamburger button */
-.menu-icon::after { background: var(--sp-header-text); box-shadow: 0 7px 0 var(--sp-header-text), 0 14px 0 var(--sp-header-text); }
-
 /* --- Logo / Search bar ------------------------------------ */
 .sopds-logo-row {
     background: var(--sp-header-bg);
@@ -648,52 +645,6 @@ table th { color: var(--text) !important; border: none !important; border-width:
     color: var(--text) !important;
 }
 .dropdown-pane label, .dropdown-pane legend { color: var(--text) !important; }
-
-/* --- Navigation menu -------------------------------------- */
-#main_menu {
-    background: var(--sp-header-bg);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    height: auto !important;
-    overflow: visible !important;
-}
-#main_menu .sopdsmenu { background: transparent; flex-wrap: wrap; }
-#main_menu .sopdsmenu > li > a {
-    color: var(--sp-nav-text);
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 0.7rem 1rem;
-    transition: color var(--transition), background var(--transition);
-}
-#main_menu .sopdsmenu > li > a:hover,
-#main_menu .sopdsmenu > li.active > a {
-    color: var(--sp-nav-hover-text);
-    background: var(--sp-nav-hover-bg);
-}
-#main_menu .sopdsmenu .is-dropdown-submenu {
-    background: var(--sp-header-bg) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: var(--radius-md) !important;
-    box-shadow: var(--shadow-lg) !important;
-    padding: 0.3rem;
-}
-#main_menu .sopdsmenu .is-dropdown-submenu a {
-    color: var(--sp-nav-text) !important;
-    border-radius: var(--radius-sm);
-}
-#main_menu .sopdsmenu .is-dropdown-submenu a:hover {
-    background: var(--sp-nav-hover-bg) !important;
-    color: #fff !important;
-}
-
-/* Scan status badge in menu */
-#sopds-scan-status {
-    font-size: 0.8rem;
-    color: #fde68a;
-    background: rgba(253,230,138,0.15);
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid rgba(253,230,138,0.3);
-}
 
 /* --- Breadcrumbs ------------------------------------------ */
 .breadcrumbs {
@@ -741,7 +692,7 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sopds-book-card img:hover { opacity: 0.85; }
 
 /* --- Callouts with SOPDS accent for links inside them ----- */
-#main_menu ~ * a, .sopds-section a { color: var(--sp-accent); }
+.sopds-section a { color: var(--sp-accent); }
 
 /* --- Footer ----------------------------------------------- */
 .sopds-footer {
@@ -822,10 +773,6 @@ table th { color: var(--text) !important; border: none !important; border-width:
 
     .sopds-top-bar { padding: 0.5rem 0.75rem; }
     .sopds-top-bar .top-bar-right { width: 100%; justify-content: flex-end; padding-top: 0.25rem; }
-    .sopdsmenu { flex-direction: column; }
-    .sopdsmenu > li { width: 100%; }
-    .sopdsmenu > li[style*="margin-left:auto"] { margin-left: 0 !important; }
-
     .sopds-book-card .card-section { font-size: 80%; }
     .sopds-suggestions { max-height: 200px; }
     .pagination { font-size: 0.9rem; }
