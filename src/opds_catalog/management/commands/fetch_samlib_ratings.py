@@ -143,14 +143,14 @@ class Command(BaseCommand):
         author_name = first_author.full_name
         series_name = first_series.ser
 
-        # Шаг 1: ищем автора
-        seek_url = (
-            "http://samlib.ru/cgi-bin/seek?"
-            + urllib.parse.urlencode({"q": author_name, "type": "name"})
-        )
-        self.stdout.write(f"  GET {seek_url}")
+        # Шаг 1: ищем автора через POST (cp1251)
+        seek_url = "http://samlib.ru/cgi-bin/seek"
+        post_data = (
+            "FIND=" + urllib.parse.quote(author_name.encode("cp1251")) + "&PLACE=index"
+        ).encode("ascii")
+        self.stdout.write(f"  POST {seek_url} FIND={author_name!r}")
         try:
-            html, status = self._fetch(seek_url)
+            html, status = self._fetch(seek_url, post_data)
         except Exception as exc:
             self.stdout.write(f"  Ошибка: {exc}")
             return None, 0, seek_url, True, []
@@ -293,14 +293,14 @@ class Command(BaseCommand):
     def _fetch_single_rating(self, author_name, title):
         """Ищет рейтинг конкретной книги на samlib.ru."""
         query = f"{author_name} {title}".strip()
-        url = (
-            "http://samlib.ru/cgi-bin/seek?"
-            + urllib.parse.urlencode({"q": query, "type": "book"})
-        )
-        self.stdout.write(f"  GET {url}")
+        url = "http://samlib.ru/cgi-bin/seek"
+        post_data = (
+            "FIND=" + urllib.parse.quote(query.encode("cp1251")) + "&PLACE=index"
+        ).encode("ascii")
+        self.stdout.write(f"  POST {url} FIND={query!r}")
 
         try:
-            html, status = self._fetch(url)
+            html, status = self._fetch(url, post_data)
         except Exception as exc:
             self.stdout.write(f"  Ошибка: {exc}")
             return None, 0, url, True
@@ -325,12 +325,12 @@ class Command(BaseCommand):
 
         return round(avg, 2), total_votes, url, fetch_error, individual
 
-    def _fetch(self, url):
-        req = urllib.request.Request(url, headers={"User-Agent": self._UA})
+    def _fetch(self, url, post_data=None):
+        req = urllib.request.Request(url, data=post_data, headers={"User-Agent": self._UA})
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 status = resp.status
-                html = resp.read().decode("utf-8", errors="replace")
+                html = resp.read().decode("cp1251", errors="replace")
             return html, status
         except urllib.error.HTTPError as e:
             return "", e.code
