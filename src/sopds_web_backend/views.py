@@ -157,18 +157,18 @@ def SearchBooksView(request):
 
         # Поиск книг по жанру
         elif args["searchtype"] == "g":
+            genre_url = reverse("web:genre")
+            genres_root = {"label": _("Genres"), "url": genre_url}
             try:
                 genre = Genre.objects.get(id=args["searchterms"])
                 section = genre.section
                 subsection = genre.subsection
-                args["breadcrumbs"] = [
-                    _books_root,
-                    {"label": _("Search by genre"), "url": ""},
-                    {"label": section, "url": ""},
-                    {"label": subsection, "url": ""},
-                ]
+                crumbs = [genres_root, {"label": section, "url": ""}]
+                if subsection.lower() != section.lower():
+                    crumbs.append({"label": subsection, "url": ""})
+                args["breadcrumbs"] = crumbs
             except:
-                args["breadcrumbs"] = [_books_root, {"label": _("Search by genre"), "url": ""}]
+                args["breadcrumbs"] = [genres_root]
 
             args["searchobject"] = "genre"
 
