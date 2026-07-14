@@ -6,15 +6,15 @@
 {% autoescape on %}
 {%  for chars in items %}
 <div class="cell sopdsitem">
-	{% if chars.cnt >= splititems %}
-	   <a href="{% url "web:series" %}?lang={{lang_code}}&chars={{chars.sid|urlencode|iriencode}}">{{ chars.sid }}</a>
-	{% else %}
-	   <a href="{% url "web:searchseries" %}?searchtype=b&searchterms={{chars.sid|urlencode|iriencode}}">{{ chars.sid }}</a>
-	{% endif %}
-	<span style="font-size:80%">{% blocktrans with chars_cnt=chars.cnt %}Total: {{ chars_cnt }} series.{% endblocktrans %}</span>
+    {% if chars.cnt >= splititems %}
+    <a class="sopdsitem-link" href="{% url "web:series" %}?lang={{lang_code}}&chars={{chars.sid|urlencode|iriencode}}">
+    {% else %}
+    <a class="sopdsitem-link" href="{% url "web:searchseries" %}?searchtype=b&searchterms={{chars.sid|urlencode|iriencode}}">
+    {% endif %}
+        <span class="sopdsitem-key">{{ chars.sid }}</span>
+        <span class="sopdsitem-count">{% blocktrans with chars_cnt=chars.cnt %}Total: {{ chars_cnt }} series.{% endblocktrans %}</span>
+    </a>
 </div>
 {% endfor %}
 {% endautoescape %}
-
-
 {% endblock %}  {# body #}

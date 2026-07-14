@@ -22,6 +22,17 @@
     </button>
 </div>
 
+<!-- Модальное окно: карточка книги -->
+<div id="BookCardModal" class="reveal" data-reveal
+     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow:hidden;">
+    <button class="close-button" data-close aria-label="{% trans 'Close' %}" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <div id="BookCardContent" style="padding:1.2rem;">
+        <div class="text-center" style="padding:2rem; color:var(--text-muted);">{% trans "Loading..." %}</div>
+    </div>
+</div>
+
 <script>
 function openCoverModal(bookId) {
     var img = document.getElementById('CoverModalImage');
@@ -37,6 +48,11 @@ function openBookModal(bookId) {
         frame.src = '';
     });
 }
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target && e.target.id === 'BookCardContent') {
+        $('#BookCardModal').foundation('open');
+    }
+});
 </script>
 
 <div id="list-content" class="cell"
@@ -66,7 +82,12 @@ function openBookModal(bookId) {
 {% spaceless %}
 <!-- Book card-->
     <div class="cell sopds-book-card">
-        <div class="sopds-book-card-divider">
+        <div class="sopds-book-card-divider"
+             hx-get="{% url 'web:book_card' b.id %}"
+             hx-target="#BookCardContent"
+             hx-swap="innerHTML"
+             style="cursor:pointer;"
+             title="{% trans 'Open book card' %}">
             <b>{{ b.title }}</b>
             {% if isbookshelf %}
             На книжной полке

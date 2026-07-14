@@ -704,6 +704,7 @@ table th { color: var(--text) !important; border: none !important; border-width:
     border-radius: 0 !important;
     font-size: 0.82rem !important;
 }
+.breadcrumbs li { color: var(--text-muted) !important; }
 .breadcrumbs li:not(:last-child)::after { color: var(--text-light) !important; }
 .breadcrumbs a { color: var(--sp-accent) !important; }
 .breadcrumbs .current { color: var(--text-muted) !important; }
@@ -1214,6 +1215,28 @@ table th { color: var(--text) !important; border: none !important; border-width:
 }
 .sopdsitem span {
     color: var(--text-muted) !important;
+}
+.sopdsitem-link {
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    text-decoration: none !important;
+}
+.sopdsitem-key {
+    color: var(--sp-accent) !important;
+    font-weight: 600;
+    font-size: 1.05rem;
+    min-width: 2.2rem;
+    flex-shrink: 0;
+}
+.sopdsitem-count {
+    color: var(--text-muted) !important;
+    font-size: 0.83rem;
+}
+.sopdsitem:hover .sopdsitem-key {
+    color: var(--sp-accent-hover) !important;
+    text-decoration: underline;
 }
 
 /* ============================================================
