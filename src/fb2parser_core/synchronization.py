@@ -496,6 +496,11 @@ class SynchronizationService:
             lo, hi = int(paren_range.group(1)), int(paren_range.group(2))
             return 'compilation', set(range(lo, hi + 1))
 
+        # Одиночный том — series_number — целое число (проверяем до эвристик по заголовку,
+        # чтобы "Серия. Том N. Название" не ложно классифицировалось как компиляция)
+        if sn and re.match(r'^\d+$', sn):
+            return 'single', {int(sn)}
+
         # Ключевые слова компиляции
         for kw, count in self._COMPILATION_KEYWORDS.items():
             if kw in combined:
@@ -505,10 +510,6 @@ class SynchronizationService:
         title = record.file_title or ''
         if len(re.findall(r'\.\s+[А-ЯЁA-Z]', title)) >= 2:
             return 'compilation', set()
-
-        # Одиночный том — series_number — целое число
-        if sn and re.match(r'^\d+$', sn):
-            return 'single', {int(sn)}
 
         # Пробуем извлечь номер из паттерна "... N. Title" или "... - N. Title"
         num_m = re.search(r'(?:[-–\s])(\d{1,3})\.\s+[А-ЯЁA-Z]', Path(record.file_path).stem)
