@@ -726,11 +726,11 @@ def hello(request):
     args["chart_genres"] = all_genres
     args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
     args["random_book"]  = Book.objects.order_by("?").first()
-    from opds_catalog.models import SamlibRating
+    args["samlib_rating_enabled"] = config.SOPDS_SAMLIB_RATING
     if config.SOPDS_SAMLIB_RATING:
-        args["popular_books"] = Book.objects.filter(
+        args["popular_books"] = list(Book.objects.filter(
             samlib_rating__rating__isnull=False
-        ).select_related("samlib_rating").prefetch_related("authors").order_by("-samlib_rating__rating")[:5]
+        ).select_related("samlib_rating").prefetch_related("authors").order_by("-samlib_rating__rating")[:5])
     else:
         args["popular_books"] = []
     return render(request, "sopds_hello.html", args)

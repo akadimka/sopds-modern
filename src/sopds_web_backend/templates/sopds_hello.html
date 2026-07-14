@@ -143,11 +143,17 @@ function openBookCard(bookId) {
             </div>
         </div>
     </div>
-    {% if popular_books %}
+    {% if samlib_rating_enabled %}
     <div class="cell medium-4" style="margin-bottom:1rem;">
         <div class="card" style="height:100%;">
             <div class="card-divider"><strong>⭐ {% trans "Popular books" %}</strong></div>
             <div class="card-section" style="padding:0.5rem;">
+                {% if not popular_books %}
+                <div style="padding:1rem; text-align:center; color:var(--text-muted); font-size:0.85rem;">
+                    ⏳ {% trans "Ratings are being collected from samlib.ru..." %}<br>
+                    <span style="font-size:0.75rem;">python manage.py fetch_samlib_ratings</span>
+                </div>
+                {% else %}
                 <table class="unstriped" style="font-size:0.85rem; margin:0; width:100%;">
                     <tbody>
                     {% for b in popular_books %}
@@ -160,11 +166,12 @@ function openBookCard(bookId) {
                     {% endfor %}
                     </tbody>
                 </table>
+                {% endif %}
             </div>
         </div>
     </div>
     {% endif %}
-    <div class="cell {% if popular_books %}medium-4{% else %}medium-8{% endif %}" style="margin-bottom:1rem;">
+    <div class="cell {% if samlib_rating_enabled %}medium-4{% else %}medium-8{% endif %}" style="margin-bottom:1rem;">
         <div class="card" style="height:100%;">
             <div class="card-divider"><strong>🆕 {% trans "Recently added" %}</strong></div>
             <div class="card-section" style="padding:0.5rem;">
