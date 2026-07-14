@@ -351,14 +351,31 @@ def addbauthor(book, author):
 
 def addgenre(genre):
     # TODO: функция addgenre используется только в sopdscan
-    genre, created = Genre.objects.get_or_create(
-        genre=genre[:SIZE_GENRE],
+    genre_code = genre[:SIZE_GENRE]
+
+    # Exact code match (standard FB2 codes: 'sf', 'detective', ...)
+    try:
+        return Genre.objects.get(genre=genre_code)
+    except Genre.DoesNotExist:
+        pass
+
+    # FB2 files sometimes contain Russian names instead of codes — match by subsection or section
+    match = Genre.objects.filter(subsection__iexact=genre_code).first()
+    if match:
+        return match
+    match = Genre.objects.filter(section__iexact=genre_code).first()
+    if match:
+        return match
+
+    # Unknown — create placeholder
+    obj, _ = Genre.objects.get_or_create(
+        genre=genre_code,
         defaults={
             "section": unknown_genre,
             "subsection": genre[:SIZE_GENRE_SUBSECTION],
         },
     )
-    return genre
+    return obj
 
 
 def addbgenre(book, genre):
