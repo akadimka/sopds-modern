@@ -74,6 +74,10 @@ class opdsScanner:
             self.logger.info("Books deleted    : " + str(self.books_deleted))
         else:
             self.logger.info("Books DB entries deleted : " + str(self.books_deleted))
+        authors_del, genres_del, series_del = getattr(self, "orphans_deleted", (0, 0, 0))
+        self.logger.info(
+            f"Orphan entries deleted : authors={authors_del} genres={genres_del} series={series_del}"
+        )
         self.logger.info("Books in archives: " + str(self.books_in_archives))
         self.logger.info("Archives scanned : " + str(self.arch_scanned))
         self.logger.info("Archives skipped : " + str(self.arch_skipped))
@@ -137,6 +141,7 @@ class opdsScanner:
         #    self.books_deleted=opdsdb.books_del_phisical()
 
         self.books_deleted = opdsdb.books_del_phisical()
+        self.orphans_deleted = opdsdb.cleanup_orphan_entities()
 
         self.log_stats()
 

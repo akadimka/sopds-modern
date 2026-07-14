@@ -4,6 +4,7 @@ import os
 import re
 
 from django.db import connection, transaction
+from django.db.models import Count
 
 # from django.db.models import Q
 from django.utils.translation import gettext as _
@@ -157,11 +158,38 @@ def books_del_logical():
 
 def books_del_phisical():
     # Используется только в sopdscan
+    # Записи в bauthor/bgenre/bseries удаляются автоматически: у них
+    # on_delete=CASCADE на Book, так что .delete() по Book чистит связи сам.
+    # Но это не удаляет сами записи Author/Genre/Series на другой стороне
+    # связи — см. cleanup_orphan_entities() ниже.
     row_count = Book.objects.filter(avail__lte=1).delete()
-    # TODO: Разобратся нужно ли удалять записи в таблицах связи ManyToMany или они сами удалятся?
-    # sql='delete from '+TBL_BAUTHORS+' where book_id in (select book_id from '+TBL_BOOKS+' where avail<=1)'
-    # sql='delete from '+TBL_BGENRES+' where book_id in (select book_id from '+TBL_BOOKS+' where avail<=1)'
     return row_count
+
+
+def cleanup_orphan_entities():
+    """Удаляет записи Author/Genre/Series, у которых после удаления книг
+    (books_del_phisical) не осталось ни одной привязанной книги.
+
+    CASCADE на bauthor/bgenre/bseries чистит только связи, а не записи
+    на стороне Author/Genre/Series — без этой функции они остаются
+    "осиротевшими" в базе навсегда.
+
+    Returns:
+        tuple[int, int, int]: (удалено авторов, удалено жанров, удалено серий)
+    """
+    orphan_authors = Author.objects.annotate(_book_count=Count("book")).filter(_book_count=0)
+    authors_deleted = orphan_authors.count()
+    orphan_authors.delete()
+
+    orphan_genres = Genre.objects.annotate(_book_count=Count("book")).filter(_book_count=0)
+    genres_deleted = orphan_genres.count()
+    orphan_genres.delete()
+
+    orphan_series = Series.objects.annotate(_book_count=Count("book")).filter(_book_count=0)
+    series_deleted = orphan_series.count()
+    orphan_series.delete()
+
+    return authors_deleted, genres_deleted, series_deleted
 
 
 def arc_skip(arcpath, arcsize):
