@@ -1299,6 +1299,35 @@ table th { color: var(--text) !important; border: none !important; border-width:
     padding-top: 0.75rem;
 }
 
+/* --- Stat counters on home page --------------------------- */
+.sopds-stats-row {
+    margin-bottom: 1.5rem;
+    gap: 0 !important;
+}
+.sopds-stat-card {
+    margin: 0 !important;
+}
+.sopds-stat-section {
+    padding: 0.9rem 0.3rem !important;
+}
+.sopds-stat-num {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.sopds-stat-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+}
+
+@media screen and (max-width: 39.9375em) {
+    .sopds-stat-section { padding: 0.45rem 0.2rem !important; }
+    .sopds-stat-num     { font-size: 1.35rem; }
+    .sopds-stat-label   { font-size: 0.68rem; margin-top: 0.15rem; }
+    .sopds-stat-card    { border-top-width: 2px !important; }
+}
+
 /* Recently added table — clickable rows */
 .sopds-recent-row {
     cursor: pointer;
