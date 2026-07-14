@@ -404,15 +404,19 @@ def CatalogsView(request):
     args["cat_id"] = cat_id
     args["current"] = "catalog"
 
+    catalog_url = reverse("web:catalog")
+    cat_path = []
+    cat_ptr = cat
+    if cat_ptr:
+        while cat_ptr.parent:
+            cat_path.insert(0, cat_ptr)
+            cat_ptr = cat_ptr.parent
+    # cat_path = [intermediate..., current_cat]; last item = current page (no link, id=-1)
     breadcrumbs_list = []
-    if cat:
-        while cat.parent:
-            breadcrumbs_list.insert(0, (cat.cat_name, cat.id))
-            cat = cat.parent
-        breadcrumbs_list.insert(0, (_("ROOT"), 0))
-    # breadcrumbs_list.insert(0, (_('Catalogs'),-1))
+    for i, c in enumerate(cat_path):
+        breadcrumbs_list.append((c.cat_name, -1 if i == len(cat_path) - 1 else c.id))
     args["breadcrumbs_cat"] = breadcrumbs_list
-    args["breadcrumbs"] = [{"label": _("Catalogs"), "url": ""}]
+    args["breadcrumbs"] = [{"label": _("Catalogs"), "url": catalog_url if cat_id else ""}]
     args["cache_id"] = "%s:%s:%s" % (args["current"], cat_id, op["number"])
     args["cache_t"] = config.SOPDS_CACHE_TIME
 
