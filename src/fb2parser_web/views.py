@@ -1631,6 +1631,7 @@ def sync_clear_assignments(request):
 
 def _run_auto_compile(library_path, on_log):
     from fb2parser_core.auto_compile_service import auto_compile_library
+    from .fb2parser_bridge import _config_path
     on_log("─" * 40)
     on_log("🔧 Авто-компиляция серий...")
     with _sync_lock:
@@ -1650,7 +1651,7 @@ def _run_auto_compile(library_path, on_log):
             _sync_state["current"] = f"{author} — {series}"
 
     try:
-        result = auto_compile_library(str(library_path), on_group=_on_group)
+        result = auto_compile_library(str(library_path), on_group=_on_group, config_path=_config_path())
         ok_cnt, fail_cnt = result["ok"], result["fail"]
         on_log(f"✅ Компиляция завершена: {ok_cnt} групп, ошибок: {fail_cnt}")
     except Exception as exc:

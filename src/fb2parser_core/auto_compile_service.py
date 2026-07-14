@@ -11,12 +11,14 @@ from fb2parser_core.fb2_compiler import FB2CompilerService
 def auto_compile_library(
     library_path: str,
     on_group: Optional[Callable[[str, str, bool], None]] = None,
+    config_path: Optional[str] = None,
 ) -> dict:
     """Сгенерировать CSV, найти группы и скомпилировать каждую с удалением исходников.
 
     Args:
         library_path: путь к папке библиотеки.
         on_group: callback(author, series, success) — после каждой группы.
+        config_path: путь к config.json; если None — используется дефолтный.
 
     Returns:
         dict с ключами ok (int), fail (int).
@@ -25,7 +27,7 @@ def auto_compile_library(
     _old_out, _old_err = sys.stdout, sys.stderr
     sys.stdout = sys.stderr = _devnull
     try:
-        svc_csv = RegenCSVService()
+        svc_csv = RegenCSVService(config_path=config_path) if config_path else RegenCSVService()
         records = svc_csv.generate_csv(library_path, output_csv_path=None)
         if not records:
             records = getattr(svc_csv, 'records', []) or []
