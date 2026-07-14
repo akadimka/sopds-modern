@@ -1,29 +1,40 @@
-{% if state.running %}<span
+{% if state.running %}<div
   hx-get="{% url 'web:scan_status' %}"
   hx-trigger="every 2s"
-  hx-target="#sopds-scan-status"
+  hx-target="#sopds-scan-toast"
   hx-swap="innerHTML"
-  class="sopds-scan-running">⏳ Сканирование...{% if state.root %} <code class="sopds-scan-code">{{ state.root }}</code>{% endif %}</span>
-<script>sessionStorage._sopdsWasRunning = '1';</script>
-{% elif state.done and state.error %}
-<div class="sopds-scan-error" style="font-size:0.82rem;">
-  ✗ Ошибка: {{ state.error }}
-  {% if state.traceback %}<pre class="sopds-scan-pre" style="color:var(--status-error);">{{ state.traceback }}</pre>{% endif %}
+  style="background:var(--bg-card); border:1px solid var(--sp-accent); border-radius:8px;
+         padding:0.6rem 0.9rem; color:var(--text); pointer-events:auto;
+         box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+  <span style="color:var(--sp-accent); font-weight:600;">⏳ {% trans "Scanning..." %}</span>
+  {% if state.root %}<div style="color:var(--text-muted); font-size:0.75rem; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.root }}</div>{% endif %}
 </div>
-{% elif state.done %}
+<script>sessionStorage._sopdsWasRunning = '1';</script>
+{% elif state.done and state.error %}<div
+  style="background:#450a0a; border:1px solid #ef4444; border-radius:8px;
+         padding:0.6rem 0.9rem; color:#fca5a5; pointer-events:auto;
+         box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+  <strong>✗ {% trans "Error" %}</strong><br>{{ state.error }}
+</div>
+{% elif state.done %}<div
+  id="sopds-scan-done-toast"
+  style="background:var(--bg-card); border:1px solid #10b981; border-radius:8px;
+         padding:0.6rem 0.9rem; color:var(--text); pointer-events:auto;
+         box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+  <span style="color:#10b981; font-weight:600;">✓ {% trans "Scan complete" %}</span>
+  <div style="color:var(--text-muted); margin-top:0.25rem;">
+    {% trans "Added" %}: <strong style="color:var(--text);">{{ state.added }}</strong> &nbsp;
+    {% trans "Errors" %}: <strong style="color:var(--text);">{{ state.bad }}</strong>
+  </div>
+</div>
 <script>
 if (sessionStorage._sopdsWasRunning === '1') {
     sessionStorage.removeItem('_sopdsWasRunning');
-    setTimeout(function(){ location.reload(); }, 800);
+    setTimeout(function(){ location.reload(); }, 1200);
 }
+setTimeout(function(){
+    var el = document.getElementById('sopds-scan-done-toast');
+    if (el) el.parentElement.innerHTML = '';
+}, 5000);
 </script>
-<div class="sopds-scan-ok" style="font-size:0.82rem;">
-  ✓ Готово —
-  добавлено: <strong>{{ state.added }}</strong>,
-  ошибок: <strong>{{ state.bad }}</strong>{% if state.root %},
-  путь: <code class="sopds-scan-code">{{ state.root }}</code>{% endif %}
-</div>
-{% if state.first_error %}
-<pre class="sopds-scan-pre" style="color:#fde68a;">{{ state.first_error }}</pre>
-{% endif %}
 {% endif %}
