@@ -563,6 +563,30 @@ msgstr "Удалить эту книгу с книжной полки?"
 msgid "Loading..."
 msgstr "Загрузка..."
 
+msgid "Popular books"
+msgstr "Популярные книги"
+
+msgid "Ratings are being collected from samlib.ru..."
+msgstr "Рейтинги собираются с samlib.ru..."
+
+msgid "Services"
+msgstr "Сервисы"
+
+msgid "Fetch ratings from Samizdat (samlib.ru)"
+msgstr "Получать рейтинги с Самиздата (samlib.ru)"
+
+msgid "A background process will slowly crawl books and retrieve ratings. Run: python manage.py fetch_samlib_ratings"
+msgstr "Фоновый процесс будет медленно обходить книги и получать рейтинги. Запуск: python manage.py fetch_samlib_ratings"
+
+msgid "Rating source method:"
+msgstr "Метод получения рейтинга:"
+
+msgid "Author page on samlib.ru (find series → average)"
+msgstr "Страница автора на samlib.ru (найти серию → усреднить)"
+
+msgid "Parse FB2 file (extract section titles → search each)"
+msgstr "Парсинг FB2-файла (извлечь заголовки секций → искать каждую)"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
