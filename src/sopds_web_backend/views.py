@@ -720,7 +720,7 @@ def hello(request):
         "allauthors": Author.objects.count(),
         "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("section").distinct().count(),
     }
-    args["top_genres"]   = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
+    args["top_genres"]   = Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).order_by("-cnt")[:5]
     args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
     args["random_book"]  = Book.objects.order_by("?").first()
     return render(request, "sopds_hello.html", args)
