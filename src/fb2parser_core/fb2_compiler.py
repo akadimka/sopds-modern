@@ -3136,6 +3136,8 @@ class FB2CompilerService:
             _eff_lo = top_lo if top_lo else 1
             _eff_hi = top_hi if top_hi else _eff_lo
             _vol_range = f'{_eff_lo}' if _eff_lo == _eff_hi else f'{_eff_lo}-{_eff_hi}'
+            first_book = group.books[0] if group.books else None
+            annotation_xml = self._extract_annotation_xml(first_book) if first_book else ''
             output_xml = self._build_fb2(
                 author=group.author,
                 series=clean_series,
@@ -3146,6 +3148,7 @@ class FB2CompilerService:
                 cover_image_id=cover_image_id,
                 book_cover_ids=book_cover_ids,
                 volume_range=_vol_range,
+                annotation=annotation_xml,
             )
 
             # --- Имя выходного файла ---
@@ -3454,6 +3457,19 @@ class FB2CompilerService:
             return ''
         return re.sub(r'<[^>]+>', ' ', m.group(1)).lower().replace('ё', 'е')
 
+    def _extract_annotation_xml(self, book: CompilationBook) -> str:
+        """Извлечь сырой XML блок <annotation>...</annotation> из первой книги."""
+        if not book.abs_path.exists():
+            return ''
+        try:
+            text = self._read_file_text(book.abs_path)
+        except Exception:
+            return ''
+        body_pos = text.lower().find('<body')
+        head = text[:body_pos] if body_pos >= 0 else text
+        m = re.search(r'(<annotation>.*?</annotation>)', head, re.DOTALL | re.IGNORECASE)
+        return m.group(1) if m else ''
+
     def _extract_coverpage_id(self, book: CompilationBook) -> Optional[str]:
         """Извлечь ID бинаря обложки из <coverpage><image l:href="#id"/>."""
         if not book.abs_path.exists():
@@ -3530,6 +3546,7 @@ class FB2CompilerService:
         cover_image_id: Optional[str] = None,
         book_cover_ids: Optional[List[Optional[str]]] = None,
         volume_range: Optional[str] = None,
+        annotation: str = '',
     ) -> str:
         """Собрать итоговый FB2 XML из компонентов."""
         # Разбиваем автора на фамилию и имя
@@ -3562,6 +3579,8 @@ class FB2CompilerService:
             safe_cover_id = _html.escape(cover_image_id)
             coverpage_tag = f'<coverpage><image l:href="#{safe_cover_id}"/></coverpage>\n'
 
+        annotation_tag = f'{annotation}\n' if annotation else ''
+
         # Описание
         description = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -3573,6 +3592,7 @@ class FB2CompilerService:
             f'<author>\n  <last-name>{last_name}</last-name>\n'
             f'  <first-name>{first_name}</first-name>\n</author>\n'
             f'<book-title>{book_title}</book-title>\n'
+            f'{annotation_tag}'
             f'{coverpage_tag}'
             f'<sequence {sequence_attr}/>\n'
             '</title-info>\n'
