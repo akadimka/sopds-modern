@@ -718,7 +718,7 @@ def hello(request):
     args["breadcrumbs"] = []
     args["stats"] = {
         "allbooks":   Book.objects.count(),
-        "allauthors": Author.objects.values("full_name").distinct().count(),
+        "allauthors": Catalog.objects.exclude(parent=None).exclude(parent__parent=None).filter(parent__parent__parent=None).count(),
         "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("section").distinct().count(),
     }
     all_genres = list(Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).order_by("-cnt"))
