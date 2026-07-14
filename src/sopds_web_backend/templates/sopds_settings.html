@@ -102,6 +102,16 @@
         <div class="s-hint">{{ comments.temp_dir }}</div>
     </div>
 
+    <div class="s-section-title">{% trans "Services" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="samlib_rating" {% if sopds.samlib_rating %}checked{% endif %}>
+            <span>{% trans "Fetch ratings from Samizdat (samlib.ru)" %}</span>
+        </label>
+        <div class="s-hint">{% trans "A background process will slowly crawl books and retrieve ratings. Run: python manage.py fetch_samlib_ratings" %}</div>
+    </div>
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 

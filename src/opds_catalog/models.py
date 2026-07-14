@@ -235,3 +235,14 @@ class Counter(models.Model):
     update_time = models.DateTimeField(null=False, default=timezone.now)
     obj = models.Manager()
     objects: CounterManager = CounterManager()  # type: ignore[assignment]
+
+
+class SamlibRating(models.Model):
+    book = models.OneToOneField(Book, on_delete=models.CASCADE, related_name='samlib_rating')
+    rating = models.FloatField(null=True, blank=True)
+    votes = models.IntegerField(default=0)
+    samlib_url = models.CharField(max_length=512, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        app_label = 'opds_catalog'

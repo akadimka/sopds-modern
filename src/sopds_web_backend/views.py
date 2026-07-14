@@ -668,6 +668,7 @@ def sopds_settings(request):
         'auth', 'alphabet_menu', 'doubles_hide', 'title_as_filename',
         'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
+        'samlib_rating',
     ]
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language']
@@ -725,6 +726,13 @@ def hello(request):
     args["chart_genres"] = all_genres
     args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
     args["random_book"]  = Book.objects.order_by("?").first()
+    from opds_catalog.models import SamlibRating
+    if config.SOPDS_SAMLIB_RATING:
+        args["popular_books"] = Book.objects.filter(
+            samlib_rating__rating__isnull=False
+        ).select_related("samlib_rating").prefetch_related("authors").order_by("-samlib_rating__rating")[:5]
+    else:
+        args["popular_books"] = []
     return render(request, "sopds_hello.html", args)
 
 

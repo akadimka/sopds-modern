@@ -118,7 +118,7 @@ function openBookCard(bookId) {
 </div>
 {% endif %}
 
-<!-- Жанры + Последние добавленные -->
+<!-- Жанры + Популярные + Последние добавленные -->
 <div class="grid-x grid-margin-x">
     <div class="cell medium-4" style="margin-bottom:1rem;">
         <div class="card" style="height:100%;">
@@ -143,7 +143,28 @@ function openBookCard(bookId) {
             </div>
         </div>
     </div>
-    <div class="cell medium-8" style="margin-bottom:1rem;">
+    {% if popular_books %}
+    <div class="cell medium-4" style="margin-bottom:1rem;">
+        <div class="card" style="height:100%;">
+            <div class="card-divider"><strong>⭐ {% trans "Popular books" %}</strong></div>
+            <div class="card-section" style="padding:0.5rem;">
+                <table class="unstriped" style="font-size:0.85rem; margin:0; width:100%;">
+                    <tbody>
+                    {% for b in popular_books %}
+                    <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
+                        <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:40 }}</td>
+                        <td style="text-align:right; padding:0.3rem 0.5rem; white-space:nowrap; color:#f59e0b;">
+                            ★ {{ b.samlib_rating.rating|floatformat:1 }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="cell {% if popular_books %}medium-4{% else %}medium-8{% endif %}" style="margin-bottom:1rem;">
         <div class="card" style="height:100%;">
             <div class="card-divider"><strong>🆕 {% trans "Recently added" %}</strong></div>
             <div class="card-section" style="padding:0.5rem;">
