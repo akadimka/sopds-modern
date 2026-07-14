@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "axes",
     "opds_catalog",
     "sopds_web_backend",
     "fb2parser_web",
@@ -53,9 +54,21 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "axes.middleware.AxesMiddleware",
     "opds_catalog.middleware.SOPDSLocaleMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+# ── Brute-force protection (django-axes) ──────────────────────────────────────
+AXES_FAILURE_LIMIT = 5          # блокировка после 5 неудачных попыток
+AXES_COOLOFF_TIME = 1           # разблокировка через 1 час
+AXES_LOCKOUT_CALLABLE = None    # возвращает 403 (стандартное поведение)
+AXES_RESET_ON_SUCCESS = True    # сброс счётчика после успешного входа
+AXES_ENABLE_ADMIN = False       # не блокировать /admin/
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = "sopds.urls.base"

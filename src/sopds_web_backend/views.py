@@ -865,20 +865,25 @@ def user_profile(request):
             success = "profile"
 
         elif action == "password":
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError as DjangoValidationError
             old_pw = request.POST.get("old_password", "")
             new_pw = request.POST.get("new_password", "")
             confirm_pw = request.POST.get("confirm_password", "")
             if not user.check_password(old_pw):
                 errors["password"] = _("Current password is incorrect.")
-            elif len(new_pw) < 6:
-                errors["password"] = _("New password must be at least 6 characters.")
             elif new_pw != confirm_pw:
                 errors["password"] = _("Passwords do not match.")
             else:
-                user.set_password(new_pw)
-                user.save()
-                update_session_auth_hash(request, user)
-                success = "password"
+                try:
+                    validate_password(new_pw, user)
+                except DjangoValidationError as e:
+                    errors["password"] = " ".join(e.messages)
+                else:
+                    user.set_password(new_pw)
+                    user.save()
+                    update_session_auth_hash(request, user)
+                    success = "password"
 
         elif action == "delete":
             confirm_pw = request.POST.get("confirm_password", "")
