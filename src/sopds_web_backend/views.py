@@ -731,8 +731,23 @@ def hello(request):
         args["popular_books"] = list(Book.objects.filter(
             samlib_rating__rating__isnull=False
         ).select_related("samlib_rating").prefetch_related("authors").order_by("-samlib_rating__rating")[:5])
+        from opds_catalog.models import SamlibRating
+        total_books = Book.objects.count()
+        processed   = SamlibRating.objects.count()
+        with_rating = SamlibRating.objects.filter(rating__isnull=False).count()
+        with_error  = SamlibRating.objects.filter(fetch_error=True).count()
+        last_entry  = SamlibRating.objects.order_by("-fetched_at").first()
+        args["samlib_stats"] = {
+            "total":       total_books,
+            "processed":   processed,
+            "pending":     max(0, total_books - processed),
+            "with_rating": with_rating,
+            "with_error":  with_error,
+            "last_fetch":  last_entry.fetched_at if last_entry else None,
+        }
     else:
         args["popular_books"] = []
+        args["samlib_stats"] = None
     return render(request, "sopds_hello.html", args)
 
 

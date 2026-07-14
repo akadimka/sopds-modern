@@ -168,6 +168,15 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
+            {% if samlib_stats %}
+            <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
+                <span>📚 {{ samlib_stats.processed }}/{{ samlib_stats.total }}</span>
+                <span>⭐ {{ samlib_stats.with_rating }}</span>
+                {% if samlib_stats.with_error %}<span style="color:#ef4444;">⚠ {{ samlib_stats.with_error }}</span>{% endif %}
+                {% if samlib_stats.pending %}<span style="color:var(--text-muted);">⏳ {{ samlib_stats.pending }}</span>{% endif %}
+                {% if samlib_stats.last_fetch %}<span>🕐 {{ samlib_stats.last_fetch|date:"d.m H:i" }}</span>{% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}
