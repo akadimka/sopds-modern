@@ -1,0 +1,108 @@
+{% extends "sopds_main.html" %}
+{% load i18n %}
+
+{% block ext-body %}
+<div class="cell medium-8 large-6">
+
+<h4 style="color:var(--text); margin-bottom:1.5rem;">👤 {{ request.user.username }}</h4>
+
+{% if success == 'profile' %}
+<div class="callout success" style="margin-bottom:1rem; padding:0.6rem 1rem; border-radius:6px;">
+  ✓ {% trans "Profile saved." %}
+</div>
+{% elif success == 'password' %}
+<div class="callout success" style="margin-bottom:1rem; padding:0.6rem 1rem; border-radius:6px;">
+  ✓ {% trans "Password changed." %}
+</div>
+{% endif %}
+
+<!-- ── Профиль ────────────────────────────────────────────────── -->
+<div class="s-section" style="margin-bottom:1.5rem;">
+  <div class="s-section-title">{% trans "Profile" %}</div>
+  <form method="post" action="{% url 'web:profile' %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="profile">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:0.8rem;">
+      <label style="margin:0;">
+        <span class="s-label">{% trans "First name" %}</span>
+        <input type="text" name="first_name" value="{{ request.user.first_name }}" style="margin:0;">
+      </label>
+      <label style="margin:0;">
+        <span class="s-label">{% trans "Last name" %}</span>
+        <input type="text" name="last_name" value="{{ request.user.last_name }}" style="margin:0;">
+      </label>
+    </div>
+    <label style="margin-bottom:0.8rem; display:block;">
+      <span class="s-label">{% trans "Display name" %}</span>
+      <input type="text" name="display_name" value="{{ profile.display_name }}" style="margin:0;"
+             placeholder="{% trans 'How to display your name on the site' %}">
+    </label>
+    <label style="margin-bottom:0.8rem; display:block;">
+      <span class="s-label">{% trans "E-mail" %}</span>
+      <input type="email" name="email" value="{{ request.user.email }}" style="margin:0;">
+    </label>
+    <label style="margin-bottom:0.8rem; display:block;">
+      <span class="s-label">{% trans "About me" %}</span>
+      <textarea name="bio" rows="3" style="margin:0; resize:vertical;">{{ profile.bio }}</textarea>
+    </label>
+    <button type="submit" class="button" style="margin:0;">{% trans "Save profile" %}</button>
+  </form>
+</div>
+
+<!-- ── Смена пароля ───────────────────────────────────────────── -->
+<div class="s-section" style="margin-bottom:1.5rem;">
+  <div class="s-section-title">{% trans "Change password" %}</div>
+  {% if errors.password %}
+  <div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">
+    {{ errors.password }}
+  </div>
+  {% endif %}
+  <form method="post" action="{% url 'web:profile' %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="password">
+    <label style="margin-bottom:0.8rem; display:block;">
+      <span class="s-label">{% trans "Current password" %}</span>
+      <input type="password" name="old_password" required style="margin:0;">
+    </label>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:0.8rem;">
+      <label style="margin:0;">
+        <span class="s-label">{% trans "New password" %}</span>
+        <input type="password" name="new_password" required style="margin:0;" minlength="6">
+      </label>
+      <label style="margin:0;">
+        <span class="s-label">{% trans "Confirm" %}</span>
+        <input type="password" name="confirm_password" required style="margin:0;" minlength="6">
+      </label>
+    </div>
+    <button type="submit" class="button" style="margin:0;">{% trans "Change password" %}</button>
+  </form>
+</div>
+
+<!-- ── Удаление аккаунта ──────────────────────────────────────── -->
+<div class="s-section" style="border-color:#ef4444; margin-bottom:1.5rem;">
+  <div class="s-section-title" style="color:#ef4444;">{% trans "Delete account" %}</div>
+  <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
+    {% trans "This action is irreversible. All your data will be permanently deleted." %}
+  </p>
+  {% if errors.delete %}
+  <div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">
+    {{ errors.delete }}
+  </div>
+  {% endif %}
+  <form method="post" action="{% url 'web:profile' %}"
+        onsubmit="return confirm('{% trans "Are you sure you want to delete your account? This cannot be undone." %}');">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete">
+    <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+      <input type="password" name="confirm_password" required
+             placeholder="{% trans 'Enter your password to confirm' %}"
+             style="margin:0; max-width:260px;">
+      <button type="submit" class="button alert" style="margin:0;">
+        {% trans "Delete my account" %}
+      </button>
+    </div>
+  </form>
+</div>
+
+</div>
+{% endblock %}

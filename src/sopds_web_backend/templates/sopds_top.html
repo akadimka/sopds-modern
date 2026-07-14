@@ -31,7 +31,8 @@
                 <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
             {% endif %}{% endif %}
             {% if user.is_authenticated %}
-                <li><a href="{% url "web:logout" %}">{% trans "Logout" %} ({{ user.username }})</a></li>
+                <li><a href="{% url "web:profile" %}">{{ user.username }}</a></li>
+                <li><a href="{% url "web:logout" %}">{% trans "Logout" %}</a></li>
             {% else %}
                 <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>
             {% endif %}

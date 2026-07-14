@@ -838,6 +838,64 @@ def handler403(request, args):
     return response
 
 
+# ── Профиль пользователя ─────────────────────────────────────────────────────
+
+@sopds_login(url="web:login")
+@require_http_methods(["GET", "POST"])
+def user_profile(request):
+    from django.contrib.auth import update_session_auth_hash
+    from sopds_web_backend.models import UserProfile
+
+    user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    errors = {}
+    success = None
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "profile":
+            user.first_name = request.POST.get("first_name", "").strip()
+            user.last_name = request.POST.get("last_name", "").strip()
+            user.email = request.POST.get("email", "").strip()
+            profile.display_name = request.POST.get("display_name", "").strip()
+            profile.bio = request.POST.get("bio", "").strip()
+            user.save()
+            profile.save()
+            success = "profile"
+
+        elif action == "password":
+            old_pw = request.POST.get("old_password", "")
+            new_pw = request.POST.get("new_password", "")
+            confirm_pw = request.POST.get("confirm_password", "")
+            if not user.check_password(old_pw):
+                errors["password"] = _("Current password is incorrect.")
+            elif len(new_pw) < 6:
+                errors["password"] = _("New password must be at least 6 characters.")
+            elif new_pw != confirm_pw:
+                errors["password"] = _("Passwords do not match.")
+            else:
+                user.set_password(new_pw)
+                user.save()
+                update_session_auth_hash(request, user)
+                success = "password"
+
+        elif action == "delete":
+            confirm_pw = request.POST.get("confirm_password", "")
+            if not user.check_password(confirm_pw):
+                errors["delete"] = _("Password is incorrect.")
+            else:
+                logout(request)
+                user.delete()
+                return redirect(reverse("web:main"))
+
+    return render(request, "sopds_profile.html", {
+        "profile": profile,
+        "errors": errors,
+        "success": success,
+    })
+
+
 # ── Управление пользователями (только Admin) ──────────────────────────────────
 
 @sopds_admin(url="web:login")
