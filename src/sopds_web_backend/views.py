@@ -639,6 +639,8 @@ def sopds_scan_start(request):
         return HttpResponseNotAllowed(["POST"])
     with _sopds_scan_lock:
         already = _sopds_scan_state["running"]
+        if not already:
+            _sopds_scan_state.update({"running": True, "done": False, "error": None})
     if not already:
         t = threading.Thread(target=_run_sopds_scan, daemon=True)
         t.start()
