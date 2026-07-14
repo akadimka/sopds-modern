@@ -65,10 +65,6 @@ def _run_sopds_scan():
     _log.addHandler(_handler)
 
     try:
-        from opds_catalog.opdsdb import clear_all
-        from django.core.management import call_command
-        clear_all()
-        call_command("loaddata", "genre", app_label="opds_catalog", verbosity=0)
         scanner = opdsScanner()
         scanner.scan_all()
         with _sopds_scan_lock:
