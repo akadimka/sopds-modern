@@ -359,13 +359,21 @@ def addgenre(genre):
     except Genre.DoesNotExist:
         pass
 
-    # FB2 files sometimes contain Russian names instead of codes — match by subsection or section
-    match = Genre.objects.filter(subsection__iexact=genre_code).first()
-    if match:
-        return match
-    match = Genre.objects.filter(section__iexact=genre_code).first()
-    if match:
-        return match
+    # FB2 files sometimes contain Russian names instead of codes.
+    # iexact is unreliable for Cyrillic in SQLite (UPPER() is ASCII-only),
+    # so we do Python-level case-insensitive comparison.
+    genre_lower = genre_code.lower()
+    known = Genre.objects.exclude(section=unknown_genre)
+    for g in known:
+        if g.subsection.lower() == genre_lower:
+            return g
+        if g.section.lower() == genre_lower:
+            # Section-level match: create a generic entry under this section
+            obj, _ = Genre.objects.get_or_create(
+                genre=genre_code,
+                defaults={"section": g.section, "subsection": g.section},
+            )
+            return obj
 
     # Unknown — create placeholder
     obj, _ = Genre.objects.get_or_create(
