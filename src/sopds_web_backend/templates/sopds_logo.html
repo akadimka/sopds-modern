@@ -15,9 +15,21 @@
 		       autocomplete="off">
 		<input type="hidden" name="type" id="searchtype-hidden" value="title">
 
-		<div class="input-group-button">
-		     <button class="button" type="submit" data-close="search-dropdown" name="submit_form" style="margin:1">{% trans "Search" %}</button>
-		     <a id="search_selector" class="dropdown button sopds-arrow-only align-self-middle" data-toggle="search-dropdown" ></a>
+		<div class="input-group-button" style="position:relative;">
+		     <button class="button" type="submit" name="submit_form">{% trans "Search" %}</button>
+		     <button type="button" class="button sopds-arrow-only" id="search_selector" onclick="toggleSearchDropdown()" aria-haspopup="true">▾</button>
+		     <div id="search-dropdown" style="display:none; position:absolute; right:0; top:100%; z-index:200; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:0.75rem 1rem; min-width:220px; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+		         <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">{% trans "Choose Search Type:" %}</div>
+		         <label style="display:flex; align-items:center; gap:0.5rem; padding:0.25rem 0; cursor:pointer;">
+		             <input type="radio" name="searchtype" value="m" id="srch-title" data-text="{% trans "Search by name" %}" onchange="applySearchType(this)" {% if searchobject == "title" or not searchobject %}checked{% endif %}> {% trans "Title" %}
+		         </label>
+		         <label style="display:flex; align-items:center; gap:0.5rem; padding:0.25rem 0; cursor:pointer;">
+		             <input type="radio" name="searchtype" value="m" id="srch-author" data-text="{% trans "Search by author" %}" onchange="applySearchType(this)" {% if searchobject == "author" %}checked{% endif %}> {% trans "Author" %}
+		         </label>
+		         <label style="display:flex; align-items:center; gap:0.5rem; padding:0.25rem 0; cursor:pointer;">
+		             <input type="radio" name="searchtype" value="m" id="srch-series" data-text="{% trans "Search by series" %}" onchange="applySearchType(this)" {% if searchobject == "series" %}checked{% endif %}> {% trans "Series" %}
+		         </label>
+		     </div>
 		</div>
 
 		<input type="hidden" name="page" value="0">
@@ -27,40 +39,24 @@
     <div id="search-spinner" class="htmx-indicator" style="display:none;">
         <span class="label secondary">{% trans "Searching..." %}</span>
     </div>
-
-	<div class="dropdown-pane" data-position="bottom" data-aligement="right" id="search-dropdown" data-dropdown>
-	  <div class="row">
-	  <fieldset class="large-12 columns">
-	    <legend>{% trans "Choose Search Type:" %}</legend>
-	    <input type="radio" name="searchtype" value="m" id="title" data-text="{% trans "Search by name" %}" onClick="SetSearch()" {% if searchobject == "title" or not searchobject %}checked{%endif%}><label for="title">{% trans "Title" %}</label>
-	    <input type="radio" name="searchtype" value="m" id="author" data-text="{% trans "Search by author" %}" onClick="SetSearch()" {% if searchobject == "author" %}checked{%endif%}><label for="author">{% trans "Author" %}</label>
-	    <input type="radio" name="searchtype" value="m" id="series" data-text="{% trans "Search by series" %}" onClick="SetSearch()" {% if searchobject == "series" %}checked{%endif%}><label for="series">{% trans "Series" %}</label>
-	  </fieldset>
-	  </div>
-	</div>
   </form>
 </div>
 
 <script>
-function SetSearch() {
-    var searchtype = $("input[name='searchtype']:radio:checked").attr("id");
-    var placeholder = $("input[name='searchtype']:radio:checked").attr("data-text");
-    $('#main_searchbox').attr( "placeholder", placeholder);
-
-    // Обновляем hidden input для htmx-suggest
-    if (searchtype == "title") {
-        $('#searchtype-hidden').val("title");
-        $('#searchform').attr( "action","{% url "web:searchbooks" %}");
+function toggleSearchDropdown() {
+    var dd = document.getElementById('search-dropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+    if (!document.getElementById('search_selector').contains(e.target)) {
+        document.getElementById('search-dropdown').style.display = 'none';
     }
-    if (searchtype == "author") {
-        $('#searchtype-hidden').val("author");
-        $('#searchform').attr( "action","{% url "web:searchauthors" %}");
-    }
-    if (searchtype == "series") {
-        $('#searchtype-hidden').val("series");
-        $('#searchform').attr( "action","{% url "web:searchseries" %}");
-    }
-
-    $('#search_selector')[0].click();
+});
+function applySearchType(el) {
+    document.getElementById('main_searchbox').placeholder = el.getAttribute('data-text');
+    if (el.id === 'srch-title')  { document.getElementById('searchtype-hidden').value = 'title';  document.getElementById('searchform').action = "{% url "web:searchbooks" %}"; }
+    if (el.id === 'srch-author') { document.getElementById('searchtype-hidden').value = 'author'; document.getElementById('searchform').action = "{% url "web:searchauthors" %}"; }
+    if (el.id === 'srch-series') { document.getElementById('searchtype-hidden').value = 'series'; document.getElementById('searchform').action = "{% url "web:searchseries" %}"; }
+    document.getElementById('search-dropdown').style.display = 'none';
 }
 </script>
