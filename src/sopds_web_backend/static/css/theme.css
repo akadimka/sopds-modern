@@ -1314,6 +1314,44 @@ table th { color: var(--text) !important; border: none !important; border-width:
 }
 
 /* Recently added table — clickable rows */
+/* --- Catalog item thumbnail -------------------------------- */
+.sopds-cat-thumb {
+    position: relative;
+    width: 42px;
+    min-width: 42px;
+    height: 58px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg-muted);
+}
+.sopds-cat-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.sopds-cat-folder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+.sopds-cat-folder img { width: 36px; height: auto; object-fit: unset; }
+.sopds-cat-fmt {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    font-size: 0.52rem;
+    font-weight: 700;
+    background: rgba(0,0,0,0.72);
+    color: #fff;
+    padding: 1px 3px;
+    border-radius: 2px;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+}
+
 .sopds-recent-row {
     cursor: pointer;
     transition: background var(--transition);

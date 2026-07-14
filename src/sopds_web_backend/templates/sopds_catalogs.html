@@ -2,6 +2,29 @@
 {% load static %}
 {% load i18n %}
 
+{% block ext-body %}
+<div id="BookCardModal" class="reveal" data-reveal
+     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow:hidden;">
+    <button class="close-button" data-close aria-label="{% trans 'Close' %}" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <div id="BookCardContent" style="padding:1.2rem;">
+        <div class="text-center" style="padding:2rem; color:var(--text-muted);">{% trans "Loading..." %}</div>
+    </div>
+</div>
+<script>
+function openBookCard(bookId) {
+    var el = document.getElementById('BookCardContent');
+    el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted)">⏳</div>';
+    $('#BookCardModal').foundation('open');
+    fetch('/web/book/card/' + bookId + '/')
+        .then(function(r){ return r.text(); })
+        .then(function(html){ el.innerHTML = html; })
+        .catch(function(err){ el.innerHTML = '<div style="padding:1rem;color:red">' + err + '</div>'; });
+}
+</script>
+{% endblock %}
+
 {% block body %}
 <div id="list-content" class="cell"
      hx-target="this"
@@ -11,25 +34,25 @@
 <div class="cell sopdsitem">
 
 {% if b.is_catalog == 1 %}
-    {% if b.cat_type == 0 %}
-		<img src="{% static "images/sopds-ng-folder.svg" %}" width="32px">
-	{% endif %}
-    {% if b.cat_type == 1 or b.cat_type == 3 %}
-    <img src="{% static "images/sopds-ng-zip.svg" %}" width="32px">
-	{% endif %}
-    {% if b.cat_type == 2 %}
-    <img src="{% static "images/sopds-ng-inpx.svg" %}" width="32px">
-	{% endif %}
-
-	<a href="{% url "web:catalog" %}?cat={{b.id}}">{{ b.title }}</a>
+    <div class="sopds-cat-thumb sopds-cat-folder">
+        {% if b.cat_type == 1 or b.cat_type == 3 %}
+        <img src="{% static "images/sopds-ng-zip.svg" %}" width="36">
+        {% elif b.cat_type == 2 %}
+        <img src="{% static "images/sopds-ng-inpx.svg" %}" width="36">
+        {% else %}
+        <img src="{% static "images/sopds-ng-folder.svg" %}" width="36">
+        {% endif %}
+    </div>
+    <a href="{% url "web:catalog" %}?cat={{b.id}}">{{ b.title }}</a>
 {% else %}
-	<img src="{% static "images/sopds-ng-text.svg" %}" width="32px"><span class="success label">{{ b.format }}</span>
-	<a href="{% url "web:searchbooks" %}?searchtype=i&searchterms={{b.id}}">
-	{{ b.title }}
-	{% if b.authors %}
-	   ({% for a in b.authors %}{{a.full_name}}{% if not forloop.last %}, {%endif%}{%endfor%})
-	{% endif %}
-	</a>
+    <div class="sopds-cat-thumb" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
+        <img src="{% url 'opds_catalog:thumb' b.id %}" loading="lazy" alt="">
+        <span class="sopds-cat-fmt">{{ b.format|upper }}</span>
+    </div>
+    <a href="#" onclick="openBookCard({{ b.id }}); return false;">
+        {{ b.title }}
+        {% if b.authors %}({% for a in b.authors %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}){% endif %}
+    </a>
 {% endif %}
 
 </div>
