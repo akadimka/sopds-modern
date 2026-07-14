@@ -540,7 +540,13 @@ def GenresView(request):
         args["breadcrumbs"] = [{"label": _("Genres"), "url": ""}]
     else:
         section = genre_services.get_genre_section(section_id)
-        items = genre_services.get_genre_details(section_id)
+        items = list(genre_services.get_genre_details(section_id))
+        # If the section has only one generic subsection (subsection == section name),
+        # skip the redundant intermediate page and go straight to the books list.
+        if len(items) == 1 and items[0]["subsection"].lower() == section.lower():
+            return redirect(
+                reverse("web:searchbooks") + f"?searchtype=g&searchterms={items[0]['id']}"
+            )
         args["breadcrumbs"] = [
             {"label": _("Genres"), "url": genre_url},
             {"label": section, "url": ""},
@@ -708,7 +714,7 @@ def hello(request):
     args["stats"] = {
         "allbooks":   Book.objects.count(),
         "allauthors": Author.objects.count(),
-        "allgenres":  Genre.objects.count(),
+        "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("section").distinct().count(),
     }
     args["top_genres"]   = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
     args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
