@@ -122,7 +122,7 @@ def SearchBooksView(request):
             args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
         )
         book_url = reverse("web:book")
-        _books_root = {"label": _("Books"), "url": f"{book_url}?lang=0"}
+        _books_root = {"label": _("Books"), "url": book_url}
 
         if args["searchtype"] in ("m", "b"):
             if args["searchtype"] == "b":
@@ -421,13 +421,16 @@ def CatalogsView(request):
 @sopds_login(url="web:login")
 def BooksView(request):
     args = {}
+    book_url = reverse("web:book")
 
-    if request.GET:
-        lang_code = to_int(request.GET.get("lang"))
-        chars = request.GET.get("chars", "")
-    else:
-        lang_code = 0
-        chars = ""
+    if "lang" not in request.GET:
+        args["breadcrumbs"] = [{"label": _("Books"), "url": ""}]
+        args["lang_menu"] = lang_menu
+        args["current"] = "book"
+        return render(request, "sopds_langpicker.html", args)
+
+    lang_code = to_int(request.GET.get("lang"))
+    chars = request.GET.get("chars", "")
 
     length = len(chars) + 1
 
@@ -436,8 +439,7 @@ def BooksView(request):
     args["items"] = items
     args["current"] = "book"
     args["lang_code"] = lang_code
-    book_url = reverse("web:book")
-    crumbs = [{"label": _("Books"), "url": f"{book_url}?lang=0"}]
+    crumbs = [{"label": _("Books"), "url": book_url}]
     if chars:
         crumbs.append({"label": lang_menu[lang_code], "url": f"{book_url}?lang={lang_code}"})
         crumbs.append({"label": chars, "url": ""})
