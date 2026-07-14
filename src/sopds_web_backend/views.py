@@ -21,6 +21,7 @@ from opds_catalog.models import (
     Genre,
     Series,
     bookshelf,
+    bseries,
     lang_menu,
 )
 from opds_catalog.services import (
@@ -666,7 +667,6 @@ def book_card(request, book_id):
     ser_no = None
     first_series = book.series.first()
     if first_series:
-        from opds_catalog.models import bseries
         bs = bseries.objects.filter(book=book, ser=first_series).first()
         ser_no = bs.ser_no if bs else None
     return render(request, "sopds_book_card.html", {

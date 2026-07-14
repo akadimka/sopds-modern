@@ -16,11 +16,12 @@
 
 <script>
 function openBookCard(bookId) {
+  var content = document.getElementById('BookCardContent');
+  content.innerHTML = '<div class="text-center" style="padding:2rem; color:var(--text-muted);">⏳ {% trans "Loading..." %}</div>';
+  $('#BookCardModal').foundation('open');
   htmx.ajax('GET', '/web/book/card/' + bookId + '/', {
     target: '#BookCardContent',
     swap: 'innerHTML'
-  }).then(function() {
-    $('#BookCardModal').foundation('open');
   });
 }
 </script>
