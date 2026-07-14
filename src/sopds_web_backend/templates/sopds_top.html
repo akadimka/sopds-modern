@@ -29,7 +29,13 @@
                 <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
                 <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
                 <li>
-                    <a href="#" hx-post="{% url 'web:scan_start' %}" hx-target="#sopds-scan-toast" hx-swap="innerHTML">🔄 {% trans "Scan" %}</a>
+                    <a href="#"
+                       hx-post="{% url 'web:scan_start' %}"
+                       hx-target="#sopds-scan-toast"
+                       hx-swap="innerHTML"
+                       hx-on:htmx:after-request="console.log('scan-after-request', event.detail)"
+                       hx-on:htmx:send-error="console.warn('scan-send-error', event.detail)"
+                       hx-on:htmx:response-error="console.warn('scan-response-error', event.detail)">🔄 {% trans "Scan" %}</a>
                 </li>
                 <li><a href="{% url "web:logout" %}">{% trans "Logout" %} ({{ user.username }})</a></li>
             {% endif %}{% else %}

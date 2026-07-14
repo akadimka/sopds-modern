@@ -1,30 +1,31 @@
-{% if state.running %}<div
+{% load i18n %}{% if state.running %}<div
+  id="sopds-scan-card"
   hx-get="{% url 'web:scan_status' %}"
   hx-trigger="every 2s"
   hx-target="#sopds-scan-toast"
   hx-swap="innerHTML"
-  style="background:var(--bg-card); border:1px solid var(--sp-accent); border-radius:8px;
-         padding:0.6rem 0.9rem; color:var(--text); pointer-events:auto;
-         box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-  <span style="color:var(--sp-accent); font-weight:600;">⏳ {% trans "Scanning..." %}</span>
-  {% if state.root %}<div style="color:var(--text-muted); font-size:0.75rem; margin-top:0.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ state.root }}</div>{% endif %}
+  style="background:#1e293b; border:2px solid #10b981; border-radius:8px;
+         padding:0.7rem 1rem; color:#e2e8f0;
+         box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+  <span style="color:#10b981; font-weight:700;">⏳ {% trans "Scanning..." %}</span>
+  {% if state.root %}<div style="color:#94a3b8; font-size:0.75rem; margin-top:0.3rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:320px;">{{ state.root }}</div>{% endif %}
 </div>
 <script>sessionStorage._sopdsWasRunning = '1';</script>
 {% elif state.done and state.error %}<div
-  style="background:#450a0a; border:1px solid #ef4444; border-radius:8px;
-         padding:0.6rem 0.9rem; color:#fca5a5; pointer-events:auto;
-         box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-  <strong>✗ {% trans "Error" %}</strong><br>{{ state.error }}
+  style="background:#450a0a; border:2px solid #ef4444; border-radius:8px;
+         padding:0.7rem 1rem; color:#fca5a5;
+         box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+  <strong>✗ {% trans "Error" %}</strong><br><span style="font-size:0.82rem;">{{ state.error }}</span>
 </div>
 {% elif state.done %}<div
   id="sopds-scan-done-toast"
-  style="background:var(--bg-card); border:1px solid #10b981; border-radius:8px;
-         padding:0.6rem 0.9rem; color:var(--text); pointer-events:auto;
-         box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-  <span style="color:#10b981; font-weight:600;">✓ {% trans "Scan complete" %}</span>
-  <div style="color:var(--text-muted); margin-top:0.25rem;">
-    {% trans "Added" %}: <strong style="color:var(--text);">{{ state.added }}</strong> &nbsp;
-    {% trans "Errors" %}: <strong style="color:var(--text);">{{ state.bad }}</strong>
+  style="background:#052e16; border:2px solid #10b981; border-radius:8px;
+         padding:0.7rem 1rem; color:#d1fae5;
+         box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+  <span style="color:#10b981; font-weight:700;">✓ {% trans "Scan complete" %}</span>
+  <div style="color:#a7f3d0; margin-top:0.25rem; font-size:0.85rem;">
+    {% trans "Added" %}: <strong>{{ state.added }}</strong> &nbsp;
+    {% trans "Errors" %}: <strong>{{ state.bad }}</strong>
   </div>
 </div>
 <script>
