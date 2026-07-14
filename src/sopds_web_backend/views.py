@@ -86,7 +86,7 @@ def _run_sopds_scan():
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
     actual_decorator = user_passes_test(
-        lambda u: u.is_authenticated if config.SOPDS_AUTH else True,
+        lambda u: u.is_authenticated,
         login_url=reverse_lazy(url),
         redirect_field_name=redirect_field_name,
     )
@@ -96,9 +96,9 @@ def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None
 
 
 def sopds_admin(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url="web:login"):
-    """Требует is_staff=True (роль Admin). Если auth выключен — пропускает всех."""
+    """Требует is_staff=True (роль Admin)."""
     actual_decorator = user_passes_test(
-        lambda u: (u.is_authenticated and u.is_staff) if config.SOPDS_AUTH else True,
+        lambda u: u.is_authenticated and u.is_staff,
         login_url=reverse_lazy(url),
         redirect_field_name=redirect_field_name,
     )
@@ -678,7 +678,7 @@ def sopds_settings(request):
     sm = SettingsManager(_config_path)
 
     _BOOL_FIELDS = [
-        'auth', 'alphabet_menu', 'doubles_hide', 'title_as_filename',
+        'alphabet_menu', 'doubles_hide', 'title_as_filename',
         'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
         'samlib_rating',

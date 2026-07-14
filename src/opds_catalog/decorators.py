@@ -33,7 +33,7 @@ def sopds_auth_validate(view_function):
             request = args[0]
 
         header = "HTTP_AUTHORIZATION"
-        if not config.SOPDS_AUTH or request.user.is_authenticated:
+        if request.user.is_authenticated:
             return view_function(*args, **kwargs)
 
         try:
