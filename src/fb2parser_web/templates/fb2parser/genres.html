@@ -46,38 +46,19 @@
 
     <div class="cell medium-4">
         <div class="card">
-            <div class="card-divider"><strong>{% trans "Assign Genre to Folder" %}</strong></div>
+            <div class="card-divider"><strong>{% trans "Selected Genre" %}</strong></div>
             <div class="card-section">
-                <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.7rem;">
-                    {% trans "Select a genre on the left and specify a folder." %}<br>
-                    {% trans "This operation replaces &lt;genre&gt; in all FB2 files in the folder." %}
-                </p>
                 <label style="font-size:0.85rem;">
                     {% trans "Genre" %}
                     <input id="selected-genre" name="genre" type="text" readonly
                            style="background:var(--bg-muted); font-family:monospace; font-size:0.82rem;"
                            placeholder="{% trans "(not selected)" %}">
                 </label>
-                <label style="font-size:0.85rem;">{% trans "Folder" %}</label>
-                <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
-                    <input id="assign-folder" name="folder" type="text"
-                           style="font-family:monospace; font-size:0.82rem; margin:0; flex:1;"
-                           placeholder="/path/to/folder">
-                    <button type="button" class="button secondary tiny fb-browse-btn" style="margin:0; white-space:nowrap;"
-                            onclick="openBrowser('assign-folder')">📁</button>
-                </div>
-                <div id="fb-browser-assign-folder" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
-                <button class="button warning" style="width:100%; margin-top:0.3rem;"
-                        hx-post="{% url 'fb2parser:genre_assign_start' %}"
-                        hx-target="#assign-status"
-                        hx-swap="outerHTML"
-                        hx-include="#selected-genre,#assign-folder">
-                    {% trans "▶ Assign Genre" %}
-                </button>
+                <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.7rem;">
+                    {% trans "To assign this genre to FB2 files in a folder, select the folder in the tree on the Home page and use the genre picker there." %}
+                </p>
             </div>
         </div>
-
-        {% include "fb2parser/genre_assign_status.html" with state=state pct=0 %}
     </div>
 </div>
 
