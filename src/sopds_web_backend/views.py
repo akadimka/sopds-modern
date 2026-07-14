@@ -588,11 +588,11 @@ def SearchSuggestView(request):
 
     if search_type == "title":
         logger.info("Suggest books by title '{q}'")
-        items = Book.objects.filter(search_title__contains=q.upper())[:10]
+        items = Book.objects.filter(search_title__startswith=q.upper())[:10]
     elif search_type == "author":
-        items = Author.objects.filter(search_full_name__contains=q.upper())[:10]
+        items = Author.objects.filter(search_full_name__startswith=q.upper())[:10]
     elif search_type == "series":
-        items = Series.objects.filter(search_ser__contains=q.upper())[:10]
+        items = Series.objects.filter(search_ser__startswith=q.upper())[:10]
     else:
         items = []
 
