@@ -3,7 +3,9 @@
 <nav aria-label="{% trans "You are here:" %}" role="navigation">
   <ul class="breadcrumbs">
     {% for b in breadcrumbs %}
-    <li>{{ b }}</li>
+    <li>
+      {% if b.url %}<a href="{{ b.url }}">{{ b.label }}</a>{% else %}{{ b.label }}{% endif %}
+    </li>
     {% endfor %}
 
     {% for b in breadcrumbs_cat %}

@@ -121,24 +121,36 @@ def SearchBooksView(request):
         books = book_services.search_book(
             args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
         )
+        book_url = reverse("web:book")
+        _books_root = {"label": _("Books"), "url": f"{book_url}?lang=0"}
+
         if args["searchtype"] in ("m", "b"):
-            args["breadcrumbs"] = [
-                _("Books"),
-                _("Search by title"),
-                args["searchterms"],
-            ]
+            if args["searchtype"] == "b":
+                lang_code = to_int(request.GET.get("lang"), 0)
+                lang_label = lang_menu.get(lang_code, _("Select"))
+                back_url = f"{book_url}?lang={lang_code}" if lang_code else f"{book_url}?lang=0"
+                args["breadcrumbs"] = [
+                    _books_root,
+                    {"label": lang_label, "url": back_url},
+                    {"label": args["searchterms"], "url": ""},
+                ]
+            else:
+                args["breadcrumbs"] = [
+                    _books_root,
+                    {"label": _("Search by title"), "url": ""},
+                    {"label": args["searchterms"], "url": ""},
+                ]
             args["searchobject"] = "title"
 
         elif args["searchtype"] == "a":
             aname = authors_services.get_author_name(id=args["searchterms"])
-            args["breadcrumbs"] = [_("Books"), _("Search by author"), aname]
+            args["breadcrumbs"] = [_books_root, {"label": _("Search by author"), "url": ""}, {"label": aname, "url": ""}]
             args["searchobject"] = "author"
 
         # Поиск книг по серии
         elif args["searchtype"] == "s":
             ser = series_services.get_series_name(args["searchterms"])
-            # books = Book.objects.filter(series=ser_id).order_by('search_title','-docdate')
-            args["breadcrumbs"] = [_("Books"), _("Search by series"), ser]
+            args["breadcrumbs"] = [_books_root, {"label": _("Search by series"), "url": ""}, {"label": ser, "url": ""}]
             args["searchobject"] = "series"
 
         # Поиск книг по жанру
@@ -148,13 +160,13 @@ def SearchBooksView(request):
                 section = genre.section
                 subsection = genre.subsection
                 args["breadcrumbs"] = [
-                    _("Books"),
-                    _("Search by genre"),
-                    section,
-                    subsection,
+                    _books_root,
+                    {"label": _("Search by genre"), "url": ""},
+                    {"label": section, "url": ""},
+                    {"label": subsection, "url": ""},
                 ]
             except:
-                args["breadcrumbs"] = [_("Books"), _("Search by genre")]
+                args["breadcrumbs"] = [_books_root, {"label": _("Search by genre"), "url": ""}]
 
             args["searchobject"] = "genre"
 
@@ -166,14 +178,14 @@ def SearchBooksView(request):
                     "-bookshelf__readtime"
                 )
                 args["breadcrumbs"] = [
-                    _("Books"),
-                    _("Bookshelf"),
-                    args["user"],
+                    _books_root,
+                    {"label": _("Bookshelf"), "url": ""},
+                    {"label": args["user"], "url": ""},
                 ]
                 # books = bookshelf.objects.filter(user=request.user).select_related('book')
             else:
                 books = Book.objects.filter(id=0)
-                args["breadcrumbs"] = [_("Books"), _("Bookshelf")]
+                args["breadcrumbs"] = [_books_root, {"label": _("Bookshelf"), "url": ""}]
             args["searchobject"] = "title"
             args["isbookshelf"] = 1
 
@@ -187,7 +199,7 @@ def SearchBooksView(request):
                 .distinct()
                 .order_by("-docdate")
             )
-            args["breadcrumbs"] = [_("Books"), _("Doubles for book"), mbook.title]
+            args["breadcrumbs"] = [_books_root, {"label": _("Doubles for book"), "url": ""}, {"label": mbook.title, "url": ""}]
             args["searchobject"] = "title"
 
         # Поиск книги по ID
@@ -195,9 +207,9 @@ def SearchBooksView(request):
             book_id = to_int(args["searchterms"], 0)
             books = Book.objects.filter(id=book_id)
             try:
-                args["breadcrumbs"] = [_("Books"), books[0].title]
+                args["breadcrumbs"] = [_books_root, {"label": books[0].title, "url": ""}]
             except IndexError:
-                args["breadcrumbs"] = [_("Books")]
+                args["breadcrumbs"] = [_books_root]
             args["searchobject"] = "title"
 
         page_num = to_int(args.get("page_num"), 1)
@@ -278,7 +290,15 @@ def SearchSeriesView(request):
         args["series"] = items
         args["searchobject"] = "series"
         args["current"] = "search"
-        args["breadcrumbs"] = [_("Series"), _("Search"), searchterms]
+        series_url = reverse("web:series")
+        lang_code = to_int(request.GET.get("lang"), 0)
+        lang_label = lang_menu.get(lang_code, _("Select"))
+        back_url = f"{series_url}?lang={lang_code}" if lang_code else f"{series_url}?lang=0"
+        args["breadcrumbs"] = [
+            {"label": _("Series"), "url": f"{series_url}?lang=0"},
+            {"label": lang_label, "url": back_url},
+            {"label": searchterms, "url": ""},
+        ]
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
         args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -334,7 +354,15 @@ def SearchAuthorsView(request):
         args["authors"] = items
         args["searchobject"] = "author"
         args["current"] = "search"
-        args["breadcrumbs"] = [_("Authors"), _("Search"), searchterms]
+        author_url = reverse("web:author")
+        lang_code = to_int(request.GET.get("lang"), 0)
+        lang_label = lang_menu.get(lang_code, _("Select"))
+        back_url = f"{author_url}?lang={lang_code}" if lang_code else f"{author_url}?lang=0"
+        args["breadcrumbs"] = [
+            {"label": _("Authors"), "url": f"{author_url}?lang=0"},
+            {"label": lang_label, "url": back_url},
+            {"label": searchterms, "url": ""},
+        ]
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
         args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -382,7 +410,7 @@ def CatalogsView(request):
         breadcrumbs_list.insert(0, (_("ROOT"), 0))
     # breadcrumbs_list.insert(0, (_('Catalogs'),-1))
     args["breadcrumbs_cat"] = breadcrumbs_list
-    args["breadcrumbs"] = [_("Catalogs")]
+    args["breadcrumbs"] = [{"label": _("Catalogs"), "url": ""}]
     args["cache_id"] = "%s:%s:%s" % (args["current"], cat_id, op["number"])
     args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -408,7 +436,14 @@ def BooksView(request):
     args["items"] = items
     args["current"] = "book"
     args["lang_code"] = lang_code
-    args["breadcrumbs"] = [_("Books"), _("Select"), lang_menu[lang_code], chars]
+    book_url = reverse("web:book")
+    crumbs = [{"label": _("Books"), "url": f"{book_url}?lang=0"}]
+    if chars:
+        crumbs.append({"label": lang_menu[lang_code], "url": f"{book_url}?lang={lang_code}"})
+        crumbs.append({"label": chars, "url": ""})
+    else:
+        crumbs.append({"label": lang_menu[lang_code], "url": ""})
+    args["breadcrumbs"] = crumbs
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
     args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -434,7 +469,14 @@ def AuthorsView(request):
     args["items"] = items
     args["current"] = "author"
     args["lang_code"] = lang_code
-    args["breadcrumbs"] = [_("Authors"), _("Select"), lang_menu[lang_code], chars]
+    author_url = reverse("web:author")
+    crumbs = [{"label": _("Authors"), "url": f"{author_url}?lang=0"}]
+    if chars:
+        crumbs.append({"label": lang_menu[lang_code], "url": f"{author_url}?lang={lang_code}"})
+        crumbs.append({"label": chars, "url": ""})
+    else:
+        crumbs.append({"label": lang_menu[lang_code], "url": ""})
+    args["breadcrumbs"] = crumbs
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
     args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -460,7 +502,14 @@ def SeriesView(request):
     args["items"] = items
     args["current"] = "series"
     args["lang_code"] = lang_code
-    args["breadcrumbs"] = [_("Series"), _("Select"), lang_menu[lang_code], chars]
+    series_url = reverse("web:series")
+    crumbs = [{"label": _("Series"), "url": f"{series_url}?lang=0"}]
+    if chars:
+        crumbs.append({"label": lang_menu[lang_code], "url": f"{series_url}?lang={lang_code}"})
+        crumbs.append({"label": chars, "url": ""})
+    else:
+        crumbs.append({"label": lang_menu[lang_code], "url": ""})
+    args["breadcrumbs"] = crumbs
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
     args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -477,13 +526,18 @@ def GenresView(request):
     else:
         section_id = 0
 
+    genre_url = reverse("web:genre")
     if section_id == 0:
         items = genre_services.get_genres()
-        args["breadcrumbs"] = [_("Genres"), _("Select")]
+        args["breadcrumbs"] = [{"label": _("Genres"), "url": ""}, {"label": _("Select"), "url": ""}]
     else:
         section = genre_services.get_genre_section(section_id)
         items = genre_services.get_genre_details(section_id)
-        args["breadcrumbs"] = [_("Genres"), _("Select"), section]
+        args["breadcrumbs"] = [
+            {"label": _("Genres"), "url": genre_url},
+            {"label": _("Select"), "url": ""},
+            {"label": section, "url": ""},
+        ]
 
     args["items"] = items
     args["current"] = "genre"
