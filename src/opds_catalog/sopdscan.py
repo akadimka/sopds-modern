@@ -283,7 +283,24 @@ class opdsScanner:
             rel_path = os.path.relpath(full_path, config.SOPDS_ROOT_LIB)
             self.logger.debug(f"Attempt to add book {rel_path}/{name}")
             try:
-                if opdsdb.findbook(name, rel_path, 1) is None:
+                existing_book = opdsdb.findbook(name, rel_path, 1)
+                if existing_book is not None and not existing_book.annotation:
+                    # Книга уже в БД, но аннотация пустая — попробуем обновить
+                    self.logger.info(f"Book {name} exists without annotation, refreshing metadata")
+                    try:
+                        book_data = create_bookfile(file, name)
+                        if book_data and book_data.description:
+                            ann = book_data.description
+                            if isinstance(ann, bytes):
+                                ann = ann.decode("utf-8")
+                            ann = ann.strip(strip_symbols)
+                            if ann:
+                                existing_book.annotation = ann[:10000]
+                                existing_book.save(update_fields=["annotation"])
+                                self.logger.info(f"Updated annotation for {name}")
+                    except Exception as err:
+                        self.logger.warning(f"Could not refresh annotation for {name}: {err}")
+                if existing_book is None:
                     self.logger.info(f"Book {name} is new")
                     if archive == 0:
                         self.logger.info(f"Add new catalog {rel_path}")
