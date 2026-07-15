@@ -52,6 +52,9 @@ class RegenCSVService:
         # Load configuration lists
         self.collection_keywords = self.settings.get_list('collection_keywords')
         self.service_words = self.settings.get_list('service_words')
+        self._genre_category_words = [
+            w.lower() for w in (self.settings.get_list('genre_category_words') or [])
+        ]
         
         # Load folder patterns for series extraction
         folder_patterns_raw = self.settings.get_author_series_patterns_in_folders()
@@ -255,11 +258,19 @@ class RegenCSVService:
         # она похожа на название (не голые инициалы, не число). Проверяем это
         # ДО паттернов ниже, т.к. среди них есть catch-all "Series", который
         # иначе всегда матчит и возвращает строку целиком.
+        #
+        # Хвост режем ТОЛЬКО если в нём есть явный признак описания/жанра
+        # (слово из genre_category_words) — иначе точка внутри хвоста может быть
+        # частью самого названия серии ("Пленник. Война покорённых"), и без
+        # этого сигнала не отличить одно от другого.
         if '. ' in folder_name:
             head, _, tail = folder_name.partition('. ')
             head = head.strip()
+            tail_lower = tail.lower()
+            _tail_is_description = any(w in tail_lower for w in self._genre_category_words)
             if (head and tail.strip() and not head.isdigit()
-                    and not re.fullmatch(r'[А-ЯA-ZЁ]\.?\s*[А-ЯA-ZЁ]?\.?', head)):
+                    and not re.fullmatch(r'[А-ЯA-ZЁ]\.?\s*[А-ЯA-ZЁ]?\.?', head)
+                    and _tail_is_description):
                 return head
 
         # ШАГ 1: Попробуем применить паттерны и найти группу "series"
@@ -1471,8 +1482,10 @@ class RegenCSVService:
                         and all(p[1:].islower() or not p[1:] for p in _gp_parts)):
                     continue
 
-            # Дедушка не должен быть коллекционным keyword
-            if any(gp_name.lower().startswith(kw) for kw in _coll_kw):
+            # Дедушка не должен быть коллекционной папкой — ключевое слово может
+            # стоять не только в начале названия («Сборник ...»), но и в конце
+            # («Автор - Сборник произведений»), поэтому проверяем вхождение, а не префикс.
+            if any(kw in gp_name.lower() for kw in _coll_kw):
                 continue
 
             # Родитель (прямая папка файла) не должен быть авторской папкой
