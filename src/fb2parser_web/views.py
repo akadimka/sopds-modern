@@ -527,21 +527,60 @@ _norm_state: dict = {
 
 
 @staff_member_required(login_url="/web/login/")
+def normalize_setup(request):
+    """Сохраняет выбранные папки в сессии и возвращает URL для редиректа."""
+    import json as _json
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    data = _json.loads(request.body)
+    folder = data.get("folder", "")
+    filter_paths = data.get("filter_paths", [])
+    mode = data.get("mode", "normalize")
+
+    rel_subfolders = []
+    for p in filter_paths:
+        try:
+            rel = os.path.relpath(str(p), str(folder))
+            if not rel.startswith(".."):
+                rel_subfolders.append(rel)
+        except ValueError:
+            pass
+
+    request.session["norm_filter_subfolders"] = rel_subfolders
+    request.session["norm_filter_folder"] = folder
+    request.session["norm_mode"] = mode
+
+    from django.urls import reverse
+    return JsonResponse({"redirect": reverse("fb2parser:normalize")})
+
+
+@staff_member_required(login_url="/web/login/")
 def normalize(request):
+    import json as _json
     from opds_catalog.sopds_config import sopds_cfg as cfg
+
+    filter_subfolders = request.session.pop("norm_filter_subfolders", None)
+    filter_folder = request.session.pop("norm_filter_folder", None)
+    norm_mode = request.session.pop("norm_mode", "normalize")
+
     with _norm_lock:
         state = dict(_norm_state)
     # Если после перезапуска сервера память пуста — пробуем восстановить кэш
     if not state["records"] and not state["running"]:
-        folder = state.get("folder") or cfg.SOPDS_ROOT_LIB or ""
+        folder = state.get("folder") or filter_folder or cfg.SOPDS_ROOT_LIB or ""
         if folder:
             _norm_restore_from_cache(folder)
             with _norm_lock:
                 state = dict(_norm_state)
+    root = filter_folder or cfg.SOPDS_ROOT_LIB or ""
     return render(request, "fb2parser/normalize.html", _ctx(
         "normalize", "Нормализация",
-        root=cfg.SOPDS_ROOT_LIB or "",
+        root=root,
         state=state,
+        filter_subfolders=filter_subfolders,
+        filter_subfolders_json=_json.dumps(filter_subfolders or []),
+        norm_mode=norm_mode,
     ))
 
 
@@ -596,7 +635,7 @@ def _norm_restore_from_cache(folder_path):
     return True
 
 
-def _run_normalize_thread(folder_path):
+def _run_normalize_thread(folder_path, filter_subfolders=None):
     from django import db
     db.connections.close_all()
     try:
@@ -626,6 +665,21 @@ def _run_normalize_thread(folder_path):
                     _norm_state["log"] = _norm_state["log"][-200:]
 
         records = service.generate_csv(folder_path, output_csv_path=output_csv_path, progress_callback=_progress) or []
+
+        # Фильтр по выбранным подпапкам (из dashboard)
+        if filter_subfolders:
+            from pathlib import Path as _Path
+            filter_set = set()
+            for sub in filter_subfolders:
+                parts = _Path(str(sub).replace('\\', '/')).parts
+                if parts:
+                    filter_set.add(parts[0].lower())
+            if filter_set:
+                def _fp_top(r):
+                    fp = getattr(r, 'file_path', '') or ''
+                    parts = _Path(str(fp).replace('\\', '/')).parts
+                    return parts[0].lower() if parts else ''
+                records = [r for r in records if _fp_top(r) in filter_set]
 
         recs_dicts = []
         for r in records:
@@ -663,10 +717,18 @@ def _run_normalize_thread(folder_path):
 
 @staff_member_required(login_url="/web/login/")
 def normalize_start(request):
+    import json as _json
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
     folder = request.POST.get("folder", "").strip()
+    filter_subfolders_str = request.POST.get("filter_subfolders", "").strip()
+    filter_subfolders = []
+    if filter_subfolders_str:
+        try:
+            filter_subfolders = _json.loads(filter_subfolders_str)
+        except Exception:
+            pass
     if not folder or not os.path.isdir(folder):
         return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {folder}</div></div>')
     with _norm_lock:
@@ -677,8 +739,9 @@ def normalize_start(request):
             "processed": 0, "total": 0, "log": [],
             "records": [], "records_total": 0, "current_file": "",
             "folder": folder,
+            "filter_subfolders": filter_subfolders,
         })
-    threading.Thread(target=_run_normalize_thread, args=(folder,), daemon=True).start()
+    threading.Thread(target=_run_normalize_thread, args=(folder, filter_subfolders), daemon=True).start()
     return _render_norm_status(dict(_norm_state))
 
 

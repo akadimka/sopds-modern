@@ -19,6 +19,7 @@ urlpatterns = [
     path("scan/start/",        views.scan_start,  name="scan_start"),
     path("scan/status/",       views.scan_status,  name="scan_status"),
     path("normalize/",         views.normalize,        name="normalize"),
+    path("normalize/setup/",   views.normalize_setup,  name="normalize_setup"),
     path("normalize/start/",   views.normalize_start,  name="normalize_start"),
     path("normalize/status/",  views.normalize_status, name="normalize_status"),
     path("normalize/table/",   views.normalize_table,  name="normalize_table"),

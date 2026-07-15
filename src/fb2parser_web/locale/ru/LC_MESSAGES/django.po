@@ -835,3 +835,20 @@ msgstr "Ошибки"
 
 msgid "No errors"
 msgstr "Ошибок нет"
+
+# --- Dashboard: selection bar новые кнопки ---
+msgid "📋 Normalize"
+msgstr "📋 Нормализация"
+
+msgid "⚙ Compile"
+msgstr "⚙ Компиляция"
+
+# --- Normalize: filter banner ---
+msgid "Filter active:"
+msgstr "Фильтр активен:"
+
+msgid "folders"
+msgstr "папок"
+
+msgid "Clear filter"
+msgstr "Снять фильтр"

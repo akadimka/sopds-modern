@@ -16,6 +16,16 @@
                  style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:500;"></div>
         </div>
     </div>
+    <!-- Скрытое поле фильтра подпапок (передаётся в normalize_start) -->
+    <input type="hidden" id="norm-filter-subfolders" name="filter_subfolders" value="{{ filter_subfolders_json|default:'[]' }}">
+    {% if filter_subfolders %}
+    <!-- Баннер активного фильтра -->
+    <div id="norm-filter-banner" style="display:flex; align-items:center; gap:0.6rem; padding:0.3rem 0.7rem; background:rgba(142,68,173,0.18); border-bottom:1px solid #8e44ad; flex-shrink:0; font-size:0.82rem;">
+        <span style="color:#c39bd3;">🔽 {% trans "Filter active:" %}</span>
+        <span style="color:var(--text); font-weight:500;">{{ filter_subfolders|length }} {% trans "folders" %}: {{ filter_subfolders|join:", " }}</span>
+        <button type="button" onclick="normClearFilter()" style="margin-left:auto; background:none; border:1px solid #8e44ad; border-radius:3px; color:#c39bd3; cursor:pointer; padding:0.1rem 0.5rem; font-size:0.78rem;">✕ {% trans "Clear filter" %}</button>
+    </div>
+    {% endif %}
 
     <!-- Строка фильтра -->
     <div style="display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0.7rem; background:var(--bg-card); border-bottom:1px solid var(--border); flex-shrink:0;">
@@ -77,9 +87,9 @@
 
     <!-- Кнопочная панель (аналог нижних кнопок десктопа) -->
     <div style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.7rem; background:var(--fp-nav-bg); flex-shrink:0; flex-wrap:wrap;">
-        <button class="button" style="margin:0; background:#8e44ad; font-size:0.82rem; padding:0.45rem 0.9rem;"
+        <button id="norm-start-btn" class="button" style="margin:0; background:#8e44ad; font-size:0.82rem; padding:0.45rem 0.9rem;"
                 hx-post="{% url 'fb2parser:normalize_start' %}"
-                hx-include="#norm-folder"
+                hx-include="#norm-folder, #norm-filter-subfolders"
                 hx-target="#norm-statusbar"
                 hx-swap="innerHTML"
                 hx-indicator="#norm-spinner">
@@ -263,6 +273,10 @@
 </style>
 
 <script>
+// Режим из dashboard: 'normalize' (обычный) или 'compile' (авто-открыть компилятор)
+var _normMode = "{{ norm_mode|default:'normalize' }}";
+var _normAutoCompile = (_normMode === 'compile');
+
 // i18n strings for JS
 const MSG_OF = "{% trans 'of' %}";
 const MSG_ROWS = "{% trans 'rows' %}";
@@ -323,6 +337,13 @@ function normSetCachedFolder(folder) {
     normCheckCache();
 }
 
+function normClearFilter() {
+    var inp = document.getElementById('norm-filter-subfolders');
+    if (inp) inp.value = '[]';
+    var banner = document.getElementById('norm-filter-banner');
+    if (banner) banner.style.display = 'none';
+}
+
 // Слушаем изменение поля пути
 document.addEventListener('DOMContentLoaded', function() {
     var folderInput = document.getElementById('norm-folder');
@@ -341,6 +362,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var doneEl = document.querySelector('[data-norm-done]');
     if (doneEl && doneEl.dataset.normFolder) {
         normSetCachedFolder(doneEl.dataset.normFolder);
+    }
+
+    // Авто-режим: если пришли из dashboard с mode=compile
+    if (_normAutoCompile) {
+        if (doneEl) {
+            // Данные уже есть — сразу открыть компилятор
+            compilerOpen();
+        } else {
+            // Нет данных — запустить нормализацию, потом откроем компилятор
+            var startBtn = document.getElementById('norm-start-btn');
+            if (startBtn) startBtn.click();
+        }
     }
 });
 
@@ -580,6 +613,13 @@ document.addEventListener('htmx:afterSwap', function(e) {
                   {target: '#norm-tbody', swap: 'innerHTML'});
         // Активируем кнопки — данные актуальны для этой папки
         normSetCachedFolder(doneEl.dataset.normFolder || '');
+        // Авто-открытие компилятора (если пришли из dashboard с mode=compile)
+        if (_normAutoCompile) {
+            _normAutoCompile = false;
+            setTimeout(function() {
+                compilerOpen();
+            }, 400);
+        }
     }
     // Обновить счётчик строк и переинициализировать ресайзеры после загрузки таблицы
     if (swapped.id === 'norm-tbody' || (swapped.closest && swapped.closest('#norm-tbody'))) {

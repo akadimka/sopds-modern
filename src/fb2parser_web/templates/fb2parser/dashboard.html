@@ -15,6 +15,7 @@ var JS_STR_SELECTED = "{% trans 'selected' %}";
 var JS_STR_FOLDER_ONE = "{% trans 'folder' %}";
 var JS_STR_FOLDER_FEW = "{% trans 'folders' %}";
 var JS_STR_FOLDER_MANY = "{% trans 'folders' %}";
+var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
 </script>
 <div class="fp-dashboard">
 
@@ -110,6 +111,10 @@ var JS_STR_FOLDER_MANY = "{% trans 'folders' %}";
         <span id="sel-count" class="sel-count"></span>
         <button class="button warning" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
                 onclick="gpOpen()">{% trans "🏷️ Assign Genre" %}</button>
+        <button class="button" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem; background:#8e44ad;"
+                onclick="goNormalize()">{% trans "📋 Normalize" %}</button>
+        <button class="button" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem; background:#27ae60;"
+                onclick="goCompile()">{% trans "⚙ Compile" %}</button>
         <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
                 onclick="selAll()">{% trans "☑ Select All" %}</button>
         <button class="button secondary" style="margin:0; padding:0.4rem 0.9rem; font-size:0.82rem;"
@@ -399,5 +404,20 @@ function _getCsrf() {
     var m = document.cookie.match(/csrftoken=([^;]+)/);
     return m ? m[1] : '';
 }
+
+async function _goNormalizeOrCompile(mode) {
+    if (_selectedPaths.size === 0) return;
+    var folder = (document.getElementById('main-folder') || {}).value || '';
+    var paths = Array.from(_selectedPaths.keys());
+    var resp = await fetch(NORMALIZE_SETUP_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf()},
+        body: JSON.stringify({folder: folder, filter_paths: paths, mode: mode})
+    });
+    var data = await resp.json();
+    if (data.redirect) window.location.href = data.redirect;
+}
+function goNormalize() { _goNormalizeOrCompile('normalize'); }
+function goCompile()   { _goNormalizeOrCompile('compile'); }
 </script>
 {% endblock %}
