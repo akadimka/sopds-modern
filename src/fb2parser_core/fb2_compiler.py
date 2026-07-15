@@ -3452,7 +3452,7 @@ class FB2CompilerService:
         # Читаем только до <body> — annotation всегда в <description>
         body_pos = text.lower().find('<body')
         head = text[:body_pos] if body_pos >= 0 else text
-        m = re.search(r'<annotation>(.*?)</annotation>', head, re.DOTALL | re.IGNORECASE)
+        m = re.search(r'<annotation\b[^>]*>(.*?)</annotation>', head, re.DOTALL | re.IGNORECASE)
         if not m:
             return ''
         return re.sub(r'<[^>]+>', ' ', m.group(1)).lower().replace('ё', 'е')
@@ -3460,14 +3460,19 @@ class FB2CompilerService:
     def _extract_annotation_xml(self, book: CompilationBook) -> str:
         """Извлечь сырой XML блок <annotation>...</annotation> из первой книги."""
         if not book.abs_path.exists():
+            self._log(f"  ⚠ Аннотация: файл не найден {book.abs_path.name}")
             return ''
         try:
             text = self._read_file_text(book.abs_path)
-        except Exception:
+        except Exception as e:
+            self._log(f"  ⚠ Аннотация: ошибка чтения {book.abs_path.name}: {e}")
             return ''
         body_pos = text.lower().find('<body')
         head = text[:body_pos] if body_pos >= 0 else text
-        m = re.search(r'(<annotation>.*?</annotation>)', head, re.DOTALL | re.IGNORECASE)
+        # Атрибуты на теге <annotation> допустимы (напр. xml:lang="ru")
+        m = re.search(r'(<annotation\b[^>]*>.*?</annotation>)', head, re.DOTALL | re.IGNORECASE)
+        if not m:
+            self._log(f"  ℹ Аннотация не найдена в {book.abs_path.name}")
         return m.group(1) if m else ''
 
     def _extract_coverpage_id(self, book: CompilationBook) -> Optional[str]:
