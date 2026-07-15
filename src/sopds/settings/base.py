@@ -117,17 +117,18 @@ else:
     raise ValueError(f"Unsupported SOPDS_DB_ENGINE: {ENGINE!r}. Use 'sqlite' or 'postgres'.")
 DATABASES = {"default": default_database}
 
-# Memcached
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
-#         "LOCATION": "mc:11211",
-#     },
-#     "redis_cache": {
-#         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-#         "LOCATION": "redis://redis:6379",
-#     },
-# }
+# Memcached — обязателен: gunicorn поднимает несколько worker-процессов
+# (см. sopds.settings.gunicorn), у каждого своя память. Прогресс фоновых
+# задач (скан, нормализация, синхронизация, компилятор — см.
+# fb2parser_web.job_state) хранится здесь, а не в module-level словарях,
+# иначе поллинг статуса может попасть в другой worker и увидеть "не запущено"
+# посреди реально идущей задачи.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
+        "LOCATION": env("MEMCACHED_LOCATION", default="127.0.0.1:11211"),
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

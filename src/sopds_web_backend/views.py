@@ -33,12 +33,12 @@ from opds_catalog.services import (
 )
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.utils import to_int
+from fb2parser_web.job_state import JobState
 
 logger = logging.getLogger(__name__)
 
-# ── Состояние сканирования SOPDS ─────────────────────────────────────────────
-_sopds_scan_lock = threading.Lock()
-_sopds_scan_state: dict = {"running": False, "done": False, "error": None}
+# ── Состояние сканирования SOPDS (общий кэш — виден всем worker-процессам) ───
+sopds_scan_job = JobState("sopds:scan", {"running": False, "done": False, "error": None})
 
 
 def _run_sopds_scan():
@@ -49,10 +49,9 @@ def _run_sopds_scan():
     from django import db
     db.connections.close_all()
     root = _cfg.SOPDS_ROOT_LIB
-    with _sopds_scan_lock:
-        _sopds_scan_state.update({"running": True, "done": False, "error": None,
-                                  "root": root, "added": 0, "bad": 0, "deleted": 0,
-                                  "first_error": None})
+    sopds_scan_job.update(running=True, done=False, error=None,
+                           root=root, added=0, bad=0, deleted=0,
+                           first_error=None)
 
     # Capture first error from scanner logger
     _first_err = []
@@ -67,21 +66,22 @@ def _run_sopds_scan():
     try:
         scanner = opdsScanner()
         scanner.scan_all()
-        with _sopds_scan_lock:
-            _sopds_scan_state.update({
-                "running": False, "done": True, "error": None,
-                "added": scanner.books_added,
-                "bad": scanner.bad_books,
-                "deleted": scanner.books_deleted,
-                "first_error": _first_err[0] if _first_err else None,
-            })
+        sopds_scan_job.update(
+            running=False, done=True, error=None,
+            added=scanner.books_added,
+            bad=scanner.bad_books,
+            deleted=scanner.books_deleted,
+            first_error=_first_err[0] if _first_err else None,
+        )
     except Exception as e:
-        with _sopds_scan_lock:
-            _sopds_scan_state.update({"running": False, "done": True,
-                                      "error": str(e), "traceback": _tb.format_exc(),
-                                      "first_error": _first_err[0] if _first_err else None})
+        sopds_scan_job.update(
+            running=False, done=True,
+            error=str(e), traceback=_tb.format_exc(),
+            first_error=_first_err[0] if _first_err else None,
+        )
     finally:
         _log.removeHandler(_handler)
+        sopds_scan_job.finish()
 
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
@@ -644,11 +644,7 @@ def BSClearView(request):
 def sopds_scan_start(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
-    with _sopds_scan_lock:
-        already = _sopds_scan_state["running"]
-        if not already:
-            _sopds_scan_state.update({"running": True, "done": False, "error": None})
-    if not already:
+    if sopds_scan_job.try_start():
         t = threading.Thread(target=_run_sopds_scan, daemon=True)
         t.start()
     return _render_sopds_scan_status(request)
@@ -660,8 +656,7 @@ def sopds_scan_status(request):
 
 
 def _render_sopds_scan_status(request):
-    with _sopds_scan_lock:
-        state = dict(_sopds_scan_state)
+    state = sopds_scan_job.get()
     return render(request, "sopds_scan_status.html", {"state": state})
 
 

@@ -286,12 +286,12 @@ which ebook-convert   # → /usr/bin/ebook-convert
 
 После запуска сервиса войдите как суперпользователь и откройте **Settings** (`/web/settings/`):
 
-| Поле | Значение |
-|------|----------|
-| fb2→epub converter path | `/usr/bin/ebook-convert` |
-| fb2→azw3 converter path | `/usr/bin/ebook-convert` |
-| fb2→mobi converter path | `/usr/bin/ebook-convert` |
-| **Temp directory** | `/tmp` |
+| Поле                      | Значение                  |
+|---------------------------|---------------------------|
+| fb2→epub converter path   | `/usr/bin/ebook-convert`  |
+| fb2→azw3 converter path   | `/usr/bin/ebook-convert`  |
+| fb2→mobi converter path   | `/usr/bin/ebook-convert`  |
+| **Temp directory**        | `/tmp`                    |
 
 > **Temp directory обязателен.** Без него конвертация завершится ошибкой 404 — конвертер не знает куда записать временный файл. Рекомендуется `/tmp` или отдельная папка с правами записи для `www-data`.
 
@@ -310,11 +310,11 @@ chown www-data:www-data /opt/sopds-modern/tmp
 
 ### Форматы и Kindle
 
-| Формат | Назначение |
-|--------|------------|
-| EPUB | Универсальный — PocketBook, Kobo, iOS, Android |
-| AZW3 | Kindle (новые устройства, лучше MOBI) |
-| MOBI | Kindle (старые устройства) |
+| Формат    | Назначение                                     |
+|-----------|------------------------------------------------|
+| EPUB      | Универсальный — PocketBook, Kobo, iOS, Android |
+| AZW3      | Kindle (новые устройства, лучше MOBI)          |
+| MOBI      | Kindle (старые устройства)                     |
 
 > Calibre 6+ официально рекомендует AZW3 вместо MOBI для Kindle. Кнопка AZW3 отображается только когда путь конвертера заполнен.
 

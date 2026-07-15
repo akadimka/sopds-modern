@@ -11,10 +11,10 @@ from django.views.decorators.http import require_http_methods
 
 from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
 from opds_catalog.sopdscan import opdsScanner
+from .job_state import JobFlag, JobState, SharedDict
 
-# ── Состояние сканирования (живёт в памяти процесса) ─────────────────────────
-_scan_lock = threading.Lock()
-_scan_state: dict = {
+# ── Состояние сканирования (общий кэш — виден всем worker-процессам gunicorn) ─
+scan_job = JobState("fb2parser:scan", {
     "running": False,
     "done": False,
     "error": None,
@@ -25,27 +25,26 @@ _scan_state: dict = {
     "books_skipped": 0,
     "bad_books": 0,
     "bad_list": [],   # [(rel_path/name, error_msg), ...]
-}
+})
 
 
 class _ErrorCapture(logging.Handler):
-    """Перехватывает ERROR-записи сканера и складывает их в _scan_state."""
+    """Перехватывает ERROR-записи сканера и складывает их в scan_job."""
 
     def emit(self, record):
         if record.levelno >= logging.ERROR:
             msg = self.format(record)
-            with _scan_lock:
-                if len(_scan_state["bad_list"]) < 200:
-                    _scan_state["bad_list"].append(msg)
+            state = scan_job.get()
+            if len(state["bad_list"]) < 200:
+                state["bad_list"].append(msg)
+                scan_job.update(bad_list=state["bad_list"])
 
 
 class _TrackingScanner(opdsScanner):
     """Сканер с перехватом processfile для обновления прогресса."""
 
     def processfile(self, name, full_path, file, cat, archive=0, file_size=0):
-        with _scan_lock:
-            _scan_state["processed"] += 1
-            _scan_state["current"] = name
+        scan_job.update(processed=scan_job["processed"] + 1, current=name)
         super().processfile(name, full_path, file, cat, archive, file_size)
 
 
@@ -73,10 +72,7 @@ def _run_scan_thread(root_path):
     db.connections.close_all()
     try:
         total = _count_files(root_path)
-        with _scan_lock:
-            _scan_state["total"] = total
-            _scan_state["processed"] = 0
-            _scan_state["current"] = ""
+        scan_job.update(total=total, processed=0, current="")
 
         scan_logger = logging.getLogger("fb2parser.scan")
         capture = _ErrorCapture()
@@ -89,19 +85,16 @@ def _run_scan_thread(root_path):
         scanner.scan_all()
         Counter.objects.update_known_counters()
 
-        with _scan_lock:
-            _scan_state["done"] = True
-            _scan_state["running"] = False
-            _scan_state["books_added"] = scanner.books_added
-            _scan_state["books_skipped"] = scanner.books_skipped
-            _scan_state["bad_books"] = scanner.bad_books
+        scan_job.update(done=True, running=False,
+                         books_added=scanner.books_added,
+                         books_skipped=scanner.books_skipped,
+                         bad_books=scanner.bad_books)
     except Exception as exc:
-        with _scan_lock:
-            _scan_state["error"] = str(exc)
-            _scan_state["running"] = False
+        scan_job.update(error=str(exc), running=False)
     finally:
         from django import db as _db
         _db.connections.close_all()
+        scan_job.finish()
 
 
 def _ctx(page_id, title, **kwargs):
@@ -111,8 +104,7 @@ def _ctx(page_id, title, **kwargs):
 @staff_member_required(login_url="/web/login/")
 def dashboard(request):
     root = request.session.get('dashboard_root') or config.SOPDS_ROOT_LIB or ""
-    with _scan_lock:
-        state = dict(_scan_state)
+    state = scan_job.get()
     return render(request, "fb2parser/dashboard.html", _ctx(
         "dashboard", "Главная",
         root=root,
@@ -161,8 +153,7 @@ def statistics(request):
 @staff_member_required(login_url="/web/login/")
 def scan(request):
     root = config.SOPDS_ROOT_LIB or ""
-    with _scan_lock:
-        state = dict(_scan_state)
+    state = scan_job.get()
     return render(request, "fb2parser/scan.html", _ctx("scan", "Сканирование", root=root, state=state))
 
 
@@ -171,29 +162,24 @@ def scan_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
-    with _scan_lock:
-        if _scan_state["running"]:
-            return _render_status(dict(_scan_state))
-        root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
-        if not root or not os.path.isdir(root):
-            return HttpResponse(
-                f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {root}</div></div>'
-            )
-        _scan_state.update({
-            "running": True, "done": False, "error": None,
-            "processed": 0, "total": 0, "current": "",
-            "books_added": 0, "books_skipped": 0, "bad_books": 0,
-            "bad_list": [],
-        })
+    if scan_job.get()["running"]:
+        return _render_status(scan_job.get())
+    root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
+    if not root or not os.path.isdir(root):
+        return HttpResponse(
+            f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {root}</div></div>'
+        )
+    if not scan_job.try_start(root=root):
+        return _render_status(scan_job.get())
 
     t = threading.Thread(target=_run_scan_thread, args=(root,), daemon=True)
     t.start()
-    return _render_status(dict(_scan_state))
+    return _render_status(scan_job.get())
 
 
 @staff_member_required(login_url="/web/login/")
 def scan_status(request):
-    return _render_status(dict(_scan_state))
+    return _render_status(scan_job.get())
 
 
 def _render_status(state):
@@ -395,8 +381,9 @@ def assign_genre_multi(request):
             count = service.assign_genre_to_folder(path, genre)
             if count > 0:
                 results.append({"path": path, "success": True, "count": count})
-                with _genre_assignments_lock:
-                    _genre_assignments[os.path.abspath(path)] = genre
+                assignments = genre_assignments.get()
+                assignments[os.path.abspath(path)] = genre
+                genre_assignments.set(assignments)
             else:
                 results.append({"path": path, "success": False, "count": 0,
                                  "error": "FB2-файлы не найдены или не изменены"})
@@ -411,28 +398,23 @@ def main_scan_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
-    with _scan_lock:
-        if _scan_state["running"]:
-            return _render_main_status(dict(_scan_state))
-        root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
-        if not root or not os.path.isdir(root):
-            return HttpResponse(
-                f'<span style="color:#c0392b;">❌ Папка не найдена: {root}</span>'
-            )
-        _scan_state.update({
-            "running": True, "done": False, "error": None,
-            "processed": 0, "total": 0, "current": "",
-            "books_added": 0, "books_skipped": 0, "bad_books": 0,
-            "bad_list": [],
-        })
+    if scan_job.get()["running"]:
+        return _render_main_status(scan_job.get())
+    root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
+    if not root or not os.path.isdir(root):
+        return HttpResponse(
+            f'<span style="color:#c0392b;">❌ Папка не найдена: {root}</span>'
+        )
+    if not scan_job.try_start(root=root):
+        return _render_main_status(scan_job.get())
     t = threading.Thread(target=_run_scan_thread, args=(root,), daemon=True)
     t.start()
-    return _render_main_status(dict(_scan_state))
+    return _render_main_status(scan_job.get())
 
 
 @staff_member_required(login_url="/web/login/")
 def main_scan_status(request):
-    return _render_main_status(dict(_scan_state))
+    return _render_main_status(scan_job.get())
 
 
 def _render_main_status(state):
@@ -447,8 +429,7 @@ def _render_main_status(state):
 @staff_member_required(login_url="/web/login/")
 def scan_results(request):
     """3-панельный вид результатов: жанры / ошибки / детали."""
-    with _scan_lock:
-        state = dict(_scan_state)
+    state = scan_job.get()
     from django.db.models import Count
     genres_qs = (
         Genre.objects
@@ -517,13 +498,12 @@ def genres(request):
 
 # ── Нормализация ──────────────────────────────────────────────────────────────
 
-_norm_lock = threading.Lock()
-_norm_state: dict = {
+norm_job = JobState("fb2parser:normalize", {
     "running": False, "done": False, "error": None,
     "processed": 0, "total": 0, "log": [],
     "records": [], "records_total": 0,
     "current_file": "", "folder": "",
-}
+})
 
 
 @staff_member_required(login_url="/web/login/")
@@ -566,15 +546,14 @@ def normalize(request):
     norm_mode = request.session.pop("norm_mode", "normalize")
     last_path = get_normalization_settings().get_last_normalize_path()
 
-    with _norm_lock:
-        state = dict(_norm_state)
-    # Если после перезапуска сервера память пуста — пробуем восстановить кэш
+    state = norm_job.get()
+    # Если в общем кэше пусто (первый запрос после деплоя/рестарта memcached)
+    # — пробуем восстановить с диска
     if not state["records"] and not state["running"]:
         folder = state.get("folder") or filter_folder or last_path or cfg.SOPDS_ROOT_LIB or ""
         if folder:
             _norm_restore_from_cache(folder)
-            with _norm_lock:
-                state = dict(_norm_state)
+            state = norm_job.get()
     root = filter_folder or state.get("folder") or last_path or cfg.SOPDS_ROOT_LIB or ""
     return render(request, "fb2parser/normalize.html", _ctx(
         "normalize", "Нормализация",
@@ -623,17 +602,16 @@ def _norm_cache_load(folder_path, max_age_hours=24):
 
 
 def _norm_restore_from_cache(folder_path):
-    """Загружает кэш в _norm_state если он есть и актуален. Возвращает True при успехе."""
+    """Загружает кэш в norm_job если он есть и актуален. Возвращает True при успехе."""
     records = _norm_cache_load(folder_path)
     if records is None:
         return False
-    with _norm_lock:
-        _norm_state.update({
-            "done": True, "running": False, "error": None,
-            "processed": len(records), "total": len(records),
-            "records": records, "records_total": len(records),
-            "folder": folder_path, "current_file": "",
-        })
+    norm_job.update(
+        done=True, running=False, error=None,
+        processed=len(records), total=len(records),
+        records=records, records_total=len(records),
+        folder=folder_path, current_file="",
+    )
     return True
 
 
@@ -658,13 +636,13 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
             output_csv_path = os.path.join(csv_dir, f"regen_{safe_name}.csv")
 
         def _progress(current, total, status=""):
-            with _norm_lock:
-                _norm_state["processed"] = current
-                _norm_state["total"] = max(total, 1)
-                if status:
-                    _norm_state["current_file"] = str(status)[:120]
-                    _norm_state["log"].append(str(status))
-                    _norm_state["log"] = _norm_state["log"][-200:]
+            fields = {"processed": current, "total": max(total, 1)}
+            if status:
+                log = norm_job["log"]
+                log.append(str(status))
+                fields["current_file"] = str(status)[:120]
+                fields["log"] = log[-200:]
+            norm_job.update(**fields)
 
         filter_paths = None
         if filter_subfolders:
@@ -691,24 +669,24 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
                 "metadata_genre":   getattr(r, "metadata_genre", ""),
             })
 
-        with _norm_lock:
-            _norm_state.update({
-                "done": True, "running": False,
-                "processed": len(recs_dicts), "total": len(recs_dicts),
-                "records": recs_dicts, "records_total": len(recs_dicts),
-                "csv_path": str(output_csv_path) if output_csv_path else "",
-            })
-        # Сохраняем кэш на диск — переживёт перезапуск сервера
+        norm_job.update(
+            done=True, running=False,
+            processed=len(recs_dicts), total=len(recs_dicts),
+            records=recs_dicts, records_total=len(recs_dicts),
+            csv_path=str(output_csv_path) if output_csv_path else "",
+        )
+        # Сохраняем кэш на диск — переживёт перезапуск сервера/memcached
         _norm_cache_save(folder_path, recs_dicts)
     except Exception as exc:
         import traceback
         tb = traceback.format_exc()
-        with _norm_lock:
-            _norm_state.update({"error": str(exc), "running": False})
-            _norm_state["log"].append(tb)
+        log = norm_job["log"]
+        log.append(tb)
+        norm_job.update(error=str(exc), running=False, log=log)
     finally:
         from django import db as _db
         _db.connections.close_all()
+        norm_job.finish()
 
 
 @staff_member_required(login_url="/web/login/")
@@ -729,18 +707,14 @@ def normalize_start(request):
         return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {folder}</div></div>')
     from .fb2parser_bridge import get_normalization_settings
     get_normalization_settings().set_last_normalize_path(folder)
-    with _norm_lock:
-        if _norm_state["running"]:
-            return _render_norm_status(dict(_norm_state))
-        _norm_state.update({
-            "running": True, "done": False, "error": None,
-            "processed": 0, "total": 0, "log": [],
-            "records": [], "records_total": 0, "current_file": "",
-            "folder": folder,
-            "filter_subfolders": filter_subfolders,
-        })
+    if not norm_job.try_start(
+        folder=folder,
+        filter_subfolders=filter_subfolders,
+        records=[], records_total=0, current_file="", log=[],
+    ):
+        return _render_norm_status(norm_job.get())
     threading.Thread(target=_run_normalize_thread, args=(folder, filter_subfolders), daemon=True).start()
-    return _render_norm_status(dict(_norm_state))
+    return _render_norm_status(norm_job.get())
 
 
 @staff_member_required(login_url="/web/login/")
@@ -757,9 +731,7 @@ def normalize_set_root(request):
 
 @staff_member_required(login_url="/web/login/")
 def normalize_status(request):
-    with _norm_lock:
-        state = dict(_norm_state)
-    return _render_norm_status(state)
+    return _render_norm_status(norm_job.get())
 
 
 def _render_norm_status(state):
@@ -777,9 +749,9 @@ def normalize_table(request):
     offset = int(request.GET.get("offset", 0))
     limit = 1000
     q = request.GET.get("q", "").strip().lower()
-    with _norm_lock:
-        records = list(_norm_state["records"])
-        total_all = _norm_state["records_total"]
+    _state = norm_job.get()
+    records = list(_state["records"])
+    total_all = _state["records_total"]
     if q:
         records = [r for r in records if any(q in str(v).lower() for v in r.values())]
     total = len(records)
@@ -856,16 +828,15 @@ def names_from_csv(request):
 
 
 def names_list(request):
-    """Возвращает список авторов с неизвестным полом из текущего _norm_state."""
+    """Возвращает список авторов с неизвестным полом из текущего norm_job."""
     import re as _re
-    with _norm_lock:
-        records = list(_norm_state["records"])
-        cached_folder = _norm_state.get("folder", "")
-    # Пробуем восстановить из кэша если память пуста
+    _state = norm_job.get()
+    records = list(_state["records"])
+    cached_folder = _state.get("folder", "")
+    # Пробуем восстановить из дискового кэша если пусто (напр. после рестарта memcached)
     if not records and cached_folder:
         _norm_restore_from_cache(cached_folder)
-        with _norm_lock:
-            records = list(_norm_state["records"])
+        records = list(norm_job["records"])
     if not records:
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 
@@ -1019,15 +990,15 @@ def martyrs_list(request):
     import re as _re
     _SKIP = {"Сборник", "Соавторство", "[unknown]"}
 
-    with _norm_lock:
-        records = list(_norm_state["records"])
-        folder  = _norm_state.get("folder", "")
+    _state = norm_job.get()
+    records = list(_state["records"])
+    folder  = _state.get("folder", "")
 
     if not records and folder:
         _norm_restore_from_cache(folder)
-        with _norm_lock:
-            records = list(_norm_state["records"])
-            folder  = _norm_state.get("folder", "")
+        _state = norm_job.get()
+        records = list(_state["records"])
+        folder  = _state.get("folder", "")
 
     if not records:
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
@@ -1066,8 +1037,7 @@ def martyrs_delete(request):
     except Exception:
         return JsonResponse({"error": "bad json"}, status=400)
 
-    with _norm_lock:
-        folder = _norm_state.get("folder", "")
+    folder = norm_job["folder"]
 
     deleted, errors = 0, []
     deleted_dirs = set()
@@ -1268,18 +1238,18 @@ def _find_duplicates(records, folder_path) -> dict:
 def duplicates_find(request):
     """GET — ищет дубликаты в записях текущего сеанса нормализации."""
     from pathlib import Path as _Path
-    with _norm_lock:
-        records = list(_norm_state["records"])
-        folder = _norm_state.get("folder", "")
+    _state = norm_job.get()
+    records = list(_state["records"])
+    folder = _state.get("folder", "")
 
     if not records and not folder:
         from opds_catalog.sopds_config import sopds_cfg as _cfg
         folder = _cfg.SOPDS_ROOT_LIB or ""
     if not records and folder:
         _norm_restore_from_cache(folder)
-        with _norm_lock:
-            records = list(_norm_state["records"])
-            folder = _norm_state.get("folder", folder)
+        _state = norm_job.get()
+        records = list(_state["records"])
+        folder = _state.get("folder", folder)
 
     if not records:
         return render(request, "fb2parser/duplicates.html", {
@@ -1366,8 +1336,7 @@ def duplicates_delete(request):
     except Exception:
         return JsonResponse({"error": "bad json"}, status=400)
 
-    with _norm_lock:
-        folder = _norm_state.get("folder", "")
+    folder = norm_job["folder"]
 
     deleted, errors = 0, []
     deleted_dirs = set()
@@ -1397,9 +1366,8 @@ def duplicates_delete(request):
 
 # ── Компилятор ────────────────────────────────────────────────────────────────
 
-_compiler_lock = threading.Lock()
-_compiler_state: dict = {
-    "groups": [],           # List[CompilationGroup] — только в памяти
+compiler_job = JobState("fb2parser:compiler", {
+    "groups": [],           # List[CompilationGroup] — pickled into the shared cache
     "folder": "",
     "running": False,
     "done": False,
@@ -1408,7 +1376,7 @@ _compiler_state: dict = {
     "total": 0,
     "current": "",
     "log": [],
-}
+})
 
 
 def _rec_to_ns(rec):
@@ -1437,18 +1405,18 @@ def _rec_to_ns(rec):
 def compiler_scan(request):
     """GET — ищет группы для компиляции из записей текущего сеанса нормализации."""
     from pathlib import Path as _Path
-    with _norm_lock:
-        records = list(_norm_state["records"])
-        folder = _norm_state.get("folder", "")
+    _state = norm_job.get()
+    records = list(_state["records"])
+    folder = _state.get("folder", "")
 
     if not records and not folder:
         from opds_catalog.sopds_config import sopds_cfg as _cfg
         folder = _cfg.SOPDS_ROOT_LIB or ""
     if not records and folder:
         _norm_restore_from_cache(folder)
-        with _norm_lock:
-            records = list(_norm_state["records"])
-            folder = _norm_state.get("folder", folder)
+        _state = norm_job.get()
+        records = list(_state["records"])
+        folder = _state.get("folder", folder)
 
     if not records:
         return render(request, "fb2parser/compiler_groups.html", {
@@ -1468,12 +1436,11 @@ def compiler_scan(request):
             "groups": [], "error": str(exc) + "\n" + _tb.format_exc()[-500:],
         })
 
-    with _compiler_lock:
-        _compiler_state.update({
-            "groups": groups,
-            "folder": str(folder_path),
-            "done": False, "running": False, "error": None, "log": [],
-        })
+    compiler_job.update(
+        groups=groups,
+        folder=str(folder_path),
+        done=False, running=False, error=None, log=[],
+    )
 
     _SORT_LABEL = {
         "series_number": "Номер тома",
@@ -1572,45 +1539,47 @@ def compiler_scan(request):
 def _run_compiler_thread(indices, delete_sources):
     """Фоновый поток: компилирует выбранные группы."""
     try:
-        from fb2parser_core.fb2_compiler import FB2CompilerService
-    except ImportError:
-        from fb2parser_core.fb2_compiler import FB2CompilerService  # noqa
-
-    with _compiler_lock:
-        all_groups = list(_compiler_state["groups"])
-
-    groups_to_run = [all_groups[i] for i in indices if i < len(all_groups)]
-    total = len(groups_to_run)
-    svc = FB2CompilerService()
-    log = []
-
-    for n, group in enumerate(groups_to_run, 1):
-        with _compiler_lock:
-            _compiler_state["progress"] = n - 1
-            _compiler_state["total"] = total
-            _compiler_state["current"] = f"{group.author} / {FB2CompilerService._series_to_display(group.series)}"
-
         try:
-            result = svc.compile_group(group, output_dir=None, delete_sources=delete_sources)
-            if result.success:
-                if result.output_path:
-                    log.append({"ok": True, "msg": f"✓ {result.output_path.name}"})
+            from fb2parser_core.fb2_compiler import FB2CompilerService
+        except ImportError:
+            from fb2parser_core.fb2_compiler import FB2CompilerService  # noqa
+
+        all_groups = list(compiler_job["groups"])
+
+        groups_to_run = [all_groups[i] for i in indices if i < len(all_groups)]
+        total = len(groups_to_run)
+        svc = FB2CompilerService()
+        log = []
+
+        for n, group in enumerate(groups_to_run, 1):
+            compiler_job.update(
+                progress=n - 1, total=total,
+                current=f"{group.author} / {FB2CompilerService._series_to_display(group.series)}",
+            )
+
+            try:
+                result = svc.compile_group(group, output_dir=None, delete_sources=delete_sources)
+                if result.success:
+                    if result.output_path:
+                        log.append({"ok": True, "msg": f"✓ {result.output_path.name}"})
+                    else:
+                        log.append({"ok": True, "msg": f"♻ Очищено: {group.author} / {group.series}"})
                 else:
-                    log.append({"ok": True, "msg": f"♻ Очищено: {group.author} / {group.series}"})
-            else:
-                log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {result.error}"})
-        except Exception as exc:
-            log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {exc}"})
+                    log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {result.error}"})
+            except Exception as exc:
+                log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {exc}"})
 
-        with _compiler_lock:
-            _compiler_state["log"] = log[:]
+            compiler_job.update(log=log[:])
 
-    with _compiler_lock:
-        _compiler_state.update({
-            "running": False, "done": True,
-            "progress": total, "total": total,
-            "current": "", "log": log,
-        })
+        compiler_job.update(
+            running=False, done=True,
+            progress=total, total=total,
+            current="", log=log,
+        )
+    except Exception as exc:
+        compiler_job.update(error=str(exc), running=False)
+    finally:
+        compiler_job.finish()
 
 
 @staff_member_required(login_url="/web/login/")
@@ -1630,14 +1599,16 @@ def compiler_run(request):
     if not indices:
         return JsonResponse({"error": "Не выбрано ни одной группы"}, status=400)
 
-    with _compiler_lock:
-        if _compiler_state["running"]:
-            return JsonResponse({"error": "Компиляция уже запущена"}, status=409)
-        _compiler_state.update({
-            "running": True, "done": False, "error": None,
-            "progress": 0, "total": len(indices), "current": "",
-            "log": [],
-        })
+    if compiler_job["running"]:
+        return JsonResponse({"error": "Компиляция уже запущена"}, status=409)
+    # groups/folder must survive this reset — try_start() only overlays `fields`
+    # on top of the class default, which would otherwise wipe the scan results.
+    if not compiler_job.try_start(
+        groups=compiler_job["groups"], folder=compiler_job["folder"],
+        done=False, error=None,
+        progress=0, total=len(indices), current="", log=[],
+    ):
+        return JsonResponse({"error": "Компиляция уже запущена"}, status=409)
 
     t = threading.Thread(target=_run_compiler_thread, args=(indices, delete_sources), daemon=True)
     t.start()
@@ -1647,8 +1618,7 @@ def compiler_run(request):
 @staff_member_required(login_url="/web/login/")
 def compiler_status(request):
     """GET — текущий статус компиляции (для polling)."""
-    with _compiler_lock:
-        s = dict(_compiler_state)
+    s = compiler_job.get()
     s.pop("groups", None)
     s["folder"] = str(s.get("folder", ""))
     return JsonResponse(s)
@@ -1656,29 +1626,25 @@ def compiler_status(request):
 
 # ── Синхронизация ─────────────────────────────────────────────────────────────
 
-_sync_lock = threading.Lock()
-_sync_state: dict = {
+sync_job = JobState("fb2parser:sync", {
     "running": False, "done": False, "error": None,
     "processed": 0, "total": 0, "current": "",
     "stats": {},
     "log": [],
-}
-_sync_stop_event = threading.Event()
+})
+sync_stop_flag = JobFlag("fb2parser:sync:stop")
 # {abs_path: genre_name} — папки с назначенным жанром в текущей сессии
-_genre_assignments: dict = {}
-_genre_assignments_lock = threading.Lock()
+genre_assignments = SharedDict("fb2parser:genre_assignments")
 
 
 @staff_member_required(login_url="/web/login/")
 def sync(request):
-    with _sync_lock:
-        state = dict(_sync_state)
+    state = sync_job.get()
     pct = 0
     if state["total"] > 0:
         pct = min(100, int(state["processed"] / state["total"] * 100))
     scan_path = request.GET.get("scan_path", "").strip()
-    with _genre_assignments_lock:
-        assignments = dict(_genre_assignments)
+    assignments = genre_assignments.get()
     from fb2parser_core.settings_manager import SettingsManager
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
@@ -1696,8 +1662,7 @@ def sync_clear_assignments(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
-    with _genre_assignments_lock:
-        _genre_assignments.clear()
+    genre_assignments.clear()
     from django.http import HttpResponse
     return HttpResponse("ok")
 
@@ -1724,13 +1689,11 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
     from .fb2parser_bridge import _config_path
     on_log("─" * 40)
     on_log(f"🔧 Авто-компиляция серий ({label})...")
-    with _sync_lock:
-        _sync_state["current"] = "Авто-компиляция серий..."
+    sync_job["current"] = "Авто-компиляция серий..."
 
     def _on_group(author, series, success):
         on_log(f"{'✓' if success else '✗'} {author} — {series}")
-        with _sync_lock:
-            _sync_state["current"] = f"{author} — {series}"
+        sync_job["current"] = f"{author} — {series}"
 
     try:
         result = auto_compile_library(
@@ -1750,25 +1713,23 @@ def _run_sync_thread():
     db.connections.close_all()
     try:
         svc = get_sync_service()
-        with _sync_lock:
-            scan_path = _sync_state.get("scan_path")
-            allowed_folders = _sync_state.get("allowed_folders")
-            auto_compile = _sync_state.get("auto_compile", False)
+        _state = sync_job.get()
+        scan_path = _state.get("scan_path")
+        allowed_folders = _state.get("allowed_folders")
+        auto_compile = _state.get("auto_compile", False)
         if scan_path:
             from pathlib import Path as _Path
             svc.last_scan_path = _Path(scan_path)
         log_lines = []
 
         def on_progress(cur, tot, msg):
-            if _sync_stop_event.is_set():
+            if sync_stop_flag.is_set():
                 raise InterruptedError("Остановлено пользователем")
-            with _sync_lock:
-                _sync_state.update({"processed": cur, "total": tot, "current": msg})
+            sync_job.update(processed=cur, total=tot, current=msg)
 
         def on_log(msg):
             log_lines.append(msg)
-            with _sync_lock:
-                _sync_state["log"] = log_lines[-200:]
+            sync_job["log"] = log_lines[-200:]
 
         compiled_groups = compile_errors = 0
         if auto_compile and svc.last_scan_path and svc.last_scan_path.is_dir():
@@ -1804,15 +1765,14 @@ def _run_sync_thread():
         stats["compiled_groups"] = compiled_groups
         stats["compile_errors"] = compile_errors
 
-        with _sync_lock:
-            _sync_state.update({"done": True, "running": False, "stats": stats})
+        sync_job.update(done=True, running=False, stats=stats)
 
     except Exception as exc:
-        with _sync_lock:
-            _sync_state.update({"error": str(exc), "running": False})
+        sync_job.update(error=str(exc), running=False)
     finally:
         from django import db as _db
         _db.connections.close_all()
+        sync_job.finish()
 
 
 @staff_member_required(login_url="/web/login/")
@@ -1820,28 +1780,26 @@ def sync_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
-    with _sync_lock:
-        if _sync_state["running"]:
-            return _render_sync_status(dict(_sync_state))
-        scan_path = request.POST.get("scan_path", "").strip() or None
-        auto_compile = request.POST.get("auto_compile") == "1"
-        with _genre_assignments_lock:
-            allowed = set(_genre_assignments.keys()) if _genre_assignments else None
-        _sync_stop_event.clear()
-        _sync_state.update({"running": True, "done": False, "error": None,
-                            "processed": 0, "total": 0, "current": "",
-                            "stats": {}, "log": [],
-                            "scan_path": scan_path, "allowed_folders": allowed,
-                            "auto_compile": auto_compile})
+    if sync_job["running"]:
+        return _render_sync_status(sync_job.get())
+    scan_path = request.POST.get("scan_path", "").strip() or None
+    auto_compile = request.POST.get("auto_compile") == "1"
+    assignments = genre_assignments.get()
+    allowed = set(assignments.keys()) if assignments else None
+    sync_stop_flag.clear()
+    if not sync_job.try_start(
+        processed=0, total=0, current="", stats={}, log=[],
+        scan_path=scan_path, allowed_folders=allowed,
+        auto_compile=auto_compile,
+    ):
+        return _render_sync_status(sync_job.get())
     threading.Thread(target=_run_sync_thread, daemon=True).start()
-    return _render_sync_status(dict(_sync_state))
+    return _render_sync_status(sync_job.get())
 
 
 @staff_member_required(login_url="/web/login/")
 def sync_status(request):
-    with _sync_lock:
-        state = dict(_sync_state)
-    return _render_sync_status(state)
+    return _render_sync_status(sync_job.get())
 
 
 @staff_member_required(login_url="/web/login/")
@@ -1849,10 +1807,8 @@ def sync_stop(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
-    _sync_stop_event.set()
-    with _sync_lock:
-        state = dict(_sync_state)
-    return _render_sync_status(state)
+    sync_stop_flag.set()
+    return _render_sync_status(sync_job.get())
 
 
 def _render_sync_status(state):
