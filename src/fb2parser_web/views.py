@@ -559,21 +559,23 @@ def normalize_setup(request):
 def normalize(request):
     import json as _json
     from opds_catalog.sopds_config import sopds_cfg as cfg
+    from .fb2parser_bridge import get_normalization_settings
 
     filter_subfolders = request.session.pop("norm_filter_subfolders", None)
     filter_folder = request.session.pop("norm_filter_folder", None)
     norm_mode = request.session.pop("norm_mode", "normalize")
+    last_path = get_normalization_settings().get_last_normalize_path()
 
     with _norm_lock:
         state = dict(_norm_state)
     # Если после перезапуска сервера память пуста — пробуем восстановить кэш
     if not state["records"] and not state["running"]:
-        folder = state.get("folder") or filter_folder or cfg.SOPDS_ROOT_LIB or ""
+        folder = state.get("folder") or filter_folder or last_path or cfg.SOPDS_ROOT_LIB or ""
         if folder:
             _norm_restore_from_cache(folder)
             with _norm_lock:
                 state = dict(_norm_state)
-    root = filter_folder or cfg.SOPDS_ROOT_LIB or ""
+    root = filter_folder or state.get("folder") or last_path or cfg.SOPDS_ROOT_LIB or ""
     return render(request, "fb2parser/normalize.html", _ctx(
         "normalize", "Нормализация",
         root=root,
@@ -683,6 +685,7 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
                 "author_source":    getattr(r, "author_source", ""),
                 "metadata_series":  getattr(r, "metadata_series", ""),
                 "proposed_series":  getattr(r, "proposed_series", ""),
+                "series_number":    getattr(r, "series_number", ""),
                 "series_source":    getattr(r, "series_source", ""),
                 "book_title":       getattr(r, "file_title", ""),
                 "metadata_genre":   getattr(r, "metadata_genre", ""),
@@ -724,6 +727,8 @@ def normalize_start(request):
             pass
     if not folder or not os.path.isdir(folder):
         return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {folder}</div></div>')
+    from .fb2parser_bridge import get_normalization_settings
+    get_normalization_settings().set_last_normalize_path(folder)
     with _norm_lock:
         if _norm_state["running"]:
             return _render_norm_status(dict(_norm_state))
@@ -736,6 +741,18 @@ def normalize_start(request):
         })
     threading.Thread(target=_run_normalize_thread, args=(folder, filter_subfolders), daemon=True).start()
     return _render_norm_status(dict(_norm_state))
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def normalize_set_root(request):
+    """Сохранить путь, введённый в поле "Папка для Input", не дожидаясь запуска нормализации."""
+    from django.http import JsonResponse
+    from .fb2parser_bridge import get_normalization_settings
+    path = request.POST.get("path", "").strip()
+    if path and os.path.isdir(path):
+        get_normalization_settings().set_last_normalize_path(path)
+    return JsonResponse({"ok": True})
 
 
 @staff_member_required(login_url="/web/login/")

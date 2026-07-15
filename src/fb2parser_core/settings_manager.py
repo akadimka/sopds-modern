@@ -163,6 +163,15 @@ class SettingsManager:
         """Получить последнюю папку окна нормализации."""
         return self.settings.get('normalizer_folder', '')
 
+    def set_last_normalize_path(self, path: str) -> None:
+        """Сохранить последний путь, введённый в поле "Папка для Input" на странице нормализации."""
+        self.settings['last_normalize_path'] = path
+        self.save()
+
+    def get_last_normalize_path(self) -> str:
+        """Получить последний путь, введённый в поле "Папка для Input" на странице нормализации."""
+        return self.settings.get('last_normalize_path', '')
+
     def get_genres_file_path(self):
         """Get genres file path / Получить путь к файлу жанров."""
         genres_path = Path(self.settings.get('genres_file_path', 'genres.xml'))

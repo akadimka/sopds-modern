@@ -2124,8 +2124,8 @@ class RegenCSVService:
                 'author_source',
                 'metadata_series',
                 'proposed_series',
-                'series_source',
                 'series_number',
+                'series_source',
                 'file_title',
                 'metadata_genre',
                 'delete_flag'
