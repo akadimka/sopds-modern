@@ -295,10 +295,14 @@ class Precache:
                 elif not author_name:
                     import re as _re
                     author_name = _re.sub(r'\s*\(.*?\)', '', folder_name).strip()
-                if depth > 0:
-                    result = (author_name, "high")
-                    self.author_folder_cache[folder] = result
-                    print(f"[CACHE] Added HIGH: {folder.name} → '{author_name}'")
+                # По этой ветке folder != work_dir всегда (work_dir обрабатывается
+                # отдельно в начале функции и возвращается раньше) — поэтому depth
+                # тут не показатель "это work_dir": при сканировании с filter_paths
+                # целевая папка передаётся сразу с depth=0 и всё равно должна кэшироваться,
+                # иначе result остаётся неопределён и return result падает с UnboundLocalError.
+                result = (author_name, "high")
+                self.author_folder_cache[folder] = result
+                print(f"[CACHE] Added HIGH: {folder.name} → '{author_name}'")
                 try:
                     for subdir in folder.iterdir():
                         if subdir.is_dir() and not subdir.name.startswith('.'):
