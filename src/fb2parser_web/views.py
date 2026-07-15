@@ -664,22 +664,15 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
                     _norm_state["log"].append(str(status))
                     _norm_state["log"] = _norm_state["log"][-200:]
 
-        records = service.generate_csv(folder_path, output_csv_path=output_csv_path, progress_callback=_progress) or []
-
-        # Фильтр по выбранным подпапкам (из dashboard)
+        filter_paths = None
         if filter_subfolders:
             from pathlib import Path as _Path
-            filter_set = set()
-            for sub in filter_subfolders:
-                parts = _Path(str(sub).replace('\\', '/')).parts
-                if parts:
-                    filter_set.add(parts[0].lower())
-            if filter_set:
-                def _fp_top(r):
-                    fp = getattr(r, 'file_path', '') or ''
-                    parts = _Path(str(fp).replace('\\', '/')).parts
-                    return parts[0].lower() if parts else ''
-                records = [r for r in records if _fp_top(r) in filter_set]
+            filter_paths = [str((_Path(folder_path) / sub).resolve()) for sub in filter_subfolders]
+
+        records = service.generate_csv(
+            folder_path, output_csv_path=output_csv_path,
+            progress_callback=_progress, filter_paths=filter_paths,
+        ) or []
 
         recs_dicts = []
         for r in records:
