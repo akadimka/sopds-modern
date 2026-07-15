@@ -12,6 +12,7 @@ TurnKey v.17 основан на Debian 11 (Bullseye).
 | uv | последняя |
 | gunicorn | ≥ 23.0 (входит в зависимости) |
 | БД | SQLite (по умолчанию) или PostgreSQL 17 |
+| memcached | обязателен — общее состояние фоновых задач между worker-процессами gunicorn |
 | ОС | TurnKey Linux 17 / Debian 11 |
 
 ---
@@ -22,8 +23,47 @@ TurnKey v.17 основан на Debian 11 (Bullseye).
 apt update && apt upgrade -y
 apt install -y git curl build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev libffi-dev \
-    liblzma-dev libxml2-dev libxslt1-dev libjpeg-dev
+    liblzma-dev libxml2-dev libxslt1-dev libjpeg-dev memcached
 ```
+
+### Настройка memcached
+
+gunicorn поднимает несколько worker-процессов (`workers = nproc*2+1`, см.
+`sopds.settings.gunicorn`), у каждого своя память. Прогресс фоновых задач
+(скан, нормализация, синхронизация, компилятор) хранится в общем кеше —
+без memcached статус этих операций будет случайно "слетать" на "не
+запущено", если запрос попадёт на другой worker.
+
+Увеличьте лимит памяти и максимальный размер элемента (по умолчанию 64 МБ
+/ 1 МБ — этого мало для прогресса синхронизации по большой библиотеке):
+
+```bash
+nano /etc/memcached.conf
+```
+
+Найдите строку `-m 64` и замените на:
+
+```
+-m 128
+```
+
+Добавьте (или раскомментируйте) строку с максимальным размером элемента:
+
+```
+-I 16m
+```
+
+Примените и включите автозапуск:
+
+```bash
+systemctl restart memcached
+systemctl enable memcached
+systemctl status memcached   # должен слушать 127.0.0.1:11211
+```
+
+> По умолчанию Django-приложение подключается к `127.0.0.1:11211`. Если
+> memcached работает на другом хосте/порту, переопределите это через
+> `MEMCACHED_LOCATION` в `.env` (шаг 6).
 
 ---
 
@@ -111,6 +151,12 @@ SOPDS_BOOK_PATH=/path/to/your/ebook/library
 > SOPDS_DB_PORT=5432
 > ```
 
+> **Опционально** — если memcached работает не на `127.0.0.1:11211`
+> (другой хост/порт):
+> ```env
+> MEMCACHED_LOCATION=127.0.0.1:11211
+> ```
+
 ---
 
 ## 7. Генерация секретного ключа
@@ -180,7 +226,7 @@ mkdir -p /opt/sopds-modern/src/fb2_data/csv
 mkdir -p /opt/sopds-modern/src/log
 ```
 
-> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 13 «Проверка».
+> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 15 «Проверка».
 
 ---
 
@@ -320,7 +366,58 @@ chown www-data:www-data /opt/sopds-modern/tmp
 
 ---
 
-## 14. Проверка
+## 14. (Опционально) Рейтинги Samlib.ru
+
+Если включена настройка **«Рейтинг Samlib»** (FB2Parser → Настройки,
+`samlib_rating` в `config.json`, метод — `series` или `fb2`), рейтинги
+получает отдельная management-команда:
+
+```bash
+cd /opt/sopds-modern/src
+../.venv/bin/python manage.py fetch_samlib_ratings
+```
+
+> Это **бесконечный процесс** (не одноразовая команда и не cron-задача):
+> он в цикле обходит книги без рейтинга, делает паузу 15–30 сек между
+> запросами (дольше — при 429/503 от samlib.ru), а исчерпав очередь, ждёт
+> сутки и проверяет снова. Если настройка `samlib_rating` выключена, команда
+> сразу завершается — включите её *до* запуска.
+
+Запускайте как отдельный systemd-сервис, а не через cron (cron создавал бы
+дублирующиеся бесконечные процессы при каждом запуске):
+
+```bash
+nano /etc/systemd/system/sopds-samlib.service
+```
+
+```ini
+[Unit]
+Description=SOPDS samlib.ru rating fetcher
+After=network.target sopds-modern.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sopds-modern/src
+EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+ExecStart=/opt/sopds-modern/.venv/bin/python manage.py fetch_samlib_ratings
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now sopds-samlib
+systemctl status sopds-samlib
+```
+
+---
+
+## 15. Проверка
 
 Откройте в браузере: `http://<IP-адрес сервера>:8008/` (без Apache) или `http://<IP-адрес сервера>/` (если настроили Apache на шаге 12)
 
@@ -363,3 +460,6 @@ systemctl restart sopds-modern
 | Apache: `403 Forbidden` на статику                                        | Whitenoise обслуживает статику через gunicorn — `ProxyPass /` должен покрывать всё                                            |
 | `systemd`: `status=203/EXEC`                                              | `www-data` не может выполнить Python из `.venv` — Python установлен под `/root` (см. шаг 2, `UV_PYTHON_INSTALL_DIR`)          |
 | `500` при открытии страницы + `FileNotFoundError: .../log/sopds-ng.log`   | Создать папку `mkdir -p /opt/sopds-modern/src/log` (см. шаг 10) и повторить `chown -R www-data:www-data /opt/sopds-modern`    |
+| Sync/Normalize/Scan/Compiler: прогресс случайно "слетает" на "не запущено" | memcached не установлен/не запущен — `systemctl status memcached` (см. шаг 1); проверить `MEMCACHED_LOCATION` в `.env`        |
+| `ConnectionRefusedError`/ошибка кеша в логах gunicorn                     | `systemctl restart memcached`; убедиться что слушает `127.0.0.1:11211` — `ss -ltnp \| grep 11211`                             |
+| Логин отдаёт `403`/недоступен после нескольких неверных попыток          | django-axes: блокировка на 1 час после 5 неудачных попыток. Сбросить вручную: `.venv/bin/python manage.py axes_reset`         |
