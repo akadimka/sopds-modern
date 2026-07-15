@@ -12,13 +12,18 @@ def auto_compile_library(
     library_path: str,
     on_group: Optional[Callable[[str, str, bool], None]] = None,
     config_path: Optional[str] = None,
+    filter_paths: Optional[set] = None,
 ) -> dict:
     """Сгенерировать CSV, найти группы и скомпилировать каждую с удалением исходников.
 
     Args:
-        library_path: путь к папке библиотеки.
+        library_path: путь к папке (библиотеки или произвольной исходной папке —
+            функция не привязана к структуре библиотеки, ``compile_group`` пишет
+            результат рядом с исходниками группы).
         on_group: callback(author, series, success) — после каждой группы.
         config_path: путь к config.json; если None — используется дефолтный.
+        filter_paths: опциональный набор абсолютных путей подпапок — если задан,
+            обрабатываются только файлы внутри них (как в ``synchronize()``).
 
     Returns:
         dict с ключами ok (int), fail (int).
@@ -28,7 +33,7 @@ def auto_compile_library(
     sys.stdout = sys.stderr = _devnull
     try:
         svc_csv = RegenCSVService(config_path=config_path) if config_path else RegenCSVService()
-        records = svc_csv.generate_csv(library_path, output_csv_path=None)
+        records = svc_csv.generate_csv(library_path, output_csv_path=None, filter_paths=filter_paths)
         if not records:
             records = getattr(svc_csv, 'records', []) or []
     finally:

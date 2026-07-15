@@ -15,7 +15,7 @@ _MACHINE_KEYS = frozenset({
     'library_path', 'last_scan_path', 'normalizer_folder', 'genres_file_path',
     'test_window_path', 'duplicate_finder_path', 'compiler_scan_dir', 'last_csv_dir',
     'window_sizes', 'genre_tree_state', 'generate_csv', 'settings_file_path',
-    'sopds',
+    'sopds', 'last_normalize_path',
 })
 
 

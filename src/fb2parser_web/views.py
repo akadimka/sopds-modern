@@ -1702,40 +1702,46 @@ def sync_clear_assignments(request):
     return HttpResponse("ok")
 
 
-def _run_auto_compile(library_path, on_log):
+def _run_compile_pass(target_path, on_log, label, filter_paths=None):
+    """Скомпилировать серии, найденные в target_path (папка-источник или библиотека).
+
+    ``compile_group`` пишет результат рядом с исходными файлами группы (см.
+    fb2_compiler.py) — компиляция не привязана к структуре библиотеки и
+    одинаково работает что над свежесканированной исходной папкой, что над
+    самой библиотекой.
+
+    Args:
+        target_path: папка для сканирования и компиляции.
+        on_log: callback(message_str) для логирования.
+        label: подпись прохода для лога ("до перемещения" / "по библиотеке").
+        filter_paths: опциональный набор разрешённых подпапок — ограничивает
+            обработку только ими (как в synchronize()).
+
+    Returns:
+        Tuple[int, int]: (успешно скомпилировано групп, ошибок).
+    """
     from fb2parser_core.auto_compile_service import auto_compile_library
     from .fb2parser_bridge import _config_path
     on_log("─" * 40)
-    on_log("🔧 Авто-компиляция серий...")
+    on_log(f"🔧 Авто-компиляция серий ({label})...")
     with _sync_lock:
-        _sync_state["running"] = True
         _sync_state["current"] = "Авто-компиляция серий..."
 
-    ok_cnt = fail_cnt = 0
-
     def _on_group(author, series, success):
-        nonlocal ok_cnt, fail_cnt
-        if success:
-            ok_cnt += 1
-        else:
-            fail_cnt += 1
         on_log(f"{'✓' if success else '✗'} {author} — {series}")
         with _sync_lock:
             _sync_state["current"] = f"{author} — {series}"
 
     try:
-        result = auto_compile_library(str(library_path), on_group=_on_group, config_path=_config_path())
-        ok_cnt, fail_cnt = result["ok"], result["fail"]
-        on_log(f"✅ Компиляция завершена: {ok_cnt} групп, ошибок: {fail_cnt}")
+        result = auto_compile_library(
+            str(target_path), on_group=_on_group, config_path=_config_path(),
+            filter_paths=filter_paths,
+        )
+        on_log(f"✅ Компиляция завершена: {result['ok']} групп, ошибок: {result['fail']}")
+        return result["ok"], result["fail"]
     except Exception as exc:
         on_log(f"❌ Ошибка компиляции: {exc}")
-    finally:
-        with _sync_lock:
-            _sync_state["running"] = False
-            stats = dict(_sync_state.get("stats") or {})
-            stats["compiled_groups"] = ok_cnt
-            stats["compile_errors"] = fail_cnt
-            _sync_state["stats"] = stats
+        return 0, 0
 
 
 def _run_sync_thread():
@@ -1747,6 +1753,7 @@ def _run_sync_thread():
         with _sync_lock:
             scan_path = _sync_state.get("scan_path")
             allowed_folders = _sync_state.get("allowed_folders")
+            auto_compile = _sync_state.get("auto_compile", False)
         if scan_path:
             from pathlib import Path as _Path
             svc.last_scan_path = _Path(scan_path)
@@ -1763,18 +1770,42 @@ def _run_sync_thread():
             with _sync_lock:
                 _sync_state["log"] = log_lines[-200:]
 
-        stats = svc.synchronize(
+        compiled_groups = compile_errors = 0
+        if auto_compile and svc.last_scan_path and svc.last_scan_path.is_dir():
+            # Проход 1: компилируем серии, целиком приехавшие в этой синхронизации,
+            # "на месте" в исходной папке — до перемещения в библиотеку. Экономит
+            # запись+удаление файла в библиотеке для файлов, которые всё равно
+            # тут же поглотились бы компиляцией.
+            ok, fail = _run_compile_pass(
+                svc.last_scan_path, on_log, "до перемещения в библиотеку",
+                filter_paths=allowed_folders,
+            )
+            compiled_groups += ok
+            compile_errors += fail
+
+        stats = dict(svc.synchronize(
             progress_callback=on_progress,
             log_callback=on_log,
             allowed_folders=allowed_folders,
-        )
-        with _sync_lock:
-            auto_compile = _sync_state.get("auto_compile", False)
-            _sync_state.update({"done": True, "running": False, "stats": stats or {}})
+        ) or {})
 
-        files_moved = (stats or {}).get("files_moved", 0)
+        files_moved = stats.get("files_moved", 0)
         if auto_compile and files_moved > 0:
-            _run_auto_compile(svc.library_path, on_log)
+            # Проход 2: по всей библиотеке — чтобы новый одиночный том мог
+            # "дособраться" с уже лежащей там ранее скомпилированной серией.
+            # Для уже полностью пересобранных на проходе 1 серий find_groups()
+            # не найдёт ≥2 файлов и просто пропустит их.
+            ok, fail = _run_compile_pass(
+                svc.library_path, on_log, "по библиотеке",
+            )
+            compiled_groups += ok
+            compile_errors += fail
+
+        stats["compiled_groups"] = compiled_groups
+        stats["compile_errors"] = compile_errors
+
+        with _sync_lock:
+            _sync_state.update({"done": True, "running": False, "stats": stats})
 
     except Exception as exc:
         with _sync_lock:
