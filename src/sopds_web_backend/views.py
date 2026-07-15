@@ -803,7 +803,7 @@ def LoginView(request):
     ):
         next_url = reverse("web:main")
 
-    user = authenticate(username=username, password=password)
+    user = authenticate(request, username=username, password=password)
     if user is not None:
         if user.is_active:
             login(request, user)

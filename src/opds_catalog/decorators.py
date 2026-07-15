@@ -50,7 +50,7 @@ def sopds_auth_validate(view_function):
         auth_data = base64.b64decode(auth_data.strip()).decode("utf-8")
         username, password = auth_data.split(":", 1)
 
-        user = auth.authenticate(username=username, password=password)
+        user = auth.authenticate(request, username=username, password=password)
         if user and user.is_active:
             request.user = user
             auth.login(request, user)
