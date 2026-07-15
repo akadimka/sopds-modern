@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'sopds-v20';
+const CACHE_VERSION = 'sopds-v21';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE   = CACHE_VERSION + '-pages';
 const OFFLINE_URL  = '/web/offline/';
@@ -69,21 +69,24 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Страницы /web/ — Network First с офлайн-fallback
+  // Страницы /web/ — Network First с офлайн-fallback.
+  // Кешируем HTML ТОЛЬКО заведомо публичных страниц (белый список) — весь
+  // остальной /web/* требует авторизации на сервере (@sopds_login/@sopds_admin),
+  // и если сохранить такой ответ в PAGE_CACHE, service worker при сбое сети
+  // отдаст его в обход сервера — то есть в обход проверки авторизации — любому,
+  // у кого просто есть доступ к браузеру/устройству.
   if (url.pathname.startsWith('/web/')) {
-    // Страницы с персональным контентом / CSRF не кешируем
-    const NO_CACHE_PATHS = ['/web/login/', '/web/profile/', '/web/settings/', '/web/settings/users/'];
-    const noCache = NO_CACHE_PATHS.some(p => url.pathname.startsWith(p));
+    const PUBLIC_CACHEABLE_PATHS = ['/web/login/', '/web/offline/'];
+    const cacheable = PUBLIC_CACHEABLE_PATHS.some(p => url.pathname.startsWith(p));
 
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          // Не кешируем: редиректы (auth), персональные страницы, не-GET
           if (
             response.ok &&
             !response.redirected &&
             event.request.method === 'GET' &&
-            !noCache
+            cacheable
           ) {
             const clone = response.clone();
             caches.open(PAGE_CACHE).then(c => c.put(event.request, clone));
@@ -91,7 +94,7 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() =>
-          caches.match(event.request)
+          (cacheable ? caches.match(event.request) : Promise.resolve())
             .then(cached => cached || caches.match(OFFLINE_URL))
         )
     );

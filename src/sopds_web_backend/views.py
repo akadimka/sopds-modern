@@ -574,11 +574,9 @@ def GenresView(request):
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
-# g @sopds_login(url="web:login")
+@sopds_login(url="web:login")
 def SearchSuggestView(request):
     """Подсказки для строки поиска через htmx."""
-    logger.critical("Suggestion helper")
-
     if request.method == "POST":
         q = request.POST.get("searchterms", "").strip()
         search_type = request.POST.get("type", "title")
@@ -724,6 +722,7 @@ def offline_page(request):
     return render(request, 'sopds_offline.html')
 
 
+@sopds_login(url="web:login")
 def hello(request):
     from django.db.models import Count
 
