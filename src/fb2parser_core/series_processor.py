@@ -382,6 +382,8 @@ class SeriesProcessor:
             for record in group_records:
                 if record.author_source in _HIGH_PRIORITY:
                     continue  # не трогаем авторитетные источники
+                if record.proposed_author in ('Сборник', 'Соавторство'):
+                    continue  # явный коллективный маркер — не перезаписываем консенсусом
                 if record.proposed_author == consensus_author:
                     continue  # уже правильно
                 if record.proposed_author and record.proposed_author != 'Сборник' and not high_priority:
