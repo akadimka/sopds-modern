@@ -12,6 +12,14 @@ DATABASES = {
     }
 }
 
+# Тесты — один процесс, memcached не нужен и не должен быть обязательным
+# требованием для запуска тестов (см. base.py про причину memcached в проде).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    },
+}
+
 # В тестах не запускается collectstatic, поэтому используем StaticFilesStorage без манифеста
 STORAGES = {
     "default": {
