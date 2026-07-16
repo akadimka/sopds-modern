@@ -78,8 +78,21 @@ class AuthorNormalizer:
         self._init_author_name()
     
     def _init_author_name(self):
-        """Initialize AuthorName with config path."""
-        config_path = self.settings._config_path if hasattr(self.settings, '_config_path') else 'config.json'
+        """Initialize AuthorName with the path to app_settings.json.
+
+        male_names/female_names/author_initials_and_suffixes/name_particles
+        live in app_settings.json, not config.json (see settings_manager.py's
+        _MACHINE_KEYS split) — AuthorName._get_known_names() etc. read the
+        given file directly with json.load(), so it must point there.
+
+        Previously this read `self.settings._config_path`, an attribute that
+        never existed on SettingsManager (the real one is `config_path`), so
+        hasattr() was always False and this silently fell back to the
+        literal string 'config.json' — meaning the known-names list was
+        always empty and every author's Ф/И word order was decided by the
+        much weaker suffix/vowel-ratio fallback heuristics instead.
+        """
+        config_path = self.settings.app_settings_path if hasattr(self.settings, 'app_settings_path') else 'config.json'
         AuthorName.set_config_path(config_path)
     
     def _apply_to_each_author(self, author: str, fn, separator: str = ', ') -> str:
