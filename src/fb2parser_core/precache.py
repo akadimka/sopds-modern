@@ -262,10 +262,29 @@ class Precache:
                 r'^.+\(([А-ЯЁ][а-яёА-ЯЁ\-]{2,}(?:\s[А-ЯЁ][а-яёА-ЯЁ\-]{2,})?)\)\s*$',
                 folder_name,
             )
+
+            # Папка внутри чужой персональной коллекции (напр. "Александр Тамоников -
+            # Сборник\Иван Грозный\") может сама называться как имя персонажа/серии,
+            # которое случайно совпадает с шаблоном ФИО (Иван Грозный, Николай II,
+            # Роман Уланов — "Имя" есть в словаре мужских имён). Без проверки такая
+            # папка перехватывает авторство у уже определённого выше родителя.
+            # Если родитель уже закэширован под ДРУГИМ именем (не пересекающимся по
+            # словам) — не доверяем эвристике по имени папки, оставляем файлы
+            # авторству родителя (metadata-fallback в Pass1 подтвердит по метаданным).
+            _parent_cached = self.author_folder_cache.get(folder.parent)
+            _conflicts_with_parent = False
+            if _parent_cached and not force_author and folder_name not in conversions:
+                _parent_author = _parent_cached[0]
+                if _parent_author and author_name:
+                    _wa = set(author_name.lower().replace('ё', 'е').split())
+                    _wb = set(_parent_author.lower().replace('ё', 'е').split())
+                    _conflicts_with_parent = not (_wa & _wb)
+
             is_author = (
                 force_author
                 or folder_name in conversions
-                or (has_fb2_files and author_name and self._contains_valid_name(author_name))
+                or (has_fb2_files and author_name and self._contains_valid_name(author_name)
+                    and not _conflicts_with_parent)
                 or (has_fb2_files and bool(_paren_surname))
             )
 
@@ -319,7 +338,8 @@ class Precache:
                 # Don't cache, allow parent inheritance to work
 
             # If folder is not author but name parses → cache for inheritance (no FB2 files).
-            elif author_name and depth > 0 and self._contains_valid_name(author_name):
+            elif (author_name and depth > 0 and self._contains_valid_name(author_name)
+                  and not _conflicts_with_parent):
                 result = (author_name, "low")
                 self.author_folder_cache[folder] = result
 
