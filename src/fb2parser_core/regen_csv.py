@@ -772,6 +772,22 @@ class RegenCSVService:
                             if series_combined:
                                 result = (series_combined, 'folder_dataset')
 
+                # Папочный источник — авторитетный (Pass 2 / filename extraction его не
+                # трогает и не проверяет по blacklist, доверяя ему безоговорочно, см.
+                # pass2_series_filename.py). Поэтому blacklist нужно проверить ЗДЕСЬ, до
+                # присвоения source='folder_dataset' — иначе издательский/коллекционный
+                # ярлык вроде "В Серии -Fantasy World" блокирует извлечение из имени файла
+                # на весь пайплайн, и единственный шанс его вычистить — поздний постчек
+                # _postcheck_series_folder_blacklist(), когда Pass 2 уже отработал и
+                # вернулся раньше времени, так и не попробовав имя файла.
+                if result[1] == 'folder_dataset':
+                    _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
+                    if _sfbl is None:
+                        _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
+                        self._series_folder_blacklist_cache = _sfbl
+                    if result[0].lower() in _sfbl:
+                        result = ('', '')
+
                 _series_folder_cache[key] = result
                 return result
 
@@ -909,6 +925,16 @@ class RegenCSVService:
             self._postcheck_strip_leading_number()  # повторно, после backslash-стрипинга
             self._postcheck_fill_empty_authors()
             self._postcheck_strip_digit_prefix_author()
+
+            # Финальный откат к мете (приоритет Папка(3) > Файл(2) > Мета(1)):
+            # к этому моменту и папочный, и файловый источники уже честно
+            # попробованы (включая случаи, где папочное значение забраковано
+            # blacklist'ом в _compute_folder_series и заменено на попытку
+            # извлечения из имени файла). Если оба ничего не дали — метаданные
+            # используются как последний резерв, а не как замена приоритета.
+            # Вызов идемпотентен (трогает только записи с пустым proposed_series).
+            self._postcheck_metadata_rescue()
+
             self._clear_series_for_compilations()
             self.logger.log("[OK] Series cleared for compilations")
 

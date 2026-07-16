@@ -1019,7 +1019,24 @@ class Pass2SeriesFilename:
                             else:
                                 record.proposed_series = series_name
                                 record.series_source = "folder_hierarchy"
-        
+
+        # Общий guard для всех веток выше: папочный источник считается настолько
+        # авторитетным, что _process_single_record просто возвращается, увидев
+        # series_source in ("folder_hierarchy", "folder_dataset", ...) — не давая
+        # ни filename extraction, ни metadata шанса подтвердить/поправить его (см.
+        # начало _process_single_record). Если получившееся значение серии совпадает
+        # с series_folder_blacklist (издательский/коллекционный ярлык папки вроде
+        # "В Серии -Fantasy World"), сбрасываем его здесь — до того как источник
+        # "заморозится" как папочный и заблокирует дальнейшую цепочку приоритета
+        # Папка(3) > Файл(2) > Мета(1).
+        if record.series_source in self._FOLDER_SOURCES and record.proposed_series:
+            _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
+            if _sfbl is None:
+                _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
+                self._series_folder_blacklist_cache = _sfbl
+            if record.proposed_series.lower() in _sfbl:
+                record.proposed_series = ''
+                record.series_source = ''
 
     def _process_single_record(self, record, parts_cache: dict) -> None:
         """Обработать одну запись: определить серию из папки, filename или metadata."""
@@ -3069,6 +3086,31 @@ class Pass2SeriesFilename:
             )
             if _confirmed:
                 return f'{_root_name} {_root_num}\\{_sub_name}'
+
+        # Вариант Д: «Автор. Корень. Подсерия. Том/Книга N. Название» — КОРЕНЬ без
+        # номера вообще (номер есть только у подсерии, через "Книга N").
+        # Пример: «Аберкромби. Земной круг. Первый закон. Книга 1. Кровь и железо»
+        #   → proposed_series = «Земной круг\Первый закон»
+        # Отличие от варианта Б: там корень обязательно пронумерован
+        # («Серия N. Подсерия. Том M»), здесь — нет вообще ни у одного уровня,
+        # кроме идущего перед названием "Книга N".
+        _AUTHOR_ROOT_SUB_TOM_RE = re.compile(
+            r'^(.+?)\.\s+(.+?)\.\s+([А-ЯЁA-Z][^.]{2,}?)\.\s+(?:Том|Книга|Часть|кн\.|Book|Vol\.?)\s+\d',
+            re.IGNORECASE | re.UNICODE,
+        )
+        _tld = _AUTHOR_ROOT_SUB_TOM_RE.match(name_for_parsing)
+        if _tld and metadata_series:
+            _root_name = _tld.group(2).strip()
+            _sub_name = _tld.group(3).strip()
+            _meta_low = _meta_norm(metadata_series.strip())
+            _sub_low = _meta_norm(_sub_name)
+            _confirmed = (
+                _meta_low == _meta_norm(_root_name)
+                or _meta_low == _sub_low
+                or _word_overlap(_meta_low, _sub_low) >= 2
+            )
+            if _confirmed:
+                return f'{_root_name}\\{_sub_name}'
 
         # ══════════════════════════════════════════════════════════════════
         # ШАГ 0.5: «Фамилия N НазваниеСерии. Том N» (без тире-разделителя)
