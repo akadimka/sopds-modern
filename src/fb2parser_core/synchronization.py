@@ -694,11 +694,12 @@ class SynchronizationService:
                 lo, hi = min(covered_volumes), max(covered_volumes)
                 volume_range = str(lo) if lo == hi else f'{lo}-{hi}'
             else:
+                lo = hi = 1
                 volume_range = ''
 
             try:
                 from .fb2_compiler import FB2CompilerService
-                suffix = FB2CompilerService._series_suffix(len(covered_volumes), volume_range)
+                suffix = FB2CompilerService._series_suffix(len(covered_volumes), lo, hi)
             except Exception:
                 suffix = f'т. {volume_range}' if volume_range else 'Сборник'
 
