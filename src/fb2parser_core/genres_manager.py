@@ -209,6 +209,12 @@ class GenresManager:
             if idx == 0:
                 return False  # нет предыдущего соседа, к которому можно "прижаться"
             new_parent = siblings[idx - 1]
+            # Проверяем ДО мутации: если у нового родителя уже есть дочерний
+            # узел с таким именем, add_child() откажет молча, а node к тому
+            # моменту уже будет удалён из старого списка — то есть потерян
+            # из дерева. Поэтому валидируем заранее и ничего не трогаем при конфликте.
+            if any(c.name == node.name for c in new_parent.children):
+                return False
             siblings.pop(idx)
             new_parent.add_child(node)
 
@@ -216,8 +222,13 @@ class GenresManager:
             old_parent = node.parent
             if not old_parent:
                 return False  # уже корневой узел — выше некуда
-            siblings.pop(idx)
             grandparent_list = self._siblings_of(old_parent)
+            # Проверяем ДО мутации: узел не должен конфликтовать по имени
+            # с уже существующими соседями на уровне, куда он поднимается
+            # (сам old_parent из проверки исключаем — это не тот уровень).
+            if any(c.name == node.name for c in grandparent_list if c is not old_parent):
+                return False
+            siblings.pop(idx)
             node.parent = old_parent.parent
             grandparent_list.insert(grandparent_list.index(old_parent) + 1, node)
 
