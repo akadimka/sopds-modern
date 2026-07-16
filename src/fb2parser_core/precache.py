@@ -338,7 +338,14 @@ class Precache:
                 # Don't cache, allow parent inheritance to work
 
             # If folder is not author but name parses → cache for inheritance (no FB2 files).
-            elif (author_name and depth > 0 and self._contains_valid_name(author_name)
+            #
+            # Note: no depth > 0 guard here. With filter_paths (the normalize/compiler
+            # UI's "scan just this folder" mode), the target folder itself is scanned at
+            # depth=0 even though it's NOT self.work_dir (only the true top-level scan hits
+            # the earlier `folder == self.work_dir` branch and returns before reaching this
+            # point) — it still needs a cache entry so its person-name-shaped subfolders
+            # can detect the parent conflict above instead of being misread as new authors.
+            elif (author_name and self._contains_valid_name(author_name)
                   and not _conflicts_with_parent):
                 result = (author_name, "low")
                 self.author_folder_cache[folder] = result
