@@ -1567,11 +1567,16 @@ class Pass2SeriesFilename:
             arc_display = arc_full
             if not arc_norm or len(arc_norm) < 4:
                 continue
-            key = (_norm_s(rec.proposed_author or ''), series_rec)
+            # Папка — часть ключа: это извлечение из ИМЕНИ ФАЙЛА, а не общий поиск
+            # по всей библиотеке. Без этого один и тот же роман, лежащий в разных
+            # изданиях/переводах/подборках (разные папки), схлопывается в одну "дугу",
+            # и её корень/название берутся от случайно первой попавшейся записи.
+            _folder_k = str(Path(rec.file_path).parent)
+            key = (_norm_s(rec.proposed_author or ''), series_rec, _folder_k)
             groups[key].append((rec, vol_num, arc_norm, arc_display, arc_norm_prefix, arc_prefix))
 
         # 2. По каждой группе: arc titles с 2+ вхождениями → подсерия
-        for (_author_k, _series_k), entries in groups.items():
+        for (_author_k, _series_k, _folder_k), entries in groups.items():
             arc_counts: dict = defaultdict(list)
             for rec, vol_num, arc_norm, arc_display, arc_norm_prefix, arc_prefix in entries:
                 arc_counts[arc_norm].append((rec, vol_num, arc_display))
@@ -1678,10 +1683,13 @@ class Pass2SeriesFilename:
             if arc_norm_ps and (arc_norm_ps == _root_base_stripped
                                 or (_root_base_stripped and _root_base_stripped in arc_norm_ps)):
                 continue
-            key = (_norm_s(rec.proposed_author or ''), _norm_s(root_base), _norm_s(arc))
+            # Папка — часть ключа (см. пояснение в первом проходе выше): не смешиваем
+            # разные издания/переводы одной и той же серии, лежащие в разных папках.
+            _folder_k2 = str(Path(rec.file_path).parent)
+            key = (_norm_s(rec.proposed_author or ''), _norm_s(root_base), _norm_s(arc), _folder_k2)
             existing_arcs[key].append((rec, vol_num, root_base, arc))
 
-        for (_ak, _rk, _srk), arc_entries in existing_arcs.items():
+        for (_ak, _rk, _srk, _fk), arc_entries in existing_arcs.items():
             if len(arc_entries) < 2:
                 continue
             vols = sorted(vol_num for _, vol_num, _, _ in arc_entries)
@@ -1753,7 +1761,8 @@ class Pass2SeriesFilename:
             _root_r, _arc_r = _s_r.split('\\', 1)
             _root_base_r = re.sub(r'\s+\d+[-–—]\d+\s*$', '', _root_r).strip()
             _root_base_r = re.sub(r'\s+\d+\s*$', '', _root_base_r).strip()
-            _key_r = (_norm_s(rec.proposed_author or ''), _norm_s(_root_base_r), _norm_s(_arc_r.strip()))
+            _folder_k3 = str(Path(rec.file_path).parent)
+            _key_r = (_norm_s(rec.proposed_author or ''), _norm_s(_root_base_r), _norm_s(_arc_r.strip()), _folder_k3)
             _arc_registry[_key_r].append((rec, int(_sn_r), _root_base_r, _arc_r.strip()))
 
         for rec in records:
@@ -1775,11 +1784,12 @@ class Pass2SeriesFilename:
             if not _arc_norm_f or len(_arc_norm_f) < 4:
                 continue
             _root_ps_f = rec.proposed_series
+            _folder_kf = str(Path(rec.file_path).parent)
             # Пробуем ключ с зачисткой числового суффикса из proposed_series и без
             _root_norm_f = _norm_s(re.sub(r'\s+\d+[-–—]?\d*\s*$', '', _root_ps_f).strip())
-            _key_f = (_norm_s(rec.proposed_author or ''), _root_norm_f, _arc_norm_f)
+            _key_f = (_norm_s(rec.proposed_author or ''), _root_norm_f, _arc_norm_f, _folder_kf)
             if _key_f not in _arc_registry:
-                _key_f = (_norm_s(rec.proposed_author or ''), _norm_s(_root_ps_f), _arc_norm_f)
+                _key_f = (_norm_s(rec.proposed_author or ''), _norm_s(_root_ps_f), _arc_norm_f, _folder_kf)
             if _key_f not in _arc_registry:
                 continue
             _arc_recs_f = _arc_registry[_key_f]

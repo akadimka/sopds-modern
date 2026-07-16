@@ -896,7 +896,7 @@ class RegenCSVService:
             pass6.execute(self.records)
             print(f"[PASS 6] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 6: Abbreviations expanded")
-            
+
             self._postcheck_series_not_equal_author()
             self._postcheck_metadata_rescue()
 
@@ -1108,8 +1108,15 @@ class RegenCSVService:
                     stripped += 1
                     break
 
-            # Generic: если в серии остался '\', берём только часть после последнего '\'
-            if '\\' in record.proposed_series:
+            # Generic: если в серии остался '\', берём только часть после последнего '\'.
+            # Это чистка организационных остатков папки (напр. "В Серии -Fantasy World\Подсерия"),
+            # поэтому применяем только к папочным источникам — легитимную иерархию
+            # "Серия\Подсерия", извлечённую из имени файла (filename_named_arc и т.п.),
+            # трогать нельзя.
+            if '\\' in record.proposed_series and record.series_source in (
+                'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus',
+                'folder_metadata_confirmed',
+            ):
                 record.proposed_series = record.proposed_series.rsplit('\\', 1)[-1].strip()
                 stripped += 1
 
