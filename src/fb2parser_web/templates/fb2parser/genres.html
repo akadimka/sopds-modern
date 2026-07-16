@@ -17,17 +17,48 @@
             <div style="padding:0.4rem 0.7rem;">
                 <input type="text" id="genre-filter" placeholder="{% trans "Filter..." %}" style="margin:0; font-size:0.82rem;">
             </div>
+            <div style="padding:0 0.7rem 0.4rem; display:flex; gap:0.4rem;">
+                <input type="text" id="new-root-genre" placeholder="{% trans "New root genre..." %}" style="margin:0; font-size:0.82rem; flex:1;">
+                <button type="button" class="button secondary" style="margin:0; font-size:0.78rem; padding:0.3rem 0.6rem; white-space:nowrap;"
+                        onclick="genreAddRoot()">+ {% trans "Add" %}</button>
+            </div>
             <div style="flex:1; overflow-y:auto; padding:0 0.5rem 0.5rem;">
                 <ul class="no-bullet" id="genre-tree" style="font-size:0.83rem; margin:0;">
                 {% for g in genre_list %}
                 <li class="genre-node" data-name="{{ g.name|lower }}"
-                    style="padding:0.18rem 0 0.18rem {{ g.depth }}rem;
+                    style="padding:0.2rem 0; padding-left:{{ g.depth }}rem;
                            {% if g.has_children %}font-weight:600;{% endif %}
-                           border-bottom:1px solid var(--border); cursor:pointer;"
-                    onclick="selectGenre('{{ g.name|escapejs }}', this)">
-                    {% if g.depth > 0 %}<span style="color:var(--text-muted);">└ </span>{% endif %}
-                    {{ g.name }}
-                    {% if g.assigned %}<span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;"> ({{ g.assigned|length }})</span>{% endif %}
+                           border-bottom:1px solid var(--border);
+                           display:flex; align-items:center; gap:0.3rem;">
+                    <span style="cursor:pointer; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                          onclick="selectGenre('{{ g.name|escapejs }}', this)">
+                        {% if g.depth > 0 %}<span style="color:var(--text-muted);">└ </span>{% endif %}
+                        {{ g.name }}
+                        {% if g.assigned %}<span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;"> ({{ g.assigned|length }})</span>{% endif %}
+                    </span>
+                    <span class="genre-actions" style="white-space:nowrap; font-size:0.72rem; flex-shrink:0;">
+                        <button type="button" class="button secondary" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Move up" %}" {% if g.is_first %}disabled{% endif %}
+                                onclick="genreMove('{{ g.name|escapejs }}','up')">▲</button>
+                        <button type="button" class="button secondary" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Move down" %}" {% if g.is_last %}disabled{% endif %}
+                                onclick="genreMove('{{ g.name|escapejs }}','down')">▼</button>
+                        <button type="button" class="button secondary" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Make child of previous genre" %}" {% if g.is_first %}disabled{% endif %}
+                                onclick="genreMove('{{ g.name|escapejs }}','indent')">→</button>
+                        <button type="button" class="button secondary" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Move up one level" %}" {% if not g.parent %}disabled{% endif %}
+                                onclick="genreMove('{{ g.name|escapejs }}','outdent')">←</button>
+                        <button type="button" class="button secondary" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Add subgenre" %}"
+                                onclick="genreAddChild('{{ g.name|escapejs }}')">+</button>
+                        <button type="button" class="button secondary" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Rename" %}"
+                                onclick="genreRename('{{ g.name|escapejs }}')">✎</button>
+                        <button type="button" class="button alert" style="margin:0 1px; padding:0.05rem 0.3rem; font-size:0.7rem;"
+                                title="{% trans "Delete" %}"
+                                onclick="genreDelete('{{ g.name|escapejs }}', {% if g.has_children %}true{% else %}false{% endif %})">🗑</button>
+                    </span>
                 </li>
                 {% endfor %}
                 </ul>
@@ -66,6 +97,62 @@
 
 <script>
 const i18n_noAssociations = "{% trans 'No associations' %}";
+const i18n_addChildPrompt = "{% trans 'New subgenre name:' %}";
+const i18n_renamePrompt = "{% trans 'New name:' %}";
+const i18n_deleteConfirm = "{% trans 'Delete genre' %}";
+const i18n_deleteConfirmChildren = "{% trans 'Delete genre together with all its subgenres' %}";
+const GENRES_ADD_URL = "{% url 'fb2parser:genres_add' %}";
+const GENRES_RENAME_URL = "{% url 'fb2parser:genres_rename' %}";
+const GENRES_DELETE_URL = "{% url 'fb2parser:genres_delete' %}";
+const GENRES_MOVE_URL = "{% url 'fb2parser:genres_move' %}";
+
+function _genreCsrf() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
+
+function _genrePost(url, data) {
+    var fd = new FormData();
+    for (var k in data) fd.append(k, data[k]);
+    fetch(url, {method: 'POST', headers: {'X-CSRFToken': _genreCsrf()}, body: fd})
+        .then(r => r.json())
+        .then(res => {
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert("{% trans 'Operation failed: name is empty or already exists in the tree.' %}");
+            }
+        });
+}
+
+function genreAddRoot() {
+    var inp = document.getElementById('new-root-genre');
+    var name = inp.value.trim();
+    if (!name) return;
+    _genrePost(GENRES_ADD_URL, {name: name});
+}
+
+function genreAddChild(parent) {
+    var name = prompt(i18n_addChildPrompt);
+    if (!name) return;
+    _genrePost(GENRES_ADD_URL, {name: name.trim(), parent: parent});
+}
+
+function genreRename(oldName) {
+    var name = prompt(i18n_renamePrompt, oldName);
+    if (!name || name.trim() === oldName) return;
+    _genrePost(GENRES_RENAME_URL, {name: oldName, new_name: name.trim()});
+}
+
+function genreDelete(name, hasChildren) {
+    var msg = (hasChildren ? i18n_deleteConfirmChildren : i18n_deleteConfirm) + ' "' + name + '"?';
+    if (!confirm(msg)) return;
+    _genrePost(GENRES_DELETE_URL, {name: name});
+}
+
+function genreMove(name, direction) {
+    _genrePost(GENRES_MOVE_URL, {name: name, direction: direction});
+}
 
 const GENRE_DATA = {
 {% for g in genre_list %}"{{ g.name|escapejs }}": [{% for a in g.assigned %}"{{ a|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],

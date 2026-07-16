@@ -465,17 +465,26 @@ def database(request):
 
 # ── Жанры ────────────────────────────────────────────────────────────────────
 
-def _genre_tree_to_list(nodes, depth=0):
-    """Рекурсивно сериализует дерево жанров в плоский список для шаблона."""
+def _genre_tree_to_list(nodes, depth=0, parent_name=None):
+    """Рекурсивно сериализует дерево жанров в плоский список для шаблона.
+
+    parent_name/is_first/is_last нужны кнопкам редактирования иерархии
+    (вверх/вниз/сделать дочерним/поднять на уровень), чтобы шаблон мог
+    решить, какие кнопки активны, не обращаясь к дереву напрямую.
+    """
     result = []
-    for node in nodes:
+    total = len(nodes)
+    for i, node in enumerate(nodes):
         result.append({
             "name": node.name,
             "depth": depth,
             "assigned": sorted(node.assigned),
             "has_children": bool(node.children),
+            "parent": parent_name,
+            "is_first": i == 0,
+            "is_last": i == total - 1,
         })
-        result.extend(_genre_tree_to_list(node.children, depth + 1))
+        result.extend(_genre_tree_to_list(node.children, depth + 1, node.name))
     return result
 
 
@@ -494,6 +503,49 @@ def genres(request):
         genre_list=genre_list,
         error=error,
     ))
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_add(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    parent = request.POST.get("parent", "").strip() or None
+    gm = get_genres_manager()
+    ok = gm.add_node(name, parent)
+    return JsonResponse({"ok": ok})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_rename(request):
+    from .fb2parser_bridge import get_genres_manager
+    old_name = request.POST.get("name", "").strip()
+    new_name = request.POST.get("new_name", "").strip()
+    gm = get_genres_manager()
+    ok = gm.rename_node(old_name, new_name)
+    return JsonResponse({"ok": ok})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_delete(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    gm = get_genres_manager()
+    ok = gm.delete_node(name)
+    return JsonResponse({"ok": ok})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_move(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    direction = request.POST.get("direction", "").strip()
+    gm = get_genres_manager()
+    ok = gm.move_node(name, direction)
+    return JsonResponse({"ok": ok})
 
 
 # ── Нормализация ──────────────────────────────────────────────────────────────

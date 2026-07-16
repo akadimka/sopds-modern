@@ -510,6 +510,48 @@ msgstr "▶ Присвоить жанр"
 msgid "No associations"
 msgstr "Нет ассоциаций"
 
+msgid "New root genre..."
+msgstr "Новый корневой жанр..."
+
+msgid "Add"
+msgstr "Добавить"
+
+msgid "Move up"
+msgstr "Переместить вверх"
+
+msgid "Move down"
+msgstr "Переместить вниз"
+
+msgid "Make child of previous genre"
+msgstr "Сделать дочерним предыдущего жанра"
+
+msgid "Move up one level"
+msgstr "Поднять на уровень выше"
+
+msgid "Add subgenre"
+msgstr "Добавить поджанр"
+
+msgid "Rename"
+msgstr "Переименовать"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "New subgenre name:"
+msgstr "Название нового поджанра:"
+
+msgid "New name:"
+msgstr "Новое название:"
+
+msgid "Delete genre"
+msgstr "Удалить жанр"
+
+msgid "Delete genre together with all its subgenres"
+msgstr "Удалить жанр вместе со всеми поджанрами"
+
+msgid "Operation failed: name is empty or already exists in the tree."
+msgstr "Операция не выполнена: название пустое или уже существует в дереве."
+
 # --- genre_assign.html ---
 msgid "🎯 Genre Assignment"
 msgstr "🎯 Присвоение жанра"

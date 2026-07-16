@@ -124,6 +124,109 @@ class GenresManager:
         if node and genre_str in node.assigned:
             node.assigned.remove(genre_str)
             self.save()
+    def _siblings_of(self, node):
+        """Список-контейнер, в котором физически лежит node (root_nodes или node.parent.children)."""
+        return node.parent.children if node.parent else self.root_nodes
+
+    def add_node(self, name, parent_name=None):
+        """Добавить новый узел жанра.
+
+        Args:
+            name: название нового жанра.
+            parent_name: имя родителя (None — добавить корневым узлом).
+
+        Returns:
+            True при успехе, False если имя пустое, уже существует в дереве,
+            либо parent_name не найден.
+        """
+        name = (name or '').strip()
+        if not name or self.find_node(name):
+            return False
+        if parent_name:
+            parent = self.find_node(parent_name)
+            if not parent:
+                return False
+            parent.add_child(GenreNode(name, parent))
+        else:
+            self.root_nodes.append(GenreNode(name))
+        self.save()
+        return True
+
+    def rename_node(self, old_name, new_name):
+        """Переименовать узел. Возвращает False, если old_name не найден
+        либо new_name уже занято другим узлом дерева."""
+        new_name = (new_name or '').strip()
+        if not new_name:
+            return False
+        node = self.find_node(old_name)
+        if not node:
+            return False
+        if new_name != node.name and self.find_node(new_name):
+            return False
+        node.name = new_name
+        self.save()
+        return True
+
+    def delete_node(self, name):
+        """Удалить узел вместе со всеми дочерними (каскадно)."""
+        node = self.find_node(name)
+        if not node:
+            return False
+        self._siblings_of(node).remove(node)
+        self.save()
+        return True
+
+    def move_node(self, name, direction):
+        """Переместить узел в дереве.
+
+        direction:
+            'up'/'down'   — поменять местами с соседним узлом на том же уровне.
+            'indent'      — сделать дочерним последнего предыдущего узла-соседа.
+            'outdent'     — поднять на один уровень выше (стать соседом своего родителя).
+
+        Returns:
+            True при успехе, False если операция невозможна (нет нужного соседа,
+            узел не найден, попытка сделать дочерним себя же и т.п.).
+        """
+        node = self.find_node(name)
+        if not node:
+            return False
+
+        siblings = self._siblings_of(node)
+        idx = siblings.index(node)
+
+        if direction == 'up':
+            if idx == 0:
+                return False
+            siblings[idx - 1], siblings[idx] = siblings[idx], siblings[idx - 1]
+
+        elif direction == 'down':
+            if idx == len(siblings) - 1:
+                return False
+            siblings[idx + 1], siblings[idx] = siblings[idx], siblings[idx + 1]
+
+        elif direction == 'indent':
+            if idx == 0:
+                return False  # нет предыдущего соседа, к которому можно "прижаться"
+            new_parent = siblings[idx - 1]
+            siblings.pop(idx)
+            new_parent.add_child(node)
+
+        elif direction == 'outdent':
+            old_parent = node.parent
+            if not old_parent:
+                return False  # уже корневой узел — выше некуда
+            siblings.pop(idx)
+            grandparent_list = self._siblings_of(old_parent)
+            node.parent = old_parent.parent
+            grandparent_list.insert(grandparent_list.index(old_parent) + 1, node)
+
+        else:
+            return False
+
+        self.save()
+        return True
+
     def get_all_genres(self):
         """
         Получить список всех жанров в плоском формате.
