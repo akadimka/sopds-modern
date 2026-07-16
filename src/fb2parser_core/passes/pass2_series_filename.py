@@ -1928,6 +1928,33 @@ class Pass2SeriesFilename:
                 continue
             record.series_number = f'{lo_b}-{hi_b}'
 
+        # Правило 5: «<текст> NN <ЗаглавнаяБуква…>» без знака препинания перед
+        # числом — например «Тамоников 10 Мятежные воины.fb2». Только для
+        # папочных серий (folder_dataset и т.п.): там сама серия уже надёжно
+        # определена структурой папок, а часть файлов просто не содержит
+        # <sequence number> в метаданных (издатель проставил его не для всех
+        # томов — см. «Проект «Эльба» 2. Отряд «Z»», где 07-09 имеют number=,
+        # а 10+ нет), при этом соседние файлы того же паттерна подтверждают,
+        # что число в имени — это позиция в серии, а не часть заголовка.
+        # (?<![-–—\d]) исключает вторую часть диапазона «1-14» (компиляция
+        # томов 1-14, а не отдельный том №14 — см. «Книги 1-14 (антология)»).
+        _MID_NUM_RE = re.compile(r'(?<![-–—\d])(\d{1,3})(?!\d)\s+(?=[А-ЯЁA-Z«"(])', re.UNICODE)
+        for record in records:
+            if record.series_number:
+                continue  # уже есть — не трогаем
+            if not record.proposed_series or record.series_source not in self._FOLDER_SOURCES_ARC:
+                continue
+            if not record.file_path:
+                continue
+            stem = Path(record.file_path).stem
+            m5 = _MID_NUM_RE.search(stem)
+            if not m5:
+                continue
+            n5 = int(m5.group(1))
+            if 1900 <= n5 <= 2099:
+                continue
+            record.series_number = str(n5)
+
         # Правило 5: «Слово N» в имени файла — «Свиток 1», «Том 3», «Книга 4» и т.п.
         # Применяется только когда series_number ещё не задан (нет метаданных и нет префикса).
         _WORD_NUM_RE = _TOM_WORD_RE
