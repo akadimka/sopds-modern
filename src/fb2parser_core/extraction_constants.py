@@ -6,6 +6,8 @@
 ПРИОРИТЕТЫ ВСЕГДА ЧИТАЮТСЯ ИЗ config.json И НИКОГДА НЕ МЕНЯЮТСЯ!
 """
 
+import re
+
 try:
     from settings_manager import SettingsManager
     _settings = SettingsManager('config.json')
@@ -143,17 +145,22 @@ NO_SERIES_FOLDER_NAMES: frozenset = frozenset({
 
 
 def is_no_series_folder(folder_name: str, extra_names: frozenset = None) -> bool:
-    """Return True if the folder name means 'books without a series'.
+    """Return True if the folder/file name means 'books without a series'.
 
-    Comparison is case-insensitive and treats е́ (ё) as е.
-    extra_names: optional frozenset of user-defined names loaded from config
+    Comparison is case-insensitive and treats е́ (ё) as е. Matches the phrase
+    ANYWHERE in the name (word-boundary match), not just as an exact name —
+    "Абрамов Владимир - Вне серий", "Повесть (вне серии).fb2" and a bare
+    "Вне серий" folder all count.
+
+    extra_names: optional frozenset of user-defined phrases loaded from config
                  (no_series_folder_names). Built-in NO_SERIES_FOLDER_NAMES
                  always acts as a fallback.
     """
     normalized = folder_name.lower().replace('е́', 'е').replace('ё', 'е')
-    if extra_names and normalized in extra_names:
-        return True
-    return normalized in NO_SERIES_FOLDER_NAMES
+    for phrase in NO_SERIES_FOLDER_NAMES | (extra_names or frozenset()):
+        if re.search(r'(?:^|\W)' + re.escape(phrase) + r'(?:\W|$)', normalized):
+            return True
+    return False
 
 class FilterReason:
     """Причины, по которым значение может быть отфильтровано."""

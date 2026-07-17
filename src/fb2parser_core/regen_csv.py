@@ -1017,7 +1017,13 @@ class RegenCSVService:
                     if _open > _close:
                         rec.proposed_author += ')' * (_open - _close)
             self.logger.log("[OK] Final sanitization applied")
-            
+
+            # Финальный гейт: "вне серий"/"без серий" и т.п. — авторитетный маркер
+            # "серии заведомо нет". Идёт последним, чтобы ничего (включая
+            # _postcheck_metadata_rescue) не могло позже подставить серию туда,
+            # где автор/издатель явно её отсутствие пометил.
+            self._postcheck_no_series_marker()
+
             # ===== Save CSV =====
             if self._do_save_csv:
                 if progress_callback:
@@ -1132,6 +1138,30 @@ class RegenCSVService:
         if stripped:
             print(f"[POST-CHECK] Stripped folder prefix from {stripped} series values")
             self.logger.log(f"[OK] POST-CHECK: Stripped folder prefix from {stripped} series values")
+
+    def _postcheck_no_series_marker(self) -> None:
+        """Обнуляет серию для файлов, помеченных как заведомо не имеющие серии.
+
+        Фраза вида "вне серий", "без серии", "standalone" и т.п.
+        (no_series_folder_names + встроенный список) в ЛЮБОЙ папке пути
+        или в самом имени файла — это явное авторское/издательское указание
+        "серии нет", а не "серия не определена". Такую запись нельзя
+        рескьюить из metadata_series или любого другого источника.
+        """
+        cleared = 0
+        for record in self.records:
+            if not record.proposed_series:
+                continue
+            path = Path(record.file_path)
+            parts_to_check = (*path.parts[:-1], path.stem)
+            if any(is_no_series_folder(part, self._no_series_names) for part in parts_to_check):
+                record.proposed_series = ''
+                record.series_number = ''
+                record.series_source = 'no_series_folder'
+                cleared += 1
+        if cleared:
+            print(f"[POST-CHECK] Cleared {cleared} series values ('вне серий'/'без серии' marker)")
+            self.logger.log(f"[OK] POST-CHECK: Cleared {cleared} series values marked 'no series'")
 
     def _clear_series_for_compilations(self) -> None:
         """Clear series for compilation/collection records.
