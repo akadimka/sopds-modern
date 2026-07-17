@@ -182,11 +182,19 @@ class RegenCSVService:
             return True
 
         # Извлечь уникальные фамилии из proposed_author
-        # Формат: "Фамилия Имя" или "Фамилия Имя, Фамилия Имя"
+        # Формат: "Фамилия Имя" или "Фамилия Имя, Фамилия Имя".
+        # Исключение: если первое слово — это просто инициал ("С.", "С"),
+        # автор в порядке "Инициал. Фамилия" (не был нормализован в ФИ,
+        # т.к. ни инициал, ни фамилия-псевдоним не входят в списки известных
+        # имён) — тогда фамилия последнее слово, а не первое.
         surnames = []
         for author in re.split(r'[,;]', proposed_author):
             words = author.strip().replace('ё', 'е').split()
-            if words:
+            if not words:
+                continue
+            if len(words) > 1 and re.match(r'^[а-я]\.?$', words[0].lower()):
+                surnames.append(words[-1].lower())
+            else:
                 surnames.append(words[0].lower())
         unique_surnames = list(dict.fromkeys(surnames))  # дедупликация с сохранением порядка
         if not unique_surnames:
