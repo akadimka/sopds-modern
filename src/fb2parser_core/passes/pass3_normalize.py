@@ -433,17 +433,28 @@ class Pass3Normalize:
                         if 'и' in words_lower_set:
                             pass  # keep as-is — co-author expression, handled elsewhere
                         else:
-                            # Try AuthorName normalization: if it produces exactly 2 words,
-                            # it successfully identified first+last (e.g. "Кристофер Джон Сэнсом"
-                            # → "Сэнсом Кристофер"). Otherwise fall back to first-2-words
-                            # truncation (safe for Russian patronymics like Иванов Иван Иванович).
+                            # Try AuthorName normalization and check what the 3rd+ word
+                            # actually IS via .parts (lastname, firstname, patronymic),
+                            # rather than just counting words. A real Russian patronymic
+                            # (Иванов Иван Иванович) is meant to be dropped — but a plain
+                            # extra given-name word that AuthorName correctly folded into
+                            # firstname (e.g. "Брэдбери Рэй Дуглас" → lastname="Брэдбери",
+                            # firstname="Рэй Дуглас", patronymic=None) must NOT be chopped
+                            # to the first two words — that would silently drop "Дуглас".
                             try:
                                 from name_normalizer import AuthorName as _AN
                             except ImportError:
                                 from ..name_normalizer import AuthorName as _AN
                             _an = _AN(auth)
-                            if _an.is_valid and len(_an.normalized.split()) == 2:
-                                auth = _an.normalized
+                            if _an.is_valid:
+                                _lastname, _firstname, _patronymic = _an.parts
+                                if _patronymic:
+                                    # Настоящее отчество — отбрасываем, оставляем "Фамилия Имя"
+                                    auth = f"{_lastname} {_firstname}" if _lastname and _firstname else _an.normalized
+                                else:
+                                    # Никакого отчества нет — все слова уже корректно
+                                    # распределены между фамилией и именем, не обрезаем.
+                                    auth = _an.normalized
                             else:
                                 auth = ' '.join(words[:2])
                 fixed = []

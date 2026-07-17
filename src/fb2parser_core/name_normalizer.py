@@ -479,22 +479,30 @@ class AuthorName:
                         surname_found_in_middle = True
                         break
                 
-                # If no middle-word surname found, check if we should apply ФИ convention.
-                # When NEITHER first NOR last word is a known first name, the input is most
-                # likely already in ФИ order (Фамилия Имя …) — e.g. foreign author names
-                # from filenames: "Линдквист Йон Айвиде", "Толкин Джон Рональд".
-                # In that case first word = surname is the correct interpretation.
+                # If no middle-word surname found, check every word against the known
+                # first-name list (not just the first/last word). The one word that is
+                # NOT a known first name is by far the strongest surname signal we have —
+                # position alone is unreliable, since a middle/second given name can
+                # coincide with a known name too.
+                # Example: "Брэдбери Рэй Дуглас" — "Рэй" and "Дуглас" are both known
+                # first names, "Брэдбери" is not → lastname="Брэдбери",
+                # firstname="Рэй Дуглас" (original order preserved), regardless of position.
                 if not surname_found_in_middle:
                     known_names = self._get_known_names()
-                    first_is_known = remaining_words[0].lower() in known_names
-                    last_is_known = remaining_words[-1].lower() in known_names
-                    if not first_is_known and not last_is_known:
-                        # Neither end-word recognised as a first name → ФИ convention.
-                        # Keep ALL words: lastname = words[0], firstname = rest joined.
-                        # "Линдквист Йон Айвиде" → lastname="Линдквист", firstname="Йон Айвиде"
-                        # "Маркес Гарсиа Габриэль" → lastname="Маркес", firstname="Гарсиа Габриэль"
-                        lastname = remaining_words[0]
-                        firstname = ' '.join(remaining_words[1:])
+                    unknown_words = [w for w in remaining_words if w.lower() not in known_names]
+                    if len(unknown_words) == 1:
+                        lastname = unknown_words[0]
+                        firstname = ' '.join(w for w in remaining_words if w != lastname)
+                    else:
+                        # Ambiguous (0, 2+ unknown words) — fall back to the old
+                        # position-based heuristic: if NEITHER end word is known, assume
+                        # the input is already in ФИ order (Фамилия Имя …), e.g. foreign
+                        # names from filenames: "Линдквист Йон Айвиде", "Толкин Джон Рональд".
+                        first_is_known = remaining_words[0].lower() in known_names
+                        last_is_known = remaining_words[-1].lower() in known_names
+                        if not first_is_known and not last_is_known:
+                            lastname = remaining_words[0]
+                            firstname = ' '.join(remaining_words[1:])
 
                 return (lastname, firstname, patronymic)
     
