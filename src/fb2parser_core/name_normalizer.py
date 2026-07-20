@@ -386,10 +386,23 @@ class AuthorName:
             known_names = self._get_known_names()
             word0_lower = remaining_words[0].lower()
             word1_lower = remaining_words[1].lower()
-            
+
             word0_is_known_name = word0_lower in known_names
             word1_is_known_name = word1_lower in known_names
-            
+
+            # A bare initial (single letter, optional dot — "С.", "А") is NEVER a
+            # surname, regardless of what the vowel-ratio/suffix heuristics below
+            # would say (an initial has ~0 vowels, which used to make it win the
+            # "surnames have fewer vowels" tiebreaker). The other word is the
+            # surname. Example: "С. Витицкий" → lastname="Витицкий",
+            # firstname="С." (was backwards: lastname="С.", firstname="Витицкий").
+            _is_initial0 = len(word0_lower.rstrip('.')) == 1
+            _is_initial1 = len(word1_lower.rstrip('.')) == 1
+            if _is_initial0 and not _is_initial1:
+                return (remaining_words[1], remaining_words[0], patronymic)
+            elif _is_initial1 and not _is_initial0:
+                return (remaining_words[0], remaining_words[1], patronymic)
+
             if word0_is_known_name and not word1_is_known_name:
                 return (remaining_words[1], remaining_words[0], patronymic)
             elif word1_is_known_name and not word0_is_known_name:
