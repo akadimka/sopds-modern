@@ -271,18 +271,27 @@ class Pass3Normalize:
                         #   metadata_authors="Пак Чжэен", meta_first="пак" == norm_first="пак" → accept.
                         # Example: "Линдквист Йон Айвиде" → normalized "Айвиде …":
                         #   metadata confirms "Линдквист …" → meta_first != norm_first → keep original.
-                        # Also check the LAST word of metadata_authors, not just the first:
+                        # Also check the LAST word of each metadata author, not just the first:
                         # standard Russian metadata is written "Имя [Отчество] Фамилия" — the
                         # surname sits at the END, not the start. Example: folder "Александр
                         # Тамоников" (ИФ order) + metadata "Александр Александрович Тамоников"
                         # → norm_first="тамоников" only matches meta's LAST word, not its first;
                         # without this check the reorder was rejected and "Александр Тамоников"
                         # (wrong ИФ order) was kept forever.
-                        _meta_words = (record.metadata_authors or "").strip().split() \
+                        # metadata_authors can list MULTIPLE people separated by ';'/',' (e.g. an
+                        # 8-author anthology) — splitting the whole string as one bag of words
+                        # gives the first/last word of the WHOLE LIST, not of any single author's
+                        # name, so the match against norm_first would basically never fire. Split
+                        # into individual author entries first, then check each one's ends.
+                        _meta_authors_raw = (record.metadata_authors or "").replace(';', ',').split(',') \
                             if record.metadata_authors else []
-                        _meta_first = _meta_words[0].lower().replace('ё', 'е') if _meta_words else ""
-                        _meta_last = _meta_words[-1].lower().replace('ё', 'е') if _meta_words else ""
-                        if norm_first and (norm_first == _meta_first or norm_first == _meta_last):
+                        _meta_ends = set()
+                        for _ma in _meta_authors_raw:
+                            _ma_words = _ma.strip().split()
+                            if _ma_words:
+                                _meta_ends.add(_ma_words[0].lower().replace('ё', 'е'))
+                                _meta_ends.add(_ma_words[-1].lower().replace('ё', 'е'))
+                        if norm_first and norm_first in _meta_ends:
                             # Metadata confirms the reorder — trust normalization (includes ё→е)
                             normalized = normalized_candidate
                         else:
