@@ -480,8 +480,17 @@ class AuthorName:
                 firstname = remaining_words[0]
                 
                 surname_found_in_middle = False
+                _known_names_mid = self._get_known_names()
                 for i in range(1, len(remaining_words) - 1):
                     word_lower = remaining_words[i].lower()
+                    # A word already recognised as a known first name can't also be the
+                    # "surname found via suffix" — otherwise a short suffix like "ан"
+                    # false-positives on names such as "Хуан", "Ян", "Иван".
+                    # Example: "Феррандис Хуан Франсиско" — "Хуан" ends in "ан" (a real
+                    # Russian surname suffix) but is a known given name, so it must not
+                    # be treated as the surname here.
+                    if word_lower in _known_names_mid:
+                        continue
                     word_ends = word_lower[-2:] if len(word_lower) >= 2 else ''
                     surname_suffixes = (
                         'ов', 'ева', 'ова', 'ев', 'ева', 'ская', 'ский', 'ин', 'ина', 'ын', 'ына',
