@@ -271,9 +271,18 @@ class Pass3Normalize:
                         #   metadata_authors="Пак Чжэен", meta_first="пак" == norm_first="пак" → accept.
                         # Example: "Линдквист Йон Айвиде" → normalized "Айвиде …":
                         #   metadata confirms "Линдквист …" → meta_first != norm_first → keep original.
-                        _meta_first = (record.metadata_authors or "").strip().split()[0].lower().replace('ё', 'е') \
-                            if record.metadata_authors else ""
-                        if _meta_first and _meta_first == norm_first:
+                        # Also check the LAST word of metadata_authors, not just the first:
+                        # standard Russian metadata is written "Имя [Отчество] Фамилия" — the
+                        # surname sits at the END, not the start. Example: folder "Александр
+                        # Тамоников" (ИФ order) + metadata "Александр Александрович Тамоников"
+                        # → norm_first="тамоников" only matches meta's LAST word, not its first;
+                        # without this check the reorder was rejected and "Александр Тамоников"
+                        # (wrong ИФ order) was kept forever.
+                        _meta_words = (record.metadata_authors or "").strip().split() \
+                            if record.metadata_authors else []
+                        _meta_first = _meta_words[0].lower().replace('ё', 'е') if _meta_words else ""
+                        _meta_last = _meta_words[-1].lower().replace('ё', 'е') if _meta_words else ""
+                        if norm_first and (norm_first == _meta_first or norm_first == _meta_last):
                             # Metadata confirms the reorder — trust normalization (includes ё→е)
                             normalized = normalized_candidate
                         else:
