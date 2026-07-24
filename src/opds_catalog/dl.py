@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import re
 import subprocess
 import zipfile
 
@@ -225,7 +226,15 @@ def SaveProgress(request, book_id):
     except (ValueError, TypeError):
         return JsonResponse({"ok": False, "error": "invalid json"}, status=400)
 
-    anchor_id = str(data.get("anchor_id", ""))[:64]
+    # Строгий allowlist: anchor_id — это html id вида "ref-123"/"vol_1"
+    # (см. fb2_to_html.py), не свободный текст. Отдельно от того что ниже
+    # это же значение попадает в inline <script> на странице ридера
+    # (см. _build_progress_tracker_js) — без этой проверки произвольная
+    # строка с "</script>" ломала бы контекст script и исполнялась как HTML/JS
+    # при следующем открытии книги (stored XSS через этот же, CSRF-незащищённый
+    # эндпоинт).
+    raw_anchor_id = str(data.get("anchor_id", ""))[:64]
+    anchor_id = raw_anchor_id if re.fullmatch(r"[\w.:-]{1,64}", raw_anchor_id) else ""
     try:
         percent = max(0.0, min(100.0, float(data.get("percent", 0))))
     except (TypeError, ValueError):

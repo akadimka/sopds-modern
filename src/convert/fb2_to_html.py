@@ -527,10 +527,17 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
     approximate page number, and its id is what a saved reading position points
     back to.
     """
+    # Defense in depth: escape '<' so a value containing "</script>" can't
+    # break out of this inline <script> block no matter what validation the
+    # caller applied upstream (resume_anchor is server-stored, user-supplied
+    # data — see opds_catalog.dl.SaveProgress's anchor_id allowlist).
+    def _js_string(value: str) -> str:
+        return _json.dumps(value).replace("<", "\\u003c")
+
     return f"""
 (function () {{
-    var PROGRESS_URL = {_json.dumps(progress_url)};
-    var RESUME_ANCHOR = {_json.dumps(resume_anchor)};
+    var PROGRESS_URL = {_js_string(progress_url)};
+    var RESUME_ANCHOR = {_js_string(resume_anchor)};
 
     document.addEventListener('DOMContentLoaded', function () {{
         var paras = Array.prototype.slice.call(document.querySelectorAll('[id^="ref-"]'));
