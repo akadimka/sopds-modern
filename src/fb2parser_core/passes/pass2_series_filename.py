@@ -695,6 +695,7 @@ class Pass2SeriesFilename:
                     if n_str.startswith('0') and len(n_str) >= 2:
                         if not record.series_number:
                             record.series_number = str(n)
+                            record.series_number_source = 'arc_numbering'
                     else:
                         if len(_ar_nums.get((ak, series_norm), set())) >= 2:
                             continue
@@ -741,6 +742,7 @@ class Pass2SeriesFilename:
             if n_str.startswith('0') and len(n_str) >= 2:
                 if not record.series_number:
                     record.series_number = str(n_str.lstrip('0') or '0')
+                    record.series_number_source = 'arc_numbering'
             else:
                 record.proposed_series = f'{record.proposed_series.strip()} {n}'
 
@@ -762,6 +764,7 @@ class Pass2SeriesFilename:
                 n = int(_sm.group(1))
                 if n < 1900 and str(n) != (record.series_number or ''):
                     record.series_number = str(n)
+                    record.series_number_source = 'arc_numbering'
 
     def _apply_folder_series(self, record, parts_cache: dict) -> None:
         """Определить серию из структуры папок и записать в record."""
@@ -1640,6 +1643,7 @@ class Pass2SeriesFilename:
                 for rec, vol_num, _ in arc_entries:
                     rec.proposed_series = new_series
                     rec.series_number = str(vol_num)
+                    rec.series_number_source = 'filename_named_arc'
                     rec.series_source = 'filename_named_arc'
 
         # --- Второй проход: выравниваем существующие Series\Arc из filename-источников ---
@@ -1731,6 +1735,7 @@ class Pass2SeriesFilename:
                 for _i, (_rec, _vn, _, _) in enumerate(_sorted_arc, 1):
                     _rec.proposed_series = _arc_vol_series
                     _rec.series_number = f'{_arc_vol}.{_i}'
+                    _rec.series_number_source = 'filename_named_arc'
                     _rec.series_source = 'filename_named_arc'
                 continue
 
@@ -1742,6 +1747,7 @@ class Pass2SeriesFilename:
             for rec, vol_num, _, _ in arc_entries:
                 rec.proposed_series = new_series
                 rec.series_number = str(vol_num)
+                rec.series_number_source = 'filename_named_arc'
                 rec.series_source = 'filename_named_arc'
 
         # --- Третий проход: обратное применение арка к плоским томам ---
@@ -1802,11 +1808,13 @@ class Pass2SeriesFilename:
             _new_series_f = f'{_root_base_f}{_rsuf_f}\\{_arc_disp_f}'
             rec.proposed_series = _new_series_f
             rec.series_number = str(_vol_f)
+            rec.series_number_source = 'filename_named_arc'
             rec.series_source = 'filename_named_arc'
             # Обновляем уже назначенные тома арка — диапазон мог измениться
             for _arc_rec_f, _arc_vol_f, _, _ in _arc_recs_f:
                 _arc_rec_f.proposed_series = _new_series_f
                 _arc_rec_f.series_number = str(_arc_vol_f)
+                _arc_rec_f.series_number_source = 'filename_named_arc'
 
     def _correct_series_number_from_filename(self, records: List[BookRecord]) -> None:
         """Переопределяет series_number числовым префиксом имени файла.
@@ -1858,6 +1866,7 @@ class Pass2SeriesFilename:
                 lo3, hi3 = int(m3.group(1)), int(m3.group(2))
                 if lo3 < hi3 and not (1900 <= lo3 <= 2099):
                     record.series_number = f'{lo3}-{hi3}'
+                    record.series_number_source = 'filename_bracket_range'
                     continue
 
             # Правило 3.5 — диапазон с именем серии в скобках
@@ -1867,6 +1876,7 @@ class Pass2SeriesFilename:
                 if lo35 < hi35 and not (1900 <= lo35 <= 2099):
                     if _br_series_match(m35.group(1), record.proposed_series):
                         record.series_number = f'{lo35}-{hi35}'
+                        record.series_number_source = 'filename_bracket_series_range'
                         continue
 
             # Правило 1.5: дробный префикс «N.M.» или «N.M_»
@@ -1879,6 +1889,7 @@ class Pass2SeriesFilename:
                 if not (1900 <= fn_frac_lo <= 2099):
                     if not (record.series_number and re.match(r'^\d+\.\d+$', record.series_number)):
                         record.series_number = fn_frac
+                        record.series_number_source = 'filename_prefix_fraction'
                     continue
 
             m = _PREFIX_RE.match(stem)
@@ -1886,6 +1897,7 @@ class Pass2SeriesFilename:
                 fn_num = int(m.group(1))
                 if not (1900 <= fn_num <= 2099):
                     record.series_number = str(fn_num)
+                    record.series_number_source = 'filename_prefix'
                 continue
 
             # Правило 2: «SeriesRoot N. BookTitle» в середине стема.
@@ -1915,6 +1927,7 @@ class Pass2SeriesFilename:
             if record.series_number and re.match(r'^\d+\.\d+$', record.series_number):
                 continue
             record.series_number = fn_val2
+            record.series_number_source = 'filename_series_root'
             # Если диапазон N-M и серия была иерархической «Корень\Арк» —
             # выпрямляем: «Арк» это подзаголовок компиляции, а не настоящая подсерия.
             if '-' in fn_val2 and '\\' in (record.proposed_series or ''):
@@ -1937,6 +1950,7 @@ class Pass2SeriesFilename:
             if lo_b >= hi_b or 1900 <= lo_b <= 2099:
                 continue
             record.series_number = f'{lo_b}-{hi_b}'
+            record.series_number_source = 'filename_bare_range'
 
         # Правило 5: «<текст> NN <ЗаглавнаяБуква…>» без знака препинания перед
         # числом — например «Тамоников 10 Мятежные воины.fb2». Только для
@@ -1964,8 +1978,9 @@ class Pass2SeriesFilename:
             if 1900 <= n5 <= 2099:
                 continue
             record.series_number = str(n5)
+            record.series_number_source = 'filename_mid'
 
-        # Правило 5: «Слово N» в имени файла — «Свиток 1», «Том 3», «Книга 4» и т.п.
+        # Правило 6: «Слово N» в имени файла — «Свиток 1», «Том 3», «Книга 4» и т.п.
         # Применяется только когда series_number ещё не задан (нет метаданных и нет префикса).
         _WORD_NUM_RE = _TOM_WORD_RE
         for record in records:
@@ -1981,8 +1996,9 @@ class Pass2SeriesFilename:
             if 1900 <= fn_numW <= 2099:
                 continue
             record.series_number = str(fn_numW)
+            record.series_number_source = 'filename_word_number'
 
-        # Правило 6: «Пролог» без series_number → sn=0, если в серии нет тома 0.
+        # Правило 7: «Пролог» без series_number → sn=0, если в серии нет тома 0.
         _norm6 = lambda s: _nfc_lower_yo(s).strip()
         _has_zero: set = set()
         for rec in records:
@@ -1997,6 +2013,7 @@ class Pass2SeriesFilename:
             key = (_norm6(rec.proposed_author or ''), _norm6(rec.proposed_series))
             if key not in _has_zero:
                 rec.series_number = '0'
+                rec.series_number_source = 'filename_title_prologue'
 
     def _resolve_hierarchical_flat_mismatch(self, records: List[BookRecord]) -> None:
         """Нормализует рассогласование «A\\B» и «A» у одного автора.
@@ -2196,6 +2213,7 @@ class Pass2SeriesFilename:
                         tm = _TOM_RE.search(Path(rec.file_path).stem)
                         if tm:
                             rec.series_number = tm.group(1)
+                            rec.series_number_source = 'filename_tom_keyword'
             else:
                 # Квалификатор-коллизия: извлекаем слово перед номером только у filename-записей.
                 # folder_hierarchy-записи пропускаем — их серия уже корректна из папки.

@@ -691,6 +691,7 @@ class Pass4Consensus:
                     continue
                 record.proposed_series = next(iter(candidates))
                 record.series_number = num
+                record.series_number_source = 'consensus_subseries'
                 subseries_num_fix_count += 1
 
         self.logger.log(f"[PASS 4] Fixed {subseries_num_fix_count} trailing-number series into subseries")
@@ -758,6 +759,7 @@ class Pass4Consensus:
             record.proposed_series = m.group(1).strip()
             if not sn:
                 record.series_number = num
+                record.series_number_source = 'consensus_trailing_strip'
             trailing_num_strip_count += 1
 
         self.logger.log(f"[PASS 4] Stripped trailing number from {trailing_num_strip_count} series names")
@@ -794,6 +796,7 @@ class Pass4Consensus:
                 if re.match(r'^\d+\.\d+$', _cur_sn):
                     continue
                 record.series_number = fn_num
+                record.series_number_source = 'filename_series_refix'
                 fn_sn_refix_count += 1
 
         self.logger.log(f"[PASS 4] Re-fixed series_number from filename for {fn_sn_refix_count} records")

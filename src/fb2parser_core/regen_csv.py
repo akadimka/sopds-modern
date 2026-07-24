@@ -1165,6 +1165,7 @@ class RegenCSVService:
             if any(is_no_series_folder(part, self._no_series_names) for part in parts_to_check):
                 record.proposed_series = ''
                 record.series_number = ''
+                record.series_number_source = ''
                 record.series_source = 'no_series_folder'
                 cleared += 1
         if cleared:
@@ -1814,6 +1815,7 @@ class RegenCSVService:
                     record.proposed_series = ''
                     record.series_source = ''
                     record.series_number = ''
+                    record.series_number_source = ''
                     _ac_cleared += 1
         if _ac_cleared:
             print(f"[POST-CHECK] Cleared {_ac_cleared} author-consensus series==title (no metadata)")
@@ -1857,6 +1859,7 @@ class RegenCSVService:
             record.proposed_series = ''
             record.series_source = ''
             record.series_number = ''
+            record.series_number_source = ''
             _title_series_fp_count += 1
         if _title_series_fp_count:
             print(f"[POST-CHECK] Cleared {_title_series_fp_count} false-positive series (series+number==title)")
@@ -1946,6 +1949,7 @@ class RegenCSVService:
             sn = (record.series_number or '').strip()
             if sn and re.match(r'^\d+$', sn) and int(sn) >= 100:
                 record.series_number = ''
+                record.series_number_source = ''
                 _count += 1
         if _count:
             print(f"[POST-CHECK] Cleared {_count} oversized series numbers (>=100)")
@@ -2208,8 +2212,9 @@ class RegenCSVService:
                 'author_source',
                 'metadata_series',
                 'proposed_series',
-                'series_number',
                 'series_source',
+                'series_number',
+                'series_number_source',
                 'file_title',
                 'metadata_genre',
                 'delete_flag'
@@ -2224,8 +2229,9 @@ class RegenCSVService:
                     record.author_source,
                     record.metadata_series,
                     record.proposed_series,
-                    record.series_number,
                     record.series_source,
+                    record.series_number,
+                    record.series_number_source,
                     record.file_title,
                     record.metadata_genre if record.metadata_genre and record.metadata_genre != 'None' else '',
                     'DELETE' if getattr(record, 'delete_flag', False) else ''

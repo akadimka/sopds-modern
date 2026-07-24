@@ -716,6 +716,7 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
                 "metadata_series":  getattr(r, "metadata_series", ""),
                 "proposed_series":  getattr(r, "proposed_series", ""),
                 "series_number":    getattr(r, "series_number", ""),
+                "series_number_source": getattr(r, "series_number_source", ""),
                 "series_source":    getattr(r, "series_source", ""),
                 "book_title":       getattr(r, "file_title", ""),
                 "metadata_genre":   getattr(r, "metadata_genre", ""),
@@ -1444,7 +1445,7 @@ def _rec_to_ns(rec):
             'file_path': '', 'file_title': '', 'metadata_authors': '',
             'proposed_author': '', 'author_source': '', 'metadata_series': '',
             'proposed_series': '', 'series_source': '', 'metadata_genre': '',
-            'series_number': '', 'content_hash': '',
+            'series_number': '', 'series_number_source': '', 'content_hash': '',
             'needs_filename_fallback': False, 'delete_flag': False,
         }
         for k, v in _defaults.items():

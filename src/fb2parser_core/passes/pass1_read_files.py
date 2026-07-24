@@ -94,6 +94,7 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
                 meta_series_from_folder = series_fb
 
         # Create record
+        _meta_series_number = meta.get('series_number', '')
         record = BookRecord(
             file_path=str(fb2_file.relative_to(work_dir)),
             file_title=meta['title'] or "[no title]",
@@ -101,7 +102,8 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
             proposed_author=author or "",
             author_source=author_source or "",
             metadata_series=meta['series'] or "",
-            series_number=meta.get('series_number', ''),
+            series_number=_meta_series_number,
+            series_number_source='metadata' if _meta_series_number else "",
             proposed_series=meta_series_from_folder,
             series_source='folder_dataset' if meta_series_from_folder else "",
             metadata_genre=meta['genre'] if meta.get('genre') and meta['genre'] != 'None' else "",
@@ -250,6 +252,7 @@ class BookRecord:
     series_source: str          # Source of series
     metadata_genre: str = ""    # Genres from <genre> tags (comma-separated)
     series_number: str = ""       # Sequence number within series (from <sequence number=.../>)
+    series_number_source: str = ""  # Source of series_number: "metadata", "filename_prefix", "consensus_...", etc.
     extracted_series_candidate: str = ""  # Series found in filename (even if blocked by BL)
     needs_filename_fallback: bool = False  # True if folder parse found nothing, need filename PASS 2
     delete_flag: bool = False     # True if this is an older duplicate superseded by a newer variant
@@ -269,6 +272,7 @@ class BookRecord:
             self.metadata_genre,
             self.series_number,
             self.content_hash,
+            self.series_number_source,
         )
 
     @classmethod
@@ -288,6 +292,7 @@ class BookRecord:
             extracted_series_candidate="",  # defaults
             needs_filename_fallback=(data[2] == ""),  # based on proposed_author
             content_hash=data[10] if len(data) > 10 else "",
+            series_number_source=data[11] if len(data) > 11 else "",
         )
 
 
