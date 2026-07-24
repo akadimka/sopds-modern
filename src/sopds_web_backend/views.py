@@ -730,7 +730,7 @@ def hello(request):
     args["stats"] = {
         "allbooks":   Book.objects.count(),
         "allauthors": Author.objects.values("full_name").distinct().count(),
-        "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("section").distinct().count(),
+        "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("genre").distinct().count(),
     }
 
     # Виджет "сейчас читаю" / статистика чтения — только записи, где реально
