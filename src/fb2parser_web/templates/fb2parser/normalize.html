@@ -48,10 +48,11 @@
                 <col id="ntc-3" style="width:110px;">
                 <col id="ntc-4" style="width:160px;">
                 <col id="ntc-5" style="width:160px;">
-                <col id="ntc-6" style="width:50px; min-width:50px; max-width:50px;">
-                <col id="ntc-7" style="width:110px;">
-                <col id="ntc-8" style="width:180px;">
-                <col id="ntc-9" style="width:140px;">
+                <col id="ntc-6" style="width:110px;">
+                <col id="ntc-7" style="width:50px; min-width:50px; max-width:50px;">
+                <col id="ntc-8" style="width:130px;">
+                <col id="ntc-9" style="width:180px;">
+                <col id="ntc-10" style="width:140px;">
             </colgroup>
             <thead style="position:sticky; top:0; z-index:2; background:var(--fp-header-bg); color:var(--fp-header-text);">
                 <tr>
@@ -61,9 +62,10 @@
                     <th class="nt-th nt-src">author_source<div class="nt-resizer" data-col="3"></div></th>
                     <th class="nt-th">metadata_series<div class="nt-resizer" data-col="4"></div></th>
                     <th class="nt-th nt-proposed">proposed_series<div class="nt-resizer" data-col="5"></div></th>
+                    <th class="nt-th nt-src">series_source<div class="nt-resizer" data-col="6"></div></th>
                     <th class="nt-th nt-proposed" style="overflow:visible;">Vol N</th>
-                    <th class="nt-th nt-src">series_source<div class="nt-resizer" data-col="7"></div></th>
-                    <th class="nt-th">book_title<div class="nt-resizer" data-col="8"></div></th>
+                    <th class="nt-th nt-src">series_number_source<div class="nt-resizer" data-col="8"></div></th>
+                    <th class="nt-th">book_title<div class="nt-resizer" data-col="9"></div></th>
                     <th class="nt-th">metadata_genre</th>
                 </tr>
             </thead>
@@ -74,7 +76,7 @@
                    hx-swap="innerHTML"
                 {% endif %}>
                 {% if not state.records %}
-                <tr><td colspan="10" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                <tr><td colspan="11" style="text-align:center; padding:2rem; color:var(--text-muted);">
                     {% trans 'No data — click "Create CSV"' %}
                 </td></tr>
                 {% endif %}

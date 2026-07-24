@@ -8,15 +8,16 @@
     <td class="nt-src">{{ r.author_source }}</td>
     <td class="nt-cell">{{ r.metadata_series }}</td>
     <td class="nt-cell nt-proposed">{{ r.proposed_series }}</td>
-    <td class="nt-cell nt-proposed">{{ r.series_number }}</td>
     <td class="nt-src">{{ r.series_source }}</td>
+    <td class="nt-cell nt-proposed">{{ r.series_number }}</td>
+    <td class="nt-src">{{ r.series_number_source }}</td>
     <td class="nt-cell">{{ r.book_title }}</td>
     <td class="nt-cell">{{ r.metadata_genre }}</td>
 </tr>
 {% endfor %}
 {% if has_more %}
 <tr id="load-more-row">
-    <td colspan="10" style="text-align:center; padding:0.5rem;">
+    <td colspan="11" style="text-align:center; padding:0.5rem;">
         <button class="button secondary" style="margin:0; font-size:0.82rem;"
                 hx-get="{% url 'fb2parser:normalize_table' %}?offset={{ next_offset }}&q={{ q }}"
                 hx-target="#load-more-row"
@@ -27,7 +28,7 @@
 </tr>
 {% endif %}
 {% else %}
-<tr><td colspan="10" style="text-align:center; padding:1.5rem; color:#7f8c8d;">
+<tr><td colspan="11" style="text-align:center; padding:1.5rem; color:#7f8c8d;">
     {% if q %}{% blocktrans with q=q %}Nothing found for query "{{ q }}"{% endblocktrans %}{% else %}{% trans 'No data — run "Create CSV"' %}{% endif %}
 </td></tr>
 {% endif %}
