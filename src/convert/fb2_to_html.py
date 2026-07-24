@@ -327,35 +327,54 @@ def render_coverpage(coverpage, binaries):
 
 
 _READER_CSS = """
+:root {
+    --reader-bg: #1b1b1b;
+    --reader-fg: #ddd;
+    --reader-link: #8ecfff;
+    --reader-border: #444;
+    --reader-toolbar-bg: rgba(30, 30, 30, .92);
+    --reader-font-size: 19px;
+    --reader-line-height: 1.6;
+    --reader-align: left;
+    --reader-max-width: none;
+}
+:root[data-theme="light"] {
+    --reader-bg: #f4f1e8;
+    --reader-fg: #262220;
+    --reader-link: #1a5490;
+    --reader-border: #ccc;
+    --reader-toolbar-bg: rgba(244, 241, 232, .95);
+}
 body {
     margin: 3rem auto;
     padding: 0 3rem;
     font-family: Georgia, serif;
-    line-height: 1.6;
-    color: #ddd;
-    background-color: #1b1b1b;
+    font-size: var(--reader-font-size);
+    line-height: var(--reader-line-height);
+    color: var(--reader-fg);
+    background-color: var(--reader-bg);
 }
-a { color: #8ecfff; }
+a { color: var(--reader-link); }
 table { border-collapse: collapse; margin-bottom: 2rem; }
 th { text-align: left; padding-right: 1rem; vertical-align: top; }
-td, th { border-bottom: 1px solid #444; padding: .35rem .75rem .35rem 0; }
+td, th { border-bottom: 1px solid var(--reader-border); padding: .35rem .75rem .35rem 0; }
 img { max-width: 100%; display: block; margin: 1.5rem auto; }
 blockquote {
     margin-left: 1.5rem; padding-left: 1rem;
-    border-left: 3px solid #555;
+    border-left: 3px solid var(--reader-border);
 }
 pre.poem { font-family: Georgia, serif; white-space: pre-wrap; }
 .note-ref { text-decoration: none; vertical-align: super; font-size: .85em; }
 .note-backlinks { font-size: .9em; margin-bottom: .5rem; }
 .note-backref { text-decoration: none; }
-.notes { margin-top: 4rem; border-top: 1px solid #555; }
+.notes { margin-top: 4rem; border-top: 1px solid var(--reader-border); }
 .book-header { max-width: 820px; margin: 0 auto; }
 .coverpage { text-align: center; margin-bottom: 2rem; }
 .coverpage img { max-width: 100%; max-height: 80vh; }
 .note-number { font-weight: bold; font-size: 1.1em; margin-right: .3em; }
 .toc {
     max-width: 820px; margin: 2rem auto 3rem; padding: 1rem;
-    border: 1px solid #444; text-align: center;
+    border: 1px solid var(--reader-border); text-align: center;
 }
 .toc ul { list-style: none; padding-left: 0; }
 .toc li { margin: .25rem 0; }
@@ -364,6 +383,136 @@ pre.poem { font-family: Georgia, serif; white-space: pre-wrap; }
 .toc-level-2 { margin-left: 1.5rem; }
 .toc-level-3 { margin-left: 3rem; }
 .toc-level-4 { margin-left: 4.5rem; }
+
+main { max-width: var(--reader-max-width); margin: 0 auto; }
+main p { text-align: var(--reader-align); }
+
+#reader-toolbar {
+    position: fixed; top: 0; left: 50%;
+    transform: translate(-50%, -120%);
+    display: flex; align-items: center; gap: .3rem;
+    background: var(--reader-toolbar-bg);
+    border: 1px solid var(--reader-border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: .4rem .6rem;
+    z-index: 1000;
+    transition: transform .2s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+}
+#reader-toolbar.visible { transform: translate(-50%, 0); }
+#reader-toolbar button {
+    background: transparent; color: var(--reader-fg);
+    border: 1px solid var(--reader-border); border-radius: 5px;
+    padding: .3rem .55rem; font-size: .9rem; line-height: 1;
+    font-family: Georgia, serif; cursor: pointer;
+}
+#reader-toolbar button:hover { background: var(--reader-border); }
+#reader-toolbar button.active {
+    background: var(--reader-link); color: var(--reader-bg);
+    border-color: var(--reader-link);
+}
+#reader-toolbar .sep { width: 1px; height: 1.4rem; background: var(--reader-border); margin: 0 .15rem; }
+"""
+
+_READER_TOOLBAR_HTML = """
+<div id="reader-toolbar">
+  <button type="button" data-act="font-dec" title="Уменьшить шрифт">A−</button>
+  <button type="button" data-act="font-inc" title="Увеличить шрифт">A+</button>
+  <span class="sep"></span>
+  <button type="button" data-act="lh-dec" title="Меньше межстрочный интервал">↕−</button>
+  <button type="button" data-act="lh-inc" title="Больше межстрочный интервал">↕+</button>
+  <span class="sep"></span>
+  <button type="button" data-align="left" title="По левому краю">⯇</button>
+  <button type="button" data-align="justify" title="По ширине">≡</button>
+  <button type="button" data-align="right" title="По правому краю">⯈</button>
+  <span class="sep"></span>
+  <button type="button" data-act="width" title="Ширина колонки">⇔</button>
+  <button type="button" data-act="theme" title="Светлая/тёмная тема">◐</button>
+</div>
+"""
+
+_READER_TOOLBAR_JS = """
+(function () {
+    var KEY = 'sopds_reader_prefs';
+    var defaults = { fontSize: 19, theme: 'dark', align: 'left', lineHeight: 1.6, width: 'wide' };
+    var prefs;
+    try {
+        prefs = Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY) || '{}'));
+    } catch (e) {
+        prefs = Object.assign({}, defaults);
+    }
+
+    function widthValue() {
+        if (prefs.width === 'narrow') return '650px';
+        if (prefs.width === 'normal') return '900px';
+        return 'none';
+    }
+
+    function apply() {
+        var root = document.documentElement;
+        root.style.setProperty('--reader-font-size', prefs.fontSize + 'px');
+        root.style.setProperty('--reader-line-height', prefs.lineHeight);
+        root.style.setProperty('--reader-align', prefs.align);
+        root.style.setProperty('--reader-max-width', widthValue());
+        root.setAttribute('data-theme', prefs.theme);
+    }
+
+    function save() {
+        try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {}
+        apply();
+    }
+
+    apply();
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var bar = document.getElementById('reader-toolbar');
+        if (!bar) return;
+
+        function byAct(act) { return bar.querySelector('[data-act="' + act + '"]'); }
+
+        byAct('font-dec').onclick = function () { prefs.fontSize = Math.max(12, prefs.fontSize - 1); save(); };
+        byAct('font-inc').onclick = function () { prefs.fontSize = Math.min(32, prefs.fontSize + 1); save(); };
+        byAct('lh-dec').onclick = function () { prefs.lineHeight = Math.max(1.2, +(prefs.lineHeight - 0.1).toFixed(1)); save(); };
+        byAct('lh-inc').onclick = function () { prefs.lineHeight = Math.min(2.2, +(prefs.lineHeight + 0.1).toFixed(1)); save(); };
+        byAct('theme').onclick = function () { prefs.theme = prefs.theme === 'dark' ? 'light' : 'dark'; save(); };
+        byAct('width').onclick = function () {
+            prefs.width = prefs.width === 'wide' ? 'normal' : (prefs.width === 'normal' ? 'narrow' : 'wide');
+            save();
+        };
+
+        var alignBtns = bar.querySelectorAll('[data-align]');
+        alignBtns.forEach(function (btn) {
+            btn.onclick = function () { prefs.align = btn.getAttribute('data-align'); save(); updateActive(); };
+        });
+
+        function updateActive() {
+            alignBtns.forEach(function (b) {
+                b.classList.toggle('active', b.getAttribute('data-align') === prefs.align);
+            });
+        }
+        updateActive();
+
+        // Показываем панель при скролле вверх (или у самого верха страницы),
+        // прячем при скролле вниз — т.е. пока пользователь читает дальше, панель не мешает.
+        var lastY = window.scrollY;
+        var ticking = false;
+        window.addEventListener('scroll', function () {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(function () {
+                var y = window.scrollY;
+                if (y < 40 || y < lastY - 5) {
+                    bar.classList.add('visible');
+                } else if (y > lastY + 5) {
+                    bar.classList.remove('visible');
+                }
+                lastY = y;
+                ticking = false;
+            });
+        }, { passive: true });
+    });
+})();
 """
 
 
@@ -420,6 +569,8 @@ def _build_html(root, title_hint: str) -> str:
 </style>
 </head>
 <body>
+<script>{_READER_TOOLBAR_JS}</script>
+{_READER_TOOLBAR_HTML}
 <div class="book-header">
 <h1>{html.escape(title)}</h1>
 {render_coverpage(coverpage, binaries)}
