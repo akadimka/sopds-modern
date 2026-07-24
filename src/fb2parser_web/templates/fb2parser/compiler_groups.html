@@ -174,8 +174,10 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
         // onclick содержит JSON.stringify(path), т.е. буквальные двойные кавычки —
         // экранируем их через _esc(), иначе они преждевременно закроют HTML-атрибут
         // onclick="..." (браузер раскодирует &quot; обратно перед выполнением JS).
+        // Явно задаём color — без него кнопка использует дефолтный (тёмный)
+        // цвет текста браузера, а не текущую тему, и на тёмном фоне не видна.
         return '<button type="button" title="' + _esc(title) + '" onclick="' + _esc(onclick) + '" '
-             + 'style="border:none;background:transparent;cursor:pointer;font-size:0.85rem;padding:0 0.15rem;">'
+             + 'style="border:none;background:transparent;color:var(--text);cursor:pointer;font-size:0.85rem;padding:0 0.15rem;">'
              + label + '</button>';
     }
 
