@@ -262,34 +262,31 @@ class FB2CompilerService:
                           добавляем «в N книгах» к служебному слову
         series_complete — True если серия считается завершённой на этом run'е
                           (нет других томов/блоков за его пределами). Если False —
-                          используем «книги N-M» вместо «Дилогия/Трилогия/…»,
-                          т.к. наличие пропущенных/будущих томов означает незаконченность.
+                          используем «т. N-M» вместо «Дилогия/Трилогия/…», т.к.
+                          наличие пропущенных/будущих томов означает незаконченность
+                          (напр. тома 1,2,3 + отдельно том 6 — «т. 1-3», не «Трилогия»).
 
         Правила:
           • lo ∈ {0, 1} И series_complete → служебное слово (Дилогия, Трилогия…)
             или «в N книгах» если слова нет.
-          • lo ∈ {0, 1} И NOT series_complete → «книги 1-N» (неполная серия).
-          • lo > 1 (частичный run) → «т. N» или «т. N-M».
+          • NOT series_complete (независимо от lo) → «т. N» / «т. N-M» — та же
+            нотация, что и для частичного run'а: единообразно показывает диапазон
+            вместо намёка на завершённость.
+          • lo > 1 И series_complete (частичный run) → «т. N» или «т. N-M».
         """
         if hi is None:
             hi = lo + n_volumes - 1
         n_books = part_count if part_count > 0 else n_volumes
-        if lo in (0, 1):
-            if series_complete:
-                if 2 <= n_volumes < len(cls._SERIES_WORDS) and cls._SERIES_WORDS[n_volumes]:
-                    word = cls._SERIES_WORDS[n_volumes]
-                    if n_books > n_volumes:
-                        return f'{word} в {n_books} книгах'
-                    return word
-                if n_books == 1:
-                    return 'в 1 книге'
-                return f'в {n_books} книгах'
-            else:
-                # Серия незавершена — за пределами run'а есть другие тома
-                if lo == hi:
-                    return f'книга {lo}'
-                return f'книги {lo}-{hi}'
-        # Частичный run — указываем диапазон томов/частей
+        if lo in (0, 1) and series_complete:
+            if 2 <= n_volumes < len(cls._SERIES_WORDS) and cls._SERIES_WORDS[n_volumes]:
+                word = cls._SERIES_WORDS[n_volumes]
+                if n_books > n_volumes:
+                    return f'{word} в {n_books} книгах'
+                return word
+            if n_books == 1:
+                return 'в 1 книге'
+            return f'в {n_books} книгах'
+        # Частичный run ИЛИ незавершённая серия — указываем диапазон томов/частей
         _lbl = 'ч.' if use_parts else 'т.'
         if lo == hi:
             _base = f'{_lbl} {lo}'
@@ -3255,14 +3252,16 @@ class FB2CompilerService:
                 suffix = f'{_base} в {_arc_part_count} книгах'
             elif has_subseries and n_top_arcs and n_top_arcs >= 2:
                 suffix = self._series_suffix(n_top_arcs, top_lo, top_hi,
-                                             _arc_part_count or n_volumes, use_parts=True)
+                                             _arc_part_count or n_volumes, use_parts=True,
+                                             series_complete=_sc_compile)
             elif has_subseries and n_top_arcs == 1 and n_volumes > 1 and top_lo > 1:
                 # Одна дуга внутри многодуговой серии, arc-позиция > 1:
                 # «ч. 2 в 3 книгах» — показывает и позицию в родителе, и объём.
                 suffix = f'ч. {top_lo} в {n_volumes} книгах'
             else:
                 suffix = self._series_suffix(n_volumes, top_lo, top_hi,
-                                             _arc_part_count or part_count)
+                                             _arc_part_count or part_count,
+                                             series_complete=_sc_compile)
             # Реальный диапазон томов для <sequence number> в метаданных.
             # top_lo=0 означает что сортировка через sort_key[2] (подсерии без числа в корне).
             _eff_lo = top_lo if top_lo else 1
