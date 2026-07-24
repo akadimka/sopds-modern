@@ -854,6 +854,15 @@ msgstr "Ошибка соединения:"
 msgid "▶ Compile again"
 msgstr "▶ Скомпилировать снова"
 
+msgid "Exclude from compilation"
+msgstr "Исключить из компиляции"
+
+msgid "Exclude and mark for deletion"
+msgstr "Исключить и пометить на удаление"
+
+msgid "Return to compilation"
+msgstr "Вернуть в компиляцию"
+
 # --- genre_picker_list.html ---
 msgid "Genres not found"
 msgstr "Жанры не найдены"

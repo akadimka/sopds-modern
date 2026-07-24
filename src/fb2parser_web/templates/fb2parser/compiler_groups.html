@@ -125,10 +125,12 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 
 <script>
 (function(){
-    var runUrl    = "{% url 'fb2parser:compiler_run' %}";
-    var statusUrl = "{% url 'fb2parser:compiler_status' %}";
+    var runUrl     = "{% url 'fb2parser:compiler_run' %}";
+    var statusUrl  = "{% url 'fb2parser:compiler_status' %}";
+    var excludeUrl = "{% url 'fb2parser:compiler_exclude' %}";
     var csrfToken = (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
     var _pollTimer = null;
+    var _selectedGroupIdx = null;
 
     var MSG_COL_TITLE_BOOK    = "{% trans 'Title' %}";
     var MSG_COL_FILE          = "{% trans 'File' %}";
@@ -146,6 +148,9 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
     var MSG_CONN_ERROR_PREFIX = "{% trans 'Connection error:' %}";
     var MSG_DONE              = "{% trans '✓ Done' %}";
     var MSG_COMPILE_AGAIN     = "{% trans '▶ Compile again' %}";
+    var MSG_EXCLUDE_TITLE     = "{% trans 'Exclude from compilation' %}";
+    var MSG_EXCLUDE_DEL_TITLE = "{% trans 'Exclude and mark for deletion' %}";
+    var MSG_RESTORE_TITLE     = "{% trans 'Return to compilation' %}";
 
     // ── Чекбоксы ────────────────────────────────────────────────────────────
     window.cgUpdateCount = function() {
@@ -164,25 +169,44 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
 
     // ── Выбор группы → нижняя панель ────────────────────────────────────────
     var _selectedRow = null;
+
+    function _actionBtn(label, title, onclick) {
+        // onclick содержит JSON.stringify(path), т.е. буквальные двойные кавычки —
+        // экранируем их через _esc(), иначе они преждевременно закроют HTML-атрибут
+        // onclick="..." (браузер раскодирует &quot; обратно перед выполнением JS).
+        return '<button type="button" title="' + _esc(title) + '" onclick="' + _esc(onclick) + '" '
+             + 'style="border:none;background:transparent;cursor:pointer;font-size:0.85rem;padding:0 0.15rem;">'
+             + label + '</button>';
+    }
+
     window.cgSelectGroup = function(idx, rowEl) {
         // Подсветка
         if (_selectedRow) _selectedRow.style.outline = '';
         _selectedRow = rowEl;
         rowEl.style.outline = '2px solid #2980b9';
+        _selectedGroupIdx = idx;
+        _cgRenderDetail(idx);
+    };
 
+    function _cgRenderDetail(idx) {
         var data = window._cgGroupsBooks[idx];
         if (!data) return;
 
+        var rowEl = document.querySelector('#cg-table tr.cg-row[data-idx="' + idx + '"]');
         var titleEl = document.getElementById('cg-detail-title');
         var outEl   = document.getElementById('cg-detail-outname');
         var bodyEl  = document.getElementById('cg-detail-body');
 
         // Автор + серия из строки таблицы
-        var cells = rowEl.querySelectorAll('td');
-        var author = cells[1] ? cells[1].textContent.trim() : '';
-        var series = cells[2] ? cells[2].textContent.trim() : '';
-        if (titleEl) titleEl.textContent = author + ' / ' + series;
-        if (outEl)   outEl.textContent   = data.output_name ? ('→ ' + data.output_name) : '';
+        if (rowEl) {
+            var cells = rowEl.querySelectorAll('td');
+            var author = cells[1] ? cells[1].textContent.trim() : '';
+            var series = cells[2] ? cells[2].textContent.trim() : '';
+            if (titleEl) titleEl.textContent = author + ' / ' + series;
+        }
+        if (outEl) outEl.textContent = data.output_name ? ('→ ' + data.output_name) : '';
+
+        var canEdit = !data.cleanup_only;
 
         // Строим таблицу книг
         var html = '<table style="border-collapse:collapse; font-size:0.77rem; width:100%;">';
@@ -194,12 +218,17 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
               + '<th style="padding:0.18rem 0.4rem;text-align:center;width:110px;">' + MSG_COL_SOURCE + '</th>'
               + '<th style="padding:0.18rem 0.4rem;text-align:center;width:50px;">' + MSG_COL_VOL + '</th>'
               + '<th style="padding:0.18rem 0.4rem;text-align:right;width:72px;">' + MSG_COL_SIZE + '</th>'
+              + '<th style="padding:0.18rem 0.4rem;text-align:center;width:54px;"></th>'
               + '</tr></thead><tbody>';
 
         // Обычные книги
         (data.books || []).forEach(function(b) {
             var warn  = b.ambiguous ? ' style="background:var(--status-warn-bg);"' : '';
             var volStyle = b.ambiguous ? ' style="color:#e67e22;"' : ' style="color:var(--text-muted);"';
+            var actions = canEdit
+                ? _actionBtn('⊘', MSG_EXCLUDE_TITLE, 'cgExcludeBook(' + idx + ',' + JSON.stringify(b.path) + ',\'exclude\')')
+                  + _actionBtn('🗑', MSG_EXCLUDE_DEL_TITLE, 'cgExcludeBook(' + idx + ',' + JSON.stringify(b.path) + ',\'exclude_delete\')')
+                : '';
             html += '<tr' + warn + ' title="' + _esc(b.file) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:var(--text-muted);">' + b.n + '</td>'
                   + '<td style="padding:0 0.4rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0;" title="' + _esc(b.title) + '">' + _esc(b.title) + '</td>'
@@ -207,41 +236,90 @@ window._cgGroupsBooks = {{ groups_books_json|safe }};
                   + '<td style="padding:0 0.4rem;text-align:center;color:var(--text-muted);font-size:0.73rem;">' + _esc(b.sort_src) + '</td>'
                   + '<td' + volStyle + ' style="padding:0 0.4rem;text-align:center;">' + _esc(b.vol) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:var(--text-muted);">' + b.size + '</td>'
+                  + '<td style="padding:0 0.2rem;text-align:center;white-space:nowrap;">' + actions + '</td>'
                   + '</tr>';
         });
 
-        // Оставляемые файлы — kept (серо-зелёные, для cleanup_only групп)
+        // Оставляемые файлы — kept (серо-зелёные, для cleanup_only групп; действий нет)
         (data.kept || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
             html += '<tr style="background:var(--status-ok-bg);" title="' + MSG_TITLE_KEEP + ' ' + _esc(p) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:#27ae60;">✓</td>'
                   + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#27ae60;">' + _esc(name) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:#27ae60;font-size:0.73rem;">' + MSG_ACTION_KEEP + '</td>'
+                  + '<td></td>'
                   + '</tr>';
         });
 
-        // Дубликаты (красные)
+        // Дубликаты (красные) — уже помечены на удаление, можно вернуть
         (data.dups || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
+            var actions = canEdit ? _actionBtn('↩', MSG_RESTORE_TITLE, 'cgExcludeBook(' + idx + ',' + JSON.stringify(p) + ',\'restore\')') : '';
             html += '<tr style="background:var(--status-err-bg);" title="' + MSG_TITLE_DUP + ' ' + _esc(p) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:#c0392b;">🗑</td>'
                   + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#c0392b;">' + _esc(name) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:#c0392b;font-size:0.73rem;">' + MSG_ACTION_DELETE + '</td>'
+                  + '<td style="padding:0 0.2rem;text-align:center;">' + actions + '</td>'
                   + '</tr>';
         });
 
-        // Исключённые автоматически (светло-оранжевые)
+        // Исключённые вручную (жёлтые) — не удаляются, просто не входят в компиляцию
+        (data.excluded || []).forEach(function(p) {
+            var name = p.replace(/.*[\/\\]/, '');
+            var actions = canEdit ? _actionBtn('↩', MSG_RESTORE_TITLE, 'cgExcludeBook(' + idx + ',' + JSON.stringify(p) + ',\'restore\')') : '';
+            html += '<tr style="background:var(--status-warn-bg);" title="' + MSG_EXCLUDE_TITLE + ': ' + _esc(p) + '">'
+                  + '<td style="padding:0 0.4rem;text-align:center;color:#e67e22;">⊘</td>'
+                  + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#e67e22;">' + _esc(name) + '</td>'
+                  + '<td style="padding:0 0.4rem;text-align:right;color:#e67e22;font-size:0.73rem;">' + MSG_EXCLUDE_TITLE + '</td>'
+                  + '<td style="padding:0 0.2rem;text-align:center;">' + actions + '</td>'
+                  + '</tr>';
+        });
+
+        // Исключённые автоматически (светло-оранжевые) — из-за пробела в томах
         (data.auto_excluded || []).forEach(function(p) {
             var name = p.replace(/.*[\/\\]/, '');
+            var actions = canEdit ? _actionBtn('↩', MSG_RESTORE_TITLE, 'cgExcludeBook(' + idx + ',' + JSON.stringify(p) + ',\'restore\')') : '';
             html += '<tr style="background:var(--status-warn-bg);" title="' + MSG_TITLE_AUTO_EXCL + ' ' + _esc(p) + '">'
                   + '<td style="padding:0 0.4rem;text-align:center;color:#e67e22;">⊘</td>'
                   + '<td colspan="4" style="padding:0 0.4rem;font-family:monospace;font-size:0.72rem;color:#e67e22;">' + _esc(name) + '</td>'
                   + '<td style="padding:0 0.4rem;text-align:right;color:#e67e22;font-size:0.73rem;">' + MSG_ACTION_AUTO_EXCL + '</td>'
+                  + '<td style="padding:0 0.2rem;text-align:center;">' + actions + '</td>'
                   + '</tr>';
         });
 
         html += '</tbody></table>';
         if (bodyEl) bodyEl.innerHTML = html;
+    }
+
+    // ── Исключить/вернуть отдельную книгу ───────────────────────────────────
+    window.cgExcludeBook = function(idx, path, action) {
+        fetch(excludeUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({group_idx: idx, path: path, action: action}),
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if (!data.ok) {
+                alert(MSG_ERROR_PREFIX + ' ' + (data.error || ''));
+                return;
+            }
+            window._cgGroupsBooks[idx] = data.detail;
+            var rowEl = document.querySelector('#cg-table tr.cg-row[data-idx="' + idx + '"]');
+            if (rowEl) {
+                var cells = rowEl.querySelectorAll('td');
+                if (cells[3]) cells[3].textContent = data.row.count;
+                if (cells[4]) cells[4].textContent = data.row.range;
+                rowEl.setAttribute('data-status', data.row.status);
+                rowEl.style.background =
+                    data.row.status === 'ok'      ? 'var(--status-ok-bg)'   :
+                    data.row.status === 'partial' ? 'var(--status-warn-bg)' :
+                    data.row.status === 'alpha'   ? 'var(--status-info-bg)' :
+                    'var(--bg-muted)';
+            }
+            if (_selectedGroupIdx === idx) _cgRenderDetail(idx);
+        })
+        .catch(function(err){ alert(MSG_CONN_ERROR_PREFIX + ' ' + err); });
     };
 
     function _esc(s) {

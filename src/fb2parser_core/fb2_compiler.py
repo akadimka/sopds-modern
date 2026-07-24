@@ -67,6 +67,9 @@ class CompilationGroup:
     cleanup_only: bool = False          # True — новая компиляция не нужна, только удалить дубликаты
     part_count: int = 0                 # > 0 если книги имеют паттерн N.M (том.часть): общее число частей
     series_complete: bool = True        # False если за пределами run'а есть другие тома серии
+    original_books: List[CompilationBook] = None  # Полный список книг группы на момент сканирования
+                                                    # (до ручных исключений) — нужен чтобы "вернуть
+                                                    # в компиляцию" могло восстановить книгу.
 
     def __post_init__(self):
         if self.duplicate_paths is None:
@@ -77,6 +80,8 @@ class CompilationGroup:
             self.excluded_paths = []
         if self.auto_excluded_paths is None:
             self.auto_excluded_paths = []
+        if self.original_books is None:
+            self.original_books = list(self.books)
 
 
 @dataclass
@@ -320,6 +325,115 @@ class FB2CompilerService:
     def _log(self, msg: str):
         if self.logger:
             self.logger.log(msg)
+
+    # ------------------------------------------------------------------
+    # Ручное управление составом группы (перенесено из десктопной версии,
+    # gui_compiler.py: _exclude_book/_restore_book/_recalc_consecutive_runs)
+    # ------------------------------------------------------------------
+
+    def recalc_consecutive_runs(self, group: CompilationGroup) -> None:
+        """Найти непрерывные подряд идущие тома среди group.books, оставить
+        наибольший непрерывный участок, остальные — в auto_excluded_paths.
+
+        Вызывается после любого ручного исключения/восстановления книги —
+        состав группы меняется, и то, что раньше было "без пропусков",
+        может перестать им быть (и наоборот).
+        """
+        def _book_vol(b: CompilationBook) -> Optional[int]:
+            vl = (b.volume_label or '').strip()
+            m = re.match(r'^(\d+)', vl)
+            return int(m.group(1)) if m else None
+
+        vol_books = [(v, b) for b in group.books if (v := _book_vol(b)) is not None]
+        vol_books.sort(key=lambda x: x[0])
+
+        if not vol_books:
+            group.volume_range = ''
+            return
+
+        # Разбиваем на consecutive runs по уникальным top-level томам — несколько
+        # книг с одинаковым номером (подсерии 1.1/1.2/1.3, или два перевода одного
+        # тома) считаются одной позицией, а не разрывом.
+        unique_vols = sorted(set(v for v, _ in vol_books))
+        runs_vols: List[List[int]] = []
+        cur_run_vols = [unique_vols[0]]
+        for i in range(1, len(unique_vols)):
+            if unique_vols[i] == unique_vols[i - 1] + 1:
+                cur_run_vols.append(unique_vols[i])
+            else:
+                runs_vols.append(cur_run_vols)
+                cur_run_vols = [unique_vols[i]]
+        runs_vols.append(cur_run_vols)
+
+        if len(runs_vols) > 1:
+            # Есть пробелы — оставляем наибольший run (при равенстве длины — последний)
+            best_vols = max(runs_vols, key=lambda r: (len(r), r[0]))
+            best_vol_set = set(best_vols)
+            for v, b in vol_books:
+                if v not in best_vol_set:
+                    group.auto_excluded_paths.append(b.abs_path)
+            group.books = [b for v, b in vol_books if v in best_vol_set]
+            lo, hi = best_vols[0], best_vols[-1]
+        else:
+            lo, hi = unique_vols[0], unique_vols[-1]
+
+        group.volume_range = f'{lo}-{hi}' if lo != hi else str(lo)
+        group.order_determined = all(not b.order_ambiguous for b in group.books)
+
+    def exclude_book(self, group: CompilationGroup, path: Path, delete: bool) -> None:
+        """Исключить книгу из компиляции.
+
+        delete=False: файл остаётся на диске нетронутым (excluded_paths).
+        delete=True:  файл дополнительно помечается на удаление (duplicate_paths).
+        """
+        p_res = Path(path).resolve()
+        group.books = [b for b in group.books if b.abs_path.resolve() != p_res]
+
+        if delete:
+            if not any(p.resolve() == p_res for p in group.duplicate_paths):
+                group.duplicate_paths.append(Path(path))
+        else:
+            if not any(p.resolve() == p_res for p in group.excluded_paths):
+                group.excluded_paths.append(Path(path))
+
+        # Старые авто-исключения возвращаем в books — пересчёт рана решит заново,
+        # какие из них теперь укладываются в непрерывный участок.
+        orig = group.original_books or []
+        for prev_auto in list(group.auto_excluded_paths):
+            if not any(b.abs_path.resolve() == prev_auto.resolve() for b in group.books):
+                for ob in orig:
+                    if ob.abs_path.resolve() == prev_auto.resolve():
+                        group.books.append(ob)
+                        break
+        group.auto_excluded_paths = []
+
+        self.recalc_consecutive_runs(group)
+
+    def restore_book(self, group: CompilationGroup, path: Path) -> None:
+        """Вернуть книгу из excluded_paths/duplicate_paths обратно в компиляцию."""
+        p_res = Path(path).resolve()
+
+        group.excluded_paths = [x for x in group.excluded_paths if x.resolve() != p_res]
+        group.duplicate_paths = [x for x in group.duplicate_paths if x.resolve() != p_res]
+
+        orig = group.original_books or []
+        for auto_p in list(group.auto_excluded_paths):
+            if not any(b.abs_path.resolve() == auto_p.resolve() for b in group.books):
+                for ob in orig:
+                    if ob.abs_path.resolve() == auto_p.resolve():
+                        group.books.append(ob)
+                        break
+        group.auto_excluded_paths = []
+
+        if not any(b.abs_path.resolve() == p_res for b in group.books):
+            for ob in orig:
+                if ob.abs_path.resolve() == p_res:
+                    group.books.append(ob)
+                    break
+
+        group.books.sort(key=lambda b: b.sort_key)
+        group.order_determined = all(not b.order_ambiguous for b in group.books)
+        self.recalc_consecutive_runs(group)
 
     # ------------------------------------------------------------------
     # Группировка записей

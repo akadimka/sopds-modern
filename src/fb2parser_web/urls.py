@@ -34,6 +34,7 @@ urlpatterns = [
     path("normalize/compiler/scan/",      views.compiler_scan,       name="compiler_scan"),
     path("normalize/compiler/run/",       views.compiler_run,        name="compiler_run"),
     path("normalize/compiler/status/",    views.compiler_status,     name="compiler_status"),
+    path("normalize/compiler/exclude/",   views.compiler_exclude,    name="compiler_exclude"),
     path("normalize/names/check-online/", views.names_check_online,  name="names_check_online"),
     path("sync/",              views.sync,                   name="sync"),
     path("sync/start/",        views.sync_start,             name="sync_start"),
