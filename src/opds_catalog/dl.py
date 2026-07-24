@@ -2,6 +2,7 @@
 import codecs
 import importlib.util
 import io
+import json
 import logging
 import os
 import subprocess
@@ -14,8 +15,12 @@ from django.http import (
     HttpResponse,
     HttpResponseNotFound,
     HttpResponseRedirect,
+    JsonResponse,
 )
+from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from PIL import Image
 
 from book_tools.format import create_bookfile, mime_detector
@@ -163,6 +168,8 @@ def Thumbnail(request, book_id):
 @xframe_options_exempt
 def ViewHtml(request, book_id):
     """Отдать книгу как HTML для чтения в браузере (только fb2)."""
+    from django.urls import reverse
+
     book = Book.objects.get(id=book_id)
 
     if book.format.lower() != "fb2":
@@ -172,15 +179,66 @@ def ViewHtml(request, book_id):
     if fb2_data is None:
         raise Http404
 
+    resume_anchor = ""
+    if request.user.is_authenticated:
+        entry = bookshelf.objects.filter(user=request.user, book=book).first()
+        if entry:
+            resume_anchor = entry.anchor_id
+
     convert_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "convert"))
     spec = importlib.util.spec_from_file_location(
         "fb2_to_html", os.path.join(convert_dir, "fb2_to_html.py")
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    html_content = module.convert_bytes_to_html_string(fb2_data.read())
+    html_content = module.convert_bytes_to_html_string(
+        fb2_data.read(),
+        progress_url=reverse("opds:save_progress", args=[book_id]) if request.user.is_authenticated else "",
+        resume_anchor=resume_anchor,
+    )
 
     return HttpResponse(html_content, content_type="text/html; charset=utf-8")
+
+
+@csrf_exempt
+@require_POST
+def SaveProgress(request, book_id):
+    """Сохранить позицию чтения (вызывается JS из страницы ридера).
+
+    CSRF-исключение осознанное: запрос шлётся и обычным fetch() во время
+    чтения, и navigator.sendBeacon() при закрытии вкладки (единственный
+    надёжный способ не потерять последнюю позицию) — а Beacon API не умеет
+    добавлять кастомные заголовки, поэтому X-CSRFToken туда не воткнуть.
+    Худшее, что может сделать CSRF здесь — испортить пользователю
+    сохранённую позицию чтения; это не открывает доступ к чужим данным и
+    не требует аутентификации для эксплуатации кем-то посторонним (только
+    от лица уже залогиненного пользователя, чей браузер шлёт запрос).
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"ok": False, "error": "auth required"}, status=401)
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        raise Http404
+    try:
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({"ok": False, "error": "invalid json"}, status=400)
+
+    anchor_id = str(data.get("anchor_id", ""))[:64]
+    try:
+        percent = max(0.0, min(100.0, float(data.get("percent", 0))))
+    except (TypeError, ValueError):
+        percent = 0.0
+
+    entry, _created = bookshelf.objects.get_or_create(user=request.user, book=book)
+    entry.anchor_id = anchor_id
+    entry.progress_percent = percent
+    entry.readtime = timezone.now()
+    if percent >= 98.0:
+        entry.finished = True
+    entry.save(update_fields=["anchor_id", "progress_percent", "readtime", "finished"])
+    return JsonResponse({"ok": True})
 
 
 def ConvertFB2(request, book_id, convert_type):

@@ -93,6 +93,7 @@ urlpatterns = [
         r"^search/(?P<searchterms>.+)/$", feeds.SearchTypesFeed(), name="searchtypes"
     ),
     re_path(r"^view/(?P<book_id>[0-9]+)/$", dl.ViewHtml, name="view_html"),
+    re_path(r"^progress/(?P<book_id>[0-9]+)/$", dl.SaveProgress, name="save_progress"),
     re_path(
         r"^convert/(?P<book_id>[0-9]+)/(?P<convert_type>epub|mobi|azw3)/$",
         dl.ConvertFB2,

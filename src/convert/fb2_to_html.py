@@ -6,6 +6,7 @@ Stdlib only — no external dependencies required.
 """
 import argparse
 import html
+import json as _json
 import re
 import zipfile
 import xml.etree.ElementTree as ET
@@ -516,10 +517,96 @@ _READER_TOOLBAR_JS = """
 """
 
 
-def convert_bytes_to_html_string(fb2_data: bytes) -> str:
-    """Convert raw FB2 bytes to an HTML string (for in-memory use in Django views)."""
+def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
+    """JS: resume at the saved position on load, report reading progress on scroll.
+
+    "Page" doesn't exist as a real concept in this continuous HTML (FB2 has no
+    fixed pagination) — instead each paragraph already carries a document-order
+    "ref-N" id (assigned once per whole document, across every <main> — see
+    _build_html), so the paragraph's position among all of them doubles as an
+    approximate page number, and its id is what a saved reading position points
+    back to.
+    """
+    return f"""
+(function () {{
+    var PROGRESS_URL = {_json.dumps(progress_url)};
+    var RESUME_ANCHOR = {_json.dumps(resume_anchor)};
+
+    document.addEventListener('DOMContentLoaded', function () {{
+        var paras = Array.prototype.slice.call(document.querySelectorAll('[id^="ref-"]'));
+
+        if (RESUME_ANCHOR) {{
+            var target = document.getElementById(RESUME_ANCHOR);
+            if (target) target.scrollIntoView({{ block: 'start' }});
+        }}
+
+        if (!PROGRESS_URL || paras.length === 0) return;
+
+        // Бинарный поиск последнего абзаца, чей верх уже проскроллен —
+        // дёшево даже для книг с десятками тысяч абзацев.
+        function currentIndex() {{
+            var y = window.scrollY + 80;
+            var lo = 0, hi = paras.length - 1, ans = 0;
+            while (lo <= hi) {{
+                var mid = (lo + hi) >> 1;
+                if (paras[mid].offsetTop <= y) {{ ans = mid; lo = mid + 1; }} else {{ hi = mid - 1; }}
+            }}
+            return ans;
+        }}
+
+        var lastSentIndex = -1;
+        function send(anchorId, percent, useBeacon) {{
+            var body = JSON.stringify({{ anchor_id: anchorId, percent: percent }});
+            if (useBeacon && navigator.sendBeacon) {{
+                navigator.sendBeacon(PROGRESS_URL, new Blob([body], {{ type: 'application/json' }}));
+                return;
+            }}
+            fetch(PROGRESS_URL, {{
+                method: 'POST',
+                headers: {{ 'Content-Type': 'application/json' }},
+                credentials: 'same-origin',
+                body: body,
+                keepalive: true,
+            }}).catch(function () {{}});
+        }}
+
+        function reportIfChanged(useBeacon) {{
+            var idx = currentIndex();
+            if (idx === lastSentIndex) return;
+            lastSentIndex = idx;
+            send(paras[idx].id, ((idx + 1) / paras.length) * 100, useBeacon);
+        }}
+
+        var debounceTimer = null;
+        window.addEventListener('scroll', function () {{
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {{ reportIfChanged(false); }}, 1500);
+        }}, {{ passive: true }});
+
+        // На случай если пользователь закрывает вкладку раньше, чем сработает
+        // debounce — sendBeacon гарантированно долетает даже при выгрузке страницы.
+        window.addEventListener('pagehide', function () {{
+            if (debounceTimer) clearTimeout(debounceTimer);
+            lastSentIndex = -1; // форсируем отправку, даже если позиция не менялась с прошлого report
+            reportIfChanged(true);
+        }});
+    }});
+}})();
+"""
+
+
+def convert_bytes_to_html_string(fb2_data: bytes, progress_url: str = "", resume_anchor: str = "") -> str:
+    """Convert raw FB2 bytes to an HTML string (for in-memory use in Django views).
+
+    Args:
+        progress_url: if given, the reader page POSTs {anchor_id, percent} to this
+            URL as the user scrolls, so their reading position survives a reload.
+            Empty string disables progress tracking (e.g. anonymous user).
+        resume_anchor: id of the paragraph/section to scroll to on load (the last
+            position saved for this user+book), or "" to start at the top.
+    """
     root = ET.fromstring(fb2_data)
-    return _build_html(root, title_hint="")
+    return _build_html(root, title_hint="", progress_url=progress_url, resume_anchor=resume_anchor)
 
 
 def fb2_to_html(input_path: Path, output_path: Path):
@@ -529,7 +616,7 @@ def fb2_to_html(input_path: Path, output_path: Path):
     output_path.write_text(html_doc, encoding="utf-8")
 
 
-def _build_html(root, title_hint: str) -> str:
+def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: str = "") -> str:
     binaries = extract_binaries(root)
     meta, annotation, coverpage = extract_description(root)
     title = meta.get("Название") or title_hint
@@ -578,6 +665,7 @@ def _build_html(root, title_hint: str) -> str:
 </div>
 {main_html}
 {notes_html}
+<script>{_build_progress_tracker_js(progress_url, resume_anchor)}</script>
 </body>
 </html>
 """

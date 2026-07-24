@@ -185,6 +185,25 @@ class bookshelf(models.Model):
     book = models.ForeignKey(Book, db_index=True, on_delete=models.CASCADE)
     readtime = models.DateTimeField(null=False, default=timezone.now, db_index=True)
 
+    # Позиция чтения внутри книги: id ближайшего к верху экрана абзаца/секции
+    # (см. render_block/_build_html в convert/fb2_to_html.py — каждому
+    # абзацу присваивается свой "ref-N" id, монотонно по всему документу,
+    # что даёт заодно приблизительный номер "страницы" без реальной пагинации).
+    anchor_id = models.CharField(max_length=64, blank=True, default="")
+    progress_percent = models.FloatField(default=0.0)
+    finished = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        # Одна запись на пару (пользователь, книга): и .get_or_create(user=, book=),
+        # используемый здесь и в Download/ConvertFB2, и чтение позиции в ViewHtml
+        # опираются на то, что такая запись максимум одна — без этого constraint
+        # дубликат строки (гонка запросов, старые данные) роняет get_or_create()
+        # с MultipleObjectsReturned, и сохранение/восстановление позиции чтения
+        # перестаёт работать для конкретного пользователя+книги молча.
+        constraints = [
+            models.UniqueConstraint(fields=["user", "book"], name="unique_bookshelf_user_book"),
+        ]
+
 
 class CounterManager(models.Manager):
     """Менеджер для модели Counter.
