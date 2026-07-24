@@ -413,6 +413,7 @@ def _build_html(root, title_hint: str) -> str:
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title>
 <style>
 {_READER_CSS}
