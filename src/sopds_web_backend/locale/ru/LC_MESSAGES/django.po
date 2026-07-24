@@ -407,6 +407,27 @@ msgstr "Жанры"
 msgid "Series"
 msgstr "Серии"
 
+msgid "Reading"
+msgstr "Чтение"
+
+msgid "page"
+msgstr "стр."
+
+msgid "of"
+msgstr "из"
+
+msgid "Finished"
+msgstr "Прочитано"
+
+msgid "This month"
+msgstr "За месяц"
+
+msgid "Streak"
+msgstr "Подряд"
+
+msgid "days"
+msgstr "дн."
+
 msgid "Random Book"
 msgstr "Случайная книга"
 

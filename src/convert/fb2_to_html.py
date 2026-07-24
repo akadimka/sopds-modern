@@ -555,8 +555,11 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
         }}
 
         var lastSentIndex = -1;
-        function send(anchorId, percent, useBeacon) {{
-            var body = JSON.stringify({{ anchor_id: anchorId, percent: percent }});
+        function send(anchorId, unit, total, percent, useBeacon) {{
+            var body = JSON.stringify({{
+                anchor_id: anchorId, percent: percent,
+                current_unit: unit, total_units: total,
+            }});
             if (useBeacon && navigator.sendBeacon) {{
                 navigator.sendBeacon(PROGRESS_URL, new Blob([body], {{ type: 'application/json' }}));
                 return;
@@ -574,7 +577,7 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
             var idx = currentIndex();
             if (idx === lastSentIndex) return;
             lastSentIndex = idx;
-            send(paras[idx].id, ((idx + 1) / paras.length) * 100, useBeacon);
+            send(paras[idx].id, idx + 1, paras.length, ((idx + 1) / paras.length) * 100, useBeacon);
         }}
 
         var debounceTimer = null;

@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
@@ -719,7 +720,10 @@ def offline_page(request):
 
 @sopds_login(url="web:login")
 def hello(request):
+    from datetime import timedelta
+
     from django.db.models import Count
+    from django.db.models.functions import TruncDate
 
     args = {}
     args["breadcrumbs"] = []
@@ -727,6 +731,49 @@ def hello(request):
         "allbooks":   Book.objects.count(),
         "allauthors": Author.objects.values("full_name").distinct().count(),
         "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("section").distinct().count(),
+    }
+
+    # Виджет "сейчас читаю" / статистика чтения — только записи, где реально
+    # открывали ридер (progress_percent > 0), а не просто скачали файл
+    # (Download/ConvertFB2 тоже создают bookshelf-запись, но с percent=0).
+    reading_qs = bookshelf.objects.filter(user=request.user, progress_percent__gt=0)
+    current_reading = (
+        reading_qs.filter(finished=False)
+        .select_related("book")
+        .prefetch_related("book__series")
+        .order_by("-readtime")
+        .first()
+    )
+    if current_reading:
+        first_series = current_reading.book.series.first()
+        if first_series:
+            bs = bseries.objects.filter(book=current_reading.book, ser=first_series).first()
+            current_reading.series_name = first_series.ser
+            current_reading.series_no = bs.ser_no if bs else None
+            current_reading.series_total = Book.objects.filter(series=first_series).count()
+        else:
+            current_reading.series_name = None
+
+    books_finished_total = reading_qs.filter(finished=True).count()
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    books_finished_month = reading_qs.filter(finished=True, finished_at__gte=month_start).count()
+
+    read_days = set(
+        reading_qs.annotate(day=TruncDate("readtime")).values_list("day", flat=True).distinct()
+    )
+    streak = 0
+    cursor = timezone.localdate()
+    if cursor not in read_days:
+        cursor -= timedelta(days=1)  # сегодня ещё не открывали книгу — не обрываем стрик раньше времени
+    while cursor in read_days:
+        streak += 1
+        cursor -= timedelta(days=1)
+
+    args["reading_stats"] = {
+        "current": current_reading,
+        "books_finished_total": books_finished_total,
+        "books_finished_month": books_finished_month,
+        "streak_days": streak,
     }
     all_genres = list(Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).order_by("-cnt"))
     args["top_genres"]   = all_genres[:5]

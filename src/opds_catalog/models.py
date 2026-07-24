@@ -191,7 +191,13 @@ class bookshelf(models.Model):
     # что даёт заодно приблизительный номер "страницы" без реальной пагинации).
     anchor_id = models.CharField(max_length=64, blank=True, default="")
     progress_percent = models.FloatField(default=0.0)
+    # "Страница" X из Y — реального разбиения на страницы у непрерывного FB2/HTML
+    # нет, поэтому используем позицию текущего абзаца среди всех как приближение
+    # (см. _build_progress_tracker_js в convert/fb2_to_html.py).
+    current_unit = models.PositiveIntegerField(default=0)
+    total_units = models.PositiveIntegerField(default=0)
     finished = models.BooleanField(default=False, db_index=True)
+    finished_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta:
         # Одна запись на пару (пользователь, книга): и .get_or_create(user=, book=),

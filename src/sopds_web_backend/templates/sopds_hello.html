@@ -92,6 +92,48 @@ function openBookCard(bookId) {
     </div>
 </div>
 
+{% if reading_stats.current or reading_stats.books_finished_total or reading_stats.streak_days %}
+<div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-divider"><strong>📖 {% trans "Reading" %}</strong></div>
+    <div class="card-section" style="padding:0.8rem; display:flex; flex-direction:column; gap:0.8rem;">
+        {% if reading_stats.current %}
+        <a href="{% url 'opds_catalog:view_html' reading_stats.current.book.id %}" target="_blank"
+           style="display:flex; gap:0.8rem; align-items:flex-start; color:inherit; text-decoration:none;">
+            <img src="{% url 'opds_catalog:thumb' reading_stats.current.book.id %}" width="60"
+                 style="flex-shrink:0; border-radius:var(--radius-sm);">
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:0.3rem;">
+                <p style="font-size:0.88rem; font-weight:600; margin:0; color:var(--text);">
+                    {{ reading_stats.current.book.title }}
+                </p>
+                {% if reading_stats.current.series_name %}
+                <div style="font-size:0.78rem; color:var(--text-muted);">
+                    {{ reading_stats.current.series_name }}
+                    {% if reading_stats.current.series_no %}· {{ reading_stats.current.series_no }}{% if reading_stats.current.series_total %} / {{ reading_stats.current.series_total }}{% endif %}{% endif %}
+                </div>
+                {% endif %}
+                <div class="progress" style="height:0.6rem; margin:0.15rem 0;">
+                    <span class="progress-meter" style="width:{{ reading_stats.current.progress_percent|floatformat:0 }}%; background:var(--sp-accent);"></span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted); display:flex; gap:0.6rem;">
+                    <span>{{ reading_stats.current.progress_percent|floatformat:0 }}%</span>
+                    {% if reading_stats.current.total_units %}
+                    <span>{% trans "page" %} {{ reading_stats.current.current_unit }} {% trans "of" %} {{ reading_stats.current.total_units }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endif %}
+        <div style="display:flex; flex-wrap:wrap; gap:1rem; font-size:0.8rem; color:var(--text-muted);{% if reading_stats.current %} padding-top:0.4rem; border-top:1px solid var(--border);{% endif %}">
+            <span>✅ {% trans "Finished" %}: <strong style="color:var(--text);">{{ reading_stats.books_finished_total }}</strong></span>
+            <span>📅 {% trans "This month" %}: <strong style="color:var(--text);">{{ reading_stats.books_finished_month }}</strong></span>
+            {% if reading_stats.streak_days %}
+            <span>🔥 {% trans "Streak" %}: <strong style="color:var(--text);">{{ reading_stats.streak_days }}</strong> {% trans "days" %}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if random_book %}
 <div class="card" style="margin-bottom:1.2rem;">
     <div class="card-divider"><strong>🎲 {% trans "Random Book" %}</strong></div>

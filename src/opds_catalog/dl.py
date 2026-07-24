@@ -230,14 +230,24 @@ def SaveProgress(request, book_id):
         percent = max(0.0, min(100.0, float(data.get("percent", 0))))
     except (TypeError, ValueError):
         percent = 0.0
+    try:
+        current_unit = max(0, int(data.get("current_unit", 0)))
+        total_units = max(0, int(data.get("total_units", 0)))
+    except (TypeError, ValueError):
+        current_unit = total_units = 0
 
     entry, _created = bookshelf.objects.get_or_create(user=request.user, book=book)
     entry.anchor_id = anchor_id
     entry.progress_percent = percent
+    entry.current_unit = current_unit
+    entry.total_units = total_units
     entry.readtime = timezone.now()
-    if percent >= 98.0:
+    update_fields = ["anchor_id", "progress_percent", "current_unit", "total_units", "readtime"]
+    if percent >= 98.0 and not entry.finished:
         entry.finished = True
-    entry.save(update_fields=["anchor_id", "progress_percent", "readtime", "finished"])
+        entry.finished_at = entry.readtime
+        update_fields += ["finished", "finished_at"]
+    entry.save(update_fields=update_fields)
     return JsonResponse({"ok": True})
 
 
