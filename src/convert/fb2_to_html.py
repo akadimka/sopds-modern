@@ -180,6 +180,19 @@ def render_block(elem, binaries, heading_level=2, note_ids=None, note_backrefs=N
         else:
             html_id = elem_id
         id_attr = f' id="{html.escape(html_id)}"' if html_id else ""
+
+        # Секция "Содержание"/"Оглавление" (список ссылок на главы/тома) —
+        # такая секция уже присутствует как обычный контент во многих
+        # компиляциях. Помечаем классом, чтобы центрировать её как
+        # book-header, а не растягивать на всю ширину как обычный текст.
+        class_attr = ""
+        if not in_notes:
+            _title_elem = elem.find("fb:title", NS)
+            _title_text = plain_text(_title_elem).strip().lower().replace("ё", "е") \
+                if _title_elem is not None else ""
+            if _title_text in ("содержание", "оглавление"):
+                class_attr = ' class="toc"'
+
         back_link = ""
         note_number = ""
         if in_notes:
@@ -204,7 +217,7 @@ def render_block(elem, binaries, heading_level=2, note_ids=None, note_backrefs=N
                              note_ids, note_backrefs, in_notes, anchor_counter)
             )
         return (
-            f"<section{id_attr}>\n" + back_link + "".join(children) + "</section>\n"
+            f"<section{id_attr}{class_attr}>\n" + back_link + "".join(children) + "</section>\n"
         )
 
     html_id = elem_id
@@ -315,9 +328,8 @@ def render_coverpage(coverpage, binaries):
 
 _READER_CSS = """
 body {
-    max-width: 820px;
     margin: 3rem auto;
-    padding: 0 1rem;
+    padding: 0 3rem;
     font-family: Georgia, serif;
     line-height: 1.6;
     color: #ddd;
@@ -327,7 +339,7 @@ a { color: #8ecfff; }
 table { border-collapse: collapse; margin-bottom: 2rem; }
 th { text-align: left; padding-right: 1rem; vertical-align: top; }
 td, th { border-bottom: 1px solid #444; padding: .35rem .75rem .35rem 0; }
-img { max-width: 100%; }
+img { max-width: 100%; display: block; margin: 1.5rem auto; }
 blockquote {
     margin-left: 1.5rem; padding-left: 1rem;
     border-left: 3px solid #555;
@@ -337,10 +349,14 @@ pre.poem { font-family: Georgia, serif; white-space: pre-wrap; }
 .note-backlinks { font-size: .9em; margin-bottom: .5rem; }
 .note-backref { text-decoration: none; }
 .notes { margin-top: 4rem; border-top: 1px solid #555; }
+.book-header { max-width: 820px; margin: 0 auto; }
 .coverpage { text-align: center; margin-bottom: 2rem; }
 .coverpage img { max-width: 100%; max-height: 80vh; }
 .note-number { font-weight: bold; font-size: 1.1em; margin-right: .3em; }
-.toc { margin: 2rem 0 3rem; padding: 1rem; border: 1px solid #444; }
+.toc {
+    max-width: 820px; margin: 2rem auto 3rem; padding: 1rem;
+    border: 1px solid #444; text-align: center;
+}
 .toc ul { list-style: none; padding-left: 0; }
 .toc li { margin: .25rem 0; }
 .toc a { text-decoration: none; }
@@ -379,7 +395,13 @@ def _build_html(root, title_hint: str) -> str:
 
     main_html = ""
     for body in normal_bodies:
-        main_html += "<main>\n"
+        # Многотомные "компиляции" склеивают несколько книг как отдельные
+        # <body>, и оглавление ссылается прямо на id САМОГО body (напр.
+        # <body id="vol_1">), а не на id секции внутри него — без этого
+        # атрибута такие якоря ведут в никуда.
+        body_id = xml_id(body)
+        body_id_attr = f' id="{html.escape(body_id)}"' if body_id else ""
+        main_html += f"<main{body_id_attr}>\n"
         for child in body:
             main_html += render_block(child, binaries, 2, note_ids, note_backrefs,
                                       False, anchor_counter)
@@ -397,9 +419,11 @@ def _build_html(root, title_hint: str) -> str:
 </style>
 </head>
 <body>
+<div class="book-header">
 <h1>{html.escape(title)}</h1>
 {render_coverpage(coverpage, binaries)}
 {render_description(meta, annotation, binaries)}
+</div>
 {main_html}
 {notes_html}
 </body>
