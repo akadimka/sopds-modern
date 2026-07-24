@@ -1482,17 +1482,25 @@ class Pass4Consensus:
         # Апгрейд folder_dataset серий до filename_named_arc подсерий.
         # Когда filename_named_arc даёт «Серия\Подсерия», а folder_dataset —
         # только «Серия» (корень), обновляем folder_dataset записи до полного пути.
-        # Это безопасно: корень должен совпадать точно, и только в рамках одного автора.
+        # Это безопасно только в рамках одной и той же папки: тот же автор и тот
+        # же корень серии могут повторяться в СОВСЕМ других папках — разных
+        # изданиях/переводах или отдельных повестях того же условного мира,
+        # не входящих в конкретную детектированную арку (напр. «Земной круг» —
+        # общее название вселенной Аберкромби, а не только трилогии «Первый
+        # закон»). Без привязки к папке апгрейд ошибочно приписывал арку
+        # трилогии посторонним файлам, лежащим в другой физической папке
+        # только потому, что совпали автор и имя корня серии.
         _subseries_upgraded = 0
-        # Собираем все named_arc подсерии: корень → (полный путь, author_key)
-        _arc_subseries: dict = {}  # (author_key, root_norm) → full_subseries
+        # Собираем все named_arc подсерии: (author_key, root_norm, folder) → полный путь
+        _arc_subseries: dict = {}
         for rec in records:
             if rec.series_source == 'filename_named_arc' and '\\' in (rec.proposed_series or ''):
                 root = rec.proposed_series.split('\\', 1)[0].strip()
                 root_norm = _nfc_lower_yo(root)
                 author_key = _nfc_lower_yo((rec.proposed_author or '').strip())
-                key = (author_key, root_norm)
-                # Если несколько подсерий у одного автора с одним корнем — не трогаем
+                folder_key = str(Path(rec.file_path).parent)
+                key = (author_key, root_norm, folder_key)
+                # Если несколько подсерий у одного автора с одним корнем в одной папке — не трогаем
                 if key not in _arc_subseries:
                     _arc_subseries[key] = rec.proposed_series
                 elif _arc_subseries[key] != rec.proposed_series:
@@ -1510,7 +1518,8 @@ class Pass4Consensus:
                 continue
             root_norm = _nfc_lower_yo(rec.proposed_series.strip())
             author_key = _nfc_lower_yo((rec.proposed_author or '').strip())
-            key = (author_key, root_norm)
+            folder_key = str(Path(rec.file_path).parent)
+            key = (author_key, root_norm, folder_key)
             target = _arc_subseries.get(key)
             if target and target != rec.proposed_series:
                 rec.proposed_series = target
