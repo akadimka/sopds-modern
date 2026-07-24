@@ -620,6 +620,16 @@ class FB2CompilerService:
         # Пример: «Не ГГ» (тт.1,4) + «Не ГГ\Курсанты» (тт.2-3) → одна группа «Не ГГ».
         # В отличие от общего цикла выше, этот проход не трогает независимые подсерии
         # (Антиблицкриг\ВоенТур без umbrella), потому что там нет plain-бакета.
+        #
+        # ВАЖНО: как и в основном цикле слияния выше, само по себе совпадение
+        # (автор, корень серии) недостаточно — «Земной круг» у Аберкромби это общее
+        # название вселенной, а не только трилогии «Первый закон»: без проверки через
+        # metadata_series эта склейка объединяла реальную трилогию (тома 1-3) с
+        # совершенно другими самостоятельными романами той же вселенной (Герои,
+        # Красная страна, Лучше подавать холодным — не части трилогии), просто
+        # потому что их plain-серия текстово совпала с корнем арки. Требуем то же
+        # metadata-подтверждение, что и основной цикл: хотя бы одна запись из
+        # бакета арки должна иметь metadata_series, совпадающий с plain-корнем.
         _all_keys = list(buckets.keys())
         for (ak, sk) in _all_keys:
             if (ak, sk) not in buckets:
@@ -633,7 +643,15 @@ class FB2CompilerService:
                 sk2_norm = _norm_key(sk2)
                 sk_norm  = _norm_key(sk)
                 if sk2_norm.startswith(sk_norm + '\\'):
-                    # sk — plain umbrella, sk2 — её подсерия → сливаем в umbrella
+                    arc_recs = buckets.get((ak2, sk2), [])
+                    confirmed = any(
+                        _punct_norm(r.metadata_series or '') == sk_norm
+                        or _word_suffix_key(sk_norm, _punct_norm(r.metadata_series or ''))
+                        for r in arc_recs
+                    )
+                    if not confirmed:
+                        continue
+                    # sk — plain umbrella, sk2 — её подсерия, подтверждено metadata → сливаем
                     buckets[(ak, sk)].extend(buckets.pop((ak2, sk2)))
 
         groups: List[CompilationGroup] = []
