@@ -1771,6 +1771,14 @@ def sync(request):
         pct = min(100, int(state["processed"] / state["total"] * 100))
     scan_path = request.GET.get("scan_path", "").strip()
     assignments = genre_assignments.get()
+    # Папки, уже перемещённые предыдущим прогоном синхронизации (или удалённые
+    # вручную), остаются в этом кеше 6 часов — без проверки существования панель
+    # при повторном открытии продолжает показывать их как "к синхронизации".
+    stale = [path for path in assignments if not os.path.isdir(path)]
+    if stale:
+        for path in stale:
+            assignments.pop(path, None)
+        genre_assignments.set(assignments)
     from fb2parser_core.settings_manager import SettingsManager
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
