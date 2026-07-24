@@ -1692,6 +1692,11 @@ genre_assignments = SharedDict("fb2parser:genre_assignments")
 @staff_member_required(login_url="/web/login/")
 def sync(request):
     state = sync_job.get()
+    if not state["running"] and (state["done"] or state["error"]):
+        # Re-opening the sync panel after a previous run finished — don't show
+        # its leftover "complete"/error summary as if it belonged to a run
+        # that hasn't started yet.
+        state = sync_job.reset()
     pct = 0
     if state["total"] > 0:
         pct = min(100, int(state["processed"] / state["total"] * 100))

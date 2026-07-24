@@ -79,6 +79,19 @@ class JobState:
         """Release the start-lock once the job has finished/errored."""
         cache.delete(self._lock_key)
 
+    def reset(self) -> dict:
+        """Clear a finished/idle job back to its defaults.
+
+        Call this when re-opening a job's panel/menu so a previous run's
+        leftover results (done=True, stats, log) don't flash back up as if
+        they belonged to the run about to start. Never call this while the
+        job is actually running — that would wipe live progress out from
+        under a concurrent status poll.
+        """
+        state = dict(self._default)
+        cache.set(self._key, state, _TIMEOUT)
+        return state
+
     @property
     def _lock_key(self):
         return self._key + ":lock"
