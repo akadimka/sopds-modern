@@ -226,7 +226,7 @@ mkdir -p /opt/sopds-modern/src/fb2_data/csv
 mkdir -p /opt/sopds-modern/src/log
 ```
 
-> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 15 «Проверка».
+> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 16 «Проверка».
 
 ---
 
@@ -368,9 +368,10 @@ chown www-data:www-data /opt/sopds-modern/tmp
 
 ## 14. (Опционально) Рейтинги Samlib.ru
 
-Если включена настройка **«Рейтинг Samlib»** (FB2Parser → Настройки,
-`samlib_rating` в `config.json`, метод — `series` или `fb2`), рейтинги
-получает отдельная management-команда:
+Если включена настройка **«Fetch ratings from Samizdat»** (SOPDS → Settings,
+`/web/settings/` → раздел Services; хранится как `samlib_rating` в
+`config.json`, метод — `series` или `fb2`), рейтинги получает отдельная
+management-команда:
 
 ```bash
 cd /opt/sopds-modern/src
@@ -417,7 +418,58 @@ systemctl status sopds-samlib
 
 ---
 
-## 15. Проверка
+## 15. (Опционально) Рейтинги author.today
+
+В отличие от Samlib, у author.today нет числовой оценки вида «X.XX из N
+голосов» — есть только лайки, платные «награды» от читателей и счётчик
+просмотров. Если включена настройка **«Fetch likes from author.today»**
+(SOPDS → Settings, `/web/settings/` → раздел Services; хранится как
+`authortoday_rating` в `config.json`), эти данные получает отдельная
+management-команда:
+
+```bash
+cd /opt/sopds-modern/src
+../.venv/bin/python manage.py fetch_authortoday_ratings
+```
+
+> Как и `fetch_samlib_ratings` — это **бесконечный процесс**, не разовая
+> команда: обходит книги без данных, пауза 15–30 сек между запросами
+> (дольше при 429/503 — у author.today лимит ~20 запросов/мин на IP),
+> обновляет записи старше 14 дней. Поиск — через публичную страницу
+> `https://author.today/search`, авторизация/API-токен не нужны.
+
+```bash
+nano /etc/systemd/system/sopds-authortoday.service
+```
+
+```ini
+[Unit]
+Description=SOPDS author.today rating fetcher
+After=network.target sopds-modern.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sopds-modern/src
+EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+ExecStart=/opt/sopds-modern/.venv/bin/python manage.py fetch_authortoday_ratings
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now sopds-authortoday
+systemctl status sopds-authortoday
+```
+
+---
+
+## 16. Проверка
 
 Откройте в браузере: `http://<IP-адрес сервера>:8008/` (без Apache) или `http://<IP-адрес сервера>/` (если настроили Apache на шаге 12)
 
