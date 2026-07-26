@@ -109,6 +109,14 @@
         <label class="s-radio"><input type="radio" name="samlib_method" value="fb2" {% if sopds.samlib_method == 'fb2' %}checked{% endif %}> {% trans "Parse FB2 file (extract section titles → search each)" %}</label>
     </div>
 
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="authortoday_rating" id="id_authortoday_rating" {% if sopds.authortoday_rating %}checked{% endif %}>
+            <span>{% trans "Fetch likes from author.today" %}</span>
+        </label>
+        <div class="s-hint">{% trans "author.today has no star rating, only likes/awards/reads. A background process will slowly crawl books. Run: python manage.py fetch_authortoday_ratings" %}</div>
+    </div>
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 

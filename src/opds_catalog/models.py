@@ -273,3 +273,24 @@ class SamlibRating(models.Model):
 
     class Meta:
         app_label = 'opds_catalog'
+
+
+class AuthorTodayRating(models.Model):
+    """Рейтинг с author.today.
+
+    В отличие от samlib.ru, на author.today нет числовой оценки вида
+    "X.XX из 5 (N голосов)" — есть только лайки (likeCount, встроен в
+    HTML книги как knockout-компонент) и платные "награды" от читателей.
+    Лайки — ближайший по смыслу аналог оценки качества, поэтому это
+    основное поле; awards/reads — дополнительный контекст.
+    """
+    book = models.OneToOneField(Book, on_delete=models.CASCADE, related_name='authortoday_rating')
+    likes = models.IntegerField(default=0)
+    awards = models.IntegerField(null=True, blank=True)
+    reads = models.IntegerField(null=True, blank=True)
+    work_url = models.CharField(max_length=512, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    fetch_error = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'opds_catalog'

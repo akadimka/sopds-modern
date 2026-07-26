@@ -675,7 +675,7 @@ def sopds_settings(request):
         'alphabet_menu', 'doubles_hide', 'title_as_filename',
         'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
-        'samlib_rating',
+        'samlib_rating', 'authortoday_rating',
     ]
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
@@ -802,6 +802,29 @@ def hello(request):
     else:
         args["popular_books"] = []
         args["samlib_stats"] = None
+
+    args["authortoday_rating_enabled"] = config.SOPDS_AUTHORTODAY_RATING
+    if config.SOPDS_AUTHORTODAY_RATING:
+        args["popular_books_at"] = list(Book.objects.filter(
+            authortoday_rating__likes__gt=0
+        ).select_related("authortoday_rating").prefetch_related("authors").order_by("-authortoday_rating__likes")[:5])
+        from opds_catalog.models import AuthorTodayRating
+        total_books_at = Book.objects.count()
+        processed_at   = AuthorTodayRating.objects.count()
+        with_likes_at  = AuthorTodayRating.objects.filter(likes__gt=0).count()
+        with_error_at  = AuthorTodayRating.objects.filter(fetch_error=True).count()
+        last_entry_at  = AuthorTodayRating.objects.order_by("-fetched_at").first()
+        args["authortoday_stats"] = {
+            "total":       total_books_at,
+            "processed":   processed_at,
+            "pending":     max(0, total_books_at - processed_at),
+            "with_rating": with_likes_at,
+            "with_error":  with_error_at,
+            "last_fetch":  last_entry_at.fetched_at if last_entry_at else None,
+        }
+    else:
+        args["popular_books_at"] = []
+        args["authortoday_stats"] = None
     return render(request, "sopds_hello.html", args)
 
 
