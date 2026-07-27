@@ -356,6 +356,13 @@ body {
     color: var(--reader-fg);
     background-color: var(--reader-bg);
 }
+@media (max-width: 600px) {
+    /* 3rem (48px) с каждой стороны — четверть экрана телефона только на
+       отступы. На узких экранах это фиксированное поле нужно убрать
+       почти целиком; сужение по вкусу даёт --reader-side-pad (см. кнопку
+       "Ширина колонки"), а не body. */
+    body { margin: 1.25rem auto; padding: 0 0.75rem; }
+}
 a { color: var(--reader-link); }
 table { border-collapse: collapse; margin-bottom: 2rem; }
 th { text-align: left; padding-right: 1rem; vertical-align: top; }
