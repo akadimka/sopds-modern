@@ -104,7 +104,7 @@ def paginated_catalog_content(
 
     catalogs_list = get_catalogs_query(cat).order_by("cat_name")
     books_list = (
-        get_books_query(cat).select_related("samlib_rating").order_by("search_title").prefetch_related(*prefetch)
+        get_books_query(cat).select_related("samlib_rating", "authortoday_rating").order_by("search_title").prefetch_related(*prefetch)
     )
 
     # Собираем единый список: сначала подкаталоги, потом книги
@@ -153,6 +153,7 @@ def paginated_catalog_content(
                 "readtime": readtime,
                 "prefix": "b",
                 "samlib_rating": getattr(row, "samlib_rating", None),
+                "authortoday_rating": getattr(row, "authortoday_rating", None),
             }
         )
 

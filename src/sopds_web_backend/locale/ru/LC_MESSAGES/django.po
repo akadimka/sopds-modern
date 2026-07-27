@@ -617,6 +617,12 @@ msgstr "Популярное на author.today"
 msgid "Data is being collected from author.today..."
 msgstr "Данные собираются с author.today..."
 
+msgid "Rating SL"
+msgstr "Рейтинг SL"
+
+msgid "Rating A.T"
+msgstr "Рейтинг A.T"
+
 msgid "Fetch likes from author.today"
 msgstr "Получать лайки с author.today"
 

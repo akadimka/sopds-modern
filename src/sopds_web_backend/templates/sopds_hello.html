@@ -142,7 +142,11 @@ function openBookCard(bookId) {
             <img src="{% url 'opds_catalog:thumb' random_book.id %}" width="80"
                  style="flex-shrink:0; border-radius:var(--radius-sm);">
             <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:0.4rem;">
-                <p style="font-size:0.88rem; font-weight:600; margin:0; color:var(--text);">{{ random_book.title }}</p>
+                <p style="font-size:0.88rem; font-weight:600; margin:0; color:var(--text);">
+                    {{ random_book.title }}
+                    {% if samlib_rating_enabled and random_book.samlib_rating and not random_book.samlib_rating.fetch_error and random_book.samlib_rating.rating %} <span title="{% trans 'Rating SL' %}" style="color:#f59e0b; font-size:0.8rem; font-weight:normal; white-space:nowrap;">★ {{ random_book.samlib_rating.rating|floatformat:1 }}</span>{% endif %}
+                    {% if authortoday_rating_enabled and random_book.authortoday_rating and not random_book.authortoday_rating.fetch_error and random_book.authortoday_rating.likes %} <span title="{% trans 'Rating A.T' %}" style="color:#3b82f6; font-size:0.8rem; font-weight:normal; white-space:nowrap;">👍 {{ random_book.authortoday_rating.likes }}</span>{% endif %}
+                </p>
                 {% if random_book.annotation %}
                 <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.5;">{{ random_book.annotation|truncatechars:300 }}</div>
                 {% endif %}
@@ -271,6 +275,8 @@ function openBookCard(bookId) {
                             <th style="padding:0.3rem 0.5rem;">{% trans "Title" %}</th>
                             <th style="padding:0.3rem 0.5rem;">{% trans "Format" %}</th>
                             <th style="padding:0.3rem 0.5rem;">{% trans "Genre" %}</th>
+                            {% if samlib_rating_enabled %}<th style="padding:0.3rem 0.5rem; text-align:right;" title="{% trans 'Rating SL' %}">SL</th>{% endif %}
+                            {% if authortoday_rating_enabled %}<th style="padding:0.3rem 0.5rem; text-align:right;" title="{% trans 'Rating A.T' %}">A.T</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -282,6 +288,16 @@ function openBookCard(bookId) {
                         <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:50 }}</td>
                         <td style="padding:0.3rem 0.5rem; white-space:nowrap;">{{ b.format }}</td>
                         <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.subsection }}</td>
+                        {% if samlib_rating_enabled %}
+                        <td style="padding:0.3rem 0.5rem; text-align:right; color:#f59e0b; white-space:nowrap;">
+                            {% if b.samlib_rating and not b.samlib_rating.fetch_error and b.samlib_rating.rating %}★ {{ b.samlib_rating.rating|floatformat:1 }}{% endif %}
+                        </td>
+                        {% endif %}
+                        {% if authortoday_rating_enabled %}
+                        <td style="padding:0.3rem 0.5rem; text-align:right; color:#3b82f6; white-space:nowrap;">
+                            {% if b.authortoday_rating and not b.authortoday_rating.fetch_error and b.authortoday_rating.likes %}👍 {{ b.authortoday_rating.likes }}{% endif %}
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                     </tbody>

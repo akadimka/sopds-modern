@@ -801,8 +801,12 @@ def hello(request):
     all_genres = list(Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).order_by("-cnt"))
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
-    args["recent_books"] = Book.objects.order_by("-id").prefetch_related("genres")[:10]
-    args["random_book"]  = Book.objects.order_by("?").first()
+    args["recent_books"] = Book.objects.select_related(
+        "samlib_rating", "authortoday_rating"
+    ).order_by("-id").prefetch_related("genres")[:10]
+    args["random_book"]  = Book.objects.select_related(
+        "samlib_rating", "authortoday_rating"
+    ).order_by("?").first()
     args["samlib_rating_enabled"] = config.SOPDS_SAMLIB_RATING
     if config.SOPDS_SAMLIB_RATING:
         args["popular_books"] = list(Book.objects.filter(
@@ -868,7 +872,9 @@ def book_card(request, book_id):
     from opds_catalog.models import Book
     from django.http import Http404
     try:
-        book = Book.objects.prefetch_related("authors", "genres", "series").get(pk=book_id)
+        book = Book.objects.select_related(
+            "samlib_rating", "authortoday_rating"
+        ).prefetch_related("authors", "genres", "series").get(pk=book_id)
     except Book.DoesNotExist:
         raise Http404
     ser_no = None
@@ -879,6 +885,8 @@ def book_card(request, book_id):
     return render(request, "sopds_book_card.html", {
         "b": book,
         "ser_no": ser_no,
+        "samlib_rating_enabled": config.SOPDS_SAMLIB_RATING,
+        "authortoday_rating_enabled": config.SOPDS_AUTHORTODAY_RATING,
     })
 
 

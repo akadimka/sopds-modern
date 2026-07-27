@@ -54,6 +54,20 @@
         <span>{{ b.docdate }}</span>
       </div>
       {% endif %}
+
+      {% if samlib_rating_enabled and b.samlib_rating and not b.samlib_rating.fetch_error and b.samlib_rating.rating %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Rating SL" %}</span>
+        <span style="color:#f59e0b;">★ {{ b.samlib_rating.rating|floatformat:1 }}{% if b.samlib_rating.votes %} <span style="color:var(--text-muted); font-size:0.85em;">({{ b.samlib_rating.votes }})</span>{% endif %}</span>
+      </div>
+      {% endif %}
+
+      {% if authortoday_rating_enabled and b.authortoday_rating and not b.authortoday_rating.fetch_error and b.authortoday_rating.likes %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Rating A.T" %}</span>
+        <span style="color:#3b82f6;">👍 {{ b.authortoday_rating.likes }}</span>
+      </div>
+      {% endif %}
     </div>
   </div>
 
