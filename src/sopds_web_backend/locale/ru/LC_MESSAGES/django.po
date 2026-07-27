@@ -428,6 +428,27 @@ msgstr "Подряд"
 msgid "days"
 msgstr "дн."
 
+msgid "Processing:"
+msgstr "Обрабатывается:"
+
+msgid "Pausing before the next book — next attempt at"
+msgstr "Пауза перед следующей книгой — следующая попытка в"
+
+msgid "Site is throttling requests — next attempt at"
+msgstr "Сайт ограничивает запросы — следующая попытка в"
+
+msgid "All books processed — next cycle at"
+msgstr "Все книги обработаны — следующий цикл в"
+
+msgid "found"
+msgstr "найдено"
+
+msgid "not found"
+msgstr "не найдено"
+
+msgid "error"
+msgstr "ошибка"
+
 msgid "Random Book"
 msgstr "Случайная книга"
 
@@ -589,6 +610,18 @@ msgstr "Популярные книги"
 
 msgid "Ratings are being collected from samlib.ru..."
 msgstr "Рейтинги собираются с samlib.ru..."
+
+msgid "Popular on author.today"
+msgstr "Популярное на author.today"
+
+msgid "Data is being collected from author.today..."
+msgstr "Данные собираются с author.today..."
+
+msgid "Fetch likes from author.today"
+msgstr "Получать лайки с author.today"
+
+msgid "author.today has no star rating, only likes/awards/reads. A background process will slowly crawl books. Run: python manage.py fetch_authortoday_ratings"
+msgstr "На author.today нет звёздного рейтинга, только лайки/награды/просмотры. Фоновый процесс медленно обходит книги. Запуск: python manage.py fetch_authortoday_ratings"
 
 msgid "Services"
 msgstr "Сервисы"

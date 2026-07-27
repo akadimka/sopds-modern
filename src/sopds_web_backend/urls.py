@@ -30,6 +30,7 @@ urlpatterns = [
     re_path(r"^settings/users/(?P<user_id>\d+)/delete/$", views.user_delete, name="user_delete"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
+    re_path(r"^ratings/(?P<source>samlib|authortoday)/progress/$", views.ratings_progress, name="ratings_progress"),
 ]
 
 # handler403 = 'views.handler403'

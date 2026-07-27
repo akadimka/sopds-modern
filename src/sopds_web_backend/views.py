@@ -5,7 +5,7 @@ from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
@@ -826,6 +826,18 @@ def hello(request):
         args["popular_books_at"] = []
         args["authortoday_stats"] = None
     return render(request, "sopds_hello.html", args)
+
+
+@sopds_login(url="web:login")
+def ratings_progress(request, source):
+    """GET — живой прогресс fetch_samlib_ratings/fetch_authortoday_ratings
+    (эти команды — отдельные долгоживущие процессы, не через JobState;
+    см. opds_catalog.ratings_progress)."""
+    if source not in ("samlib", "authortoday"):
+        return JsonResponse({"error": "unknown source"}, status=404)
+    from opds_catalog.ratings_progress import get_progress
+    data = get_progress(source)
+    return JsonResponse(data)
 
 
 @sopds_login(url="web:login")

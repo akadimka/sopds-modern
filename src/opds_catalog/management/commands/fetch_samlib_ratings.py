@@ -60,25 +60,37 @@ class Command(BaseCommand):
         method = sopds_cfg.SOPDS_SAMLIB_METHOD or 'series'
         self.stdout.write(f"Запуск fetch_samlib_ratings (метод: {method})…")
 
+        from opds_catalog.ratings_progress import set_progress
+
         while True:
             book = self._next_book()
             if book is None:
+                resume_at = timezone.now() + timedelta(seconds=self._SLEEP_IDLE)
+                set_progress("samlib", status="idle", resume_at=resume_at)
                 self.stdout.write(
                     f"Все книги обработаны. Следующий цикл через {self._SLEEP_IDLE // 3600} ч."
                 )
                 time.sleep(self._SLEEP_IDLE)
                 continue
 
+            set_progress("samlib", status="processing",
+                         book_id=book.id, book_title=book.title)
             self.stdout.write(f"Обрабатываю: [{book.id}] {book.title}")
-            status = self._process_book(book, method)
+            status, result = self._process_book(book, method)
 
             if status in (429, 503):
+                resume_at = timezone.now() + timedelta(seconds=self._SLEEP_THROTTLE)
+                set_progress("samlib", status="throttled", book_id=book.id,
+                            book_title=book.title, last_result=result, resume_at=resume_at)
                 self.stdout.write(
                     f"HTTP {status} — пауза {self._SLEEP_THROTTLE // 60} мин."
                 )
                 time.sleep(self._SLEEP_THROTTLE)
             else:
                 delay = random.uniform(self._SLEEP_MIN, self._SLEEP_MAX)
+                resume_at = timezone.now() + timedelta(seconds=delay)
+                set_progress("samlib", status="sleeping", book_id=book.id,
+                            book_title=book.title, last_result=result, resume_at=resume_at)
                 self.stdout.write(f"  Пауза {delay:.0f} с.")
                 time.sleep(delay)
 
@@ -114,17 +126,20 @@ class Command(BaseCommand):
 
         if rating is not None:
             self.stdout.write(f"  Рейтинг: {rating} ({votes} голосов)")
+            result = "found"
         elif error:
             self.stdout.write("  Ошибка при получении рейтинга")
+            result = "error"
         else:
             self.stdout.write("  Рейтинг не найден")
+            result = "not_found"
 
         self._save_rating(book, rating, votes, url, error, individual)
 
         # Detect throttle HTTP status
         if error and url:
-            return None
-        return 200
+            return None, result
+        return 200, result
 
     def _fetch_by_series(self, book):
         """Метод 'series': ищем по странице автора, находим серию, усредняем."""

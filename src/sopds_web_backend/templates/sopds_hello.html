@@ -210,6 +210,7 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
+            <div id="ratings-live-samlib" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>
             {% if samlib_stats %}
             <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
                 <span>📚 {{ samlib_stats.processed }}/{{ samlib_stats.total }}</span>
@@ -247,6 +248,7 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
+            <div id="ratings-live-authortoday" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>
             {% if authortoday_stats %}
             <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
                 <span>📚 {{ authortoday_stats.processed }}/{{ authortoday_stats.total }}</span>
@@ -341,4 +343,81 @@ function openBookCard(bookId) {
     });
 })();
 </script>
+
+<!-- Живой прогресс fetch_samlib_ratings / fetch_authortoday_ratings -->
+<script>
+(function(){
+    var MSG_PROCESSING = "{% trans 'Processing:' %}";
+    var MSG_SLEEPING    = "{% trans 'Pausing before the next book — next attempt at' %}";
+    var MSG_THROTTLED   = "{% trans 'Site is throttling requests — next attempt at' %}";
+    var MSG_IDLE        = "{% trans 'All books processed — next cycle at' %}";
+    var MSG_FOUND       = "{% trans 'found' %}";
+    var MSG_NOT_FOUND   = "{% trans 'not found' %}";
+    var MSG_ERROR       = "{% trans 'error' %}";
+    var RESULT_LABEL = {found: MSG_FOUND, not_found: MSG_NOT_FOUND, error: MSG_ERROR};
+    var RESULT_ICON  = {found: '✅', not_found: '➖', error: '⚠️'};
+
+    function _esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function _fmtTime(iso) {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleTimeString();
+    }
+
+    var URLS = {
+        samlib:      "{% url 'web:ratings_progress' 'samlib' %}",
+        authortoday: "{% url 'web:ratings_progress' 'authortoday' %}",
+    };
+
+    function poll(source) {
+        var el = document.getElementById('ratings-live-' + source);
+        if (!el) return;
+        fetch(URLS[source])
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (!data || !data.status) { el.style.display = 'none'; return; }
+                var lastBit = '';
+                if (data.last_result && RESULT_LABEL[data.last_result]) {
+                    lastBit = ' <span style="color:var(--text-muted);">(' + RESULT_ICON[data.last_result]
+                            + ' ' + _esc(data.book_title || '') + ' — ' + RESULT_LABEL[data.last_result] + ')</span>';
+                }
+                var html;
+                if (data.status === 'processing') {
+                    html = '<span class="ratings-live-dot"></span> ' + MSG_PROCESSING + ' <strong>' + _esc(data.book_title) + '</strong>';
+                } else if (data.status === 'sleeping') {
+                    html = MSG_SLEEPING + ' ' + _fmtTime(data.resume_at) + lastBit;
+                } else if (data.status === 'throttled') {
+                    html = '🛑 ' + MSG_THROTTLED + ' ' + _fmtTime(data.resume_at) + lastBit;
+                } else if (data.status === 'idle') {
+                    html = '💤 ' + MSG_IDLE + ' ' + _fmtTime(data.resume_at);
+                } else {
+                    el.style.display = 'none';
+                    return;
+                }
+                el.innerHTML = html;
+                el.style.display = 'block';
+            })
+            .catch(function(){ /* тихо игнорируем — не мешаем остальной странице */ });
+    }
+
+    ['samlib', 'authortoday'].forEach(function(source){
+        if (!document.getElementById('ratings-live-' + source)) return;
+        poll(source);
+        setInterval(function(){ poll(source); }, 5000);
+    });
+})();
+</script>
+
+<style>
+.ratings-live-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #27ae60; animation: ratings-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ratings-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.35; transform: scale(0.7); }
+}
+</style>
 {% endblock %}
