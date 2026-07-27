@@ -338,6 +338,7 @@ _READER_CSS = """
     --reader-line-height: 1.6;
     --reader-align: left;
     --reader-max-width: none;
+    --reader-side-pad: 0px;
 }
 :root[data-theme="light"] {
     --reader-bg: #f4f1e8;
@@ -385,7 +386,12 @@ pre.poem { font-family: Georgia, serif; white-space: pre-wrap; }
 .toc-level-3 { margin-left: 3rem; }
 .toc-level-4 { margin-left: 4.5rem; }
 
-main { max-width: var(--reader-max-width); margin: 0 auto; }
+main {
+    max-width: var(--reader-max-width);
+    margin: 0 auto;
+    padding: 0 var(--reader-side-pad);
+    box-sizing: border-box;
+}
 main p { text-align: var(--reader-align); }
 
 #reader-toolbar {
@@ -450,12 +456,24 @@ _READER_TOOLBAR_JS = """
         return 'none';
     }
 
+    function sidePad() {
+        // Проценты, а не px: на широком десктопе всё равно побеждает
+        // max-width (см. widthValue), а на экране уже него самого узкого
+        // px-предела (телефон/планшет в PWA) max-width вообще ни на что не
+        // влияет — без этого отступа кнопка "Ширина колонки" визуально
+        // ничего не меняла на таких экранах.
+        if (prefs.width === 'narrow') return '8%';
+        if (prefs.width === 'normal') return '3%';
+        return '0px';
+    }
+
     function apply() {
         var root = document.documentElement;
         root.style.setProperty('--reader-font-size', prefs.fontSize + 'px');
         root.style.setProperty('--reader-line-height', prefs.lineHeight);
         root.style.setProperty('--reader-align', prefs.align);
         root.style.setProperty('--reader-max-width', widthValue());
+        root.style.setProperty('--reader-side-pad', sidePad());
         root.setAttribute('data-theme', prefs.theme);
     }
 
