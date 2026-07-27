@@ -283,8 +283,13 @@ class Pass3Normalize:
                         # gives the first/last word of the WHOLE LIST, not of any single author's
                         # name, so the match against norm_first would basically never fire. Split
                         # into individual author entries first, then check each one's ends.
+                        # "[unknown]" — sentinel for "no metadata found" (see pass1_read_files.py),
+                        # not a real author string. Must be excluded here like it already is in
+                        # every other metadata_authors check in this codebase (pass1/pass2*/pass4/
+                        # regen_csv) — otherwise it gets split into fake "words" that can never
+                        # match norm_first, silently rejecting an otherwise-correct reorder.
                         _meta_authors_raw = (record.metadata_authors or "").replace(';', ',').split(',') \
-                            if record.metadata_authors else []
+                            if record.metadata_authors and record.metadata_authors != '[unknown]' else []
                         _meta_ends = set()
                         for _ma in _meta_authors_raw:
                             _ma_words = _ma.strip().split()
@@ -293,6 +298,14 @@ class Pass3Normalize:
                                 _meta_ends.add(_ma_words[-1].lower().replace('ё', 'е'))
                         if norm_first and norm_first in _meta_ends:
                             # Metadata confirms the reorder — trust normalization (includes ё→е)
+                            normalized = normalized_candidate
+                        elif not _meta_authors_raw and record.author_source == 'folder_dataset':
+                            # No real metadata to check against (empty FB2, or "[unknown]"), and
+                            # this is folder_dataset — unlike the filename block-extractor (which
+                            # parses structured patterns with an explicit author position),
+                            # parse_author_from_folder_name does NOT guarantee "Фамилия Имя" order
+                            # (confirmed: it left "Андрей Васильев" unchanged during Precache).
+                            # There's nothing to confirm against either way — trust normalize_format.
                             normalized = normalized_candidate
                         else:
                             # Keep original ФИ order; still apply ё→е and conversions
