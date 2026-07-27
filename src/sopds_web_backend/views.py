@@ -682,8 +682,6 @@ def sopds_settings(request):
 
     if request.method == 'POST':
         sopds = sm.settings.setdefault('sopds', {})
-        _was_samlib_on = bool(sopds.get('samlib_rating'))
-        _was_authortoday_on = bool(sopds.get('authortoday_rating'))
         for f in _BOOL_FIELDS:
             sopds[f] = request.POST.get(f) == 'on'
         for f in _INT_FIELDS:
@@ -695,19 +693,26 @@ def sopds_settings(request):
             sopds[f] = request.POST.get(f, '').strip()
         sm.save()
 
-        # Локальное использование без systemd (см. DEPLOY.md): включение галочки
-        # в настройках само запускает фоновый сбор рейтингов в этом же процессе,
-        # выключение — останавливает. Если фичи развёрнуты как systemd-сервисы
-        # на сервере, этот блок НЕ трогать без предварительного разделения
-        # local/server режимов — иначе получится два независимых обходчика сразу.
+        # Локальное использование без systemd (см. DEPLOY.md): сохранение настроек
+        # с включённой галочкой гарантирует, что фоновый сбор рейтингов работает
+        # в этом же процессе (start_fetcher сам не делает ничего лишнего, если уже
+        # запущен — см. is_running() внутри), выключенной — что он остановлен.
+        # Реагируем на ТЕКУЩЕЕ значение, а не на переход False→True: если галочка
+        # уже была True, но процесс почему-то не запущен (например, после рестарта
+        # сервера, или настройка была включена раньше без старта фичи) — сохранение
+        # всё равно должно его поднять, иначе пользователю пришлось бы сначала
+        # выключить и отдельным сохранением включить обратно, только чтобы поймать
+        # "переход". Если фичи развёрнуты как systemd-сервисы на сервере, этот блок
+        # НЕ трогать без предварительного разделения local/server режимов — иначе
+        # получится два независимых обходчика сразу.
         from opds_catalog.ratings_fetchers import start_fetcher, stop_fetcher
-        if sopds['samlib_rating'] and not _was_samlib_on:
+        if sopds['samlib_rating']:
             start_fetcher('samlib')
-        elif not sopds['samlib_rating'] and _was_samlib_on:
+        else:
             stop_fetcher('samlib')
-        if sopds['authortoday_rating'] and not _was_authortoday_on:
+        if sopds['authortoday_rating']:
             start_fetcher('authortoday')
-        elif not sopds['authortoday_rating'] and _was_authortoday_on:
+        else:
             stop_fetcher('authortoday')
 
         return redirect(reverse('web:settings') + '?saved=1')
