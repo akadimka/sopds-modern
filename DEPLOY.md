@@ -412,6 +412,7 @@ Group=www-data
 WorkingDirectory=/opt/sopds-modern/src
 EnvironmentFile=/opt/sopds-modern/src/.env
 Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/opt/sopds-modern/.venv/bin/python manage.py fetch_samlib_ratings
 Restart=on-failure
 RestartSec=60
@@ -425,6 +426,10 @@ systemctl daemon-reload
 systemctl enable --now sopds-samlib
 systemctl status sopds-samlib
 ```
+
+> `PYTHONUNBUFFERED=1` — без него Python буферизует stdout при выводе не в
+> терминал, и `journalctl -u sopds-samlib -f` не показывает прогресс, пока
+> буфер не заполнится или процесс не завершится.
 
 ---
 
@@ -463,6 +468,7 @@ Group=www-data
 WorkingDirectory=/opt/sopds-modern/src
 EnvironmentFile=/opt/sopds-modern/src/.env
 Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/opt/sopds-modern/.venv/bin/python manage.py fetch_authortoday_ratings
 Restart=on-failure
 RestartSec=60
