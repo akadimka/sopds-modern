@@ -250,6 +250,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/sopds-modern/src
 EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=SOPDS_MANAGED_BY_SYSTEMD=1
 ExecStart=/opt/sopds-modern/.venv/bin/gunicorn \
     --config "python:sopds.settings.gunicorn" \
     sopds.wsgi
@@ -259,6 +260,15 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 ```
+
+> **`SOPDS_MANAGED_BY_SYSTEMD=1` обязателен**, если рейтинги Samlib/author.today
+> когда-либо будут включены (шаги 14-15). Без него включение галочки в
+> Settings запустит сбор рейтингов ещё и в потоке внутри gunicorn-воркера —
+> поверх уже работающих `sopds-samlib`/`sopds-authortoday`, вдвое увеличивая
+> частоту запросов, а выключение галочки остановит эти systemd-сервисы
+> (через общий флаг в кеше), причём `Restart=on-failure` их не поднимет,
+> т.к. выход будет "чистым". С этой переменной оба вызова — no-op, сайты
+> опрашиваются только независимыми systemd-сервисами.
 
 Активируйте и запустите:
 

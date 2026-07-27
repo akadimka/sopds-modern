@@ -8,7 +8,17 @@ ready()/веб-хук здесь, иначе получится два неза�
 Поток стартует/останавливается по действию пользователя в /web/settings/
 (галочка "Fetch ratings from Samizdat" / "Fetch likes from author.today" +
 кнопка "Сохранить") — не при каждом запуске приложения.
+
+Разделение local/server режимов: systemd-юнит основного сервиса
+(sopds-modern.service, см. DEPLOY.md шаг 11) выставляет переменную окружения
+SOPDS_MANAGED_BY_SYSTEMD=1. Если она задана — считаем, что рейтинги уже
+собираются отдельными systemd-сервисами (sopds-samlib/sopds-authortoday),
+и start_fetcher()/stop_fetcher() отсюда не запускают/не останавливают
+собственный поток: настройка просто сохраняется в config.json, а отдельный
+сервис подхватывает её на следующей итерации (это уже проверяется на каждом
+цикле, см. fetch_samlib_ratings/fetch_authortoday_ratings).
 """
+import os
 import threading
 import time
 
@@ -19,6 +29,13 @@ _COMMAND_NAME = {
     "samlib": "fetch_samlib_ratings",
     "authortoday": "fetch_authortoday_ratings",
 }
+
+
+def is_systemd_managed() -> bool:
+    """True если сервис развёрнут через systemd (см. DEPLOY.md шаг 11) —
+    в этом режиме рейтинги собирают отдельные sopds-samlib/sopds-authortoday
+    юниты, и веб-процессу нельзя запускать свой поток поверх них."""
+    return os.environ.get("SOPDS_MANAGED_BY_SYSTEMD") == "1"
 
 _STOP_TIMEOUT = 24 * 3600  # держим флаг остановки дольше самой длинной паузы (SLEEP_IDLE)
 
@@ -70,10 +87,17 @@ def is_running(source: str) -> bool:
 def start_fetcher(source: str) -> bool:
     """Запустить фоновый поток сбора рейтингов, если ещё не запущен.
 
-    Returns True если поток был запущен этим вызовом, False если уже работал.
+    На systemd-развёртывании (см. is_systemd_managed) — no-op: рейтинги там
+    собирает отдельный systemd-сервис, запускать ещё один поток в веб-процессе
+    поверх него нельзя (см. модульный docstring).
+
+    Returns True если поток был запущен этим вызовом, False если уже работал
+    (или если это systemd-развёртывание).
     """
     if source not in _COMMAND_NAME:
         raise ValueError(f"unknown ratings source: {source!r}")
+    if is_systemd_managed():
+        return False
     with _lock:
         if is_running(source):
             return False
@@ -98,5 +122,15 @@ def start_fetcher(source: str) -> bool:
 
 
 def stop_fetcher(source: str) -> None:
-    """Попросить фоновый поток остановиться (не ждёт завершения)."""
+    """Попросить фоновый поток остановиться (не ждёт завершения).
+
+    На systemd-развёртывании — no-op. request_stop() пишет флаг в общий кеш
+    (memcached), который проверяет и отдельный systemd-сервис — без этой
+    проверки снятие галочки в Settings на сервере остановило бы уже
+    работающий sopds-samlib/sopds-authortoday (а Restart=on-failure его не
+    поднимет: команда завершается чисто, это не считается сбоем). Там
+    управление — только через `systemctl stop/start`.
+    """
+    if is_systemd_managed():
+        return
     request_stop(source)
