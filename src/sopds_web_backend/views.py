@@ -682,6 +682,8 @@ def sopds_settings(request):
 
     if request.method == 'POST':
         sopds = sm.settings.setdefault('sopds', {})
+        _was_samlib_on = bool(sopds.get('samlib_rating'))
+        _was_authortoday_on = bool(sopds.get('authortoday_rating'))
         for f in _BOOL_FIELDS:
             sopds[f] = request.POST.get(f) == 'on'
         for f in _INT_FIELDS:
@@ -692,6 +694,22 @@ def sopds_settings(request):
         for f in _STR_FIELDS:
             sopds[f] = request.POST.get(f, '').strip()
         sm.save()
+
+        # Локальное использование без systemd (см. DEPLOY.md): включение галочки
+        # в настройках само запускает фоновый сбор рейтингов в этом же процессе,
+        # выключение — останавливает. Если фичи развёрнуты как systemd-сервисы
+        # на сервере, этот блок НЕ трогать без предварительного разделения
+        # local/server режимов — иначе получится два независимых обходчика сразу.
+        from opds_catalog.ratings_fetchers import start_fetcher, stop_fetcher
+        if sopds['samlib_rating'] and not _was_samlib_on:
+            start_fetcher('samlib')
+        elif not sopds['samlib_rating'] and _was_samlib_on:
+            stop_fetcher('samlib')
+        if sopds['authortoday_rating'] and not _was_authortoday_on:
+            start_fetcher('authortoday')
+        elif not sopds['authortoday_rating'] and _was_authortoday_on:
+            stop_fetcher('authortoday')
+
         return redirect(reverse('web:settings') + '?saved=1')
 
     sopds = sm.settings.get('sopds', {})

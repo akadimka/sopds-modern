@@ -70,8 +70,17 @@ class Command(BaseCommand):
         self.stdout.write("Запуск fetch_authortoday_ratings…")
 
         from opds_catalog.ratings_progress import set_progress
+        from opds_catalog.ratings_fetchers import sleep_or_stop, stop_requested, clear_stop
+
+        _SRC = "authortoday"
 
         while True:
+            if stop_requested(_SRC):
+                set_progress(_SRC, status="stopped")
+                self.stdout.write("Остановлено по запросу.")
+                clear_stop(_SRC)
+                return
+
             book = self._next_book()
             if book is None:
                 resume_at = timezone.now() + timedelta(seconds=self._SLEEP_IDLE)
@@ -79,7 +88,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"Все книги обработаны. Следующий цикл через {self._SLEEP_IDLE // 3600} ч."
                 )
-                time.sleep(self._SLEEP_IDLE)
+                sleep_or_stop(_SRC, self._SLEEP_IDLE)  # прерывается по stop_requested(), проверка в начале цикла
                 continue
 
             set_progress("authortoday", status="processing",
@@ -94,14 +103,14 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"HTTP {status} — пауза {self._SLEEP_THROTTLE // 60} мин."
                 )
-                time.sleep(self._SLEEP_THROTTLE)
+                sleep_or_stop(_SRC, self._SLEEP_THROTTLE)
             else:
                 delay = random.uniform(self._SLEEP_MIN, self._SLEEP_MAX)
                 resume_at = timezone.now() + timedelta(seconds=delay)
                 set_progress("authortoday", status="sleeping", book_id=book.id,
                             book_title=book.title, last_result=result, resume_at=resume_at)
                 self.stdout.write(f"  Пауза {delay:.0f} с.")
-                time.sleep(delay)
+                sleep_or_stop(_SRC, delay)
 
     # ── helpers ──────────────────────────────────────────────────────────────
 
