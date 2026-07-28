@@ -191,6 +191,7 @@ document.addEventListener('click', function(e) {
 });
 
 function openSyncModal() {
+    window._syncNeedsTreeRefresh = false;
     document.getElementById('sync-modal-overlay').classList.add('open');
     var folderEl = document.getElementById('main-folder');
     var path = folderEl ? folderEl.value.trim() : '';
@@ -201,6 +202,19 @@ function openSyncModal() {
 }
 function closeSyncModal() {
     document.getElementById('sync-modal-overlay').classList.remove('open');
+    // Синхронизация только что успешно завершилась (см. sync_status.html) —
+    // перенесённые/удалённые папки больше не соответствуют дереву в главном
+    // окне, обновляем его. reloadTree существует только на странице
+    // dashboard (там, где вообще есть дерево папок) — на других страницах
+    // просто ничего не делаем.
+    if (window._syncNeedsTreeRefresh) {
+        window._syncNeedsTreeRefresh = false;
+        var folderEl = document.getElementById('main-folder');
+        var path = folderEl ? folderEl.value.trim() : '';
+        if (path && typeof reloadTree === 'function') {
+            reloadTree(path);
+        }
+    }
 }
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeSyncModal();

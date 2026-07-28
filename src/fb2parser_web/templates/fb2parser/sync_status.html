@@ -34,6 +34,12 @@
         {% endfor %}
     </table>
     {% endif %}
+    <script>
+    /* Синхронизация успешно завершилась (файлы перенесены/папки удалены) —
+       запоминаем это, чтобы при закрытии модалки обновить дерево папок
+       главного окна (см. closeSyncModal() в base.html). */
+    window._syncNeedsTreeRefresh = true;
+    </script>
 
 {% elif state.error %}
 <div id="sync-status">
