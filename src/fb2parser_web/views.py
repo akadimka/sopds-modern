@@ -1507,10 +1507,14 @@ def _serialize_compiler_group(svc, g):
     kept_list = [str(p) for p in (g.kept_paths or [])]
 
     try:
-        n_vols = len(g.books)
         vol_m = re.match(r'^(\d+)-(\d+)$', g.volume_range or '')
         lo = int(vol_m.group(1)) if vol_m else 0
         hi = int(vol_m.group(2)) if vol_m else 0
+        # Для cleanup_only групп g.books пуст (компилировать нечего, только удалить
+        # дубликаты старого предкомпилированного файла) — число томов берём из
+        # диапазона volume_range, а не из len(g.books), иначе получаем "в 0 книгах".
+        # См. cleanup_only-ветку compile_group() в fb2_compiler.py — та же формула.
+        n_vols = (hi - lo + 1) if vol_m else len(g.books)
         suffix = svc._series_suffix(n_vols, lo, hi, g.part_count,
                                      series_complete=g.series_complete)
         clean_s = FB2CompilerService._clean_series_name(g.series)
