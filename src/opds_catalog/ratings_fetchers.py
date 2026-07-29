@@ -62,16 +62,41 @@ def stop_requested(source: str) -> bool:
     return bool(cache.get(_stop_key(source), False))
 
 
+def _wake_key(source: str) -> str:
+    return f"ratings_fetcher_wake:{source}"
+
+
+def request_wake(source: str) -> None:
+    """Прервать текущий "сон" фетчера (idle 24ч / троттлинг 10мин / обычную
+    паузу между книгами) и заставить его немедленно проверить, нет ли новых
+    книг для обработки. В отличие от request_stop() это НЕ гейтится
+    is_systemd_managed(): флаг лежит в общем кеше (memcached в проде), который
+    и так уже опрашивает и in-process поток, и отдельный systemd-сервис
+    (sleep_or_stop вызывается из одного и того же кода команды в обоих
+    случаях) — будить нужно одинаково независимо от режима развёртывания."""
+    cache.set(_wake_key(source), True, _STOP_TIMEOUT)
+
+
+def wake_requested(source: str) -> bool:
+    return bool(cache.get(_wake_key(source), False))
+
+
 def sleep_or_stop(source: str, seconds: float, chunk: float = 3.0) -> bool:
-    """Спать `seconds`, но проверять request_stop() каждые `chunk` секунд.
+    """Спать `seconds`, но проверять request_stop()/request_wake() каждые
+    `chunk` секунд.
 
     Returns:
-        True если сон был прерван запросом на остановку (вызывающий код
-        должен завершить цикл), False если истекло полное время без остановки.
+        True если сон был прерван запросом на остановку ИЛИ на пробуждение
+        (вызывающий код в обоих случаях просто возвращается к началу цикла —
+        разница лишь в том, что там же заново проверяется stop_requested()),
+        False если истекло полное время без прерывания.
     """
     remaining = seconds
     while remaining > 0:
         if stop_requested(source):
+            return True
+        if wake_requested(source):
+            cache.delete(_wake_key(source))
             return True
         time.sleep(min(chunk, remaining))
         remaining -= chunk
@@ -134,3 +159,33 @@ def stop_fetcher(source: str) -> None:
     if is_systemd_managed():
         return
     request_stop(source)
+
+
+def poke_fetchers_for_new_books() -> None:
+    """Вызывается после сканирования библиотеки, если оно добавило хотя бы
+    одну новую книгу — гарантирует, что для новых книг сбор рейтингов
+    начнётся сразу, а не когда фетчер сам проснётся (до 24ч простоя, если
+    все прежние книги уже были обработаны).
+
+    _next_book() в fetch_samlib_ratings/fetch_authortoday_ratings и так
+    выбирает книги БЕЗ рейтинга раньше книг с устаревшим — новые книги не
+    "ждут своей очереди" за старыми, но сам процесс мог быть либо не
+    запущен, либо спать (idle/throttle/между книгами) и не заметить, что
+    появилась работа, поэтому будим/запускаем явно.
+    """
+    from opds_catalog.sopds_config import sopds_cfg
+
+    for source, enabled in (
+        ("samlib", sopds_cfg.SOPDS_SAMLIB_RATING),
+        ("authortoday", sopds_cfg.SOPDS_AUTHORTODAY_RATING),
+    ):
+        if not enabled:
+            continue
+        if is_systemd_managed():
+            # Локальный поток не поднимаем — но будим отдельный systemd-сервис
+            # через тот же общий кеш, который он и так опрашивает.
+            request_wake(source)
+        elif is_running(source):
+            request_wake(source)
+        else:
+            start_fetcher(source)

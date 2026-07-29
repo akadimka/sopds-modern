@@ -74,6 +74,9 @@ def _run_sopds_scan():
             deleted=scanner.books_deleted,
             first_error=_first_err[0] if _first_err else None,
         )
+        if scanner.books_added:
+            from opds_catalog.ratings_fetchers import poke_fetchers_for_new_books
+            poke_fetchers_for_new_books()
     except Exception as e:
         sopds_scan_job.update(
             running=False, done=True,
