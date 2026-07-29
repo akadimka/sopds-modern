@@ -2168,6 +2168,16 @@ class FB2CompilerService:
                 spec_a, spec_b = _specificity(book_a), _specificity(book_b)
                 if spec_a != spec_b:
                     loser = book_b if spec_a > spec_b else book_a
+                    winner = book_a if loser is book_b else book_b
+                    # Совпадение первых compare_chars символов означает лишь общее начало
+                    # (тот же первый том), а не идентичность всего содержимого. Если
+                    # "проигравший" заметно крупнее победителя — это, скорее всего,
+                    # нераспознанный сборник из нескольких книг (напр. содержит ещё и
+                    # том другого автора по общей вселенной), а не переформатированный
+                    # дубликат одного и того же тома. Не удаляем — рискуем потерять
+                    # уникальный контент, которого больше нигде в библиотеке нет.
+                    if _file_size(loser) > _file_size(winner) * 1.6:
+                        continue
                 else:
                     size_a, size_b = _file_size(book_a), _file_size(book_b)
                     loser = book_b if size_a >= size_b else book_a
