@@ -1846,6 +1846,18 @@ class Pass2SeriesFilename:
             r'\(\s*([^\d()]+?)\s+(\d{1,3})\s*[-–—]\s*(\d{1,3})\s*\)',
             re.UNICODE,
         )
+        # Правило 3.6: «(N книг)» — счётчик, а не диапазон (одно число, не два через
+        # дефис) — компиляция ВСЕЙ серии в один файл, начиная с тома 1.
+        # «Ученики Ворона. Сборник (7 книг).fb2» → series_number='1-7', а не
+        # ошибочно взятый где-то ещё номер (напр. позиция файла в папке).
+        _BRACKET_COUNT_RE = re.compile(
+            r'\(\s*(\d{1,3})\s*книг\w*\s*\)', re.IGNORECASE | re.UNICODE,
+        )
+        # Правило 1 (диапазон): «N-M.Title» / «N-M_Title» — диапазон томов в самом
+        # начале имени файла (без скобок). Проверяем ДО одиночного _PREFIX_RE, иначе
+        # тот съедает только «N», а «-M» пропадает целиком.
+        # «1-7.Ученики Ворона.fb2» → series_number='1-7', не '1'.
+        _PREFIX_RANGE_RE = re.compile(r'^(\d{1,3})\s*[-–—]\s*(\d{1,3})[_.]')
 
         def _br_series_match(prefix_raw: str, proposed: str) -> bool:
             """Prefix ≈ proposed_series root (нечувствительно к знакам и регистру)."""
@@ -1878,6 +1890,25 @@ class Pass2SeriesFilename:
                         record.series_number = f'{lo35}-{hi35}'
                         record.series_number_source = 'filename_bracket_series_range'
                         continue
+
+            # Правило 3.6 — счётчик «(N книг)» → диапазон 1-N
+            m36 = _BRACKET_COUNT_RE.search(stem)
+            if m36:
+                n36 = int(m36.group(1))
+                if n36 > 1 and not (1900 <= n36 <= 2099):
+                    record.series_number = f'1-{n36}'
+                    record.series_number_source = 'filename_bracket_count'
+                    continue
+
+            # Правило 1 (диапазон) — «N-M.Title» в начале имени файла.
+            # Проверяем ДО одиночного _PREFIX_RE (см. определение выше).
+            mpr = _PREFIX_RANGE_RE.match(stem)
+            if mpr:
+                lo_pr, hi_pr = int(mpr.group(1)), int(mpr.group(2))
+                if lo_pr < hi_pr and not (1900 <= lo_pr <= 2099):
+                    record.series_number = f'{lo_pr}-{hi_pr}'
+                    record.series_number_source = 'filename_prefix_range'
+                    continue
 
             # Правило 1.5: дробный префикс «N.M.» или «N.M_»
             # «0.1. Двигатель (рассказ).fb2» → series_number='0.1'
