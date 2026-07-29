@@ -318,6 +318,17 @@ class FB2CompilerService:
 
     def __init__(self, logger=None):
         self.logger = logger
+        # Слова-маркеры "это компиляция всей серии в одном файле" (сборник,
+        # антология, компиляция…) — та же настройка, что и в Pass2SeriesFilename
+        # (app_settings.json), не отдельный список: см. _determine_sort_key,
+        # где эти слова не дают Источникам Б/В/Г ошибочно принять позицию файла
+        # в папке за номер тома внутри серии.
+        try:
+            from .settings_manager import SettingsManager
+            _config_path = str(Path(__file__).resolve().parent.parent / 'fb2_data' / 'settings' / 'config.json')
+            self.collection_keywords = SettingsManager(_config_path).get_list('collection_keywords') or []
+        except Exception:
+            self.collection_keywords = []
 
     def _log(self, msg: str):
         if self.logger:
@@ -2518,11 +2529,33 @@ class FB2CompilerService:
             result = self._sort_key_for_subseries(rec, sn, stem)
             if result is not None:
                 return result
+
+        # Файл — компиляция всей серии в одну книгу ("Сборник" и т.п. из
+        # collection_keywords), а не отдельный том. Источники Б/В/Г ниже все
+        # умеют вытащить число прямо из имени файла — но для такого файла
+        # ведущее/любое другое число обычно НЕ позиция в этой серии (напр.
+        # "5. Отдел 15-К. Сборник.fb2" — 5-й файл в папке "Сборники" среди
+        # РАЗНЫХ сборников автора, не 5-я книга серии "Отдел 15-К"). Ложная
+        # числовая позиция ломает проверку "серия завершена?": группа {1,2,3}
+        # выглядит незавершённой (есть "том 5"), и вместо "Трилогия" в имени
+        # получается "т. 1-3". Пропускаем Б/В/Г — файл провалится до
+        # даты/order_ambiguous и не будет мешать нумерации сиблингов.
+        _is_collection_file = False
+        if self.collection_keywords:
+            _stem_lower = stem.lower().replace('ё', 'е')
+            _title_lower = (rec.file_title or '').lower().replace('ё', 'е')
+            _is_collection_file = any(
+                kw.lower() in _stem_lower or kw.lower() in _title_lower
+                for kw in self.collection_keywords
+            )
+
         # Источник Б: число в начале/конце имени файла.
         # При многоуровневой нумерации ("Серия N. Подсерия M. ... Том K") извлекаем
         # secondary и tertiary, чтобы избежать коллизий sort_key между подсериями.
-        num_m = self._STEM_NUM_RE.match(stem) or self._STEM_NUM_RE.search(stem) or re.search(
-            r'(?:^|[-–\s])(\d{1,4})\.\s+[А-ЯЁA-Z]', stem
+        num_m = None if _is_collection_file else (
+            self._STEM_NUM_RE.match(stem) or self._STEM_NUM_RE.search(stem) or re.search(
+                r'(?:^|[-–\s])(\d{1,4})\.\s+[А-ЯЁA-Z]', stem
+            )
         )
         if num_m:
             num = int(next(g for g in num_m.groups() if g is not None))
@@ -2573,7 +2606,7 @@ class FB2CompilerService:
 
         # Источник В: диапазон томов в скобках внутри stem — «(Серия 1-3)», «(4-6)»
         # Используем MIN как позицию сортировки: файл (1-3) → 1, файл (4-6) → 4
-        range_m = re.search(
+        range_m = None if _is_collection_file else re.search(
             r'\((?:[^()]*?\s)?(\d{1,4})\s*[-–—]\s*(\d{1,4})\)', stem
         )
         if range_m:
@@ -2590,19 +2623,19 @@ class FB2CompilerService:
 
         # Паттерн N.M (том.часть) — проверяем первым, до других inline-методов.
         # Пример: «Расходники 1.2_Название» → том=1, часть=2.
-        dp = self._extract_dot_part(stem, _ft or '')
+        dp = None if _is_collection_file else self._extract_dot_part(stem, _ft or '')
         if dp is not None:
             vol, part = dp
             return (0, vol, part, 0), 'dot_part', False, f'{vol}.{part}'
 
         # Проверяем паттерн «Том N. Часть M» до общего inline-поиска,
         # чтобы «Часть» не интерпретировалась как ключевое слово тома.
-        vp = self._extract_volume_part(_ft or stem, stem)
+        vp = None if _is_collection_file else self._extract_volume_part(_ft or stem, stem)
         if vp is not None:
             vol, part = vp
             return (0, vol, part, 0), 'volume_part', False, str(vol)
 
-        inline = self._extract_inline_volume_number(
+        inline = None if _is_collection_file else self._extract_inline_volume_number(
             stem if _ft_is_series else (_ft or stem), stem
         )
         if inline is not None:
