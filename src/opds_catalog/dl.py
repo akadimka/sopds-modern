@@ -30,7 +30,7 @@ from book_tools.format.parsers import FB2
 from opds_catalog import opdsdb, settings, utils
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
-from opds_catalog.utils import getFileData, getFileName
+from opds_catalog.utils import get_fs_book_path, getFileData, getFileName
 
 logger = logging.getLogger(__name__)
 SOPDS_DEFAULT_COVER = "/static/images/sopds-ng-nocover.png"
@@ -271,14 +271,6 @@ def ConvertFB2(request, book_id, convert_type):
     if config.SOPDS_AUTH and request.user.is_authenticated:
         bookshelf.objects.get_or_create(user=request.user, book=book)
 
-    full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
-    if book.cat_type == opdsdb.CAT_INP:
-        # Убираем из пути INPX и INП файл
-        inp_path, zip_name = os.path.split(full_path)
-        inpx_path, inp_name = os.path.split(inp_path)
-        path, inpx_name = os.path.split(inpx_path)
-        full_path = os.path.join(path, zip_name)
-
     base_name = os.path.splitext(getFileName(book))[0]
     dlfilename = f"{base_name}.{convert_type}"
 
@@ -298,18 +290,23 @@ def ConvertFB2(request, book_id, convert_type):
 
     content_type = mime_detector.fmt(convert_type)
 
+    # Читаем через общий utils.getFileData/get_fs_book_path — тот же хелпер,
+    # которым пользуются Download/Cover/ViewHtml. Раньше здесь путь для
+    # CAT_INP разбирался вручную (дублируя get_fs_book_path), а для
+    # CAT_ZIP/CAT_INP файл извлекался через z.extract(book.filename, ...)
+    # без запасного поиска имени в некорректной кодировке (get_infolist_filename),
+    # который есть в read_from_zipped_file — при несовпадении имени это
+    # падало необработанным KeyError вместо аккуратного 404.
     if book.cat_type == opdsdb.CAT_NORMAL:
         tmp_fb2_path = None
-        file_path = os.path.join(full_path, book.filename)
+        file_path = os.path.join(get_fs_book_path(book), book.filename)
     elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-        # FIXME: Исправить работу c codecs
-        try:
-            fz = codecs.open(full_path, "rb")
-        except FileNotFoundError:
+        file_data = getFileData(book)
+        if file_data is None:
             raise Http404
-        z = zipfile.ZipFile(fz, "r", allowZip64=True)
-        z.extract(book.filename, config.SOPDS_TEMP_DIR)
         tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
+        with open(tmp_fb2_path, "wb") as f:
+            f.write(file_data.read())
         file_path = tmp_fb2_path
 
     tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)

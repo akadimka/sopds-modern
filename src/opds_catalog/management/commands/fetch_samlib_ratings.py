@@ -12,9 +12,7 @@ import re
 import time
 import urllib.parse
 import urllib.request
-import zipfile
 from datetime import timedelta
-from io import BytesIO
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -240,37 +238,28 @@ class Command(BaseCommand):
         return self._aggregate(individual, author_url)
 
     def _fetch_by_fb2(self, book):
-        """Метод 'fb2': извлекаем заголовки из FB2 и ищем каждый."""
-        from opds_catalog.models import Book as BookModel
+        """Метод 'fb2': извлекаем заголовки из FB2 и ищем каждый.
+
+        Читаем через общий opds_catalog.utils.getFileData — тот же хелпер,
+        которым пользуются Download/Cover/ViewHtml. Раньше здесь путь
+        собирался вручную (Catalog.path + filename, без SOPDS_ROOT_LIB) и
+        определение "это zip?" делалось по расширению итоговой строки —
+        для CAT_ZIP/CAT_INP книг Catalog.path указывает на сам .zip-файл,
+        а не на папку, так что filename дописывался ПОСЛЕ ".zip" и итоговый
+        путь всегда оканчивался на ".fb2", а не на ".zip" — проверка никогда
+        не срабатывала, и метод тихо считал, что раздел не найден, для
+        КАЖДОЙ книги, хранящейся в .fb2.zip.
+        """
+        from opds_catalog.utils import getFileData
 
         first_author = book.authors.first()
         author_name = first_author.full_name if first_author else ""
 
-        # Определяем путь к файлу
-        cat = book.catalog
-        cat_path = cat.path if cat else ""
-        filename = book.filename
-
-        if cat_path:
-            import os
-            file_path = os.path.join(cat_path, filename)
-        else:
-            file_path = filename
-
-        # Читаем FB2 (возможно, внутри ZIP)
-        try:
-            if file_path.lower().endswith('.fb2.zip') or file_path.lower().endswith('.zip'):
-                with zipfile.ZipFile(file_path, 'r') as z:
-                    names = [n for n in z.namelist() if n.lower().endswith('.fb2')]
-                    if not names:
-                        return None, 0, '', False, []
-                    content = z.read(names[0])
-            else:
-                with open(file_path, 'rb') as f:
-                    content = f.read()
-        except Exception as exc:
-            self.stdout.write(f"  Не удалось открыть файл: {exc}")
+        file_data = getFileData(book)
+        if file_data is None:
+            self.stdout.write("  Не удалось открыть файл")
             return None, 0, '', False, []
+        content = file_data.read()
 
         # Пробуем декодировать
         try:
