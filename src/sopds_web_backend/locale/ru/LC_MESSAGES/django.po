@@ -605,8 +605,8 @@ msgstr "Удалить эту книгу с книжной полки?"
 msgid "Loading..."
 msgstr "Загрузка..."
 
-msgid "Popular books"
-msgstr "Популярные книги"
+msgid "Popular on samlib.ru"
+msgstr "Популярное на samlib.ru"
 
 msgid "Ratings are being collected from samlib.ru..."
 msgstr "Рейтинги собираются с samlib.ru..."

@@ -109,12 +109,36 @@
         <label class="s-radio"><input type="radio" name="samlib_method" value="fb2" {% if sopds.samlib_method == 'fb2' %}checked{% endif %}> {% trans "Parse FB2 file (extract section titles → search each)" %}</label>
     </div>
 
+    <div class="s-field" style="{% if not sopds.samlib_rating %}display:none;{% endif %}margin-left:1.5rem;" id="samlib-restart-field">
+        <button type="button" class="button secondary tiny" style="margin:0;"
+                hx-post="{% url 'web:ratings_restart' 'samlib' %}"
+                hx-confirm="{% trans 'This discards ALL ratings collected so far from samlib.ru and starts a fresh full pass. Use this after the fetching code changed. Continue?' %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-target="#samlib-restart-result" hx-swap="innerHTML">
+            🔄 {% trans "Restart full cycle now" %}
+        </button>
+        <span id="samlib-restart-result" style="margin-left:0.5rem; font-size:0.85rem;"></span>
+        <div class="s-hint">{% trans "Use after fixing/changing the rating-fetching code — old data may be wrong and would otherwise sit unrefreshed for days." %}</div>
+    </div>
+
     <div class="s-field">
         <label class="s-check">
             <input type="checkbox" name="authortoday_rating" id="id_authortoday_rating" {% if sopds.authortoday_rating %}checked{% endif %}>
             <span>{% trans "Fetch likes from author.today" %}</span>
         </label>
         <div class="s-hint">{% trans "author.today has no star rating, only likes/awards/reads. A background process will slowly crawl books. Run: python manage.py fetch_authortoday_ratings" %}</div>
+    </div>
+
+    <div class="s-field" style="{% if not sopds.authortoday_rating %}display:none;{% endif %}margin-left:1.5rem;" id="authortoday-restart-field">
+        <button type="button" class="button secondary tiny" style="margin:0;"
+                hx-post="{% url 'web:ratings_restart' 'authortoday' %}"
+                hx-confirm="{% trans 'This discards ALL data collected so far from author.today and starts a fresh full pass. Use this after the fetching code changed. Continue?' %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-target="#authortoday-restart-result" hx-swap="innerHTML">
+            🔄 {% trans "Restart full cycle now" %}
+        </button>
+        <span id="authortoday-restart-result" style="margin-left:0.5rem; font-size:0.85rem;"></span>
+        <div class="s-hint">{% trans "Use after fixing/changing the fetching code — old data may be wrong and would otherwise sit unrefreshed for days." %}</div>
     </div>
 
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
@@ -268,9 +292,18 @@
 (function() {
     var cb = document.getElementById('id_samlib_rating');
     var mf = document.getElementById('samlib-method-field');
-    if (cb && mf) {
+    var rf = document.getElementById('samlib-restart-field');
+    if (cb) {
         cb.addEventListener('change', function() {
-            mf.style.display = cb.checked ? '' : 'none';
+            if (mf) mf.style.display = cb.checked ? '' : 'none';
+            if (rf) rf.style.display = cb.checked ? '' : 'none';
+        });
+    }
+    var cbAt = document.getElementById('id_authortoday_rating');
+    var rfAt = document.getElementById('authortoday-restart-field');
+    if (cbAt && rfAt) {
+        cbAt.addEventListener('change', function() {
+            rfAt.style.display = cbAt.checked ? '' : 'none';
         });
     }
 })();

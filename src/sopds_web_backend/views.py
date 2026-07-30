@@ -870,6 +870,41 @@ def ratings_progress(request, source):
     return JsonResponse(data)
 
 
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def ratings_restart_cycle(request, source):
+    """POST — стереть все собранные рейтинги источника и разбудить фетчер,
+    чтобы он немедленно начал полный проход заново.
+
+    _next_book() в fetch_samlib_ratings/fetch_authortoday_ratings пересобирает
+    только книги без рейтинга или с рейтингом старше _STALE_DAYS (7 дней) —
+    после правки кода получения рейтинга старые (потенциально неверные)
+    записи иначе провисели бы в БД всю неделю. Источники независимы: сброс
+    одного не трогает данные другого."""
+    if source not in ("samlib", "authortoday"):
+        return HttpResponse("unknown source", status=404)
+    from opds_catalog.models import AuthorTodayRating, SamlibRating
+    from opds_catalog.ratings_fetchers import (
+        is_running,
+        is_systemd_managed,
+        request_wake,
+        start_fetcher,
+    )
+
+    model = SamlibRating if source == "samlib" else AuthorTodayRating
+    deleted, _details = model.objects.all().delete()
+
+    if is_systemd_managed() or is_running(source):
+        request_wake(source)
+    else:
+        start_fetcher(source)
+
+    return HttpResponse(
+        f'<span style="color:var(--sp-accent);">✓ '
+        f'{_("Cleared")} {deleted} — {_("restarting full cycle…")}</span>'
+    )
+
+
 @sopds_login(url="web:login")
 def book_card(request, book_id):
     from opds_catalog.models import Book
