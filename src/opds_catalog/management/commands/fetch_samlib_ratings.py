@@ -29,10 +29,15 @@ _COMPILATION_RE = re.compile(
 )
 
 _RATING_PATTERNS = [
+    # Реальный формат samlib.ru: "Оценка:<b>5.74*16</b>" (страница автора) или
+    # "Оценка: <b><a href=...>5.74*16</a></b>" (страница книги) — между
+    # "Оценка" и числом может быть произвольное число HTML-тегов.
+    re.compile(r'[Оо]ценк[аи][:\s]*(?:<[^>]+>\s*){0,5}(\d+(?:[.,]\d+)?)\s*\*\s*(\d+)', re.IGNORECASE),
     re.compile(r'[Оо]ценка[:\s]+(\d+(?:[.,]\d+)?)\s*\((\d+)\)'),
     re.compile(r'(\d+(?:[.,]\d+)?)\s*\*\s*(\d+)\s*(?:оцен|голос)', re.IGNORECASE),
     re.compile(r'<b>(\d+(?:[.,]\d+)?)</b>[^<]{0,30}?(\d+)\s*(?:оцен|голос)', re.IGNORECASE),
 ]
+
 
 
 class Command(BaseCommand):
@@ -165,40 +170,11 @@ class Command(BaseCommand):
         author_name = first_author.full_name
         series_name = first_series.ser
 
-        # Шаг 1: ищем автора через POST (cp1251)
-        seek_url = "http://samlib.ru/cgi-bin/seek"
-        post_data = (
-            "FIND=" + urllib.parse.quote(author_name.encode("cp1251")) + "&PLACE=index"
-        ).encode("ascii")
-        self.stdout.write(f"  POST {seek_url} FIND={author_name!r}")
-        try:
-            html, status = self._fetch(seek_url, post_data)
-        except Exception as exc:
-            self.stdout.write(f"  Ошибка: {exc}")
-            return None, 0, seek_url, True, []
-
-        if status not in (None, 200):
-            return None, 0, seek_url, True, []
-
-        # Ищем ссылку вида /a/author_dir/ в HTML
-        author_dir_re = re.compile(r'href=["\']/(a/[^/"\']+/)["\']', re.IGNORECASE)
-        matches = author_dir_re.findall(html)
-        if not matches:
-            return None, 0, seek_url, False, []
-
-        author_dir = matches[0]
-        author_url = f"http://samlib.ru/{author_dir}"
-
-        # Шаг 2: страница автора
-        self.stdout.write(f"  GET {author_url}")
-        try:
-            author_html, status2 = self._fetch(author_url)
-        except Exception as exc:
-            self.stdout.write(f"  Ошибка: {exc}")
+        author_html, author_url, error = self._find_author_page(author_name)
+        if error:
             return None, 0, author_url, True, []
-
-        if status2 not in (None, 200):
-            return None, 0, author_url, True, []
+        if author_html is None:
+            return None, 0, author_url, False, []
 
         # Шаг 3: ищем секцию с названием серии
         # Ищем блок текста вокруг упоминания названия серии
@@ -303,26 +279,85 @@ class Command(BaseCommand):
 
         return self._aggregate(individual, last_url, fetch_error)
 
-    def _fetch_single_rating(self, author_name, title):
-        """Ищет рейтинг конкретной книги на samlib.ru."""
-        query = f"{author_name} {title}".strip()
-        url = "http://samlib.ru/cgi-bin/seek"
-        post_data = (
-            "FIND=" + urllib.parse.quote(query.encode("cp1251")) + "&PLACE=index"
-        ).encode("ascii")
-        self.stdout.write(f"  POST {url} FIND={query!r}")
+    def _find_author_page(self, author_name):
+        """Ищет автора на samlib.ru, возвращает (html, url, error) его страницы.
 
+        /cgi-bin/seek на практике находит что-то только по ОДНОМУ слову —
+        составные запросы вроде "Фамилия Имя Отчество" или "Автор Название"
+        не дают ни одного результата (проверено вживую: пустая форма и для
+        "Сергей Лукьяненко", и для "Лукьяненко Сергей", и т.п.), поэтому
+        ищем по фамилии (первое слово ФИО), а среди найденных ссылок на
+        авторов берём ту, чей текст содержит полное имя.
+        """
+        surname = author_name.split()[0] if author_name else ''
+        if not surname:
+            return None, '', False
+
+        seek_url = "http://samlib.ru/cgi-bin/seek"
+        self.stdout.write(f"  GET {seek_url} FIND={surname!r}")
         try:
-            html, status = self._fetch(url, post_data)
+            html, status = self._seek(surname)
         except Exception as exc:
             self.stdout.write(f"  Ошибка: {exc}")
-            return None, 0, url, True
+            return None, seek_url, True
 
         if status not in (None, 200):
-            return None, 0, url, True
+            return None, seek_url, True
 
-        rating, votes = self._parse_rating(html)
-        return rating, votes, url, False
+        author_link_re = re.compile(
+            r'href=["\']?(/[a-zа-я0-9]/[^/"\'>\s]+/)["\']?>\s*<font[^>]*>([^<]+)</font>',
+            re.IGNORECASE,
+        )
+        author_dir = None
+        for href, name_text in author_link_re.findall(html):
+            if author_name.lower() in name_text.lower():
+                author_dir = href
+                break
+        if author_dir is None:
+            # Среди результатов поиска по фамилии нет автора с точно таким
+            # именем (например, самого автора просто нет на samlib.ru) —
+            # НЕ берём первую попавшуюся однобуквенную ссылку на странице:
+            # ей может оказаться вообще не автор (например /i/info/), что
+            # молча даст рейтинг совсем не того человека.
+            return None, seek_url, False
+
+        author_url = f"http://samlib.ru{author_dir}"
+        self.stdout.write(f"  GET {author_url}")
+        try:
+            author_html, status2 = self._fetch(author_url)
+        except Exception as exc:
+            self.stdout.write(f"  Ошибка: {exc}")
+            return None, author_url, True
+
+        if status2 not in (None, 200):
+            return None, author_url, True
+
+        return author_html, author_url, False
+
+    def _fetch_single_rating(self, author_name, title):
+        """Ищет рейтинг конкретной книги на samlib.ru.
+
+        Раньше искали по строке "автор название" целиком через /cgi-bin/seek
+        и пытались распарсить рейтинг прямо со страницы результатов поиска —
+        оба шага были нерабочими: составные запросы ничего не находят (см.
+        _find_author_page), а страница результатов вообще не содержит
+        рейтинг (там только размер файла вроде "155k"); оценка вида
+        "Оценка:5.74*16" есть только на странице автора. Поэтому теперь идём
+        через страницу автора и ищем название книги уже в её списке работ.
+        """
+        author_html, author_url, error = self._find_author_page(author_name)
+        if error:
+            return None, 0, author_url, True
+        if author_html is None:
+            return None, 0, author_url, False
+
+        idx = author_html.lower().find(title.lower())
+        if idx == -1:
+            return None, 0, author_url, False
+
+        section_html = author_html[idx:idx + 2000]
+        rating, votes = self._parse_rating(section_html)
+        return rating, votes, author_url, False
 
     def _aggregate(self, individual, url, fetch_error=False):
         """Усредняет individual_ratings, пропуская нулевые рейтинги."""
@@ -349,6 +384,21 @@ class Command(BaseCommand):
             return "", e.code
         except Exception as exc:
             raise exc
+
+    def _seek(self, query):
+        """Ищет `query` в поиске samlib.ru.
+
+        /cgi-bin/seek принимает и POST, и GET, но на практике POST-запрос
+        (как здесь и было раньше) отдаёт только пустую форму поиска — сервер
+        видно принимает параметры формы только через query string. GET с теми
+        же параметрами возвращает реальную страницу результатов (проверено:
+        POST ~6 КБ пустой формы против GET ~48 КБ с результатами для того же
+        запроса), поэтому ищем только через GET.
+        """
+        url = "http://samlib.ru/cgi-bin/seek?FIND=" + urllib.parse.quote(
+            query.encode("cp1251")
+        ) + "&PLACE=index&JANR=0&TYPE=0"
+        return self._fetch(url)
 
     def _parse_rating(self, html):
         """Ищет паттерн рейтинга в HTML Самиздата."""
