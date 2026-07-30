@@ -556,6 +556,7 @@ norm_job = JobState("fb2parser:normalize", {
     "records": [], "records_total": 0,
     "current_file": "", "folder": "",
 })
+norm_stop_flag = JobFlag("fb2parser:normalize:stop")
 
 
 @staff_member_required(login_url="/web/login/")
@@ -688,6 +689,8 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
             output_csv_path = os.path.join(csv_dir, f"regen_{safe_name}.csv")
 
         def _progress(current, total, status=""):
+            if norm_stop_flag.is_set():
+                raise InterruptedError("Остановлено пользователем")
             fields = {"processed": current, "total": max(total, 1)}
             if status:
                 log = norm_job["log"]
@@ -760,6 +763,7 @@ def normalize_start(request):
         return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {folder}</div></div>')
     from .fb2parser_bridge import get_normalization_settings
     get_normalization_settings().set_last_normalize_path(folder)
+    norm_stop_flag.clear()
     if not norm_job.try_start(
         folder=folder,
         filter_subfolders=filter_subfolders,
@@ -767,6 +771,16 @@ def normalize_start(request):
     ):
         return _render_norm_status(norm_job.get())
     threading.Thread(target=_run_normalize_thread, args=(folder, filter_subfolders), daemon=True).start()
+    return _render_norm_status(norm_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def normalize_stop(request):
+    """Прервать текущий фоновый проход нормализации (см. norm_stop_flag —
+    проверяется в _progress() внутри _run_normalize_thread, как sync_stop_flag
+    в синхронизации)."""
+    norm_stop_flag.set()
     return _render_norm_status(norm_job.get())
 
 

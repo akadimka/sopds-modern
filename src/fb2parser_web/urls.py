@@ -22,6 +22,7 @@ urlpatterns = [
     path("normalize/setup/",   views.normalize_setup,  name="normalize_setup"),
     path("normalize/set-root/", views.normalize_set_root, name="normalize_set_root"),
     path("normalize/start/",   views.normalize_start,  name="normalize_start"),
+    path("normalize/stop/",    views.normalize_stop,   name="normalize_stop"),
     path("normalize/status/",  views.normalize_status, name="normalize_status"),
     path("normalize/table/",   views.normalize_table,  name="normalize_table"),
     path("normalize/names/",          views.names_list,      name="names_list"),

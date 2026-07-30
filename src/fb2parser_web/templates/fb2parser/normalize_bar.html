@@ -13,6 +13,12 @@
     <span style="white-space:nowrap; color:var(--text-muted); flex-shrink:0; font-weight:600;">{{ pct }}%</span>
     <span style="white-space:nowrap; color:var(--text-muted); flex-shrink:0; font-size:0.78rem;">{{ state.processed }}/{{ state.total }}</span>
     <span style="color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45%; font-size:0.76rem; font-family:monospace;">{{ state.current_file }}</span>
+    <button class="button alert" style="margin:0; padding:0.25rem 0.6rem; font-size:0.76rem; flex-shrink:0;"
+            hx-post="{% url 'fb2parser:normalize_stop' %}"
+            hx-target="#norm-bar-inner"
+            hx-swap="outerHTML">
+        {% trans "⏹ Stop" %}
+    </button>
 </div>
 {% elif state.done %}
 <div id="norm-bar-inner" data-norm-done="1" data-norm-folder="{{ state.folder }}" style="display:flex; align-items:center; gap:0.6rem; width:100%;">

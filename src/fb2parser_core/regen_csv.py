@@ -1048,7 +1048,13 @@ class RegenCSVService:
                 progress_callback(100, 100, "Завершено")
             
             return True
-            
+
+        except InterruptedError:
+            # Кооперативная отмена через progress_callback (см. norm_stop_flag/
+            # sync_stop_flag в fb2parser_web.views) — не "ошибка регенерации",
+            # даём вызывающему коду увидеть точно это исключение и решить,
+            # что показать пользователю, а не молча вернуть "успех, 0 записей".
+            raise
         except Exception as e:
             self.logger.log(f"[ERROR] CSV regeneration failed: {e}")
             import traceback
