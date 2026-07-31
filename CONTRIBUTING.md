@@ -1,4 +1,4 @@
-# Contributing to SOPDS NG
+# Contributing to SOPDS MODERN
 
 ## Ветки
 

@@ -1,4 +1,4 @@
-# SOPDS NG — Coding Conventions for AI Assistants
+# SOPDS MODERN — Coding Conventions for AI Assistants
 
 ## Project structure
 - `src/sopds_web_backend/` — Django приложение

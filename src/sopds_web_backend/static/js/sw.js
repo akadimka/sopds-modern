@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'sopds-v21';
+const CACHE_VERSION = 'sopds-v22';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE   = CACHE_VERSION + '-pages';
 const OFFLINE_URL  = '/web/offline/';
@@ -11,7 +11,7 @@ const STATIC_ASSETS = [
   '/static/js/vendor/htmx.min.js',
   '/static/js/app.js',
   '/static/images/sopds-logo.svg',
-  '/static/images/sopds-ng-nocover.png',
+  '/static/images/sopds-modern-nocover.png',
   '/static/images/nocover-big.jpg',
   OFFLINE_URL,
 ];

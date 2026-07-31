@@ -1,6 +1,6 @@
 # Changelog
 
-Все значимые изменения проекта SOPDS NG документируются в этом файле.
+Все значимые изменения проекта SOPDS MODERN документируются в этом файле.
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 а проект придерживается [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -72,5 +72,5 @@
 - Использование `uv` для управления зависимостями.
 - Базовая поддержка SQLite (экспериментальная).
 
-[1.0.0RC1]: https://github.com/sarutobi/sopds-ng/releases/tag/v1.0.0RC1
-[0.48.0]: https://github.com/sarutobi/sopds-ng/releases/tag/v0.48.0
+[1.0.0RC1]: https://github.com/sarutobi/sopds-modern/releases/tag/v1.0.0RC1
+[0.48.0]: https://github.com/sarutobi/sopds-modern/releases/tag/v0.48.0

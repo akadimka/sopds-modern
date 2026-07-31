@@ -1,5 +1,5 @@
 [project]
-name = "sopds-ng"
+name = "sopds-modern"
 version = "1.0.0RC1"
 description = "New generation of Simple OPDS catalog"
 readme = "README.md"

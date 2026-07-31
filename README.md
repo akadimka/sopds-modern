@@ -8,11 +8,11 @@
 [Migration documentation](docs/migration.md)
 
 This is a fork of the [SimpleOPDS Catalog](https://github.com/mitshel/sopds) project by Dmitry Shelepnev. The original project has been inactive since April 2019.
-![Example](images/sopds-ng-1.jpg)
+![Example](images/sopds-modern-1.jpg)
 
 The following changes are planned relative to the original project:
 
-1. PostgreSQL-only database support. Django supports other database engines and SOPDS-NG will likely work with mysql and sqlite as well, but this requires additional testing.
+1. PostgreSQL-only database support. Django supports other database engines and SOPDS-MODERN will likely work with mysql and sqlite as well, but this requires additional testing.
 
 2. Base page layout redesign (work in progress).
 

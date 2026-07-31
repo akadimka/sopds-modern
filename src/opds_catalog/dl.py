@@ -33,7 +33,7 @@ from opds_catalog.models import Book, bookshelf
 from opds_catalog.utils import get_fs_book_path, getFileData, getFileName
 
 logger = logging.getLogger(__name__)
-SOPDS_DEFAULT_COVER = "/static/images/sopds-ng-nocover.png"
+SOPDS_DEFAULT_COVER = "/static/images/sopds-modern-nocover.png"
 
 
 @sopds_auth_validate

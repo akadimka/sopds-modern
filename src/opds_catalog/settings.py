@@ -17,11 +17,11 @@ loglevels = {
 NOZIP_FORMATS = ["epub", "mobi", "azw3"]
 
 VERSION = getattr(settings, "VERSION", "develop")
-TITLE = getattr(settings, "SOPDS_TITLE", "SimpleOPDS NG")
+TITLE = getattr(settings, "SOPDS_TITLE", "SimpleOPDS MODERN")
 SUBTITLE = getattr(
     settings,
     "SOPDS_SUBTITLE",
-    f"SimpleOPDS Catalog new generation by www.sopds-ng.ru. Version {VERSION}",
+    f"SimpleOPDS Catalog new generation by www.sopds-modern.ru. Version {VERSION}",
 )
 ICON = getattr(settings, "SOPDS_ICON", "/static/images/favicon.ico")
 THUMB_SIZE = 300

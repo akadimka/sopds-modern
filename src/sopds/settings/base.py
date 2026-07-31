@@ -280,7 +280,7 @@ LOGGING = {
             "class": "logging.handlers.RotatingFileHandler",
             "maxBytes": 10 * 1024 * 1024,  # 10 MB
             "backupCount": 7,
-            "filename": "log/sopds-ng.log",
+            "filename": "log/sopds-modern.log",
             "encoding": "utf-8",
             "delay": True,
         },
