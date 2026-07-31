@@ -28,6 +28,8 @@ from django.core.management import call_command
 _COMMAND_NAME = {
     "samlib": "fetch_samlib_ratings",
     "authortoday": "fetch_authortoday_ratings",
+    "fantlab": "fetch_fantlab_ratings",
+    "litmarket": "fetch_litmarket_ratings",
 }
 
 
@@ -178,6 +180,8 @@ def poke_fetchers_for_new_books() -> None:
     for source, enabled in (
         ("samlib", sopds_cfg.SOPDS_SAMLIB_RATING),
         ("authortoday", sopds_cfg.SOPDS_AUTHORTODAY_RATING),
+        ("fantlab", sopds_cfg.SOPDS_FANTLAB_RATING),
+        ("litmarket", sopds_cfg.SOPDS_LITMARKET_RATING),
     ):
         if not enabled:
             continue

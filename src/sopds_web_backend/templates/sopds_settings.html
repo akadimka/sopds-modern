@@ -141,6 +141,46 @@
         <div class="s-hint">{% trans "Use after fixing/changing the fetching code — old data may be wrong and would otherwise sit unrefreshed for days." %}</div>
     </div>
 
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="fantlab_rating" id="id_fantlab_rating" {% if sopds.fantlab_rating %}checked{% endif %}>
+            <span>{% trans "Fetch ratings from FantLab (fantlab.ru)" %}</span>
+        </label>
+        <div class="s-hint">{% trans "A background process will slowly crawl books and retrieve ratings. Run: python manage.py fetch_fantlab_ratings" %}</div>
+    </div>
+
+    <div class="s-field" style="{% if not sopds.fantlab_rating %}display:none;{% endif %}margin-left:1.5rem;" id="fantlab-restart-field">
+        <button type="button" class="button secondary tiny" style="margin:0;"
+                hx-post="{% url 'web:ratings_restart' 'fantlab' %}"
+                hx-confirm="{% trans 'This discards ALL ratings collected so far from fantlab.ru and starts a fresh full pass. Use this after the fetching code changed. Continue?' %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-target="#fantlab-restart-result" hx-swap="innerHTML">
+            🔄 {% trans "Restart full cycle now" %}
+        </button>
+        <span id="fantlab-restart-result" style="margin-left:0.5rem; font-size:0.85rem;"></span>
+        <div class="s-hint">{% trans "Use after fixing/changing the rating-fetching code — old data may be wrong and would otherwise sit unrefreshed for days." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="litmarket_rating" id="id_litmarket_rating" {% if sopds.litmarket_rating %}checked{% endif %}>
+            <span>{% trans "Fetch likes from LitMarket (litmarket.ru)" %}</span>
+        </label>
+        <div class="s-hint">{% trans "litmarket.ru has no star rating, only likes/reads. A background process will slowly crawl books. Run: python manage.py fetch_litmarket_ratings" %}</div>
+    </div>
+
+    <div class="s-field" style="{% if not sopds.litmarket_rating %}display:none;{% endif %}margin-left:1.5rem;" id="litmarket-restart-field">
+        <button type="button" class="button secondary tiny" style="margin:0;"
+                hx-post="{% url 'web:ratings_restart' 'litmarket' %}"
+                hx-confirm="{% trans 'This discards ALL data collected so far from litmarket.ru and starts a fresh full pass. Use this after the fetching code changed. Continue?' %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-target="#litmarket-restart-result" hx-swap="innerHTML">
+            🔄 {% trans "Restart full cycle now" %}
+        </button>
+        <span id="litmarket-restart-result" style="margin-left:0.5rem; font-size:0.85rem;"></span>
+        <div class="s-hint">{% trans "Use after fixing/changing the fetching code — old data may be wrong and would otherwise sit unrefreshed for days." %}</div>
+    </div>
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 
@@ -304,6 +344,20 @@
     if (cbAt && rfAt) {
         cbAt.addEventListener('change', function() {
             rfAt.style.display = cbAt.checked ? '' : 'none';
+        });
+    }
+    var cbFl = document.getElementById('id_fantlab_rating');
+    var rfFl = document.getElementById('fantlab-restart-field');
+    if (cbFl && rfFl) {
+        cbFl.addEventListener('change', function() {
+            rfFl.style.display = cbFl.checked ? '' : 'none';
+        });
+    }
+    var cbLm = document.getElementById('id_litmarket_rating');
+    var rfLm = document.getElementById('litmarket-restart-field');
+    if (cbLm && rfLm) {
+        cbLm.addEventListener('change', function() {
+            rfLm.style.display = cbLm.checked ? '' : 'none';
         });
     }
 })();

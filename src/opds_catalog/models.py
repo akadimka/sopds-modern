@@ -294,3 +294,34 @@ class AuthorTodayRating(models.Model):
 
     class Meta:
         app_label = 'opds_catalog'
+
+
+class FantlabRating(models.Model):
+    book = models.OneToOneField(Book, on_delete=models.CASCADE, related_name='fantlab_rating')
+    rating = models.FloatField(null=True, blank=True)
+    votes = models.IntegerField(default=0)
+    fantlab_url = models.CharField(max_length=512, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    fetch_error = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'opds_catalog'
+
+
+class LitmarketRating(models.Model):
+    """Рейтинг с litmarket.ru.
+
+    Как и на author.today, здесь нет числовой оценки вида "X.XX из N
+    голосов" — есть только счётчик лайков ("Количество лайков") и
+    приблизительный счётчик просмотров (например "5k"). Лайки —
+    основная метрика, reads — дополнительный контекст.
+    """
+    book = models.OneToOneField(Book, on_delete=models.CASCADE, related_name='litmarket_rating')
+    likes = models.IntegerField(default=0)
+    reads = models.IntegerField(null=True, blank=True)
+    litmarket_url = models.CharField(max_length=512, blank=True)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    fetch_error = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = 'opds_catalog'

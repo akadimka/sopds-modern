@@ -678,7 +678,7 @@ def sopds_settings(request):
         'alphabet_menu', 'doubles_hide', 'title_as_filename',
         'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
-        'samlib_rating', 'authortoday_rating',
+        'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating',
     ]
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
@@ -717,6 +717,14 @@ def sopds_settings(request):
             start_fetcher('authortoday')
         else:
             stop_fetcher('authortoday')
+        if sopds['fantlab_rating']:
+            start_fetcher('fantlab')
+        else:
+            stop_fetcher('fantlab')
+        if sopds['litmarket_rating']:
+            start_fetcher('litmarket')
+        else:
+            stop_fetcher('litmarket')
 
         return redirect(reverse('web:settings') + '?saved=1')
 
@@ -805,10 +813,10 @@ def hello(request):
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
     args["recent_books"] = Book.objects.select_related(
-        "samlib_rating", "authortoday_rating"
+        "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
     ).order_by("-id").prefetch_related("genres")[:10]
     args["random_book"]  = Book.objects.select_related(
-        "samlib_rating", "authortoday_rating"
+        "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
     ).order_by("?").first()
     args["samlib_rating_enabled"] = config.SOPDS_SAMLIB_RATING
     if config.SOPDS_SAMLIB_RATING:
@@ -855,6 +863,59 @@ def hello(request):
     else:
         args["popular_books_at"] = []
         args["authortoday_stats"] = None
+
+    args["fantlab_rating_enabled"] = config.SOPDS_FANTLAB_RATING
+    if config.SOPDS_FANTLAB_RATING:
+        args["popular_books_fl"] = list(Book.objects.filter(
+            fantlab_rating__rating__isnull=False
+        ).select_related("fantlab_rating").prefetch_related("authors").order_by("-fantlab_rating__rating")[:5])
+        from opds_catalog.models import FantlabRating
+        total_books_fl = Book.objects.count()
+        processed_fl   = FantlabRating.objects.count()
+        with_rating_fl = FantlabRating.objects.filter(rating__isnull=False).count()
+        with_error_fl  = FantlabRating.objects.filter(fetch_error=True).count()
+        last_entry_fl  = FantlabRating.objects.order_by("-fetched_at").first()
+        args["fantlab_stats"] = {
+            "total":       total_books_fl,
+            "processed":   processed_fl,
+            "pending":     max(0, total_books_fl - processed_fl),
+            "with_rating": with_rating_fl,
+            "with_error":  with_error_fl,
+            "last_fetch":  last_entry_fl.fetched_at if last_entry_fl else None,
+        }
+    else:
+        args["popular_books_fl"] = []
+        args["fantlab_stats"] = None
+
+    args["litmarket_rating_enabled"] = config.SOPDS_LITMARKET_RATING
+    if config.SOPDS_LITMARKET_RATING:
+        args["popular_books_lm"] = list(Book.objects.filter(
+            litmarket_rating__likes__gt=0
+        ).select_related("litmarket_rating").prefetch_related("authors").order_by("-litmarket_rating__likes")[:5])
+        from opds_catalog.models import LitmarketRating
+        total_books_lm = Book.objects.count()
+        processed_lm   = LitmarketRating.objects.count()
+        with_likes_lm  = LitmarketRating.objects.filter(likes__gt=0).count()
+        with_error_lm  = LitmarketRating.objects.filter(fetch_error=True).count()
+        last_entry_lm  = LitmarketRating.objects.order_by("-fetched_at").first()
+        args["litmarket_stats"] = {
+            "total":       total_books_lm,
+            "processed":   processed_lm,
+            "pending":     max(0, total_books_lm - processed_lm),
+            "with_rating": with_likes_lm,
+            "with_error":  with_error_lm,
+            "last_fetch":  last_entry_lm.fetched_at if last_entry_lm else None,
+        }
+    else:
+        args["popular_books_lm"] = []
+        args["litmarket_stats"] = None
+
+    args["ratings_enabled_count"] = sum([
+        bool(config.SOPDS_SAMLIB_RATING),
+        bool(config.SOPDS_AUTHORTODAY_RATING),
+        bool(config.SOPDS_FANTLAB_RATING),
+        bool(config.SOPDS_LITMARKET_RATING),
+    ])
     return render(request, "sopds_hello.html", args)
 
 
@@ -863,7 +924,7 @@ def ratings_progress(request, source):
     """GET — живой прогресс fetch_samlib_ratings/fetch_authortoday_ratings
     (эти команды — отдельные долгоживущие процессы, не через JobState;
     см. opds_catalog.ratings_progress)."""
-    if source not in ("samlib", "authortoday"):
+    if source not in ("samlib", "authortoday", "fantlab", "litmarket"):
         return JsonResponse({"error": "unknown source"}, status=404)
     from opds_catalog.ratings_progress import get_progress
     data = get_progress(source)
@@ -881,9 +942,9 @@ def ratings_restart_cycle(request, source):
     после правки кода получения рейтинга старые (потенциально неверные)
     записи иначе провисели бы в БД всю неделю. Источники независимы: сброс
     одного не трогает данные другого."""
-    if source not in ("samlib", "authortoday"):
+    if source not in ("samlib", "authortoday", "fantlab", "litmarket"):
         return HttpResponse("unknown source", status=404)
-    from opds_catalog.models import AuthorTodayRating, SamlibRating
+    from opds_catalog.models import AuthorTodayRating, FantlabRating, LitmarketRating, SamlibRating
     from opds_catalog.ratings_fetchers import (
         is_running,
         is_systemd_managed,
@@ -891,7 +952,13 @@ def ratings_restart_cycle(request, source):
         start_fetcher,
     )
 
-    model = SamlibRating if source == "samlib" else AuthorTodayRating
+    _MODELS = {
+        "samlib": SamlibRating,
+        "authortoday": AuthorTodayRating,
+        "fantlab": FantlabRating,
+        "litmarket": LitmarketRating,
+    }
+    model = _MODELS[source]
     deleted, _details = model.objects.all().delete()
 
     if is_systemd_managed() or is_running(source):
@@ -911,7 +978,7 @@ def book_card(request, book_id):
     from django.http import Http404
     try:
         book = Book.objects.select_related(
-            "samlib_rating", "authortoday_rating"
+            "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
         ).prefetch_related("authors", "genres", "series").get(pk=book_id)
     except Book.DoesNotExist:
         raise Http404
@@ -925,6 +992,8 @@ def book_card(request, book_id):
         "ser_no": ser_no,
         "samlib_rating_enabled": config.SOPDS_SAMLIB_RATING,
         "authortoday_rating_enabled": config.SOPDS_AUTHORTODAY_RATING,
+        "fantlab_rating_enabled": config.SOPDS_FANTLAB_RATING,
+        "litmarket_rating_enabled": config.SOPDS_LITMARKET_RATING,
     })
 
 

@@ -176,6 +176,8 @@ def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
         "readtime": readtime,
         "samlib_rating": getattr(row, 'samlib_rating', None),
         "authortoday_rating": getattr(row, 'authortoday_rating', None),
+        "fantlab_rating": getattr(row, 'fantlab_rating', None),
+        "litmarket_rating": getattr(row, 'litmarket_rating', None),
     }
 
 
@@ -255,7 +257,9 @@ def paginated_book_content(
                 to_attr="c_bookshelf",
             )
         )
-    books = books.select_related('samlib_rating', 'authortoday_rating').prefetch_related(*prefetch)
+    books = books.select_related(
+        'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating'
+    ).prefetch_related(*prefetch)
 
     django_paginator = Paginator(books, maxitems)
     page = django_paginator.page(page_num)

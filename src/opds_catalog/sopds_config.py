@@ -44,6 +44,8 @@ _DEFAULTS: dict = {
     'samlib_rating': False,
     'samlib_method': 'series',
     'authortoday_rating': False,
+    'fantlab_rating': False,
+    'litmarket_rating': False,
 }
 
 # Маппинг SOPDS_KEY -> json_key (None = мёртвая константа, возвращаем 0)
@@ -78,6 +80,8 @@ _KEY_MAP: dict[str, str | None] = {
     'SOPDS_SAMLIB_RATING': 'samlib_rating',
     'SOPDS_SAMLIB_METHOD': 'samlib_method',
     'SOPDS_AUTHORTODAY_RATING': 'authortoday_rating',
+    'SOPDS_FANTLAB_RATING': 'fantlab_rating',
+    'SOPDS_LITMARKET_RATING': 'litmarket_rating',
 }
 
 

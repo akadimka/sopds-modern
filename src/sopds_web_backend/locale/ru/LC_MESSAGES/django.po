@@ -647,6 +647,42 @@ msgstr "Страница автора на samlib.ru (найти серию → 
 msgid "Parse FB2 file (extract section titles → search each)"
 msgstr "Парсинг FB2-файла (извлечь заголовки секций → искать каждую)"
 
+msgid "Popular on fantlab.ru"
+msgstr "Популярное на fantlab.ru"
+
+msgid "Ratings are being collected from fantlab.ru..."
+msgstr "Рейтинги собираются с fantlab.ru..."
+
+msgid "Popular on litmarket.ru"
+msgstr "Популярное на litmarket.ru"
+
+msgid "Data is being collected from litmarket.ru..."
+msgstr "Данные собираются с litmarket.ru..."
+
+msgid "Rating FL"
+msgstr "Рейтинг FL"
+
+msgid "Rating LM"
+msgstr "Рейтинг LM"
+
+msgid "Fetch ratings from FantLab (fantlab.ru)"
+msgstr "Получать рейтинги с FantLab (fantlab.ru)"
+
+msgid "A background process will slowly crawl books and retrieve ratings. Run: python manage.py fetch_fantlab_ratings"
+msgstr "Фоновый процесс будет медленно обходить книги и получать рейтинги. Запуск: python manage.py fetch_fantlab_ratings"
+
+msgid "Fetch likes from LitMarket (litmarket.ru)"
+msgstr "Получать лайки с LitMarket (litmarket.ru)"
+
+msgid "litmarket.ru has no star rating, only likes/reads. A background process will slowly crawl books. Run: python manage.py fetch_litmarket_ratings"
+msgstr "На litmarket.ru нет звёздного рейтинга, только лайки/просмотры. Фоновый процесс медленно обходит книги. Запуск: python manage.py fetch_litmarket_ratings"
+
+msgid "This discards ALL ratings collected so far from fantlab.ru and starts a fresh full pass. Use this after the fetching code changed. Continue?"
+msgstr "Это удалит ВСЕ собранные рейтинги с fantlab.ru и запустит полный проход заново. Используйте после изменения кода получения рейтинга. Продолжить?"
+
+msgid "This discards ALL data collected so far from litmarket.ru and starts a fresh full pass. Use this after the fetching code changed. Continue?"
+msgstr "Это удалит ВСЕ собранные данные с litmarket.ru и запустит полный проход заново. Используйте после изменения кода получения рейтинга. Продолжить?"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

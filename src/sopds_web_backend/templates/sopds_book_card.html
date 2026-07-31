@@ -68,6 +68,20 @@
         <span style="color:#3b82f6;">👍 {{ b.authortoday_rating.likes }}</span>
       </div>
       {% endif %}
+
+      {% if fantlab_rating_enabled and b.fantlab_rating and not b.fantlab_rating.fetch_error and b.fantlab_rating.rating %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Rating FL" %}</span>
+        <span style="color:#10b981;">★ {{ b.fantlab_rating.rating|floatformat:1 }}{% if b.fantlab_rating.votes %} <span style="color:var(--text-muted); font-size:0.85em;">({{ b.fantlab_rating.votes }})</span>{% endif %}</span>
+      </div>
+      {% endif %}
+
+      {% if litmarket_rating_enabled and b.litmarket_rating and not b.litmarket_rating.fetch_error and b.litmarket_rating.likes %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Rating LM" %}</span>
+        <span style="color:#8b5cf6;">👍 {{ b.litmarket_rating.likes }}</span>
+      </div>
+      {% endif %}
     </div>
   </div>
 
