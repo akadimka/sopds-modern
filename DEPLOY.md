@@ -226,7 +226,7 @@ mkdir -p /opt/sopds-modern/src/fb2_data/csv
 mkdir -p /opt/sopds-modern/src/log
 ```
 
-> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 16 «Проверка».
+> Настройку путей через **FB2Parser → Настройки** в браузере сделаете после того, как сервис запустится — см. шаг 19 «Проверка».
 
 ---
 
@@ -485,7 +485,165 @@ systemctl status sopds-authortoday
 
 ---
 
-## 16. Проверка
+## 16. (Опционально) Рейтинги FantLab
+
+Как и Samlib, fantlab.ru отдаёт числовую оценку вида «X.XX (N голосов)» —
+поиск (`https://fantlab.ru/searchmain?searchstr=...`) сразу возвращает её
+в результатах, без отдельного запроса на страницу произведения. Если
+включена настройка **«Fetch ratings from FantLab»** (SOPDS → Settings →
+раздел Services; хранится как `fantlab_rating` в `config.json`), рейтинги
+получает отдельная management-команда:
+
+```bash
+cd /opt/sopds-modern/src
+../.venv/bin/python manage.py fetch_fantlab_ratings
+```
+
+> Как и `fetch_samlib_ratings` — это **бесконечный процесс**: обходит
+> книги без рейтинга, пауза 15–30 сек между запросами (дольше при
+> 429/503), обновляет записи старше 14 дней. Если настройка выключена,
+> команда сразу завершается — включите её *до* запуска.
+
+```bash
+nano /etc/systemd/system/sopds-fantlab.service
+```
+
+```ini
+[Unit]
+Description=SOPDS fantlab.ru rating fetcher
+After=network.target sopds-modern.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sopds-modern/src
+EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sopds-modern/.venv/bin/python manage.py fetch_fantlab_ratings
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now sopds-fantlab
+systemctl status sopds-fantlab
+```
+
+---
+
+## 17. (Опционально) Рейтинги LitMarket
+
+Как и author.today, у litmarket.ru нет числовой оценки — есть только
+лайки и приблизительный счётчик просмотров (например «5k»). Если включена
+настройка **«Fetch likes from LitMarket»** (SOPDS → Settings → раздел
+Services; хранится как `litmarket_rating` в `config.json`), эти данные
+получает отдельная management-команда:
+
+```bash
+cd /opt/sopds-modern/src
+../.venv/bin/python manage.py fetch_litmarket_ratings
+```
+
+> Как и `fetch_authortoday_ratings` — это **бесконечный процесс**: обходит
+> книги без данных, пауза 15–30 сек между запросами, обновляет записи
+> старше 14 дней. Поиск — через публичную страницу
+> `https://litmarket.ru/search`, авторизация не нужна.
+
+```bash
+nano /etc/systemd/system/sopds-litmarket.service
+```
+
+```ini
+[Unit]
+Description=SOPDS litmarket.ru rating fetcher
+After=network.target sopds-modern.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sopds-modern/src
+EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sopds-modern/.venv/bin/python manage.py fetch_litmarket_ratings
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now sopds-litmarket
+systemctl status sopds-litmarket
+```
+
+---
+
+## 18. (Опционально) Плановое сканирование библиотеки по расписанию
+
+Кнопка «Сканировать» в веб-интерфейсе запускает разовое сканирование по
+клику — расписание (SOPDS → Settings: день/день недели/час/минута) она не
+читает. Расписанием занимается отдельная management-команда:
+
+```bash
+cd /opt/sopds-modern/src
+../.venv/bin/python manage.py sopds_scanner start
+```
+
+> Это **сам планировщик** (APScheduler), а не одноразовая команда и не
+> cron-задача: процесс должен работать постоянно. Он ставит cron-джобу по
+> `SOPDS_SCAN_SHED_DAY/DOW/HOUR/MIN` и каждые 10 минут перечитывает
+> настройки — расписание можно менять в Settings без перезапуска сервиса.
+> Настройка **«Start scan directly»** (`scan_start_directly`) запускает
+> разовое сканирование сразу при старте процесса, в дополнение к
+> расписанию.
+
+```bash
+nano /etc/systemd/system/sopds-scan.service
+```
+
+```ini
+[Unit]
+Description=SOPDS scheduled library scanner
+After=network.target sopds-modern.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sopds-modern/src
+EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sopds-modern/.venv/bin/python manage.py sopds_scanner start
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now sopds-scan
+systemctl status sopds-scan
+```
+
+> Не передавайте `--daemon` в `ExecStart` — на Linux эта опция форкает
+> процесс в фон сама (двойной fork), что конфликтует с тем, как systemd
+> отслеживает PID сервиса. systemd и так держит процесс в фоне и
+> перезапускает его при падении (`Restart=on-failure`) — собственный
+> daemonize здесь не нужен, только мешает.
+
+---
+
+## 19. Проверка
 
 Откройте в браузере: `http://<IP-адрес сервера>:8008/` (без Apache) или `http://<IP-адрес сервера>/` (если настроили Apache на шаге 12)
 

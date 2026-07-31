@@ -1,4 +1,5 @@
-"""Управление фоновыми потоками сбора рейтингов (samlib/author.today) из веб-приложения.
+"""Управление фоновыми потоками сбора рейтингов (samlib/author.today/fantlab/
+litmarket) из веб-приложения.
 
 Только для локального использования без systemd (см. DEPLOY.md) — если фичи
 запущены как systemd-сервисы на сервере, НЕ подключайте автозапуск через
@@ -12,11 +13,12 @@ ready()/веб-хук здесь, иначе получится два неза�
 Разделение local/server режимов: systemd-юнит основного сервиса
 (sopds-modern.service, см. DEPLOY.md шаг 11) выставляет переменную окружения
 SOPDS_MANAGED_BY_SYSTEMD=1. Если она задана — считаем, что рейтинги уже
-собираются отдельными systemd-сервисами (sopds-samlib/sopds-authortoday),
-и start_fetcher()/stop_fetcher() отсюда не запускают/не останавливают
-собственный поток: настройка просто сохраняется в config.json, а отдельный
-сервис подхватывает её на следующей итерации (это уже проверяется на каждом
-цикле, см. fetch_samlib_ratings/fetch_authortoday_ratings).
+собираются отдельными systemd-сервисами (sopds-samlib/sopds-authortoday/
+sopds-fantlab/sopds-litmarket), и start_fetcher()/stop_fetcher() отсюда не
+запускают/не останавливают собственный поток: настройка просто сохраняется в
+config.json, а отдельный сервис подхватывает её на следующей итерации (это
+уже проверяется на каждом цикле, см. fetch_samlib_ratings/
+fetch_authortoday_ratings/fetch_fantlab_ratings/fetch_litmarket_ratings).
 """
 import os
 import threading
@@ -35,8 +37,9 @@ _COMMAND_NAME = {
 
 def is_systemd_managed() -> bool:
     """True если сервис развёрнут через systemd (см. DEPLOY.md шаг 11) —
-    в этом режиме рейтинги собирают отдельные sopds-samlib/sopds-authortoday
-    юниты, и веб-процессу нельзя запускать свой поток поверх них."""
+    в этом режиме рейтинги собирают отдельные sopds-samlib/sopds-authortoday/
+    sopds-fantlab/sopds-litmarket юниты, и веб-процессу нельзя запускать свой
+    поток поверх них."""
     return os.environ.get("SOPDS_MANAGED_BY_SYSTEMD") == "1"
 
 _STOP_TIMEOUT = 24 * 3600  # держим флаг остановки дольше самой длинной паузы (SLEEP_IDLE)
@@ -154,9 +157,9 @@ def stop_fetcher(source: str) -> None:
     На systemd-развёртывании — no-op. request_stop() пишет флаг в общий кеш
     (memcached), который проверяет и отдельный systemd-сервис — без этой
     проверки снятие галочки в Settings на сервере остановило бы уже
-    работающий sopds-samlib/sopds-authortoday (а Restart=on-failure его не
-    поднимет: команда завершается чисто, это не считается сбоем). Там
-    управление — только через `systemctl stop/start`.
+    работающий sopds-samlib/sopds-authortoday/sopds-fantlab/sopds-litmarket
+    (а Restart=on-failure его не поднимет: команда завершается чисто, это не
+    считается сбоем). Там управление — только через `systemctl stop/start`.
     """
     if is_systemd_managed():
         return
