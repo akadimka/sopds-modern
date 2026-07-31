@@ -138,7 +138,14 @@ class Command(BaseCommand):
         return 200, result
 
     def _fetch_rating(self, author_name, title):
-        """Ищет книгу по автору+названию, возвращает (rating, votes, url, error)."""
+        """Ищет книгу по автору+названию, возвращает (rating, votes, url, error).
+
+        При HTTP 500 повторяем запрос без автора (см. аналогичную обработку
+        и комментарий в fetch_litmarket_ratings._fetch_rating — некоторые
+        конкретные сочетания слов автор+название стабильно роняют поиск на
+        стороне сайта, предсказать их заранее нельзя, а более короткий
+        запрос эту нестабильность обходит).
+        """
         query = f"{author_name} {title}".strip()
         search_url = "https://fantlab.ru/searchmain?searchstr=" + urllib.parse.quote(query)
         self.stdout.write(f"  GET {search_url}")
@@ -148,6 +155,15 @@ class Command(BaseCommand):
         except Exception as exc:
             self.stdout.write(f"  Ошибка: {exc}")
             return None, 0, search_url, True
+
+        if status == 500 and author_name:
+            search_url = "https://fantlab.ru/searchmain?searchstr=" + urllib.parse.quote(title)
+            self.stdout.write(f"  HTTP 500 — повтор без автора: GET {search_url}")
+            try:
+                html, status = self._fetch(search_url)
+            except Exception as exc:
+                self.stdout.write(f"  Ошибка: {exc}")
+                return None, 0, search_url, True
 
         if status not in (None, 200):
             return None, 0, search_url, True

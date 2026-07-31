@@ -149,7 +149,17 @@ class Command(BaseCommand):
         return 200, result
 
     def _fetch_rating(self, author_name, title):
-        """Ищет книгу по автору+названию, возвращает (likes, reads, url, error)."""
+        """Ищет книгу по автору+названию, возвращает (likes, reads, url, error).
+
+        Некоторые конкретные сочетания слов автор+название стабильно роняют
+        поиск litmarket.ru с HTTP 500 (проверено вживую: например "Noslnosl
+        Абрамов Владимир Зелёный" — 500, а замена любого одного слова в этом
+        наборе — уже 200; ни скобки, ни повтор фамилии тут ни при чём, это
+        просто нестабильность их бэкенда на конкретных запросах). Предсказать
+        такие сочетания заранее нельзя, поэтому при 500 просто повторяем
+        запрос без автора — более короткий запрос не задевает этот баг и не
+        теряет автора в обычном (успешном) случае.
+        """
         query = f"{author_name} {title}".strip()
         search_url = "https://litmarket.ru/search?type=book&query=" + urllib.parse.quote(query)
         self.stdout.write(f"  GET {search_url}")
@@ -159,6 +169,15 @@ class Command(BaseCommand):
         except Exception as exc:
             self.stdout.write(f"  Ошибка: {exc}")
             return None, None, search_url, True
+
+        if status == 500 and author_name:
+            search_url = "https://litmarket.ru/search?type=book&query=" + urllib.parse.quote(title)
+            self.stdout.write(f"  HTTP 500 — повтор без автора: GET {search_url}")
+            try:
+                html, status = self._fetch(search_url)
+            except Exception as exc:
+                self.stdout.write(f"  Ошибка: {exc}")
+                return None, None, search_url, True
 
         if status not in (None, 200):
             return None, None, search_url, True
