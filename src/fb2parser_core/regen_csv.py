@@ -1031,6 +1031,12 @@ class RegenCSVService:
             # ДО финального гейта "нет серии", т.к. сам меняет только number, не серию.
             self._postcheck_combined_volume_title()
 
+            # Единственная книга серии без номера, когда у всех остальных номер ≥2 —
+            # почти наверняка подразумеваемый том 1 (частая практика: первую книгу
+            # издают без явного номера). Идёт после combined_volume, чтобы группы
+            # уже видели финальные series_number (в т.ч. диапазоны "1-2").
+            self._postcheck_infer_first_volume()
+
             # Финальный гейт: "вне серий"/"без серий" и т.п. — авторитетный маркер
             # "серии заведомо нет". Идёт последним, чтобы ничего (включая
             # _postcheck_metadata_rescue) не могло позже подставить серию туда,
@@ -2001,6 +2007,59 @@ class RegenCSVService:
         if _count:
             print(f"[POST-CHECK] Expanded series_number to a range for {_count} combined-volume titles")
             self.logger.log(f"[OK] POST-CHECK: Expanded series_number to range for {_count} combined volumes")
+
+    def _postcheck_infer_first_volume(self) -> None:
+        """Проставляет series_number=1 единственной книге серии без номера, если
+        у ВСЕХ остальных книг той же серии/автора номер ≥2 и нигде уже нет «1»
+        (частая практика: первую книгу серии издают без явного номера, а сиквелы
+        уже нумеруют с 2).
+
+        Срабатывает только когда мета НЕ противоречит назначению тома 1:
+        metadata_series у этой книги либо пустой (нет <sequence> вообще), либо
+        совпадает с proposed_series (мета подтверждает серию, просто без номера).
+        Если metadata_series указывает на другую серию — это реальное
+        противоречие, не трогаем. Диапазоны вида "1-2" в остальных книгах тоже
+        блокируют срабатывание (там уже есть/подразумевается «1»).
+        """
+        groups: dict = {}
+        for record in self.records:
+            series = record.proposed_series or ''
+            if not series or '\\' in series:
+                continue
+            groups.setdefault((record.proposed_author or '', series), []).append(record)
+
+        _count = 0
+        for (_author, series), group in groups.items():
+            if len(group) < 2:
+                continue
+            unnumbered = [r for r in group if not (r.series_number or '').strip()]
+            if len(unnumbered) != 1:
+                continue  # неоднозначно: либо все пронумерованы, либо не хватает > 1
+
+            others = [r for r in group if r is not unnumbered[0]]
+            nums = []
+            ok = True
+            for r in others:
+                sn = (r.series_number or '').strip()
+                if not re.match(r'^\d+$', sn):
+                    ok = False  # диапазон ("1-2"), дробное ("8.1") или иной формат — пропускаем группу
+                    break
+                nums.append(int(sn))
+            if not ok or not nums or 1 in nums or min(nums) < 2:
+                continue
+
+            target = unnumbered[0]
+            meta_series = (target.metadata_series or '').strip()
+            if meta_series and self._norm_for_series_cmp(meta_series) != self._norm_for_series_cmp(series):
+                continue  # мета указывает на другую серию — противоречие
+
+            target.series_number = '1'
+            target.series_number_source = 'consensus_inferred_first_volume'
+            _count += 1
+
+        if _count:
+            print(f"[POST-CHECK] Inferred series_number=1 for {_count} unnumbered first volumes")
+            self.logger.log(f"[OK] POST-CHECK: Inferred first-volume number for {_count} records")
 
     def _postcheck_strip_service_words(self) -> None:
         """Убирает хвостовые сервисные слова (Книга, Том, Часть, Book, Vol) из серий."""
