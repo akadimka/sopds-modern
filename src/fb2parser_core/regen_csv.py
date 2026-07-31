@@ -1026,6 +1026,11 @@ class RegenCSVService:
                         rec.proposed_author += ')' * (_open - _close)
             self.logger.log("[OK] Final sanitization applied")
 
+            # «Том N и M» / «Том N и Том M» в заголовке — файл объединяет два тома,
+            # а series_number на этот момент указывает только на первый (N). Идёт
+            # ДО финального гейта "нет серии", т.к. сам меняет только number, не серию.
+            self._postcheck_combined_volume_title()
+
             # Финальный гейт: "вне серий"/"без серий" и т.п. — авторитетный маркер
             # "серии заведомо нет". Идёт последним, чтобы ничего (включая
             # _postcheck_metadata_rescue) не могло позже подставить серию туда,
@@ -1960,6 +1965,42 @@ class RegenCSVService:
         if _count:
             print(f"[POST-CHECK] Cleared {_count} oversized series numbers (>=100)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_count} oversized series numbers")
+
+    def _postcheck_combined_volume_title(self) -> None:
+        """Расширяет series_number до диапазона «N-M», если заголовок явно говорит,
+        что файл объединяет два соседних тома («Том 1 и Том 2», «Том 1 и 2»).
+
+        Мета/имя файла в таких случаях обычно указывают только первый номер
+        (например <sequence number="1"/>), теряя том 2 — в каталоге серии тогда
+        возникает "дыра" на месте второго тома, хотя его содержимое физически
+        есть внутри этого же файла. Срабатывает только когда текущий
+        series_number ТОЧНО равен первому числу пары — иначе он уже был задан
+        осознанно чем-то другим (например явным диапазоном), и трогать его
+        не нужно. Числа должны быть соседними (M = N+1) — это отличает
+        "объединение двух томов" от произвольных совпадений цифр в названии.
+        """
+        _combined_re = re.compile(
+            r'\bтом\s+(\d{1,3})\s+и\s+(?:том\s+)?(\d{1,3})\b',
+            re.IGNORECASE | re.UNICODE,
+        )
+        _count = 0
+        for record in self.records:
+            title = record.file_title or ''
+            m = _combined_re.search(title)
+            if not m:
+                continue
+            lo, hi = int(m.group(1)), int(m.group(2))
+            if hi != lo + 1:
+                continue
+            sn = (record.series_number or '').strip()
+            if sn != str(lo):
+                continue
+            record.series_number = f"{lo}-{hi}"
+            record.series_number_source = 'consensus_combined_volume_title'
+            _count += 1
+        if _count:
+            print(f"[POST-CHECK] Expanded series_number to a range for {_count} combined-volume titles")
+            self.logger.log(f"[OK] POST-CHECK: Expanded series_number to range for {_count} combined volumes")
 
     def _postcheck_strip_service_words(self) -> None:
         """Убирает хвостовые сервисные слова (Книга, Том, Часть, Book, Vol) из серий."""
