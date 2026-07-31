@@ -43,6 +43,18 @@ from opds_catalog.models import Counter
 from opds_catalog.sopdscan import opdsScanner
 
 
+def _cron_day(day):
+    """0 = "каждый день" (см. комментарий scan_shed_day в config.json) — APScheduler
+    понимает это как wildcard '*', а не как буквальный day=0 (невалидный, диапазон 1-31)."""
+    return "*" if day == 0 else day
+
+
+def _cron_dow(dow):
+    """-1 = "каждый день" (см. комментарий scan_shed_dow) — то же самое для day_of_week
+    (диапазон 0-6), иначе APScheduler падает с ValueError при старте."""
+    return "*" if dow == -1 else dow
+
+
 class Command(BaseCommand):
     help = "Scan Books Collection."
     scan_is_active = False
@@ -147,8 +159,8 @@ class Command(BaseCommand):
         self.sched.reschedule_job(
             "scan",
             trigger="cron",
-            day=self.SCAN_SHED_DAY,
-            day_of_week=self.SCAN_SHED_DOW,
+            day=_cron_day(self.SCAN_SHED_DAY),
+            day_of_week=_cron_dow(self.SCAN_SHED_DOW),
             hour=self.SCAN_SHED_HOUR,
             minute=self.SCAN_SHED_MIN,
         )
@@ -190,8 +202,8 @@ class Command(BaseCommand):
         self.sched.add_job(
             self.scan,
             "cron",
-            day=self.SCAN_SHED_DAY,
-            day_of_week=self.SCAN_SHED_DOW,
+            day=_cron_day(self.SCAN_SHED_DAY),
+            day_of_week=_cron_dow(self.SCAN_SHED_DOW),
             hour=self.SCAN_SHED_HOUR,
             minute=self.SCAN_SHED_MIN,
             id="scan",
