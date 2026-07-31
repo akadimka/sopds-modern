@@ -696,33 +696,31 @@ def sopds_settings(request):
             sopds[f] = request.POST.get(f, '').strip()
         sm.save()
 
-        # Локальное использование без systemd (см. DEPLOY.md): сохранение настроек
-        # с включённой галочкой гарантирует, что фоновый сбор рейтингов работает
-        # в этом же процессе (start_fetcher сам не делает ничего лишнего, если уже
-        # запущен — см. is_running() внутри), выключенной — что он остановлен.
-        # Реагируем на ТЕКУЩЕЕ значение, а не на переход False→True: если галочка
-        # уже была True, но процесс почему-то не запущен (например, после рестарта
-        # сервера, или настройка была включена раньше без старта фичи) — сохранение
-        # всё равно должно его поднять, иначе пользователю пришлось бы сначала
-        # выключить и отдельным сохранением включить обратно, только чтобы поймать
-        # "переход". Если фичи развёрнуты как systemd-сервисы на сервере, этот блок
-        # НЕ трогать без предварительного разделения local/server режимов — иначе
-        # получится два независимых обходчика сразу.
-        from opds_catalog.ratings_fetchers import start_fetcher, stop_fetcher
+        # Сохранение настроек с включённой галочкой гарантирует, что фоновый сбор
+        # рейтингов работает. wake_or_start() покрывает оба режима развёртывания:
+        # локально (без systemd) поднимает свой поток, если он не запущен;
+        # под systemd (см. is_systemd_managed() в ratings_fetchers.py) будит уже
+        # работающий процесс через общий кеш — start_fetcher() там no-op, но
+        # fetch_*_ratings.py теперь не завершаются при выключенной настройке
+        # (ждут в статусе "disabled"), так что живой процесс есть всегда, если
+        # юнит запускался хоть раз. Реагируем на ТЕКУЩЕЕ значение, а не на переход
+        # False→True — если галочка уже была True, но процесс почему-то не в
+        # рабочем состоянии, сохранение всё равно должно его поднять/разбудить.
+        from opds_catalog.ratings_fetchers import stop_fetcher, wake_or_start
         if sopds['samlib_rating']:
-            start_fetcher('samlib')
+            wake_or_start('samlib')
         else:
             stop_fetcher('samlib')
         if sopds['authortoday_rating']:
-            start_fetcher('authortoday')
+            wake_or_start('authortoday')
         else:
             stop_fetcher('authortoday')
         if sopds['fantlab_rating']:
-            start_fetcher('fantlab')
+            wake_or_start('fantlab')
         else:
             stop_fetcher('fantlab')
         if sopds['litmarket_rating']:
-            start_fetcher('litmarket')
+            wake_or_start('litmarket')
         else:
             stop_fetcher('litmarket')
 
@@ -945,12 +943,7 @@ def ratings_restart_cycle(request, source):
     if source not in ("samlib", "authortoday", "fantlab", "litmarket"):
         return HttpResponse("unknown source", status=404)
     from opds_catalog.models import AuthorTodayRating, FantlabRating, LitmarketRating, SamlibRating
-    from opds_catalog.ratings_fetchers import (
-        is_running,
-        is_systemd_managed,
-        request_wake,
-        start_fetcher,
-    )
+    from opds_catalog.ratings_fetchers import wake_or_start
 
     _MODELS = {
         "samlib": SamlibRating,
@@ -960,11 +953,7 @@ def ratings_restart_cycle(request, source):
     }
     model = _MODELS[source]
     deleted, _details = model.objects.all().delete()
-
-    if is_systemd_managed() or is_running(source):
-        request_wake(source)
-    else:
-        start_fetcher(source)
+    wake_or_start(source)
 
     return HttpResponse(
         f'<span style="color:var(--sp-accent);">✓ '

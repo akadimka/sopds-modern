@@ -63,10 +63,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from opds_catalog.sopds_config import sopds_cfg
-        if not sopds_cfg.SOPDS_AUTHORTODAY_RATING:
-            self.stdout.write("SOPDS_AUTHORTODAY_RATING=False — выходим.")
-            return
-
         self.stdout.write("Запуск fetch_authortoday_ratings…")
 
         from opds_catalog.ratings_progress import set_progress
@@ -80,6 +76,14 @@ class Command(BaseCommand):
                 self.stdout.write("Остановлено по запросу.")
                 clear_stop(_SRC)
                 return
+
+            if not sopds_cfg.SOPDS_AUTHORTODAY_RATING:
+                # См. комментарий в fetch_samlib_ratings.py: не завершаем процесс,
+                # иначе под systemd его никто не перезапустит при включении галочки.
+                resume_at = timezone.now() + timedelta(seconds=self._SLEEP_IDLE)
+                set_progress(_SRC, status="disabled", resume_at=resume_at)
+                sleep_or_stop(_SRC, self._SLEEP_IDLE)
+                continue
 
             book = self._next_book()
             if book is None:

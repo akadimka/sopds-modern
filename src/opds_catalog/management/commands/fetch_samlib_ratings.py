@@ -56,12 +56,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from opds_catalog.sopds_config import sopds_cfg
-        if not sopds_cfg.SOPDS_SAMLIB_RATING:
-            self.stdout.write("SOPDS_SAMLIB_RATING=False — выходим.")
-            return
-
-        method = sopds_cfg.SOPDS_SAMLIB_METHOD or 'series'
-        self.stdout.write(f"Запуск fetch_samlib_ratings (метод: {method})…")
+        self.stdout.write("Запуск fetch_samlib_ratings…")
 
         from opds_catalog.ratings_progress import set_progress
         from opds_catalog.ratings_fetchers import sleep_or_stop, stop_requested, clear_stop
@@ -75,6 +70,18 @@ class Command(BaseCommand):
                 clear_stop(_SRC)
                 return
 
+            if not sopds_cfg.SOPDS_SAMLIB_RATING:
+                # Настройка выключена в Settings — НЕ завершаем процесс: под systemd
+                # (см. is_systemd_managed() в ratings_fetchers.py) включение галочки
+                # обратно не перезапускает юнит самостоятельно, только "будит" уже
+                # работающий процесс через request_wake(). Если процесс завершится
+                # здесь, никто больше не разбудит его без systemctl start вручную.
+                resume_at = timezone.now() + timedelta(seconds=self._SLEEP_IDLE)
+                set_progress(_SRC, status="disabled", resume_at=resume_at)
+                sleep_or_stop(_SRC, self._SLEEP_IDLE)
+                continue
+
+            method = sopds_cfg.SOPDS_SAMLIB_METHOD or 'series'
             book = self._next_book()
             if book is None:
                 resume_at = timezone.now() + timedelta(seconds=self._SLEEP_IDLE)

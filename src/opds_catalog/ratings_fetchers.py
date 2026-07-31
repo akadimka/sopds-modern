@@ -166,6 +166,24 @@ def stop_fetcher(source: str) -> None:
     request_stop(source)
 
 
+def wake_or_start(source: str) -> None:
+    """Разбудить работающий фетчер source, либо запустить его, если он не работает.
+
+    Общая логика для трёх мест: включение галочки в Settings, кнопка "Restart
+    full cycle" и poke_fetchers_for_new_books() ниже. Под systemd start_fetcher()
+    не делает ничего (см. is_systemd_managed()) — там процесс либо уже жив
+    (спит/обрабатывает — request_wake() достаточно), либо действительно упал/не
+    запущен вообще, и разбудить его нечем: это требует `systemctl start
+    sopds-<source>` вручную. С тех пор как fetch_*_ratings.py сами не завершаются
+    при выключенной настройке (см. их handle()), а просто ждут в статусе
+    "disabled", живой процесс есть всегда, если юнит был запущен хоть раз.
+    """
+    if is_systemd_managed() or is_running(source):
+        request_wake(source)
+    else:
+        start_fetcher(source)
+
+
 def poke_fetchers_for_new_books() -> None:
     """Вызывается после сканирования библиотеки, если оно добавило хотя бы
     одну новую книгу — гарантирует, что для новых книг сбор рейтингов
@@ -188,11 +206,4 @@ def poke_fetchers_for_new_books() -> None:
     ):
         if not enabled:
             continue
-        if is_systemd_managed():
-            # Локальный поток не поднимаем — но будим отдельный systemd-сервис
-            # через тот же общий кеш, который он и так опрашивает.
-            request_wake(source)
-        elif is_running(source):
-            request_wake(source)
-        else:
-            start_fetcher(source)
+        wake_or_start(source)
