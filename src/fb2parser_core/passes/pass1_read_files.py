@@ -301,7 +301,7 @@ class Pass1ReadFiles:
     
     def __init__(self, work_dir: Path, author_folder_cache: Dict[Path, Tuple[str, str]],
                  extractor, logger, folder_parse_limit: int,
-                 filter_paths=None):
+                 filter_paths=None, progress_callback=None):
         """Initialize PASS 1.
 
         Args:
@@ -310,8 +310,16 @@ class Pass1ReadFiles:
             extractor: FB2AuthorExtractor instance
             logger: Logger instance
             folder_parse_limit: Maximum depth for folder parsing
-            filter_paths: Optional list/set of absolute Path objects — only files
-                          inside these folders are processed. None = all files.
+            filter_paths: Optional list/set of absolute Path objects — только файлы
+                          внутри этих папок обрабатываются. None = все файлы.
+            progress_callback: Опциональный callback(current, total, status) —
+                          вызывается периодически во время обработки файлов (не
+                          только раз в начале пасса). Это единственный пасс, где
+                          нужна такая частая отдача: на полном скане библиотеки
+                          (десятки тысяч файлов) именно этот цикл — самый долгий,
+                          а вызывающий код (см. fb2parser_web.views._progress)
+                          проверяет здесь же запрос на остановку — без частых
+                          вызовов Stop не сработал бы до конца пасса.
         """
         self.work_dir = work_dir
         self.author_folder_cache = author_folder_cache
@@ -319,6 +327,7 @@ class Pass1ReadFiles:
         self.logger = logger
         self.folder_parse_limit = folder_parse_limit
         self.filter_paths = {Path(p).resolve() for p in filter_paths} if filter_paths else None
+        self.progress_callback = progress_callback
     
     def execute(self) -> List[BookRecord]:
         """Execute PASS 1: Read FB2 files and create BookRecords.
@@ -394,9 +403,15 @@ class Pass1ReadFiles:
 
             # Process results with progress bar
             records = []
+            # Не дёргаем progress_callback на каждом файле (кэш-запись на каждый
+            # из десятков тысяч файлов при полном скане библиотеки) — достаточно
+            # каждые ~25 файлов и для отдачи прогресса, и чтобы запрос на
+            # остановку (см. docstring __init__) заметился быстро, а не только
+            # после того, как весь пасс отработает целиком.
+            _report_every = max(1, min(25, total // 100))
             with tqdm.tqdm(total=total, desc="Processing FB2 files", unit="file",
                            file=sys.stdout, dynamic_ncols=True) as pbar:
-                for future in concurrent.futures.as_completed(future_to_file):
+                for i, future in enumerate(concurrent.futures.as_completed(future_to_file), start=1):
                     fb2_file = future_to_file[future]
                     try:
                         result_tuple = future.result()
@@ -407,6 +422,22 @@ class Pass1ReadFiles:
                         self.logger.log(f"[PASS 1] Error processing {fb2_file}: {e}")
 
                     pbar.update(1)
+
+                    if self.progress_callback and (i % _report_every == 0 or i == total):
+                        try:
+                            # 10-20% диапазон Pass 1 в общей шкале regen_csv.regenerate()
+                            self.progress_callback(
+                                10 + int(i / total * 9), 100,
+                                f"Pass 1: Чтение FB2 файлов ({i}/{total})",
+                            )
+                        except Exception:
+                            # Запрошена остановка (см. norm_stop_flag/sync_stop_flag) —
+                            # отменяем необработанные futures вместо того, чтобы ждать,
+                            # пока обработаются все оставшиеся файлы.
+                            for f in future_to_file:
+                                f.cancel()
+                            executor.shutdown(wait=False, cancel_futures=True)
+                            raise
 
         self.logger.log(f"[PASS 1] Read {len(records)} files")
         return records

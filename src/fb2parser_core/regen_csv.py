@@ -395,7 +395,8 @@ class RegenCSVService:
             pass1 = Pass1ReadFiles(self.work_dir, self.author_folder_cache,
                                   self.extractor, self.logger,
                                   self.folder_parse_limit,
-                                  filter_paths=filter_paths)
+                                  filter_paths=filter_paths,
+                                  progress_callback=progress_callback)
             self.records = pass1.execute()
             print(f"[PASS 1] → {time.perf_counter()-_t:.2f}s")
             
