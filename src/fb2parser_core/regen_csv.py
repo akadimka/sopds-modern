@@ -2167,8 +2167,14 @@ class RegenCSVService:
                         continue
             # Rule 2: meta = "PREFIX: SUBSERIES", proposed = "SUBSERIES"
             # Build "PREFIX\SUBSERIES" hierarchy (backslash = series separator in this system)
-            # Applies to any source (filename, folder_dataset) since match is exact
-            if ':' in record.metadata_series and len(ps_l) >= 3:
+            # NOT applied to folder_dataset/folder_hierarchy: папка — самый доверенный источник
+            # серии, и должна применяться одинаково ко всем файлам этой папки без исключений.
+            # Раньше эта же серия, но с "." вместо ":" (то же самое разночтение по факту,
+            # просто другая пунктуация в meta конкретного файла) не проходила это правило —
+            # часть файлов папки получала "Экспансия\История Галактики", другая часть
+            # оставалась плоской "История Галактики", хотя папка для всех одна и та же.
+            if (':' in record.metadata_series and len(ps_l) >= 3
+                    and not record.series_source.startswith(('folder_dataset', 'folder_hierarchy'))):
                 colon_idx = ms_l.index(':')
                 prefix_raw = record.metadata_series[:colon_idx].strip()
                 subseries_l = ms_l[colon_idx + 1:].strip().lstrip('- ')
