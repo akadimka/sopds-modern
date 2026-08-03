@@ -679,6 +679,8 @@ class SynchronizationService:
             "Автор - Название.fb2"
         """
         _safe = self._safe
+        author = _safe((record.proposed_author or '').strip())
+        raw_title = (record.file_title or Path(record.file_path).stem).strip()
 
         # ── Компиляции ────────────────────────────────────────────────
         if kind == 'compilation':
@@ -689,6 +691,20 @@ class SynchronizationService:
                 )
             except Exception:
                 clean_series = (record.proposed_series or '').strip()
+
+            # _classify_record() возвращает covered_volumes=set() не только для
+            # реальных компиляций с неизвестным диапазоном, но и для ЛЮБОЙ книги,
+            # где в названии/имени файла просто встретилось слово "сборник"
+            # (см. _COMPILATION_KEYWORDS — count=None), даже если это отдельная
+            # книга-антология вообще без серии. Без серии и диапазона томов имя
+            # "Автор -  (в 0 книгах).fb2" получается ОДИНАКОВЫМ для любой такой
+            # книги автора — вторая и все следующие считаются дубликатом первой
+            # и остаются несинхронизированными. Если нет ни серии, ни диапазона,
+            # это не настоящая компиляция серии — именуем по названию книги,
+            # как одиночный том без серии.
+            if not covered_volumes and not clean_series:
+                title = _safe(raw_title)
+                return f"{author} - {title}.fb2"
 
             if covered_volumes:
                 lo, hi = min(covered_volumes), max(covered_volumes)
@@ -703,12 +719,10 @@ class SynchronizationService:
             except Exception:
                 suffix = f'т. {volume_range}' if volume_range else 'Сборник'
 
-            return f"{_safe(record.proposed_author or '')} - {_safe(clean_series)} ({suffix}).fb2"
+            return f"{author} - {_safe(clean_series)} ({suffix}).fb2"
 
         # ── Одиночные тома и неопределённые ──────────────────────────
-        author = _safe((record.proposed_author or '').strip())
         series = (record.proposed_series or '').strip()
-        raw_title = (record.file_title or Path(record.file_path).stem).strip()
 
         # series_number: используем только если это число или простой диапазон
         sn = (getattr(record, 'series_number', '') or '').strip()
