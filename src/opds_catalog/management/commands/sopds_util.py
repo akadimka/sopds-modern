@@ -27,13 +27,6 @@ class Command(BaseCommand):
             default=False,
             help="Set verbosity level for books collection scan.",
         )
-        parser.add_argument(
-            "--nogenres",
-            action="store_true",
-            dest="nogenres",
-            default=False,
-            help="Not install genres fom fixtures.",
-        )
 
     def handle(self, *args, **options):
         if len(options["command"]) > 0:
@@ -45,7 +38,6 @@ class Command(BaseCommand):
             sys.exit(1)
 
         self.verbose = options["verbose"]
-        self.nogenres = options["nogenres"]
 
         if action == "clear":
             self.stdout.write("Clear book database.")
@@ -75,8 +67,6 @@ class Command(BaseCommand):
     def clear(self):
         with transaction.atomic():
             opdsdb.clear_all(self.verbose)
-        if not self.nogenres:
-            call_command("loaddata", "genre.json")
         Counter.objects.update_known_counters()
         opdsdb.pg_optimize(False)
 

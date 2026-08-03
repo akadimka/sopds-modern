@@ -64,6 +64,55 @@ unknown_genre_en = _noop("Unknown genre")
 unknown_genre = _(unknown_genre_en)
 
 ##########################################################################
+# Сопоставление жанров с пользовательским деревом genres.xml (FB2Parser).
+# Единственный источник классификации — этот файл, а не стандартный
+# список FB2-кодов: sopds_util.py больше не грузит фикстуру genre.json.
+#
+_GENRES_XML_CONFIG_PATH = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json")
+)
+_genres_xml_cache = {"path": None, "mtime": None, "lookup": {}}
+
+
+def _get_genres_xml_lookup():
+    """Строит {lower(имя_узла): (section, subsection)} из genres.xml.
+
+    section — имя корневого узла-предка, subsection — имя самого узла
+    (для корневого узла без детей section == subsection). Кэшируется
+    в памяти процесса и перестраивается только когда файл genres.xml
+    реально менялся (по mtime) — правки жанров через FB2Parser UI
+    подхватываются сканером без перезапуска сервиса.
+    """
+    from fb2parser_core.genres_manager import GenresManager
+    from fb2parser_core.settings_manager import SettingsManager
+
+    xml_path = SettingsManager(_GENRES_XML_CONFIG_PATH).get_genres_file_path()
+    try:
+        mtime = os.path.getmtime(xml_path) if xml_path else None
+    except OSError:
+        mtime = None
+
+    if _genres_xml_cache["path"] == xml_path and _genres_xml_cache["mtime"] == mtime:
+        return _genres_xml_cache["lookup"]
+
+    lookup = {}
+    if xml_path and mtime is not None:
+        gm = GenresManager(xml_path)
+
+        def _walk(node, section):
+            lookup[node.name.lower()] = (section, node.name)
+            for child in node.children:
+                _walk(child, section)
+
+        for root_node in gm.root_nodes:
+            _walk(root_node, root_node.name)
+
+    _genres_xml_cache["path"] = xml_path
+    _genres_xml_cache["mtime"] = mtime
+    _genres_xml_cache["lookup"] = lookup
+    return lookup
+
+##########################################################################
 # объект который мы будем использовать для перекодироки 4х байтного UTF в 3х байтный
 # пока только для аннотации, т.к. там уже "словлена" ошибка при записи в 3х байтный utf8 MYSQL
 #
@@ -381,29 +430,25 @@ def addgenre(genre):
     # TODO: функция addgenre используется только в sopdscan
     genre_code = genre[:SIZE_GENRE]
 
-    # Exact code match (standard FB2 codes: 'sf', 'detective', ...)
+    # Уже сопоставлялся раньше (не важно, успешно или в Unknown) — переиспользуем.
     try:
         return Genre.objects.get(genre=genre_code)
     except Genre.DoesNotExist:
         pass
 
-    # FB2 files sometimes contain Russian names instead of codes.
-    # iexact is unreliable for Cyrillic in SQLite (UPPER() is ASCII-only),
-    # so we do Python-level case-insensitive comparison.
+    # Единственный источник классификации — дерево genres.xml (FB2Parser).
+    # iexact ненадёжен для кириллицы в SQLite (UPPER() только ASCII), поэтому
+    # сравниваем в Python по уже приведённому к lower() имени узла.
     genre_lower = genre_code.lower()
-    known = Genre.objects.exclude(section=unknown_genre)
-    for g in known:
-        if g.subsection.lower() == genre_lower:
-            return g
-        if g.section.lower() == genre_lower:
-            # Section-level match: create a generic entry under this section
-            obj, _ = Genre.objects.get_or_create(
-                genre=genre_code,
-                defaults={"section": g.section, "subsection": g.section},
-            )
-            return obj
+    section, subsection = _get_genres_xml_lookup().get(genre_lower, (None, None))
+    if section is not None:
+        obj, _ = Genre.objects.get_or_create(
+            genre=genre_code,
+            defaults={"section": section, "subsection": subsection},
+        )
+        return obj
 
-    # Unknown — create placeholder
+    # Не найден в genres.xml — помещаем в Unknown genre как есть.
     obj, _ = Genre.objects.get_or_create(
         genre=genre_code,
         defaults={
