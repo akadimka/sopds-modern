@@ -84,7 +84,7 @@ def parse_author_from_folder_name(folder_name: str,
 
     # ==================== PASS0: Structural Analysis ====================
     struct_info = analyze_structure(name)
-    
+
     # ==================== PASS1: Pattern Selection ====================
     pattern = select_pattern(struct_info,
                               male_names=male_names or set(),
@@ -92,7 +92,35 @@ def parse_author_from_folder_name(folder_name: str,
 
     # ==================== PASS2: Author Extraction ====================
     author = extract_author(struct_info, pattern)
-    
+
+    if author:
+        return author
+
+    # ==================== FALLBACK: Strip middle initials ====================
+    # PASS0-2 не распознали имя вообще — пробуем ещё раз, убрав инициал
+    # среднего имени. Западные авторы в переводных изданиях часто фигурируют
+    # так: "Роберт Дж. Сойер", "Джордж Р.Р. Мартин", "Филип К. Дик" — для
+    # PASS0-2 инициал посреди строки не Имя и не Фамилия, и всё имя целиком
+    # не распознаётся. Только ФОЛЛБЭК (после провала основного парсинга), а
+    # не безусловный пре-пасс — иначе он перехватывает уже корректно
+    # обрабатываемые паттерны вида "Фамилия И.О" (короткая форма для них
+    # означала бы отбросить инициал, который основной парсер и так сохраняет).
+    # Отличаем инициал от отчества/второго имени по ДЛИНЕ (≤3 буквы) и
+    # обязательной точке — не по регистру: "Дж." (транслитерация J.) пишется
+    # со строчной "ж", а "Михайловна" длиннее 3 букв и точки не имеет вовсе.
+    _initials_m = _re_pre.match(
+        r'^(\S+)\s+((?:[А-ЯЁA-Z][а-яёa-z]{0,2}\.\s*)+)(\S.*)$', name,
+    )
+    if _initials_m:
+        first, _initials, rest = _initials_m.groups()
+        if not first.endswith('.'):
+            stripped = f'{first} {rest}'
+            struct_info2 = analyze_structure(stripped)
+            pattern2 = select_pattern(struct_info2,
+                                       male_names=male_names or set(),
+                                       female_names=female_names or set())
+            author = extract_author(struct_info2, pattern2)
+
     return author
 
 

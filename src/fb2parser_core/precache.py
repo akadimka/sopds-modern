@@ -2,10 +2,69 @@
 PRECACHE Phase: Build author folder hierarchy before PASS 1.
 """
 
+import re
+
 from pathlib import Path
 from typing import Dict, Tuple, Optional, Set
 from .passes.folder_author_parser import parse_author_from_folder_name
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES
+
+_FIRST_NAME_RE = re.compile(r'<(?:fb:)?first-name>(.*?)</(?:fb:)?first-name>', re.DOTALL)
+_LAST_NAME_RE = re.compile(r'<(?:fb:)?last-name>(.*?)</(?:fb:)?last-name>', re.DOTALL)
+
+
+def _maybe_swap_via_metadata(folder: Path, author_name: str) -> str:
+    """Переставить местами "Имя Фамилия" → "Фамилия Имя", если это подтверждается
+    раздельными <first-name>/<last-name> тегами реальных FB2-файлов в папке.
+
+    Паттерн "(Surname) (Name)" в folder_author_parser не проверяет порядок слов
+    по словарю имён вообще — а проверка по одному словарю ненадёжна: фамилия
+    может случайно совпасть со словарным именем ("Амнуэль" — фамилия, но есть
+    в словаре имён), а словарь никогда не бывает полным для второго слова
+    ("Карл" из "Фредерик Карл" в словаре может отсутствовать). Раздельные
+    <first-name>/<last-name> в самом файле — не гадание, а прямое указание
+    автора книги, какое слово чем является.
+    """
+    words = author_name.split()
+    if len(words) != 2:
+        return author_name  # не простое "Слово Слово" — не трогаем (мульти-автор и т.п.)
+    w0, w1 = words
+    if w0.endswith('.') or w1.endswith('.'):
+        return author_name  # инициал — не наш случай
+
+    votes_swap = 0
+    votes_keep = 0
+    try:
+        checked = 0
+        for item in folder.iterdir():
+            if checked >= 5:
+                break
+            if not (item.is_file() and item.suffix.lower() == '.fb2'):
+                continue
+            checked += 1
+            try:
+                raw = item.read_bytes()[:65536]
+                try:
+                    text = raw.decode('utf-8')
+                except UnicodeDecodeError:
+                    text = raw.decode('cp1251', errors='replace')
+            except OSError:
+                continue
+            fm = _FIRST_NAME_RE.search(text)
+            lm = _LAST_NAME_RE.search(text)
+            if not fm or not lm:
+                continue
+            first, last = fm.group(1).strip(), lm.group(1).strip()
+            if first.lower() == w0.lower() and last.lower() == w1.lower():
+                votes_swap += 1  # мета: w0=имя, w1=фамилия → в папке порядок "Имя Фамилия"
+            elif first.lower() == w1.lower() and last.lower() == w0.lower():
+                votes_keep += 1  # мета: w1=имя, w0=фамилия → в папке уже "Фамилия Имя"
+    except (PermissionError, OSError):
+        return author_name
+
+    if votes_swap > votes_keep:
+        return f'{w1} {w0}'
+    return author_name
 
 
 class Precache:
@@ -139,6 +198,8 @@ class Precache:
                         male_names=self.male_names,
                         female_names=self.female_names,
                     )
+                    if wd_author:
+                        wd_author = _maybe_swap_via_metadata(folder, wd_author)
                 wd_is_author = bool(wd_author and self._contains_valid_name(wd_author))
                 if wd_is_author:
                     # Cache work_dir as author so Pass1 assigns folder_dataset to ALL files
@@ -195,6 +256,8 @@ class Precache:
                     male_names=self.male_names,
                     female_names=self.female_names,
                 )
+                if author_name:
+                    author_name = _maybe_swap_via_metadata(folder, author_name)
 
             # Check if folder contains FB2 files
             has_fb2_files = False
