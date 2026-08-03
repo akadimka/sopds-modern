@@ -682,8 +682,21 @@ class SynchronizationService:
         author = _safe((record.proposed_author or '').strip())
         raw_title = (record.file_title or Path(record.file_path).stem).strip()
 
-        # ── Компиляции ────────────────────────────────────────────────
-        if kind == 'compilation':
+        # ── Компиляции с известным диапазоном томов ───────────────────
+        # kind == 'compilation' с ПУСТЫМ covered_volumes (см. _classify_record —
+        # там пустой set означает «похоже на компиляцию, но диапазон томов
+        # неизвестен» — например ЛЮБАЯ книга, где в названии/имени файла просто
+        # встретилось слово «сборник», даже отдельная книга-антология вообще без
+        # серии) сюда не попадает намеренно: без диапазона нельзя построить
+        # "(в N книгах)"/"(т. N-M)" — раньше здесь вызывался _series_suffix(0, …),
+        # что давало вырожденное "Автор - Серия (в 0 книгах).fb2" — одинаковое
+        # для ЛЮБОЙ такой компиляции автора (а без серии — вообще для любой его
+        # книги с этим словом в названии), из-за чего вторая и все следующие
+        # считались дубликатом первой и оставались несинхронизированными.
+        # Обрабатываем такой случай веткой ниже (одиночные/неопределённые) —
+        # там имя строится из серии+названия или просто названия книги, а не
+        # из диапазона томов, поэтому коллизий не даёт.
+        if kind == 'compilation' and covered_volumes:
             try:
                 from .fb2_compiler import FB2CompilerService
                 clean_series = FB2CompilerService._clean_series_name(
@@ -692,36 +705,19 @@ class SynchronizationService:
             except Exception:
                 clean_series = (record.proposed_series or '').strip()
 
-            # _classify_record() возвращает covered_volumes=set() не только для
-            # реальных компиляций с неизвестным диапазоном, но и для ЛЮБОЙ книги,
-            # где в названии/имени файла просто встретилось слово "сборник"
-            # (см. _COMPILATION_KEYWORDS — count=None), даже если это отдельная
-            # книга-антология вообще без серии. Без серии и диапазона томов имя
-            # "Автор -  (в 0 книгах).fb2" получается ОДИНАКОВЫМ для любой такой
-            # книги автора — вторая и все следующие считаются дубликатом первой
-            # и остаются несинхронизированными. Если нет ни серии, ни диапазона,
-            # это не настоящая компиляция серии — именуем по названию книги,
-            # как одиночный том без серии.
-            if not covered_volumes and not clean_series:
-                title = _safe(raw_title)
-                return f"{author} - {title}.fb2"
-
-            if covered_volumes:
-                lo, hi = min(covered_volumes), max(covered_volumes)
-                volume_range = str(lo) if lo == hi else f'{lo}-{hi}'
-            else:
-                lo = hi = 1
-                volume_range = ''
+            lo, hi = min(covered_volumes), max(covered_volumes)
+            volume_range = str(lo) if lo == hi else f'{lo}-{hi}'
 
             try:
                 from .fb2_compiler import FB2CompilerService
                 suffix = FB2CompilerService._series_suffix(len(covered_volumes), lo, hi)
             except Exception:
-                suffix = f'т. {volume_range}' if volume_range else 'Сборник'
+                suffix = f'т. {volume_range}'
 
             return f"{author} - {_safe(clean_series)} ({suffix}).fb2"
 
-        # ── Одиночные тома и неопределённые ──────────────────────────
+        # ── Одиночные тома и неопределённые (в т.ч. "компиляция" с ────
+        # неизвестным диапазоном томов — см. комментарий выше) ─────────
         series = (record.proposed_series or '').strip()
 
         # series_number: используем только если это число или простой диапазон
