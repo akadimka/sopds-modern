@@ -1526,6 +1526,17 @@ class Pass2SeriesFilename:
                 continue
             if (rec.series_source or '') == 'filename_named_arc':
                 continue
+            # Строгий приоритет источников: серия из структуры папок (плоский
+            # folder_dataset ИЛИ вложенная подпапка-подсерия folder_hierarchy)
+            # неприкосновенна — папка уже дала окончательный ответ, дальше
+            # искать (в т.ч. достраивать дугу по имени файла) не нужно. Дуги
+            # по имени файла строим только когда папочной структуры серии нет
+            # вовсе. Пример: «Пасть» — одна папка на все 8 книг без вложенной
+            # подпапки под «Война родов» → все 8 должны остаться плоской
+            # «Пасть», а не расколоться на «Пасть» (1-3) и «Пасть\Война родов»
+            # (4-8) только потому, что 5 из 8 файлов называют себя «Война родов».
+            if (rec.series_source or '') in ('folder_dataset', 'folder_hierarchy'):
+                continue
             stem = Path(rec.file_path).stem
             _is_fn_src = 'filename' in (rec.series_source or '')
             m = _ARC_RE.match(stem) if _is_fn_src else None
