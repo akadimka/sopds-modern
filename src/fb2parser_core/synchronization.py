@@ -71,6 +71,12 @@ class SynchronizationService:
             'total_files': 0,
             'start_time': None,
             'end_time': None,
+            # Папки genre/author в БИБЛИОТЕКЕ, куда реально перемещён хотя бы
+            # один файл за этот прогон — используется вызывающим кодом (см.
+            # fb2parser_web.views._run_sync_thread), чтобы ограничить
+            # последующий проход авто-компиляции только затронутыми авторами,
+            # а не сканировать всю библиотеку целиком.
+            'touched_author_dirs': set(),
         }
     
     def _log(self, msg: str):
@@ -843,6 +849,7 @@ class SynchronizationService:
                     shutil.move(str(source_file), str(target_file))
                     self._log(f"  ✓ Успешно перемещён")
                     self.stats['files_moved'] += 1
+                    self.stats['touched_author_dirs'].add(str(self.library_path / genre / author))
 
                     # Patch FB2 metadata: author, series, book-title.
                     # Автор: перезаписываем только если:
