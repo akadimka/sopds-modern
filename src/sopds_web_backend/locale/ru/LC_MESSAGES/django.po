@@ -583,6 +583,39 @@ msgstr "Час"
 msgid "Minute"
 msgstr "Минута"
 
+msgid "These four fields together define WHEN the automatic full library scan starts (handled by the sopds-scan service, not the manual 'Scan' button — see DEPLOY.md)."
+msgstr "Эти четыре поля вместе определяют, КОГДА запускается автоматическое полное сканирование библиотеки (за это отвечает сервис sopds-scan, а не кнопка «Сканировать» — см. DEPLOY.md)."
+
+msgid "1–31, or 0 = every day of the month (ignore this field)"
+msgstr "1–31, или 0 = каждый день месяца (игнорировать это поле)"
+
+msgid "0 = Monday … 6 = Sunday, or -1 = every day of the week (ignore this field)"
+msgstr "0 = понедельник … 6 = воскресенье, или -1 = каждый день недели (игнорировать это поле)"
+
+msgid "Hour of the day, 0–23 (24-hour clock)"
+msgstr "Час дня, 0–23 (24-часовой формат)"
+
+msgid "Minute of the hour, 0–59"
+msgstr "Минута часа, 0–59"
+
+msgid "Day of month: 1–31, or 0 = every day (default)."
+msgstr "День месяца: 1–31, или 0 = каждый день (по умолчанию)."
+
+msgid "Day of week: 0 = Monday … 6 = Sunday, or -1 = every day (default)."
+msgstr "День недели: 0 = понедельник … 6 = воскресенье, или -1 = каждый день (по умолчанию)."
+
+msgid "Hour / Minute: exact time the scan starts on a matching day."
+msgstr "Час / Минута: точное время запуска сканирования в подходящий день."
+
+msgid "Note:"
+msgstr "Примечание:"
+
+msgid "if you set BOTH 'day of month' and 'day of week' to specific values (not 0/-1), the scan runs on EITHER match, not only when both coincide — e.g. day=15, day of week=0 (Monday) fires on the 15th of every month AND on every Monday, not just a Monday that happens to be the 15th."
+msgstr "если задать ОБА поля — «день месяца» и «день недели» — конкретными значениями (не 0/-1), сканирование запускается при совпадении ЛЮБОГО из них, а не только когда оба совпали одновременно — например, день=15, день недели=0 (понедельник) сработает и 15-го числа каждого месяца, И в каждый понедельник, а не только в тот понедельник, который выпал на 15-е."
+
+msgid "Example: day=0, day of week=-1, hour=3, minute=30 → scans every day at 03:30."
+msgstr "Пример: день=0, день недели=-1, час=3, минута=30 → сканирование каждый день в 03:30."
+
 msgid "Start scan immediately on server startup"
 msgstr "Запускать сканирование сразу при старте сервера"
 
