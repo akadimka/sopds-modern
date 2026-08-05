@@ -48,7 +48,7 @@ def _norm_s(s: str) -> str:
 # Паттерн «том/книга/часть/... N» — компилируется один раз для всего модуля.
 # Полный набор слов (свиток, выпуск, арка — СИ-специфика).
 _TOM_WORD_RE = re.compile(
-    r'\b(?:свиток|том|книга|часть|выпуск|арка|book|vol\.?|part)\s+(\d{1,4})\b',
+    r'\b(?:свиток|том|книга|часть|выпуск|арка|book|vol\.?|part)\s+(\d{1,4})(?!\.\d)\b',
     re.IGNORECASE | re.UNICODE,
 )
 
@@ -2070,6 +2070,46 @@ class Pass2SeriesFilename:
             if 1900 <= fn_numW <= 2099:
                 continue
             record.series_number = str(fn_numW)
+            record.series_number_source = 'filename_word_number'
+
+        # Правило 6b: «Слово N» римскими цифрами — «Том I», «Том II», «Vol. IV» и т.п.
+        # («Пастырь. Арка 2.0. Том I» — «Арка 2» из Правила 6 больше не матчится
+        # из-за (?!\.\d) в _TOM_WORD_RE, но «Том I» рядом — реальный номер тома,
+        # который правило 6 не видит вовсе: там только арабские цифры).
+        # Тот же набор ключевых слов и римские→int, что и в fb2_compiler.py
+        # (_VOLUME_ROMAN_RE/_roman_to_int) — держим конвертацию согласованной.
+        _WORD_NUM_ROMAN_RE = re.compile(
+            r'\b(?:свиток|том|книга|часть|выпуск|арка|book|vol\.?|part)\s+'
+            r'(?=[IVXLCDM])(M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b',
+            re.IGNORECASE | re.UNICODE,
+        )
+
+        def _roman_to_int(s: str):
+            s = s.upper().strip()
+            if not s:
+                return None
+            vals = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+            result = 0
+            prev = 0
+            for ch in reversed(s):
+                v = vals[ch]
+                result += v if v >= prev else -v
+                prev = v
+            return result if result > 0 else None
+
+        for record in records:
+            if record.series_number:
+                continue
+            if not record.file_path:
+                continue
+            stem = Path(record.file_path).stem
+            mwr = _WORD_NUM_ROMAN_RE.search(stem)
+            if not mwr:
+                continue
+            fn_numR = _roman_to_int(mwr.group(1))
+            if fn_numR is None:
+                continue
+            record.series_number = str(fn_numR)
             record.series_number_source = 'filename_word_number'
 
         # Правило 7: «Пролог» без series_number → sn=0, если в серии нет тома 0.
