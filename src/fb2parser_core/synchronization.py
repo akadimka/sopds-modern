@@ -71,6 +71,12 @@ class SynchronizationService:
             'total_files': 0,
             'start_time': None,
             'end_time': None,
+            # Папки genre/author в БИБЛИОТЕКЕ, куда реально перемещён хотя бы
+            # один файл за этот прогон — используется вызывающим кодом (см.
+            # fb2parser_web.views._run_sync_thread), чтобы ограничить
+            # последующий проход авто-компиляции только затронутыми авторами,
+            # а не сканировать всю библиотеку целиком.
+            'touched_author_dirs': set(),
         }
     
     def _log(self, msg: str):
@@ -386,7 +392,7 @@ class SynchronizationService:
             # Extract metadata
             genre = record.metadata_genre or "Без жанра"
             author = record.proposed_author or "Неизвестный автор"
-            series = record.proposed_series or ""
+            series, subseries = self._split_series(record.proposed_series or "")
             title = record.file_title or Path(record.file_path).stem
             
             # Handle genre with multiple entries
@@ -419,10 +425,7 @@ class SynchronizationService:
             
             # New file - add to structure
             new_files_count += 1
-            
-            # Store subseries info if present (parse from filename)
-            subseries = self._extract_subseries(record)
-            
+
             # Build folder path
             folder_structure[record.file_path] = (
                 primary_genre,
@@ -442,17 +445,22 @@ class SynchronizationService:
         
         return folder_structure
     
-    def _extract_subseries(self, record) -> str:
-        """Extract subseries information from record if present.
-        
-        Args:
-            record: BookRecord object
-            
-        Returns:
-            Subseries string or empty string
+    @staticmethod
+    def _split_series(series_raw: str) -> Tuple[str, str]:
+        """Разбить иерархическое имя серии "Зонтик\\Подсерия" на (серия, подсерия).
+
+        "\\" — разделитель зонтичной серии/подсерии, используемый по всему
+        пайплайну normalize/regen_csv (см. "Экспансия\\История Галактики" и
+        подобные). На Linux "\\" — обычный символ имени файла, а не разделитель
+        пути, поэтому если не разбить его тут явно, target_dir получит ОДНУ
+        папку с буквальным "\\" в названии вместо двух вложенных папок
+        (например "Бремя империи\\0. Врата скорби" вместо
+        "Бремя империи/0. Врата скорби").
         """
-        # For now, return empty - can be enhanced to parse from metadata
-        return ""
+        if '\\' in series_raw:
+            series, subseries = series_raw.split('\\', 1)
+            return series.strip(), subseries.strip()
+        return series_raw, ""
 
     # ---------------------------------------------------------------------------
     # Compilation-based deduplication
@@ -841,6 +849,7 @@ class SynchronizationService:
                     shutil.move(str(source_file), str(target_file))
                     self._log(f"  ✓ Успешно перемещён")
                     self.stats['files_moved'] += 1
+                    self.stats['touched_author_dirs'].add(str(self.library_path / genre / author))
 
                     # Patch FB2 metadata: author, series, book-title.
                     # Автор: перезаписываем только если:

@@ -291,26 +291,38 @@
     <div class="s-section-title">{% trans "Scheduled scan" %}</div>
 
     <div class="s-field">
+        <div class="s-hint" style="margin-bottom:0.5rem;">
+            {% trans "These four fields together define WHEN the automatic full library scan starts (handled by the sopds-scan service, not the manual 'Scan' button — see DEPLOY.md)." %}
+        </div>
         <div class="s-shed">
             <div>
-                <label>{% trans "Day of month" %}</label>
-                <input type="number" name="scan_shed_day" value="{{ sopds.scan_shed_day }}" min="0" max="31">
+                <label title="{% trans '1–31, or 0 = every day of the month (ignore this field)' %}">{% trans "Day of month" %}</label>
+                <input type="number" name="scan_shed_day" value="{{ sopds.scan_shed_day }}" min="0" max="31"
+                       title="{% trans '1–31, or 0 = every day of the month (ignore this field)' %}">
             </div>
             <div>
-                <label>{% trans "Day of week" %}</label>
-                <input type="number" name="scan_shed_dow" value="{{ sopds.scan_shed_dow }}" min="-1" max="6">
+                <label title="{% trans '0 = Monday … 6 = Sunday, or -1 = every day of the week (ignore this field)' %}">{% trans "Day of week" %}</label>
+                <input type="number" name="scan_shed_dow" value="{{ sopds.scan_shed_dow }}" min="-1" max="6"
+                       title="{% trans '0 = Monday … 6 = Sunday, or -1 = every day of the week (ignore this field)' %}">
             </div>
             <div>
-                <label>{% trans "Hour" %}</label>
-                <input type="number" name="scan_shed_hour" value="{{ sopds.scan_shed_hour }}" min="0" max="23">
+                <label title="{% trans 'Hour of the day, 0–23 (24-hour clock)' %}">{% trans "Hour" %}</label>
+                <input type="number" name="scan_shed_hour" value="{{ sopds.scan_shed_hour }}" min="0" max="23"
+                       title="{% trans 'Hour of the day, 0–23 (24-hour clock)' %}">
             </div>
             <div>
-                <label>{% trans "Minute" %}</label>
-                <input type="number" name="scan_shed_min" value="{{ sopds.scan_shed_min }}" min="0" max="59">
+                <label title="{% trans 'Minute of the hour, 0–59' %}">{% trans "Minute" %}</label>
+                <input type="number" name="scan_shed_min" value="{{ sopds.scan_shed_min }}" min="0" max="59"
+                       title="{% trans 'Minute of the hour, 0–59' %}">
             </div>
         </div>
-        <div class="s-hint" style="margin-top:0.5rem;">
-            {{ comments.scan_shed_day }} / {{ comments.scan_shed_dow }} (-1 = каждый день, 0=пн…6=вс)
+        <div class="s-hint" style="margin-top:0.5rem; line-height:1.5;">
+            {% trans "Day of month: 1–31, or 0 = every day (default)." %}<br>
+            {% trans "Day of week: 0 = Monday … 6 = Sunday, or -1 = every day (default)." %}<br>
+            {% trans "Hour / Minute: exact time the scan starts on a matching day." %}<br>
+            <strong>{% trans "Note:" %}</strong>
+            {% trans "if you set BOTH 'day of month' and 'day of week' to specific values (not 0/-1), the scan runs on EITHER match, not only when both coincide — e.g. day=15, day of week=0 (Monday) fires on the 15th of every month AND on every Monday, not just a Monday that happens to be the 15th." %}<br>
+            {% trans "Example: day=0, day of week=-1, hour=3, minute=30 → scans every day at 03:30." %}
         </div>
     </div>
 
