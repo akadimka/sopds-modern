@@ -191,6 +191,193 @@ def _render_status(state):
     return HttpResponse(html)
 
 
+# ── Сканирование жанровых наборов ────────────────────────────────────────────
+# Отдельный от scan_job инструмент: тот сканер каталогизирует книги в БД и
+# группирует по одному нормализованному жанру из таксономии Genre; этот читает
+# FB2 напрямую из произвольной папки и группирует по ТОЧНОЙ строке из
+# <genre>-тегов — так виден полный набор жанров каждого файла и файлы вообще
+# без жанра (значение "Не определено"). Портировано из десктопного варианта
+# (scan_service.py → fb2parser_core/genre_scan_service.py).
+genre_scan_job = JobState("fb2parser:genre_scan", {
+    "running": False,
+    "done": False,
+    "error": None,
+    "processed": 0,
+    "total": 0,
+    "current": "",
+    "folder": "",
+    "results": {},     # {genre_combo: [rel_path, ...]}
+    "errors": [],
+    "stopped": False,
+})
+genre_scan_stop_flag = JobFlag("fb2parser:genre_scan_stop")
+
+
+def _genre_scan_cache_path(folder_path):
+    import hashlib
+    h = hashlib.md5(folder_path.encode("utf-8", errors="replace")).hexdigest()[:16]
+    cache_dir = os.path.join(os.path.dirname(__file__), "_genre_scan_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, f"genre_scan_{h}.json")
+
+
+def _genre_scan_cache_save(folder_path, results, errors):
+    import json
+    try:
+        data = {"folder": folder_path, "results": results, "errors": errors}
+        with open(_genre_scan_cache_path(folder_path), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def _genre_scan_cache_load(folder_path):
+    import json
+    try:
+        p = _genre_scan_cache_path(folder_path)
+        if not os.path.exists(p):
+            return None
+        with open(p, encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get("folder") != folder_path:
+            return None
+        return data["results"], data["errors"]
+    except Exception:
+        return None
+
+
+def _run_genre_scan_thread(folder_path):
+    """Тело фонового потока сканирования жанровых наборов."""
+    from django import db
+    db.connections.close_all()
+    try:
+        from pathlib import Path
+        from fb2parser_core.genre_scan_service import scan_fb2_genres
+        from .fb2parser_bridge import _config_path
+
+        def _on_progress(done, total, pct):
+            genre_scan_job.update(processed=done, total=total)
+
+        data = scan_fb2_genres(
+            Path(folder_path), _config_path(),
+            on_progress=_on_progress,
+            stop_check=genre_scan_stop_flag.is_set,
+        )
+        _genre_scan_cache_save(folder_path, data["results"], data["errors"])
+        genre_scan_job.update(
+            done=True, running=False,
+            processed=data["processed"], total=data["total"],
+            results=data["results"], errors=data["errors"],
+            stopped=data["stopped"],
+        )
+    except Exception as exc:
+        genre_scan_job.update(error=str(exc), running=False)
+    finally:
+        genre_scan_stop_flag.clear()
+        from django import db as _db
+        _db.connections.close_all()
+        genre_scan_job.finish()
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_scan(request):
+    root = genre_scan_job.get().get("folder") or config.SOPDS_ROOT_LIB or ""
+    state = genre_scan_job.get()
+    # Если общий кэш пуст (рестарт memcached), но на диске есть результаты
+    # прошлого прогона по этой же папке — подхватываем их.
+    if not state["done"] and not state["running"] and root:
+        cached = _genre_scan_cache_load(root)
+        if cached is not None:
+            results, errors = cached
+            total = sum(len(v) for v in results.values())
+            state = genre_scan_job.update(
+                done=True, running=False, folder=root,
+                results=results, errors=errors,
+                processed=total, total=total,
+            )
+    return render(request, "fb2parser/genre_scan.html", _ctx(
+        "genre_scan", "Жанровые наборы", root=root, state=state,
+    ))
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_scan_start(request):
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    if genre_scan_job.get()["running"]:
+        return _render_genre_scan_status(genre_scan_job.get())
+    root = request.POST.get("root", "").strip()
+    if not root or not os.path.isdir(root):
+        return HttpResponse(
+            f'<div id="genre-scan-status"><div class="callout alert">❌ Папка не найдена: {root}</div></div>'
+        )
+    _fb2_total = 0
+    try:
+        from pathlib import Path
+        from fb2parser_core.fb2_utils import fb2_rglob
+        _fb2_total = len(fb2_rglob(Path(root)))
+    except Exception:
+        pass
+    if _fb2_total == 0:
+        return HttpResponse(
+            '<div id="genre-scan-status"><div class="callout warning">'
+            f'⚠ В папке нет FB2-файлов: {root}</div></div>'
+        )
+    genre_scan_stop_flag.clear()
+    if not genre_scan_job.try_start(folder=root, total=_fb2_total):
+        return _render_genre_scan_status(genre_scan_job.get())
+
+    t = threading.Thread(target=_run_genre_scan_thread, args=(root,), daemon=True)
+    t.start()
+    return _render_genre_scan_status(genre_scan_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_scan_stop(request):
+    genre_scan_stop_flag.set()
+    return _render_genre_scan_status(genre_scan_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_scan_status(request):
+    return _render_genre_scan_status(genre_scan_job.get())
+
+
+def _render_genre_scan_status(state):
+    pct = 0
+    if state["total"] > 0:
+        pct = min(100, int(state["processed"] / state["total"] * 100))
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/genre_scan_status.html", {"state": state, "pct": pct})
+    return HttpResponse(html)
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_scan_results(request):
+    """3-панельный вид результатов: жанровые наборы / ошибки / детали."""
+    state = genre_scan_job.get()
+    combos = sorted(
+        ({"combo": k, "cnt": len(v)} for k, v in state["results"].items()),
+        key=lambda r: r["combo"],
+    )
+    return render(request, "fb2parser/genre_scan_results.html", {
+        "state": state,
+        "combos": combos,
+    })
+
+
+@staff_member_required(login_url="/web/login/")
+def genre_scan_files(request):
+    """Файлы для выбранного набора жанров (панель Детали)."""
+    combo = request.GET.get("combo", "")
+    state = genre_scan_job.get()
+    files = state["results"].get(combo, [])
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/genre_scan_files.html", {"files": files, "combo": combo})
+    return HttpResponse(html)
+
+
 # ── Браузер папок ────────────────────────────────────────────────────────────
 
 @staff_member_required(login_url="/web/login/")

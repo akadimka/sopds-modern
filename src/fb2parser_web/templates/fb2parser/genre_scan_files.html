@@ -1,0 +1,15 @@
+{% load i18n %}
+{% if files %}
+<div style="padding:0.3rem 0.5rem; font-size:0.78rem; color:var(--text-muted); border-bottom:1px solid var(--border);">
+    {% trans "Combination:" %} <strong>{{ combo }}</strong> — {{ files|length }} {% trans "files" %}
+</div>
+<ul class="no-bullet" style="margin:0;">
+    {% for f in files %}
+    <li style="border-bottom:1px solid var(--border); padding:0.25rem 0.6rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ f }}">
+        {{ f }}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div style="padding:1rem; color:var(--text-muted); text-align:center;">{% trans "No files" %}</div>
+{% endif %}

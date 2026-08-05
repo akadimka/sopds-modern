@@ -1,0 +1,87 @@
+{% extends "fb2parser/base.html" %}
+{% load static %}
+{% load i18n %}
+{% block content %}
+<h2>{% trans "🏷️ Genre Combinations" %}</h2>
+<p style="color:var(--text-muted); font-size:0.88rem; margin-top:-0.5rem;">
+    {% trans "Scans FB2 files directly and groups them by their exact <genre> tag combination — useful for spotting files with no genre or an unusual genre set before assigning genres." %}
+</p>
+
+<div class="grid-x grid-margin-x">
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>{% trans "Scan parameters" %}</strong></div>
+            <div class="card-section">
+                {% csrf_token %}
+                <label>{% trans "Books folder" %}</label>
+                <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
+                    <input id="genre-scan-root" type="text" name="root" value="{{ root }}"
+                           placeholder="/path/to/library"
+                           style="font-family:monospace; font-size:0.85rem; margin:0; flex:1;">
+                    <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;"
+                            onclick="openBrowser('genre-scan-root')">{% trans "📁 Browse" %}</button>
+                </div>
+                <div id="fb-browser-genre-scan-root" class="fb-browser-wrap" style="display:none; position:absolute; z-index:500; margin-top:2px;"></div>
+                <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
+                    <button id="genre-scan-btn"
+                            class="button"
+                            style="background:#8e44ad; margin:0;"
+                            hx-post="{% url 'fb2parser:genre_scan_start' %}"
+                            hx-target="#genre-scan-status"
+                            hx-swap="outerHTML"
+                            hx-include="#genre-scan-root"
+                            hx-indicator="#genre-scan-spinner">
+                        {% trans "▶ Start scan" %}
+                    </button>
+                    <button type="button" class="button secondary"
+                            style="margin:0;"
+                            hx-post="{% url 'fb2parser:genre_scan_stop' %}"
+                            hx-target="#genre-scan-status"
+                            hx-swap="outerHTML">
+                        {% trans "⏹ Stop" %}
+                    </button>
+                    <span id="genre-scan-spinner" class="htmx-indicator" style="font-size:0.85rem; color:var(--text-muted);">
+                        {% trans "Starting..." %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>{% trans "Progress" %}</strong></div>
+            <div class="card-section">
+                {% include "fb2parser/genre_scan_status.html" with state=state pct=0 %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-x grid-margin-x" style="margin-top:1rem;">
+    <div class="cell small-12">
+        <div class="card" style="height:60vh;">
+            <div class="card-divider"><strong>{% trans "Results" %}</strong></div>
+            <div id="genre-scan-results-wrap" style="height:calc(100% - 2.5rem);"
+                 {% if state.done %}hx-get="{% url 'fb2parser:genre_scan_results' %}" hx-trigger="load" hx-swap="innerHTML"{% endif %}>
+                <div style="padding:1rem; color:var(--text-muted);">
+                    {% if state.done %}{% trans "Loading..." %}{% else %}{% trans "No data — run a scan" %}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    htmx.process(document.getElementById("genre-scan-status"));
+});
+document.body.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target.id === 'genre-scan-status' && e.target.querySelector('[data-scan-done]')) {
+        htmx.ajax('GET', "{% url 'fb2parser:genre_scan_results' %}", {target: '#genre-scan-results-wrap', swap: 'innerHTML'});
+    }
+});
+</script>
+{% endblock %}

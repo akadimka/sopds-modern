@@ -1,0 +1,56 @@
+{% load i18n %}
+<div id="genre-scan-results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border);">
+
+    <!-- Панель 1: Наборы жанров -->
+    <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
+        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
+            {% trans "Genre combinations" %} <span style="font-weight:normal; color:#bdc3c7;">({{ combos|length }})</span>
+        </div>
+        <div id="genre-combos-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;">
+            {% if combos %}
+            <ul class="no-bullet" style="margin:0;">
+                {% for c in combos %}
+                <li style="border-bottom:1px solid var(--border); cursor:pointer;"
+                    onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''"
+                    hx-get="{% url 'fb2parser:genre_scan_files' %}?combo={{ c.combo|urlencode }}"
+                    hx-target="#genre-scan-details-panel"
+                    hx-swap="innerHTML">
+                    <span style="display:flex; justify-content:space-between; padding:0.25rem 0.6rem; gap:0.5rem;">
+                        <span style="{% if c.combo == 'Не определено' %}color:#c0392b;{% endif %} overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.combo }}</span>
+                        <span style="color:var(--text-muted); font-size:0.78rem; flex-shrink:0;">{{ c.cnt }}</span>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div style="padding:0.7rem; color:var(--text-muted);">{% trans "No data — run a scan" %}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Панель 2: Ошибки -->
+    <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
+        <div style="background:#c0392b; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
+            {% trans "Errors" %} <span style="font-weight:normal; color:#f1948a;">({{ state.errors|length }})</span>
+        </div>
+        <div id="genre-scan-errors-panel" style="flex:1; overflow-y:auto; font-size:0.78rem; font-family:monospace; padding:0.3rem;">
+            {% if state.errors %}
+                {% for err in state.errors %}
+                <div style="border-bottom:1px solid var(--border); padding:0.2rem 0.3rem; word-break:break-all; color:#c0392b;">{{ err }}</div>
+                {% endfor %}
+            {% else %}
+            <div style="padding:0.5rem; color:var(--text-muted); font-family:sans-serif;">{% trans "No errors" %}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Панель 3: Детали -->
+    <div style="flex:1.5; display:flex; flex-direction:column; min-width:0;">
+        <div style="background:#2980b9; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
+            {% trans "Files" %}
+        </div>
+        <div id="genre-scan-details-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;">
+            <div style="padding:0.5rem; color:var(--text-muted);">{% trans "Select a genre combination on the left" %}</div>
+        </div>
+    </div>
+</div>

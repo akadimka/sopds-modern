@@ -903,3 +903,46 @@ msgstr "папок"
 
 msgid "Clear filter"
 msgstr "Снять фильтр"
+
+# --- Genre Scan (сканирование жанровых наборов) ---
+msgid "🏷️ Genre Combinations"
+msgstr "🏷️ Жанровые наборы"
+
+msgid "Genre Combinations"
+msgstr "Жанровые наборы"
+
+msgid "Scans FB2 files directly and groups them by their exact <genre> tag combination — useful for spotting files with no genre or an unusual genre set before assigning genres."
+msgstr "Сканирует FB2-файлы напрямую и группирует их по точному набору тегов <genre> — удобно для поиска файлов без жанра или с необычным набором жанров перед разметкой."
+
+msgid "Results"
+msgstr "Результаты"
+
+msgid "stopped early"
+msgstr "остановлено досрочно"
+
+msgid "Files processed:"
+msgstr "Обработано файлов:"
+
+msgid "Unique genre combinations:"
+msgstr "Уникальных наборов жанров:"
+
+msgid "Errors:"
+msgstr "Ошибок:"
+
+msgid "Genre combinations"
+msgstr "Наборы жанров"
+
+msgid "Files"
+msgstr "Файлы"
+
+msgid "Select a genre combination on the left"
+msgstr "Выберите набор жанров слева"
+
+msgid "Combination:"
+msgstr "Набор:"
+
+msgid "files"
+msgstr "файлов"
+
+msgid "No files"
+msgstr "Файлов нет"

@@ -1,0 +1,52 @@
+{% load i18n %}
+{% if state.running %}
+<div id="genre-scan-status"
+     hx-get="{% url 'fb2parser:genre_scan_status' %}"
+     hx-trigger="every 2s"
+     hx-target="#genre-scan-status"
+     hx-swap="outerHTML">
+
+    <div class="callout primary" style="margin-bottom:1rem;">
+        <strong>{% trans "⏳ Scanning..." %}</strong>
+        {% if state.current %}
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+            {% trans "File:" %} {{ state.current }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="margin-bottom:0.5rem; font-size:0.85rem;">
+        {% trans "Processed:" %} <strong>{{ state.processed }}</strong>
+        {% if state.total > 0 %} {% trans "of" %} {{ state.total }} ({{ pct }}%){% endif %}
+    </div>
+    <div class="progress" style="height:1.5rem; margin-bottom:1rem;">
+        <span class="progress-meter" style="width:{{ pct }}%; background:#8e44ad;">
+            <span class="progress-meter-text">{{ pct }}%</span>
+        </span>
+    </div>
+
+{% elif state.done %}
+<div id="genre-scan-status" data-scan-done="1">
+    <div class="callout success">
+        <strong>{% trans "✅ Scan complete" %}</strong>
+        {% if state.stopped %}<span style="color:var(--text-muted);"> ({% trans "stopped early" %})</span>{% endif %}
+    </div>
+    <table class="unstriped" style="max-width:400px; font-size:0.9rem;">
+        <tr><td>{% trans "Files processed:" %}</td><td><strong>{{ state.processed }}</strong>{% if state.total and state.total != state.processed %} / {{ state.total }}{% endif %}</td></tr>
+        <tr><td>{% trans "Unique genre combinations:" %}</td><td>{{ state.results|length }}</td></tr>
+        <tr><td>{% trans "Errors:" %}</td><td style="color:{% if state.errors %}#c0392b{% else %}inherit{% endif %}">{{ state.errors|length }}</td></tr>
+    </table>
+
+{% elif state.error %}
+<div id="genre-scan-status">
+    <div class="callout alert">
+        <strong>{% trans "❌ Error:" %}</strong> {{ state.error }}
+    </div>
+
+{% else %}
+<div id="genre-scan-status">
+    <div class="callout secondary" style="font-size:0.9rem;">
+        {% trans "Scan not started." %}
+    </div>
+{% endif %}
+</div>
