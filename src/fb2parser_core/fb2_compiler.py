@@ -493,6 +493,13 @@ class FB2CompilerService:
             if root_no_num == root:
                 if re.match(r'^[А-ЯЁ]\.\s', sub):
                     return _punct_norm(root)
+                # Подсерия начинается с ведущего числа («1. Мы — были!») —
+                # это нумерованная дуга внутри серии, а не независимое
+                # ответвление. Сливаем в один бакет с плоскими файлами
+                # той же серии, чтобы вся серия компилировалась как одна
+                # книга со сквозной нумерацией дуг.
+                if re.match(r'^\d{1,4}[.\s]', sub):
+                    return _punct_norm(root)
                 return _punct_norm(series)
             # Корень с числом (Серия 1\X, Серия 3\Y):
             # ключ = «Серия|X» — объединяем только одноимённые подсерии,
@@ -2731,7 +2738,12 @@ class FB2CompilerService:
             _fn_m = self._STEM_NUM_RE.match(stem)
             if _fn_m:
                 _fn_n = int(next(g for g in _fn_m.groups() if g is not None))
-                if _fn_n and _fn_n < 1900 and _fn_n != parent_num:
+                # Ведущая цифра имени файла — позиция файла ВНУТРИ дуги (папки).
+                # Она валидна даже если совпадает с номером самой дуги (parent_num) —
+                # это просто совпадение цифр, а не признак «числа не найдено».
+                # Пример: дуга "2. Мы — есть!" содержит "2. Вера.fb2" — сам файл
+                # действительно второй в дуге, хотя его цифра совпадает с parent_num.
+                if _fn_n and _fn_n < 1900:
                     sub_ordinal = _fn_n
 
         # Метаданные как fallback для sub_ordinal
@@ -3168,14 +3180,22 @@ class FB2CompilerService:
                     # Обычная книга — берём целиком.
                     # Если позиция уже покрыта предкомпиляцией (covered_hi ≥ sn),
                     # пропускаем: контент этого тома уже есть в ранее добавленном диапазоне.
+                    # Дедуп по covered_hi применяем ТОЛЬКО к "плоским" позициям
+                    # (sub_ordinal == 0) — это те, что предкомпиляция-диапазон
+                    # действительно покрывает целиком. Книги внутри дуги
+                    # (sort_key[2] != 0, несколько файлов на одной parent_num
+                    # позиции — например "1. Мы — были!\1. Призыв" и "\2. Путь")
+                    # НЕ являются дублями друг друга, хотя делят один parent_num,
+                    # поэтому не участвуют в covered_hi и не пропускаются.
                     sn = book.sort_key[1] if book.sort_key[0] == 0 else 0
-                    if sn and sn <= covered_hi:
+                    sub_ord = book.sort_key[2] if book.sort_key[0] == 0 else 0
+                    if sn and sub_ord == 0 and sn <= covered_hi:
                         self._log(f"  ℹ Пропуск {book.abs_path.name} — позиция {sn} покрыта до {covered_hi}")
                         continue
                     title, body_xml = self._extract_body(book)
                     bodies.append((title, _remap_image_refs(body_xml)))
                     book_cover_ids.append(book_cover_id)
-                    if sn:
+                    if sn and sub_ord == 0:
                         covered_hi = max(covered_hi, sn)
 
             # Если все книги исключены или группа пустая — ничего компилировать не нужно.
@@ -3293,6 +3313,11 @@ class FB2CompilerService:
                 _lbl = 'ч.'
                 _base = f'{_lbl} {top_lo}' if top_lo == top_hi else f'{_lbl} {top_lo}-{top_hi}'
                 suffix = f'{_base} в {_arc_part_count} книгах'
+            elif has_subseries and n_top_arcs and n_top_arcs >= 2 and not _all_arc_point:
+                # Слияние нескольких "сырых" (не предкомпилированных) дуг
+                # в одну книгу серии — по договорённости просто "в N книгах"
+                # (N = реальное число физических файлов), без словесной формы.
+                suffix = f'в {len(group.books)} книгах'
             elif has_subseries and n_top_arcs and n_top_arcs >= 2:
                 suffix = self._series_suffix(n_top_arcs, top_lo, top_hi,
                                              _arc_part_count or n_volumes, use_parts=True,
