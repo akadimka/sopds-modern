@@ -795,11 +795,58 @@ class Pass4Consensus:
                 # Не перезаписываем дробный sn вида «8.1» (временная подсерия)
                 if re.match(r'^\d+\.\d+$', _cur_sn):
                     continue
+                # Не перезаписываем уже присвоенный filename_prefix — ведущая
+                # цифра в начале имени файла («11. Название») строго
+                # последовательна по всей папке и надёжнее числа, найденного
+                # ГДЕ-ТО В ТЕКСТЕ после названия серии: это число берётся из
+                # собственного (иногда ошибочного — опечатка автора во
+                # внутреннем заголовке) текста книги, а не из позиции файла.
+                # Пример: «11. Моя анимежизнь 10 Генезис» — ведущий номер 11
+                # верен, а «10» после названия серии — опечатка в заголовке,
+                # из-за которой без этой проверки два разных тома (10 и 11)
+                # получали одинаковый series_number=10.
+                if record.series_number_source == 'filename_prefix':
+                    continue
                 record.series_number = fn_num
                 record.series_number_source = 'filename_series_refix'
                 fn_sn_refix_count += 1
 
         self.logger.log(f"[PASS 4] Re-fixed series_number from filename for {fn_sn_refix_count} records")
+
+        # Разрешаем коллизию: файл без ведущего номера в имени (например,
+        # спецвыпуск/сборник вне общей нумерации), чей series_number взят
+        # из меты/консенсуса, может случайно совпасть с номером, УЖЕ занятым
+        # другим файлом с authoritative filename_prefix в той же серии.
+        # filename_prefix строго последователен по позиции файла в папке —
+        # он не может быть неправильным. Значит конфликтующий не-prefix
+        # номер — ошибка (опечатка автора во внутреннем номере и т.п.),
+        # и его следует просто убрать, а не оставлять дубликат.
+        # Пример: «Моя анимежизнь Хентайный спешл (18+).fb2» получил sn=7
+        # из меты, но «7. Моя анимежизнь 7 90-е.fb2» уже занимает 7 как
+        # filename_prefix.
+        # Ключ включает папку файла — коллизия имеет смысл только внутри
+        # одного датасета (папки), а не для одноимённой серии в другой
+        # папке другого сборника.
+        _prefix_taken: dict = {}
+        for _r in records:
+            if _r.series_number_source == 'filename_prefix':
+                _k = (str(Path(_r.file_path).parent), (_r.proposed_series or '').split('\\')[0].strip())
+                _prefix_taken.setdefault(_k, set()).add((_r.series_number or '').strip())
+
+        conflict_clear_count = 0
+        for record in records:
+            if record.series_number_source == 'filename_prefix':
+                continue
+            sn = (record.series_number or '').strip()
+            if not sn:
+                continue
+            key = (str(Path(record.file_path).parent), (record.proposed_series or '').split('\\')[0].strip())
+            if sn in _prefix_taken.get(key, ()):
+                record.series_number = ''
+                record.series_number_source = ''
+                conflict_clear_count += 1
+
+        self.logger.log(f"[PASS 4] Cleared {conflict_clear_count} series_number conflicting with filename_prefix")
 
         # FOLDER_HIERARCHY CLEANUP
         # Fall back to metadata_series if available, otherwise clear.
