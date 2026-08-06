@@ -946,3 +946,10 @@ msgstr "файлов"
 
 msgid "No files"
 msgstr "Файлов нет"
+
+# --- Genre conflict warning (dashboard bulk genre assignment) ---
+msgid "genre conflict:"
+msgstr "конфликт жанра:"
+
+msgid ", genre conflicts: "
+msgstr ", конфликтов жанра: "

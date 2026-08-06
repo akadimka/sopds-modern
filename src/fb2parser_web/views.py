@@ -565,9 +565,25 @@ def assign_genre_multi(request):
             results.append({"path": path, "success": False, "error": "Папка не найдена"})
             continue
         try:
+            # Сигнальная (не блокирующая) проверка ДО перезаписи: если у автора
+            # файла уже есть заметная история в каталоге SOPDS целиком в другом
+            # жанре — предупреждаем, но всё равно применяем присвоение, решение
+            # за пользователем (см. обсуждение — жёсткий блок даёт много ложных
+            # срабатываний для авторов, реально пишущих в нескольких жанрах).
+            conflicts = []
+            try:
+                from .genre_conflict_check import check_genre_conflicts
+                from .fb2parser_bridge import _config_path
+                conflicts = check_genre_conflicts(path, genre, _config_path())
+            except Exception as e:
+                logging.getLogger(__name__).warning("genre conflict check failed for %s: %s", path, e)
+
             count = service.assign_genre_to_folder(path, genre)
             if count > 0:
-                results.append({"path": path, "success": True, "count": count})
+                result = {"path": path, "success": True, "count": count}
+                if conflicts:
+                    result["conflicts"] = conflicts
+                results.append(result)
                 assignments = genre_assignments.get()
                 assignments[os.path.abspath(path)] = genre
                 genre_assignments.set(assignments)

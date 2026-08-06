@@ -474,6 +474,7 @@ table th { color: var(--text) !important; border: none !important; border-width:
     white-space: nowrap; flex-shrink: 0; font-family: var(--font-sans);
 }
 .ftree-badge.error { background: var(--fp-danger); }
+.ftree-badge.conflict { background: #f39c12; color: #1a1a1a; cursor: help; }
 .ftree-children { padding-left: 1.4rem; border-left: 1px solid var(--border); margin-left: 0.55rem; }
 .ftree-loading  { padding: 0.3rem 0.5rem; color: var(--text-muted); font-size: 0.8rem; }
 
