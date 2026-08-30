@@ -383,6 +383,32 @@ class Pass1ReadFiles:
         print(f"[PASS 1] Using {max_workers} processes for CPU-bound XML parsing...")
         if use_cache:
             print(f"[PASS 1] Metadata caching enabled")
+            # Каждый воркер создаёт свой MetadataCache() (по одному на файл —
+            # см. process_file_worker), и его __init__ проверяет, не изменились
+            # ли исходники парсера (_check_parser_version) — если да, чистит
+            # всю таблицу file_metadata. Без прогрева ЭТУ проверку впервые
+            # выполняет уже forked-воркер: если несколько воркеров запускаются
+            # почти одновременно после правки любого из отслеживаемых файлов
+            # (см. metadata_cache._PARSER_SOURCE_FILES — pass1_read_files.py сам
+            # в этом списке), они могут наперегонки попытаться выполнить DELETE
+            # FROM file_metadata — SQLite WAL допускает только одного писателя
+            # одновременно, так что проигравшие ждут снятия блокировки (до
+            # timeout=30 в metadata_cache._connect). Прогреваем проверку версии
+            # один раз здесь, в главном процессе, ДО форка воркеров — к моменту,
+            # когда они полезут в кэш, версия в БД уже актуальна, и гонки не
+            # будет. (Не подтверждено как причина конкретного зависшего прогона,
+            # который натолкнул на этот код, — там реальной причиной оказалась
+            # сторонняя служба twonky.service, забиравшая целое ядро CPU на
+            # 2-ядерном сервере; но сама гонка по кэшу — независимая, реальная
+            # проблема, которую всё равно стоит убрать.)
+            try:
+                try:
+                    from metadata_cache import MetadataCache
+                except ImportError:
+                    from ..metadata_cache import MetadataCache
+                MetadataCache()
+            except Exception:
+                pass
         print(f"[PASS 1] Using {'SAX' if use_sax_parser else 'ElementTree'} parser")
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
