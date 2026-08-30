@@ -594,6 +594,13 @@ class Pass2SeriesFilename:
         # «01_Якудза...» → series_number=1 даже если metadata ошибочно говорит 3.
         self._correct_series_number_from_filename(records)
 
+        # Привязать непронумерованную «книгу 1» к серии, обнаруженной только
+        # по пронумерованному соседу («Title.fb2» + «Title 2.fb2», без
+        # <sequence> в обоих файлах) — иначе книга 1 остаётся без серии
+        # вообще и не попадает в группу компиляции (fb2_compiler.find_groups
+        # требует непустые author И series у каждой записи группы).
+        self._link_unnumbered_book_one(records)
+
         # Пометить устаревшие дубликаты (старый/новый вариант одной книги)
         self._mark_duplicate_variants(records)
 
@@ -602,6 +609,56 @@ class Pass2SeriesFilename:
         # ВАЖНО: вызываем до _unify_folder_series_source повторно, потому что
         # при первом вызове авторы были разные → guard "len(authors)>1" пропустил папку.
         self._fix_multiauthor_folders(records)
+
+    def _link_unnumbered_book_one(self, records: List[BookRecord]) -> None:
+        """Находит непронумерованную «книгу 1» для серии, вычисленной
+        _correct_series_number_from_filename только по пронумерованному
+        соседу (см. Правило 2 там, source='filename_series_root').
+
+        Пример: «Быков Валерий - Королева ульев.fb2» (без <sequence>, без
+        номера в имени) + «Быков Валерий - Королева ульев 2.fb2» (серия и
+        номер «2» уже определены по имени файла). Первый файл не подходит
+        ни под одно из существующих правил этого прохода (нет ключевого
+        слова том/часть/книга, нет metadata_series для fallback) и остаётся
+        с пустой proposed_series — из-за этого fb2_compiler.find_groups()
+        вообще не видит пару как серию (нужны непустые author И series у
+        каждой записи группы), хотя реально это готовая двухтомная серия.
+
+        Условие безопасности: совпадение только когда номер соседа — ровно
+        «2» (то есть сосед без номера однозначно читается как книга 1,
+        а не как пропущенный где-то посередине том) и стем файла соседа
+        буквально равен «<author> - <root>» после нормализации — совпадение
+        по точному имени файла, а не по эвристике.
+        """
+        for rec in records:
+            if rec.series_number_source != 'filename_series_root':
+                continue
+            if rec.series_number != '2':
+                continue
+            if not rec.proposed_series or not rec.proposed_author:
+                continue
+
+            author_norm = _norm_s(rec.proposed_author)
+            root_norm = _norm_s(rec.proposed_series)
+            prefix_re = re.compile(r'^' + re.escape(author_norm) + r'\s*-\s*(.+)$')
+
+            for sib in records:
+                if sib is rec or sib.proposed_series:
+                    continue
+                if _norm_s(sib.proposed_author or '') != author_norm:
+                    continue
+                if not sib.file_path:
+                    continue
+                sib_stem_norm = _norm_s(Path(sib.file_path).stem)
+                m = prefix_re.match(sib_stem_norm)
+                if not m or m.group(1).strip() != root_norm:
+                    continue
+                sib.proposed_series = rec.proposed_series
+                sib.series_source = 'filename_series_root_book1'
+                if not sib.series_number:
+                    sib.series_number = '1'
+                    sib.series_number_source = 'filename_series_root_book1'
+                break
 
     def _postpass_metadata_fallback(self, records: List[BookRecord]) -> None:
         """Последний шанс: назначить серию из metadata_series если proposed_series пусто.
