@@ -217,13 +217,11 @@ function closeSyncModal() {
         }
     }
 }
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSyncModal();
-});
 </script>
 
-<!-- Sync modal -->
-<div id="sync-modal-overlay" onclick="if(event.target===this) closeSyncModal();">
+<!-- Sync modal: закрывается только крестиком — во время синхронизации случайный
+     клик по фону или Escape не должен молча снести открытую панель. -->
+<div id="sync-modal-overlay">
     <div id="sync-modal-box">
         <div id="sync-modal-header">
             <h5>{% trans "🔄 Synchronization" %}</h5>
