@@ -1355,9 +1355,13 @@ class FB2CompilerService:
                 valid_runs = [r for r in self._split_into_consecutive_runs(numeric) if len(r) >= 2]
                 lone_numeric = [b for r in self._split_into_consecutive_runs(numeric) if len(r) < 2 for b in r]
 
-                # Серия считается завершённой только если нет одиночных томов за пределами
-                # этого рана. Наличие других ранов (напр. arc 13) не делает run {1,2,3}
-                # незавершённым — каждый ран оценивается независимо.
+                # Серия считается завершённой только если это ЕДИНСТВЕННЫЙ ран в бакете
+                # и нет одиночных томов за его пределами. Наличие ЛЮБЫХ других ранов —
+                # признак того, что серия продолжается за пределами этого куска (даже если
+                # сам кусок внутри непрерывен), иначе первый ран из разорванной пополам
+                # серии (напр. 1-19 при существующих где-то ещё 27-28, 30-33) получает
+                # суффикс «в N книгах», как будто это все книги серии, вместо «т. 1-N».
+                _has_other_runs = len(valid_runs) > 1
                 for run in valid_runs:
                     # Детектируем паттерн N.M (том.часть): если ВСЕ книги в run
                     # получили sort_source='dot_part', то volume_range = диапазон томов,
@@ -1379,7 +1383,7 @@ class FB2CompilerService:
                         duplicate_paths=duplicate_paths if first_group else [],
                         alphabetical_order=False,
                         part_count=run_part_count,
-                        series_complete=not bool(lone_numeric),
+                        series_complete=not bool(lone_numeric) and not _has_other_runs,
                     ))
                     first_group = False
 
