@@ -64,28 +64,31 @@ var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
                 {% trans "Specify a folder to display the structure" %}
             </div>
             {% endif %}
+        </div>
 
-            <!-- Genre picker panel (overlay) -->
-            <div id="genre-picker-panel" class="fp-gp-panel">
-                <div class="fp-gp-header">
-                    <strong>{% trans "Genre Selection" %}</strong>
-                    <button onclick="gpClose()">✕</button>
-                </div>
-                <div class="fp-gp-filter">
-                    <input id="gp-filter" type="text" placeholder="{% trans 'Filter genres...' %}"
-                           style="margin:0; font-size:0.82rem;"
-                           oninput="gpFilter(this.value)">
-                </div>
-                <div id="gp-list" class="fp-gp-list">
-                    <div style="padding:0.5rem; color:var(--text-muted); font-size:0.82rem;">{% trans "Loading..." %}</div>
-                </div>
-                <div class="fp-gp-footer">
-                    <div id="gp-selected-label" class="fp-gp-selected-label">{% trans "No genre selected" %}</div>
-                    <button id="gp-apply-btn" class="button warning" style="width:100%; margin:0;"
-                            disabled onclick="gpApply()">
-                        {% trans "▶ Apply to selected folders" %}
-                    </button>
-                </div>
+        <!-- Genre picker panel (overlay) — sibling of #tree-view, NOT a child of
+             it: reloadTree() replaces #tree-view's innerHTML wholesale after
+             every scan/sync, which would otherwise delete this panel from the
+             DOM and silently break the "Assign Genre" button until reload. -->
+        <div id="genre-picker-panel" class="fp-gp-panel">
+            <div class="fp-gp-header">
+                <strong>{% trans "Genre Selection" %}</strong>
+                <button onclick="gpClose()">✕</button>
+            </div>
+            <div class="fp-gp-filter">
+                <input id="gp-filter" type="text" placeholder="{% trans 'Filter genres...' %}"
+                       style="margin:0; font-size:0.82rem;"
+                       oninput="gpFilter(this.value)">
+            </div>
+            <div id="gp-list" class="fp-gp-list">
+                <div style="padding:0.5rem; color:var(--text-muted); font-size:0.82rem;">{% trans "Loading..." %}</div>
+            </div>
+            <div class="fp-gp-footer">
+                <div id="gp-selected-label" class="fp-gp-selected-label">{% trans "No genre selected" %}</div>
+                <button id="gp-apply-btn" class="button warning" style="width:100%; margin:0;"
+                        disabled onclick="gpApply()">
+                    {% trans "▶ Apply to selected folders" %}
+                </button>
             </div>
         </div>
 
