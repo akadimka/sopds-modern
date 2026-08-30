@@ -578,14 +578,13 @@ class SynchronizationService:
                 to_keep.extend(rec for rec, _ in classified)
                 continue
 
-            # Строим покрытие — объединение диапазонов всех компиляций
+            # Строим покрытие — объединение диапазонов компиляций с ДОСТОВЕРНО
+            # известным диапазоном. Компиляции с неизвестным диапазоном в этом
+            # покрытии не участвуют — см. пояснение у to_keep/to_delete ниже.
             covered: set = set()
-            unknown_range_compilations = 0
             for _, vols in compilations:
                 if vols:
                     covered |= vols
-                else:
-                    unknown_range_compilations += 1
 
             self._log(f"  {author} / {series}: "
                       f"{len(compilations)} компил., {len(singles)} одиночных, "
@@ -597,17 +596,25 @@ class SynchronizationService:
 
             for rec, vols in singles:
                 if covered and vols and vols.issubset(covered):
-                    # Том полностью покрыт компиляцией → удаляем
+                    # Том полностью покрыт компиляцией с ДОСТОВЕРНО известным
+                    # диапазоном → удаляем.
                     self._log(f"    ✗ УДАЛИТЬ: {Path(rec.file_path).name} (тома {sorted(vols)} ⊆ {sorted(covered)})")
                     to_delete.append(rec)
                     total_deleted += 1
-                elif unknown_range_compilations > 0 and not covered:
-                    # Есть компиляция с неизвестным диапазоном — безопаснее удалить одиночку
-                    self._log(f"    ✗ УДАЛИТЬ (неизв. компиляция): {Path(rec.file_path).name}")
-                    to_delete.append(rec)
-                    total_deleted += 1
                 else:
-                    # Том вне покрытия → оставляем
+                    # Том вне покрытия, ИЛИ компиляции в этой связке вообще
+                    # имеют только неизвестный диапазон (covered пуст) —
+                    # НЕ удаляем. Раньше при неизвестном диапазоне действовало
+                    # правило "безопаснее удалить одиночку", исходя из
+                    # предположения, что компиляция покрывает всё — но это
+                    # предположение оказалось буквально катастрофическим:
+                    # тематическая антология с тем же автором+серией в
+                    # метаданных, но НЕ являющаяся сборником пронумерованных
+                    # томов (например «+ Правила крови (сборник разных
+                    # авторов).fb2» рядом с «Тайный город» Панова), удаляла
+                    # реальные уникальные тома без возможности восстановления.
+                    # Удаление — необратимая операция; при неопределённости
+                    # безопасный выбор — ничего не делать, а не гадать.
                     self._log(f"    ✓ ОСТАВИТЬ: {Path(rec.file_path).name} (том {sorted(vols)} вне диапазона)")
                     to_keep.append(rec)
 
