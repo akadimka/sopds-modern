@@ -2144,6 +2144,7 @@ def _run_sync_thread():
 
 @staff_member_required(login_url="/web/login/")
 def sync_start(request):
+    import json as _json
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
@@ -2152,7 +2153,32 @@ def sync_start(request):
     scan_path = request.POST.get("scan_path", "").strip() or None
     auto_compile = request.POST.get("auto_compile") == "1"
     assignments = genre_assignments.get()
-    allowed = set(assignments.keys()) if assignments else None
+
+    # Только папки, отмеченные галочкой в списке "Folders to synchronize" на
+    # самой странице — а не весь genre_assignments. Это накопительный кэш
+    # (см. assign_genre_multi): туда попадает КАЖДАЯ папка, которой хоть раз
+    # присвоили жанр, и без этой фильтрации по чекбоксам старые/лишние
+    # назначения из прошлых сессий незаметно подмешивались бы в текущий
+    # запуск синхронизации.
+    try:
+        requested_paths = _json.loads(request.POST.get("paths", "[]"))
+    except Exception:
+        requested_paths = []
+    selected_paths = [p for p in requested_paths if p in assignments]
+
+    if not selected_paths:
+        from django.template.loader import render_to_string
+        html = render_to_string("fb2parser/sync_status.html", {
+            "state": {
+                "running": False, "done": False,
+                "error": "Не выбрано ни одной папки для синхронизации.",
+                "log": [],
+            },
+            "pct": 0,
+        })
+        return HttpResponse(html)
+
+    allowed = set(selected_paths)
     sync_stop_flag.clear()
     if not sync_job.try_start(
         processed=0, total=0, current="", stats={}, log=[],
@@ -2160,6 +2186,14 @@ def sync_start(request):
         auto_compile=auto_compile,
     ):
         return _render_sync_status(sync_job.get())
+
+    # Снимаем отмеченные папки с очереди — иначе они останутся в
+    # genre_assignments и подмешаются в следующий запуск синхронизации
+    # (см. комментарий выше), даже если этот запуск ещё не завершился.
+    for p in selected_paths:
+        assignments.pop(p, None)
+    genre_assignments.set(assignments)
+
     threading.Thread(target=_run_sync_thread, daemon=True).start()
     return _render_sync_status(sync_job.get())
 

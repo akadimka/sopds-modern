@@ -31,10 +31,14 @@
     </div>
     <div style="max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; background:var(--bg-muted);">
         {% for path, genre in assignments.items %}
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem;">
-            <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; margin-right:0.5rem; color:var(--text);">{{ path }}</span>
+        <label style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem; cursor:pointer;">
+            <span style="display:flex; align-items:center; overflow:hidden; flex:1; margin-right:0.5rem;">
+                <input type="checkbox" class="sync-folder-cb" value="{{ path }}" checked
+                       style="margin-right:0.5rem; flex-shrink:0; accent-color:#27ae60; cursor:pointer;">
+                <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);">{{ path }}</span>
+            </span>
             <span style="background:#27ae60; color:#fff; border-radius:10px; padding:0.05rem 0.5rem; font-size:0.75rem; white-space:nowrap; flex-shrink:0;">{{ genre }}</span>
-        </div>
+        </label>
         {% endfor %}
     </div>
 </div>
@@ -55,9 +59,10 @@
 <script>
 function syncStart(scanPath) {
     var autoCompile = document.getElementById('sync-auto-compile').checked ? '1' : '0';
+    var paths = Array.from(document.querySelectorAll('.sync-folder-cb:checked')).map(function(cb) { return cb.value; });
     htmx.ajax('POST', '{% url "fb2parser:sync_start" %}',
               {target: '#sync-status', swap: 'outerHTML',
-               values: {scan_path: scanPath, auto_compile: autoCompile}});
+               values: {scan_path: scanPath, auto_compile: autoCompile, paths: JSON.stringify(paths)}});
 }
 </script>
 
