@@ -354,6 +354,11 @@ async function gpApply() {
     progressLabel.textContent = JS_STR_PREPARING;
     resultEl.textContent = '';
 
+    // Список "Folders to synchronize" должен показывать ровно то, что сейчас
+    // выбрано и назначено — а не копиться из всех прошлых "Assign Genre" за
+    // всю сессию. Каждое новое применение жанра начинает список заново.
+    await fetch("{% url 'fb2parser:sync_clear_assignments' %}", {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}});
+
     var ok = 0, fail = 0, conflicted = 0;
 
     for (var i = 0; i < entries.length; i++) {
