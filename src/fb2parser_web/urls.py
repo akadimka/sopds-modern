@@ -26,6 +26,7 @@ urlpatterns = [
     path("genre-scan/files/",     views.genre_scan_files,   name="genre_scan_files"),
     path("normalize/",         views.normalize,        name="normalize"),
     path("normalize/setup/",   views.normalize_setup,  name="normalize_setup"),
+    path("normalize/clear-filter/", views.normalize_clear_filter, name="normalize_clear_filter"),
     path("normalize/set-root/", views.normalize_set_root, name="normalize_set_root"),
     path("normalize/start/",   views.normalize_start,  name="normalize_start"),
     path("normalize/stop/",    views.normalize_stop,   name="normalize_stop"),

@@ -792,13 +792,30 @@ def normalize_setup(request):
 
 
 @staff_member_required(login_url="/web/login/")
+def normalize_clear_filter(request):
+    """Явно снять фильтр подпапок (кнопка "✕ Clear filter" на странице нормализации)."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    request.session.pop("norm_filter_subfolders", None)
+    request.session.pop("norm_filter_folder", None)
+    return HttpResponse("ok")
+
+
+@staff_member_required(login_url="/web/login/")
 def normalize(request):
     import json as _json
     from opds_catalog.sopds_config import sopds_cfg as cfg
     from .fb2parser_bridge import get_normalization_settings
 
-    filter_subfolders = request.session.pop("norm_filter_subfolders", None)
-    filter_folder = request.session.pop("norm_filter_folder", None)
+    # .get(), не .pop(): страница нормализации может перерисоваться (обычный
+    # F5, переход по меню и обратно) до того, как пользователь нажал "Create
+    # CSV" — .pop() снимал фильтр с первого же такого рендера, скрытое поле
+    # тихо становилось "[]", и следующий запуск обрабатывал уже всю папку
+    # вместо выбранных подпапок. Теперь фильтр переживает обычные перерисовки
+    # и снимается только явно — см. normalize_clear_filter().
+    filter_subfolders = request.session.get("norm_filter_subfolders", None)
+    filter_folder = request.session.get("norm_filter_folder", None)
     norm_mode = request.session.pop("norm_mode", "normalize")
     last_path = get_normalization_settings().get_last_normalize_path()
 

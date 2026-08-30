@@ -346,6 +346,9 @@ function normClearFilter() {
     if (inp) inp.value = '[]';
     var banner = document.getElementById('norm-filter-banner');
     if (banner) banner.style.display = 'none';
+    // Снимаем фильтр и на сервере (сессия) — иначе он переживёт клиентский
+    // сброс и вернётся при следующей перерисовке страницы (см. normalize()).
+    fetch("{% url 'fb2parser:normalize_clear_filter' %}", {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}});
 }
 
 // ── Запоминание пути: сохраняем на сервере при каждом изменении поля ───────
