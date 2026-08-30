@@ -279,7 +279,7 @@ class SynchronizationService:
             if progress_callback:
                 progress_callback(90, 100, "Очистка пустых папок")
             
-            self._cleanup_empty_folders()
+            self._cleanup_empty_folders(filter_paths=_filter)
             
             if progress_callback:
                 progress_callback(100, 100, "Синхронизация завершена")
@@ -1008,19 +1008,30 @@ class SynchronizationService:
             except Exception:
                 pass
     
-    def _cleanup_empty_folders(self) -> None:
+    def _cleanup_empty_folders(self, filter_paths=None) -> None:
         """Remove folders from source directory after FB2 files have been moved.
 
         Deletes every subdirectory of last_scan_path that contains no FB2 files
         (recursively), regardless of other file types remaining in it.
         The root working directory (last_scan_path) is never deleted.
+
+        Args:
+            filter_paths: Optional set of absolute Path objects (see
+                allowed_folders/_filter in synchronize()). When given, only
+                these folders and their subtrees are considered — a
+                checkbox-restricted sync run must not sweep away unrelated
+                empty folders elsewhere under last_scan_path.
         """
         self._log(f"Очистка папок в: {self.last_scan_path}")
 
         try:
-            for item in sorted(self.last_scan_path.iterdir()):
-                if item.is_dir():
-                    self._remove_dir_if_no_fb2(item)
+            if filter_paths:
+                for path in sorted(filter_paths):
+                    self._remove_dir_if_no_fb2(path)
+            else:
+                for item in sorted(self.last_scan_path.iterdir()):
+                    if item.is_dir():
+                        self._remove_dir_if_no_fb2(item)
             self._log(f"Удалено папок: {self.stats['folders_deleted']}")
         except Exception as e:
             self._log(f"Ошибка при очистке папок: {str(e)}")
