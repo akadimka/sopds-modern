@@ -613,6 +613,18 @@ msgstr "Пример: день=0, день недели=-1, час=3, минут
 msgid "Start scan immediately on server startup"
 msgstr "Запускать сканирование сразу при старте сервера"
 
+msgid "Real-time library watcher"
+msgstr "Слежение за библиотекой в реальном времени"
+
+msgid "Debounce (seconds)"
+msgstr "Задержка перед пересборкой (сек.)"
+
+msgid "How long a folder must stay quiet (no new file changes) before the watcher re-indexes it"
+msgstr "Сколько секунд папка должна оставаться без изменений, прежде чем сторож её переиндексирует"
+
+msgid "Used by the sopds-watch service (see DEPLOY.md) — it re-indexes changed library folders in real time instead of waiting for the nightly full scan. A folder is only re-scanned once no new changes have arrived for this many seconds, so a burst of files landing at once (e.g. from a sync) is processed as one batch."
+msgstr "Используется сервисом sopds-watch (см. DEPLOY.md) — он переиндексирует изменившиеся папки библиотеки в реальном времени, не дожидаясь ночного полного скана. Папка пересобирается только после того, как в неё это число секунд не приходило новых изменений — так пачка файлов, прилетевшая разом (например, из синхронизации), обрабатывается одним заходом."
+
 # scan
 msgid "Scan"
 msgstr "Сканировать"

@@ -643,7 +643,59 @@ systemctl status sopds-scan
 
 ---
 
-## 19. Проверка
+## 19. (Опционально) Слежение за библиотекой в реальном времени
+
+Дополняет (не заменяет) плановое сканирование из шага 18. `sopds-scan`
+раз в сутки честно обходит всю библиотеку целиком — при десятках тысяч
+файлов это становится всё дороже, даже если реально изменилось несколько
+файлов. `sopds_watch` следит за папкой библиотеки через inotify и
+пересобирает в каталоге только те папки, где реально что-то изменилось,
+почти сразу после изменения — без ожидания ночного скана. Ночной
+`sopds-scan` при этом оставляем как есть — это дешёвая страховка на
+случай пропущенных событий (простой демона, переполнение очереди inotify
+при экстремальном всплеске активности).
+
+Задержку до пересборки изменившейся папки (по умолчанию 20 секунд —
+чтобы пачка файлов, прилетевшая разом, например из синхронизации,
+обработалась одним заходом, а не по одному файлу) можно менять в
+SOPDS → Settings → Schedule, без перезапуска сервиса.
+
+```bash
+nano /etc/systemd/system/sopds-watch.service
+```
+
+```ini
+[Unit]
+Description=SOPDS-MODERN library watcher (incremental)
+After=network.target sopds-modern.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sopds-modern/src
+EnvironmentFile=/opt/sopds-modern/src/.env
+Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sopds-modern/.venv/bin/python manage.py sopds_watch
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload
+systemctl enable --now sopds-watch
+systemctl status sopds-watch
+```
+
+> Как и `sopds-scan`, не передавайте `--daemon` — процесс сам блокируется
+> в foreground, systemd держит его в фоне.
+
+---
+
+## 20. Проверка
 
 Откройте в браузере: `http://<IP-адрес сервера>:8008/` (без Apache) или `http://<IP-адрес сервера>/` (если настроили Apache на шаге 12)
 

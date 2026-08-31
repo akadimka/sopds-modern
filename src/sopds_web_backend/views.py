@@ -683,7 +683,7 @@ def sopds_settings(request):
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
         'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating',
     ]
-    _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min']
+    _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min', 'watch_debounce_seconds']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
 
     if request.method == 'POST':

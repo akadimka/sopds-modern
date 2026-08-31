@@ -4,9 +4,7 @@ import os
 import re
 
 from django.db import connection, transaction
-from django.db.models import Count
-
-# from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop as _noop
 
@@ -213,6 +211,30 @@ def books_del_phisical():
     # связи — см. cleanup_orphan_entities() ниже.
     row_count = Book.objects.filter(avail__lte=1).delete()
     return row_count
+
+
+def _path_scope_q(rel_path: str) -> Q:
+    """Книга находится в папке rel_path или любой её подпапке.
+
+    Книги хранятся с path = путь к СОДЕРЖАЩЕЙ папке (см. addbook), так что
+    точечная пересборка одной папки (см. sopds_watch) должна ловить и её
+    прямые файлы, и файлы во вложенных подсериях.
+    """
+    return Q(path=rel_path) | Q(path__startswith=rel_path + os.sep)
+
+
+def avail_check_prepare_scoped(rel_path: str) -> int:
+    """Точечный аналог avail_check_prepare() — только для одной папки библиотеки.
+
+    Используется sopds_watch для пересборки конкретной "грязной" папки без
+    прохода по всей библиотеке (см. avail_check_prepare для полной версии).
+    """
+    return Book.objects.filter(_path_scope_q(rel_path)).exclude(avail=0).update(avail=1)
+
+
+def books_del_phisical_scoped(rel_path: str):
+    """Точечный аналог books_del_phisical() — только для одной папки библиотеки."""
+    return Book.objects.filter(_path_scope_q(rel_path), avail__lte=1).delete()
 
 
 def cleanup_orphan_entities():

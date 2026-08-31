@@ -334,6 +334,19 @@
         <div class="s-hint">{{ comments.scan_start_directly }}</div>
     </div>
 
+    <div class="s-section-title">{% trans "Real-time library watcher" %}</div>
+
+    <div class="s-field">
+        <label title="{% trans 'How long a folder must stay quiet (no new file changes) before the watcher re-indexes it' %}">
+            {% trans "Debounce (seconds)" %}
+        </label>
+        <input type="number" name="watch_debounce_seconds" value="{{ sopds.watch_debounce_seconds }}" min="1" max="600"
+               title="{% trans 'How long a folder must stay quiet (no new file changes) before the watcher re-indexes it' %}">
+        <div class="s-hint">
+            {% trans "Used by the sopds-watch service (see DEPLOY.md) — it re-indexes changed library folders in real time instead of waiting for the nightly full scan. A folder is only re-scanned once no new changes have arrived for this many seconds, so a burst of files landing at once (e.g. from a sync) is processed as one batch." %}
+        </div>
+    </div>
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 

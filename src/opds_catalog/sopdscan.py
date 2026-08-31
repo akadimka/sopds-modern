@@ -97,17 +97,21 @@ class opdsScanner:
             + " seconds."
         )
 
-    def scan_all(self):
-        """Запуск сканирования библиотеки"""
-        self.init_stats()
-        self.log_options()
-        self.inp_cat = None
-        self.zip_file = None
-        self.rel_path = None
+    def scan_path(self, root_dir) -> None:
+        """Обойти root_dir и обработать найденные файлы (inpx/zip/книги).
 
-        opdsdb.avail_check_prepare()
+        Тело обхода не зависит от того, с какого каталога начат os.walk —
+        все относительные пути (processfile/processzip/processinpx) считаются
+        от config.SOPDS_ROOT_LIB, а не от root_dir. Поэтому этот метод одинаково
+        годится и для полного скана всей библиотеки (см. scan_all), и для
+        точечного пересканирования одной "грязной" подпапки (см. sopds_watch).
+
+        В отличие от scan_all(), НЕ трогает avail_check_prepare/
+        books_del_phisical/cleanup_orphan_entities — вызывающий код сам решает,
+        в каком объёме (вся библиотека или один путь) применять эту bookkeeping-логику.
+        """
         self.logger.debug(f"ZipScan: {config.SOPDS_ZIPSCAN}")
-        for full_path, dirs, files in os.walk(config.SOPDS_ROOT_LIB, followlinks=True):
+        for full_path, dirs, files in os.walk(root_dir, followlinks=True):
             # Если разрешена обработка inpx, то при нахождении inpx обрабатываем его и прекращаем обработку текущего каталога
             if config.SOPDS_INPX_ENABLE:
                 inpx_files = [
@@ -134,6 +138,17 @@ class opdsScanner:
                         self.processfile(name, full_path, file, None, 0, file_size)
                     except Exception as err:
                         self.logger.error(f"Skipping broken file {file}: {err}")
+
+    def scan_all(self):
+        """Запуск сканирования библиотеки"""
+        self.init_stats()
+        self.log_options()
+        self.inp_cat = None
+        self.zip_file = None
+        self.rel_path = None
+
+        opdsdb.avail_check_prepare()
+        self.scan_path(config.SOPDS_ROOT_LIB)
 
         # if config.SOPDS_DELETE_LOGICAL:
         #    self.books_deleted=opdsdb.books_del_logical()
