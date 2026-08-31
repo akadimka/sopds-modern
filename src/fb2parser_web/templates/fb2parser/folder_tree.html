@@ -22,7 +22,7 @@
               onclick="ftreeRowClick(event, '{{ f.path|escapejs }}', '{{ f.node_id }}')">{{ f.name }}</span>
         <span id="cnt-{{ f.node_id }}"
               hx-get="{% url 'fb2parser:folder_count' %}?path={{ f.path|urlencode }}"
-              hx-trigger="load"
+              hx-trigger="revealed"
               hx-swap="outerHTML"></span>
         <span class="ftree-badge" id="badge-{{ f.node_id }}" style="display:none;"></span>
     </div>

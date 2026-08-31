@@ -455,24 +455,26 @@ def folder_tree(request):
     except Exception as e:
         return HttpResponse(f"<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ {e}</div>")
 
+    # Раньше здесь для КАЖДОЙ подпапки делался ещё один listdir (узнать,
+    # показывать ли стрелку "развернуть" и не пустая ли папка целиком) — на
+    # сетевой шаре (SMB) это лишний round trip на каждую запись, и на паре
+    # сотен папок последовательно (а параллельно в потоках — тоже не сильно
+    # быстрее, упирается в сам SMB-сервер) складывается в десятки секунд ради
+    # одного уровня дерева. Дерево и так ленивое (folder_tree грузит один
+    # уровень по клику) — просто считаем каждую папку потенциально
+    # разворачиваемой и не скрываем "пустые": разворачивание пустой папки
+    # покажет "No folders with FB2 files" вместо того, чтобы вообще не
+    # показывать стрелку — сильно дешевле для реального размера библиотек.
     entries = []
     for name in names:
         full = os.path.join(path, name)
         if not os.path.isdir(full):
             continue
-        try:
-            children = os.listdir(full)
-        except PermissionError:
-            children = []
-        has_subdirs = any(os.path.isdir(os.path.join(full, f)) for f in children)
-        has_fb2_direct = any(f.lower().endswith(".fb2") for f in children)
-        if not has_fb2_direct and not has_subdirs:
-            continue  # пустая папка — скрываем
         node_id = "n" + hashlib.md5(full.encode("utf-8", errors="replace")).hexdigest()[:12]
         entries.append({
             "path": full,
             "name": name,
-            "has_subdirs": has_subdirs,
+            "has_subdirs": True,
             "node_id": node_id,
         })
 
