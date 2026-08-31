@@ -51,6 +51,16 @@
 </div>
 </div>
 
+<div class="cell">
+    <div style="text-align:right; font-size:0.78rem; color:var(--text-muted); padding:0.1rem 0.6rem 0.4rem;">
+        {% trans "Last manual scan:" %}
+        <strong style="color:var(--text);">{% if last_manual_scan %}{{ last_manual_scan|date:"d.m.Y H:i" }}{% else %}{% trans "never" %}{% endif %}</strong>
+        &nbsp;·&nbsp;
+        {% trans "Last automatic scan:" %}
+        <strong style="color:var(--text);">{% if last_auto_scan %}{{ last_auto_scan|date:"d.m.Y H:i" }}{% else %}{% trans "never" %}{% endif %}</strong>
+    </div>
+</div>
+
 <!-- Тост для статуса сканирования — вне меню, не влияет на layout -->
 <div id="sopds-scan-toast" style="
     position:fixed; bottom:1.2rem; right:1.2rem; z-index:9999;

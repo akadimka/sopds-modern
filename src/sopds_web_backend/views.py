@@ -19,6 +19,7 @@ from opds_catalog.models import (
     Author,
     Book,
     Catalog,
+    Counter,
     Genre,
     Series,
     bookshelf,
@@ -67,6 +68,8 @@ def _run_sopds_scan():
     try:
         scanner = opdsScanner()
         scanner.scan_all()
+        Counter.objects.update_known_counters()
+        Counter.objects.update("manual_scan", scanner.books_added)
         sopds_scan_job.update(
             running=False, done=True, error=None,
             added=scanner.books_added,

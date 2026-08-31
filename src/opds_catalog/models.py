@@ -247,6 +247,13 @@ class CounterManager(models.Manager):
 
         return lastscan
 
+    def get_scan_time(self, counter_name):
+        """Время последнего сканирования указанного вида ("manual_scan"/"auto_scan")."""
+        try:
+            return self.get(name=counter_name).update_time
+        except ObjectDoesNotExist:
+            return None
+
 
 class Counter(models.Model):
     """Модель счётчиков (статистика).

@@ -428,6 +428,15 @@ msgstr "Подряд"
 msgid "days"
 msgstr "дн."
 
+msgid "Last manual scan:"
+msgstr "Последнее ручное сканирование:"
+
+msgid "Last automatic scan:"
+msgstr "Последнее автоматическое сканирование:"
+
+msgid "never"
+msgstr "никогда"
+
 msgid "Processing:"
 msgstr "Обрабатывается:"
 

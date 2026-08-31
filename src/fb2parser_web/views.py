@@ -84,6 +84,7 @@ def _run_scan_thread(root_path):
         scanner = _TrackingScanner(scan_logger)
         scanner.scan_all()
         Counter.objects.update_known_counters()
+        Counter.objects.update("manual_scan", scanner.books_added)
 
         scan_job.update(done=True, running=False,
                          books_added=scanner.books_added,

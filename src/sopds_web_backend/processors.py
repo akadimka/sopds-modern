@@ -47,6 +47,10 @@ def sopds_processor(request):
     stats["lastscan_date"] = lastscan[0] if lastscan else None
     args["stats"] = stats
 
+    scan_times = {d["name"]: d["update_time"] for d in stats_data}
+    args["last_manual_scan"] = scan_times.get("manual_scan")
+    args["last_auto_scan"] = scan_times.get("auto_scan")
+
     # Поиск случайной книги
     books_count = stats.get("allbooks", 0)
     if books_count:

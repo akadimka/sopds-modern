@@ -139,6 +139,7 @@ class Command(BaseCommand):
             scanner.scan_all()
         self.logger.debug("Updating library statistics")
         Counter.objects.update_known_counters()
+        Counter.objects.update("auto_scan", Counter.objects.get_counter("allbooks"))
         self.logger.debug("Releasing lock")
         self.scan_is_active = False
 
