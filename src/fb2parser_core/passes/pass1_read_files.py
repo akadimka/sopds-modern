@@ -340,12 +340,25 @@ class Pass1ReadFiles:
         """
         print("[PASS 1] Reading FB2 files...")
 
-        fb2_files = fb2_rglob(self.work_dir)
         if self.filter_paths:
-            fb2_files = [
-                f for f in fb2_files
-                if any(f.resolve().is_relative_to(fp) for fp in self.filter_paths)
-            ]
+            # Гоняем rglob() ТОЛЬКО по выбранным папкам, а не по всей work_dir с
+            # последующей фильтрацией результата — раньше именно так и было, и
+            # на сетевой шаре (SMB) с сотнями папок в work_dir полный обход ради
+            # выборки нескольких подпапок оборачивался минутами сетевых round
+            # trip'ов на перечисление каталогов, даже когда реально нужных файлов
+            # были единицы. Precache уже так делает для своего обхода — здесь то
+            # же самое для перечисления файлов.
+            seen: set = set()
+            fb2_files = []
+            for fp in sorted(self.filter_paths):
+                for f in fb2_rglob(fp):
+                    key = str(f.resolve())
+                    if key not in seen:
+                        seen.add(key)
+                        fb2_files.append(f)
+            fb2_files.sort(key=lambda p: str(p).lower())
+        else:
+            fb2_files = fb2_rglob(self.work_dir)
         total = len(fb2_files)
         if total == 0:
             self.logger.log("[PASS 1] No FB2 files found")
