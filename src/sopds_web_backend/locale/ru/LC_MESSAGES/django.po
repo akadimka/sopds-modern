@@ -395,18 +395,6 @@ msgid "User does not exist or the password is incorrect!"
 msgstr "Пользователь не существует или введен неправильный пароль!"
 
 # sopds_hello.html
-msgid "Books"
-msgstr "Книги"
-
-msgid "Authors"
-msgstr "Авторы"
-
-msgid "Genres"
-msgstr "Жанры"
-
-msgid "Series"
-msgstr "Серии"
-
 msgid "Reading"
 msgstr "Чтение"
 
@@ -466,9 +454,6 @@ msgstr "Топ жанров"
 
 msgid "Recently added"
 msgstr "Недавно добавленные"
-
-msgid "Title"
-msgstr "Название"
 
 msgid "Format"
 msgstr "Формат"
@@ -638,9 +623,6 @@ msgstr "Читать"
 msgid "View cover"
 msgstr "Просмотр обложки"
 
-msgid "Download:"
-msgstr "Скачать:"
-
 msgid "Delete this book from bookshelf?"
 msgstr "Удалить эту книгу с книжной полки?"
 
@@ -786,9 +768,6 @@ msgstr "О себе"
 
 msgid "Save profile"
 msgstr "Сохранить профиль"
-
-msgid "Change password"
-msgstr "Смена пароля"
 
 msgid "Current password"
 msgstr "Текущий пароль"
