@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Джо</first-name>
+      <last-name>Аберкромби</last-name>
+    </author>
+    <book-title>Последний довод королей</book-title>
+    <annotation>
+      <p>Король умер, да здравствует король! Выборы – вот новая забота инквизитора Глокты, а вернее, «добыча» голосов за «правильного» кандидата. Вот только Глокту намного больше интересует расследование закулисных интриг, и он не может вовремя остановиться… На Севере дело идет к решающей схватке между армией Союза и отрядами самозваного короля Бетода. И именно теперь возвращается легендарный Логен Девятипалый, Девять Смертей, – человек, которого все считают мертвым. Бывший соратник Бетода жаждет с ним расквитаться…</p>
+      <p>Грядет последняя, решающая схватка, которая снимет покровы с древних тайн и обнажит правду! Судьба Союза решится раз и навсегда…</p>
+    </annotation>
+    <keywords>интриги,Средние века,квест,эпическое фэнтези,волшебные миры</keywords>
+    <date value="2008-01-01">2008</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Оксана</first-name>
+      <last-name>Орлова</last-name>
+    </translator>
+    <translator>
+      <first-name>Александра</first-name>
+      <last-name>Питчер</last-name>
+    </translator>
+    <translator>
+      <first-name>Нияз</first-name>
+      <last-name>Абдуллин</last-name>
+    </translator>
+    <sequence name="Земной Круг"/>
+    <sequence name="Первый Закон" number="3"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2017-12-16">2017-12-16</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=28076865</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>60d880c9-e25e-11e7-97d5-0cc47a5453d6</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция</last-name>
+      <id>0058d61b-69a7-11e4-a35a-002590591ed2</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Первый Закон. Книга третья. Последний довод королей / Джо Аберкромби</book-name>
+    <publisher>Э</publisher>
+    <city>Москва</city>
+    <year>2017</year>
+    <isbn>978-5-699-97928-8</isbn>
+    <sequence name="Fantasy World"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

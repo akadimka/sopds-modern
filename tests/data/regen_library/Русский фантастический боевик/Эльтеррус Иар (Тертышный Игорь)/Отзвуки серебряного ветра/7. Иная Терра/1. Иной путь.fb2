@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+<title-info>
+<genre>sf_action</genre>
+<author>
+<first-name></first-name>
+<last-name></last-name>
+</author>
+<author>
+<first-name></first-name>
+<last-name></last-name>
+</author>
+<book-title> </book-title>
+<annotation>
+<p>   .  ,    ,  ,     ,    ,    .   ,   .     ,       ,  ,   .  ?   17  2010     " "     .</p>
+</annotation>
+<date></date>
+<lang>ru</lang>
+</title-info>
+<document-info>
+<author>
+<first-name></first-name>
+<last-name></last-name>
+</author>
+<program-used>Fiction Book Designer</program-used>
+<date value="2010-06-17">17.06.2010</date>
+<src-url></src-url>
+<src-ocr></src-ocr>
+<id>FBD-5E7A00-AF80-2E49-5CA1-85AD-EB7B-7F5320</id>
+<version>1.0</version>
+</document-info>
+<publish-info>
+</publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

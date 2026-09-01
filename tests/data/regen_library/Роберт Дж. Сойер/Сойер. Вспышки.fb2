@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Роберт</first-name>
+    <last-name>Сойер</last-name>
+   </author>
+   <book-title>Вспышки</book-title>
+   <date value="2017-05-09">2017</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Владислав</first-name>
+    <last-name>Слободян</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Robert</first-name>
+    <middle-name>J.</middle-name>
+    <last-name>Sawyer</last-name>
+   </author>
+   <book-title>Flashes</book-title>
+   <date value="2006-01-01">2006</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Verdi1</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date></date>
+   <id>1F335C71-4D62-4CDE-82CF-1AA027BCCC7B</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

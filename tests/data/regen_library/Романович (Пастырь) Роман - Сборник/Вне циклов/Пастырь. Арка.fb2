@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <genre>sf_litrpg</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <book-title>Арка</book-title>
+    <annotation>
+      <p>Он очнулся по ту сторону арки среди тысяч людей, не помня своего имени. Единственное, что сообщили — на следующий этап пройдет только половина. Остальные — умрут. И кто же станет покровителем безымянного человека, что волею судьбы скоро обретет новое имя?</p>
+    </annotation>
+    <keywords>ЛитРПГ, Боевое фэнтези</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#_0.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>ru</src-lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Пастырь</first-name>
+      <last-name>Роман</last-name>
+    </author>
+    <program-used>calibre 2.85.1, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2017-07-06">6.7.2017</date>
+    <id>CF7144DD-1EE1-4307-B73E-E496CBBD9F89</id>
+    <version>1.01</version>
+    <history>
+      <p>1.01 — вычитка, evgen007</p>
+    </history>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

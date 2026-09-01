@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>popadantsy_vo_vremeni</genre>
+   <genre>back_to_ussr</genre>
+   <genre>sf_history</genre>
+   <author>
+    <first-name>Павел</first-name>
+    <last-name>Смолин</last-name>
+    <home-page>https://author.today/u/marozoff22/works</home-page>
+   </author>
+   <book-title>Самый лучший комсомолец. Том пятый (СЛП-7)</book-title>
+   <annotation>
+    <p>Седьмой том "пионерского" цикла про похождения Сергея Ткачева в СССР конца 60-х.</p>
+    <p>Том 1:</p>
+    <p><a l:href="https://author.today/work/251220">https://author.today/work/251220</a></p>
+    <p>Все персонажи и события являются полностью вымышленными, автор любит Родину во всех ее проявлениях, и всей душой радеет за сохранение ее территориальной целостности.</p>
+   </annotation>
+   <date value="2023-09-23 07:38">2023-09-23 07:38</date>
+   <coverpage>
+    <image l:href="#e6f665f0-9c36-48d9-aa50-7bd9684d834c.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Самый лучший пионер" number="07"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>Elib2Ebook, PureFB2, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-09-23 07:40">2023-09-23 07:40</date>
+   <id>4D761549-08B1-4FAB-B628-778CEC20A872</id>
+   <version>1.0</version>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

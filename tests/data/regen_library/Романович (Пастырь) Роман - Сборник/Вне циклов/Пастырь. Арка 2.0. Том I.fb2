@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <book-title>Арка 2.0</book-title>
+    <annotation>
+      <p>В мире появляются арки, за которыми неизвестно, что скрывается.</p>
+      <p>Любой может пройти через них, но никто не вернулся, чтобы рассказать, что скрывается по ту сторону.</p>
+      <p>Нашего героя скидывают туда, чтобы избавиться от тела. Когда он приходит в себя, обнаруживает вокруг тысячи людей, перед которыми неизвестные ставят задачу — выбрать бога-покровителя и сыграть в их кровавую игру.</p>
+    </annotation>
+    <coverpage>
+      <image xlink:href="#ca79c1cf-ad04-41b2-9a19-4ad8ca2047c4.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+</author>
+    <src-url>https://author.today/work/209388</src-url>
+    <date value="2022-10-29">2022-10-29</date>
+    <program-used>Elib2Ebook</program-used>
+  </document-info>
+  <publish-info/>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+</FictionBook>

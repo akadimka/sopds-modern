@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>network_literature</genre>
+   <genre>popadancy</genre>
+   <genre>sf_history</genre>
+   <genre>sf_technofantasy</genre>
+   <author>
+    <first-name></first-name>
+    <last-name>lanpirot</last-name>
+   </author>
+   <book-title>Исчадие Кромки</book-title>
+   <annotation>
+    <empty-line/>
+    <p>Наконец-то наш боевой старичок вернул себе собственное тело. Только вот куда на этот раз забросила его Судьба? Приключения старика Хоттабыча продолжаются...</p>
+    <empty-line/>
+   </annotation>
+   <date value="2024-05-16 15:01">2024-05-16 15:01</date>
+   <coverpage>
+    <image l:href="#c472a887-d217-4dd6-ac8b-95d119b6c4bc.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Хоттабыч" number="8"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <last-name></last-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <program-used>Elib2Ebook, PureFB2 4.12, FictionBook Editor Release 2.6</program-used>
+   <date value="2024-05-16 15:02">2024-05-16 15:02</date>
+   <src-url>https://author.today/work/337580</src-url>
+   <id>D3ED1E9F-DF36-4419-95EB-AFFAD6888E3D</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <year>2024</year>
+  </publish-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+</FictionBook>

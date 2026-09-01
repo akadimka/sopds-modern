@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>network_literature</genre>
+   <genre>popadancy</genre>
+   <genre>sf_history</genre>
+   <genre>sf_technofantasy</genre>
+   <author>
+    <first-name></first-name>
+    <last-name>lanpirot</last-name>
+   </author>
+   <book-title>Позывной «Хоттабыч» 2</book-title>
+   <annotation>
+    <p>Он стар. Очень стар. Сто два года — тяжелый груз! Особенно для одинокого пенсионера-ветерана. Все, чего он еще хотел в этой жизни — это спокойно уйти. Но неумолимая судьба распорядилась иначе: он ушел с боем, погибнув в неравной схватке. Но ушел победителем, прихватив с собою на тот свет и своих врагов.</p>
+    <p>Но жестокосердной судьбе и этого оказалось недостаточно! Он возродился в прошлом, на алтаре горнила минувшей войны под острым ножом жреца Черного Ордена СС. Но он выжил и вновь встал на защиту Отечества. Несмотря на то, что это даже и не его мир. И не его страна. И не его война. Но свобода и справедливость любого мира дорогого стоят, их не грех и кровушкой окропить…</p>
+   </annotation>
+   <keywords>альтернативный мир, боевая магия, великая отечественная война, магия, назад в ссср, попаданцы, сверхспособности, сильный герой</keywords>
+   <date>2022</date>
+   <lang>ru</lang>
+   <sequence name="Хоттабыч" number="2"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>lanpirot</first-name>
+    <last-name></last-name>
+    <nickname>redpolarfox</nickname>
+    <home-page>https://author.today/u/lanpirotdub/works</home-page>
+   </author>
+   <program-used>CopyText ADI, FictionBook Editor Release 2.6</program-used>
+   <date value="2022-06-14">2022-06-14</date>
+   <src-url>https://author.today/work/198266</src-url>
+   <id>35B589D3-1A44-4EB0-AD7B-9659700BCE90</id>
+   <version>1.1</version>
+   <history>
+    <p>полная версия</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <year>2022</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

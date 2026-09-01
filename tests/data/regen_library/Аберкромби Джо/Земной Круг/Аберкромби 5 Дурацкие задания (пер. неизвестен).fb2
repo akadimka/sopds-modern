@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="Windows-1251"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <book-title> </book-title>
+   <annotation>
+    <p>P          The Heroes (2011) ,        </p>
+   </annotation>
+   <date>2011</date>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+  </title-info>
+  <src-title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Joe</first-name>
+    <last-name>Abercrombie</last-name>
+   </author>
+   <book-title>The Fool Jobs</book-title>
+   <date>2011</date>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>ProstoTac</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2011-08-09">09 August 2011</date>
+   <id>6FEEB8F8-45DB-4737-AF0E-ED6B696AC393</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 - ProstoTac</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

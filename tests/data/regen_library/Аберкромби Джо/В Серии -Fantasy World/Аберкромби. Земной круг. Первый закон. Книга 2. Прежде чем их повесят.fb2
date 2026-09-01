@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Джо</first-name>
+      <last-name>Аберкромби</last-name>
+    </author>
+    <book-title>Прежде чем их повесят</book-title>
+    <annotation>
+      <p>Инквизитор Глокта получает невыполнимое задание – занять место пропавшего наставника в осажденной гурками Дагоске и не допустить ее падения. Первый маг Байяз вместе с прославленным воином Логеном Девятипалым, дворянином Джезалем дан Луфаром и южанкой Ферро отправляются в весьма опасное путешествие на край мира. Путь, который полон лишений и неприятных сюрпризов, но… ради чего? В Инглии продолжается война между Союзом и самозваным королем Севера Бетодом. Все пророчит победу Союзу, ведь во главе обученного войска стоит опытный маршал. Но противник хитер, и кто знает, что он успел подготовить…</p>
+      <p>Куда качнется маятник рока? С кем удача сыграет злую шутку, а к кому неожиданно повернется лицом? Судьба Союза оказывается в руках совсем не тех, кто этого достоин.</p>
+    </annotation>
+    <keywords>Средневековье,магические артефакты,магические миры,эпическое фэнтези,dark fantasy,темное фэнтези,сверхспособности</keywords>
+    <date value="2008-01-01">2008</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>В.</first-name>
+      <last-name>Иванов</last-name>
+    </translator>
+    <sequence name="Земной Круг"/>
+    <sequence name="Первый Закон" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>cleed</nickname>
+    </author>
+    <program-used>OOoFBTools-2.37 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2017-05-04">04.05.2017</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=6181575</src-url>
+    <src-ocr>indd предоставлен правообладателем</src-ocr>
+    <id>211805F4-C68D-43C3-9A8E-B0D36E45CC07</id>
+    <version>1.21</version>
+    <history>
+      <p>v 1.0 – создание fb2 – cleed</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция</last-name>
+      <id>0058d61b-69a7-11e4-a35a-002590591ed2</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Джо Аберкромби Первый Закон. Книга вторая. Прежде чем их повесят</book-name>
+    <publisher>Эксмо, Домино</publisher>
+    <year>2017</year>
+    <isbn>978-5-699-95096-6</isbn>
+    <sequence name="Fantasy World"/>
+  </publish-info>
+  <custom-info info-type="">Copyright © 2008 by Joe Abercrombie © В. Иванов, перевод на русский язык, 2017 © Издание на русском языке, оформление. ООО «Издательство «Э», 2017 </custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

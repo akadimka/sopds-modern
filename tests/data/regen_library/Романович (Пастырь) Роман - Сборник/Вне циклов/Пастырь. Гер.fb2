@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>sf_action</genre>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <book-title>Гер</book-title>
+    <annotation>
+      <p>На Земле открываются спонтанные проходы в другую реальность. Первые авантюристы суются в неизвестность, желая узнать, какие секреты скрываются там. Кроме неизвестности, люди обнаруживают таинственный Гер, что способен подарить любые способности. Но какую цену придется заплатить за дарованную силу?</p>
+      <p>Главный герой, обычный мужчина по имени Рад, попадает в череду случайностей, где обретает первый Гер. Что ждет его дальше?</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Пастырь</first-name>
+      <last-name>Роман</last-name>
+    </author>
+    <program-used>calibre 2.85.1, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2017-06-09">09 June 2017</date>
+    <id>A9D85EB7-404A-4A93-BC3C-D6A9DD6F7B9C</id>
+    <version>1.1</version>
+    <history>
+      <p>1.0 — создание файла и обложки — сайт Lit-Era;</p>
+      <p>1.1 — что-то с файлом — кто-то на сайте Литмир;</p>
+      <p>1.2 — исправление дескрипшна, удаление пустых строк, форматирование, скрипты — Isais.</p>
+    </history>
+  </document-info>
+  <publish-info/>
+  <custom-info info-type="">!!!ТРЕБУЕТСЯ ПОЛНАЯ ВЫЧИТКА ДЛЯ ИСПРАВЛЕНИЯ МНОГОЧИСЛЕННЫХ ОШИБОК!!!</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

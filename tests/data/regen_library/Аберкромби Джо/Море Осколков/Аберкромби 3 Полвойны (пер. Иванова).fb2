@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>foreign_fantasy</genre>
+   <genre>fantasy_fight</genre>
+   <author>
+    <first-name>Джо</first-name>
+    <last-name>Аберкромби</last-name>
+    <id>235fgb547-7890bf-658jhm-sdrg453-dfgjn45</id>
+   </author>
+   <book-title>Полвойны </book-title>
+   <annotation>
+    <p>Хоть размерами Тровенланду не сравниться с Гетландом или Ванстером, ключом к процветанию этого королевства стала крепость Мыс Бейла – ворота к Морю Осколков. Об этом прекрасно знают и отец Ярви, и, что еще важнее, Праматерь Вексен. Именно благодаря вероломству последней Тровенланд разорен захватчиками, его король и служитель убиты в собственном дворце, а принцесса Скара вынуждена бежать из родного дома под видом жалкой рабыни.</p>
+    <p>Как и когда-то у Ярви, жизнь Скары кардинально переменилась всего за один день. Еще вчера она была избалованной принцессой, а сегодня ей придется стать королевой-воительницей. И научиться разбираться в политике, ведь мечи – это лишь полвойны, а вторая половина – закулисные интриги.</p>
+    <p>Впервые на русском языке!</p>
+   </annotation>
+   <keywords>средневековье,месть,героическое фэнтези,приключенческое фэнтези,иные миры</keywords>
+   <date value="2015-01-01">2015</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Наталья</first-name>
+    <middle-name>Владимировна</middle-name>
+    <last-name>Иванова</last-name>
+   </translator>
+   <sequence name="Море Осколков" number="3"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Олег</first-name>
+    <last-name>Власов</last-name>
+    <nickname>prussol</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2016-04-07">07.04.2016</date>
+   <src-url>http://www.litres.ru/pages/biblio_book/?art=11972440</src-url>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>4365dfhfg-786gfh-345dfgf-76sezf-456fgjngh</id>
+   <version>1.0</version>
+   <history>
+    <p>V 1.0 by prussol</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Полвойны / Джо Аберкромби</book-name>
+   <publisher>Harper Voyager</publisher>
+   <city>Москва</city>
+   <year>2016</year>
+   <isbn>978-5-699-88484-1</isbn>
+  </publish-info>
+  <custom-info info-type="">Все права защищены. Книга или любая ее часть не может быть скопирована, воспроизведена в электронной или механической форме, в виде фотокопии, записи в память ЭВМ, репродукции или каким-либо иным способом, а также использована в любой информационной системе без получения разрешения от издателя. Копирование, воспроизведение и иное использование книги или ее части без согласия издателя является незаконным и влечет уголовную, административную и гражданскую ответственность © Иванов Н., перевод на русский язык, 2016 © Издание на русском языке, оформление. ООО «Издательство «Э», 2016</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

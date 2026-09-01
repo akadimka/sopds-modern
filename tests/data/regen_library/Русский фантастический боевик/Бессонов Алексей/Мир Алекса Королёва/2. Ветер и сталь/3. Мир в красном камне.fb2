@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>sf_space</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <middle-name>Игоревич</middle-name>
+        <last-name>Бессонов</last-name>
+        <id>d186dc52-2a80-102a-9ae1-2dfe723fe7c7</id>
+      </author>
+      <book-title>Мир в красном камне</book-title>
+      <annotation>
+        <p>Алекс Королев – потомственный офицер имперского Галактического флота. Пока такие, как он, в строю, космическим пиратам и гангстерам не будет спокойной жизни. И хотя мать-прародительница Земля изувечена в звездных и внутренних войнах, в рыцарских сердцах космических десантников живы мужество и любовь к прекрасной даме.</p>
+      </annotation>
+      <coverpage>
+        <image l:href="#_1000388303.jpg" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Ветер и сталь" number="3" />
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Consul</first-name>
+        <last-name />
+        <email>fictionbook@gmail.com</email>
+      </author>
+      <program-used>doc2fb, FB Writer v1.1</program-used>
+      <date value="2007-09-07">2007-09-07</date>
+      <id>0D8648FA-9FC7-4C05-BE46-A15C62BA85BB</id>
+      <version>1.01</version>
+      <history>
+        <p>v1.0 – авторский текст.</p>
+      </history>
+      <publisher>
+        <first-name>Литагент</first-name>
+        <last-name>Г.Л. Олди</last-name>
+        <id>8488af72-967f-102a-94d5-07de47c81719</id>
+      </publisher>
+    </document-info>
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+  </description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

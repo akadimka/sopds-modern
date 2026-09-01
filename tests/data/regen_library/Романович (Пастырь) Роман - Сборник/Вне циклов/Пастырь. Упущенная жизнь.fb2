@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>story</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <book-title>Упущенная жизнь</book-title>
+    <annotation>
+      <p>Рассказ про упущенную жизнь</p>
+    </annotation>
+    <keywords>возможности, жизнь, психология, развитие личности</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#_9ae066daa5a449d0b4c1f5189ca1f815.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>ru</src-lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-11-21">21.11.2020</date>
+    <id>e07bb7c3-c43f-4995-aee5-43beb1a7a676</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <year>2020</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

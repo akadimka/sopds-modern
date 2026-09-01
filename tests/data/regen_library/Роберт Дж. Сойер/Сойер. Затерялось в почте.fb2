@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Роберт</first-name>
+    <last-name>Сойер</last-name>
+   </author>
+   <book-title>Затерялось в почте</book-title>
+   <annotation>
+    <p>Когда почтальон начинает приносить почту, адресованную вроде вам, а вроде и не вам — это неспроста.</p>
+   </annotation>
+   <date value="2015-10-04">2015</date>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Владислав</first-name>
+    <last-name>Слободян</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Robert</first-name>
+    <middle-name>J.</middle-name>
+    <last-name>Sawyer</last-name>
+   </author>
+   <book-title>Lost in the Mail</book-title>
+   <date>1995</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Verdi1</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2015-10-04">04 October 2015</date>
+   <id>E149B995-174B-47B1-98A5-47F98B027BA3</id>
+   <version>1.1</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

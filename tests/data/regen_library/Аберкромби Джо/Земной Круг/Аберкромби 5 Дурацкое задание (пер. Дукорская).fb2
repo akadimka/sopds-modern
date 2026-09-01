@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_heroic</genre>
+   <author>
+    <first-name>Джо</first-name>
+    <last-name>Аберкромби</last-name>
+   </author>
+   <book-title>Дурацкое задание</book-title>
+   <date>2010</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Лидия</first-name>
+    <last-name>Дукорская</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf_heroic</genre>
+   <author>
+    <first-name>Joe</first-name>
+    <last-name>Joe Abercrombie</last-name>
+   </author>
+   <book-title>The Fool Jobs</book-title>
+   <date>2010</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>kejten</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6, AlReader.Droid</program-used>
+   <date value="2012-02-12">12.02.2012</date>
+   <src-url>http://oldmaglib.com</src-url>
+   <src-ocr>Скан — kejten, вычитка — Bianconeri</src-ocr>
+   <id>814F7538-2A8E-404B-8A52-65302A1BED1C</id>
+   <version>1.1</version>
+   <history>
+    <p>v1.0 — создание fb2 (kejten), вычитка — Bianconeri; 1.1 — дополнительная вычитка, выделение произведения, замена ID-a — Isais.</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Мечи и темная магия</book-name>
+   <publisher>Азбука : Азбука-Аттикус</publisher>
+   <city>СПб.</city>
+   <year>2011</year>
+   <isbn>978-5-389-01755-9</isbn>
+   <sequence name="Лучшее" number="19"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

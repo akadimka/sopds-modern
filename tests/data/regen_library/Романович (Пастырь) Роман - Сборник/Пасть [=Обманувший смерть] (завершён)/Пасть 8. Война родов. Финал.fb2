@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <genre>sf_heroic</genre>
+   <author>
+    <first-name>Роман</first-name>
+    <last-name>Романович</last-name>
+    <id>316381</id>
+   </author>
+   <book-title>Война родов. Финал [СИ]</book-title>
+   <annotation>
+    <p>Финальная часть приключений Эдварда Клоза.</p>
+   </annotation>
+   <keywords>бояръаниме,жить вопреки,магия и приключения,противостояние</keywords>
+   <date>2020</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Пасть (бояръаниме)" number="8"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2020-05-22">22 May 2020</date>
+   <id>E2FF400B-156E-4222-83BD-57007466F8F3</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Война родов. Финал</book-name>
+   <publisher>АТ</publisher>
+   <year>2020</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>sf_space</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <middle-name>Игоревич</middle-name>
+        <last-name>Бессонов</last-name>
+        <id>d186dc52-2a80-102a-9ae1-2dfe723fe7c7</id>
+      </author>
+      <book-title>Наследник судьбы</book-title>
+      <annotation>
+        <p>Проплывают столетия – краткий миг в жизни Галактики, но все так же терзают человеческие сердца любовь и ненависть, подлость и благородство. Звездный корсар – Торвард Королев по велению Судьбы ведет свой неуязвимый фрегат на битву с Лордами, освобождая планеты от многовекового страха и рабства.</p>
+      </annotation>
+      <coverpage>
+        <image l:href="#cover.jpg" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Замкни Судьбу в кольцо" number="1" />
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Consul</first-name>
+        <last-name />
+        <email>fictionbook@gmail.com</email>
+      </author>
+      <program-used>doc2fb, FB Writer v1.1</program-used>
+      <date value="2007-09-08">2007-09-08</date>
+      <id>C4ECC04B-A6F3-47C9-BD17-E8312A91D5F4</id>
+      <version>1.01</version>
+      <history>
+        <p>v1.0 – авторский текст.</p>
+      </history>
+      <publisher>
+        <first-name>Литагент</first-name>
+        <last-name>Г.Л. Олди</last-name>
+        <id>8488af72-967f-102a-94d5-07de47c81719</id>
+      </publisher>
+    </document-info>
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+  </description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

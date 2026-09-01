@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>sf_action</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Романович</last-name>
+    </author>
+    <book-title>Война родов. Общий сбор</book-title>
+    <annotation>
+      <p>Враги сделали ход, напали на твой дом.</p>
+      <p>Но задели не только тебя, а нарушили общий договор. Что теперь будет? Соберутся ли маги, чтобы дать отпор набирающему силу злу?</p>
+      <p>И хватит ли их сил?</p>
+    </annotation>
+    <date>2020</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>ru</src-lang>
+    <sequence name="Обманувший смерть" number="5"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name/>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-03-04">04 March 2020</date>
+    <version>1.0</version>
+    <history>
+      <p>1.0 — создание файла</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <publisher>АТ</publisher>
+    <year>2020</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

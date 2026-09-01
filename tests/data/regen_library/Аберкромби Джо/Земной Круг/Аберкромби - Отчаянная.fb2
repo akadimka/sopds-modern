@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Джо</first-name>
+    <last-name>Аберкромби</last-name>
+   </author>
+   <book-title>Отчаянная</book-title>
+   <annotation>
+    <p>Небольшая предистория похождений Шай из цикла произведений «Земной Круг».</p>
+   </annotation>
+   <date>2013-11-08</date>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>bydloman</first-name>
+    <last-name></last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Joe</first-name>
+    <last-name>Abercrombie</last-name>
+   </author>
+   <book-title>Some Desperado</book-title>
+   <date>2013</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name>PipboyD</first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>doc2fb, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2013-11-08">2013-11-08</date>
+   <id>1FDEAD0B-2267-4C33-B7A2-07209ECD0A3B</id>
+   <version>1.1</version>
+   <history>
+    <p>1.0 — создание файла PipboyD</p>
+    <p>1.1 — текст bydloman, доработанная редакция перевода</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

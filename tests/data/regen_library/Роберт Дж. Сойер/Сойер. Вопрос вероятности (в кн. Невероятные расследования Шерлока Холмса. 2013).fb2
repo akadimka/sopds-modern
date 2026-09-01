@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <genre>sf_detective</genre>
+    <author>
+      <first-name>Стивен</first-name>
+      <last-name>Бакстер</last-name>
+    </author>
+    <author>
+      <first-name>Энтони</first-name>
+      <last-name>Берджесс</last-name>
+    </author>
+    <author>
+      <first-name>Нил</first-name>
+      <last-name>Гейман</last-name>
+    </author>
+    <author>
+      <first-name>Барбара</first-name>
+      <last-name>Хэмбли</last-name>
+    </author>
+    <author>
+      <first-name>Лори</first-name>
+      <middle-name>Р.</middle-name>
+      <last-name>Кинг</last-name>
+    </author>
+    <author>
+      <first-name>Тим</first-name>
+      <last-name>Леббон</last-name>
+    </author>
+    <author>
+      <first-name>Танит</first-name>
+      <last-name>Ли</last-name>
+    </author>
+    <author>
+      <first-name>Майкл</first-name>
+      <last-name>Муркок</last-name>
+    </author>
+    <author>
+      <first-name>Дарелл</first-name>
+      <last-name>Швайцер</last-name>
+    </author>
+    <author>
+      <first-name>Энн</first-name>
+      <last-name>Перри</last-name>
+    </author>
+    <author>
+      <first-name>Роберт</first-name>
+      <middle-name>Дж.</middle-name>
+      <last-name>Сойер</last-name>
+    </author>
+    <author>
+      <first-name>Питер</first-name>
+      <last-name>Тримейн</last-name>
+    </author>
+    <author>
+      <first-name>Пол</first-name>
+      <last-name>Джефферс</last-name>
+    </author>
+    <author>
+      <first-name>Вонда</first-name>
+      <middle-name>Н</middle-name>
+      <last-name>Макинтайр</last-name>
+    </author>
+    <author>
+      <first-name>Наоми</first-name>
+      <last-name>Новик</last-name>
+    </author>
+    <author>
+      <first-name>Джеффри</first-name>
+      <last-name>Лэндис</last-name>
+    </author>
+    <author>
+      <first-name>Доминик</first-name>
+      <last-name>Грин</last-name>
+    </author>
+    <author>
+      <first-name>Эми</first-name>
+      <last-name>Майерс</last-name>
+    </author>
+    <author>
+      <first-name>Барбара</first-name>
+      <last-name>Роден</last-name>
+    </author>
+    <author>
+      <first-name>Эдвард</first-name>
+      <middle-name>Д.</middle-name>
+      <last-name>Хох</last-name>
+    </author>
+    <author>
+      <first-name>Крис</first-name>
+      <last-name>Роберсон</last-name>
+    </author>
+    <author>
+      <first-name>Шэрин</first-name>
+      <last-name>Маккрамб</last-name>
+    </author>
+    <author>
+      <first-name>Марк</first-name>
+      <last-name>Валентайн</last-name>
+    </author>
+    <author>
+      <first-name>Мэри</first-name>
+      <middle-name>Робинетт</middle-name>
+      <last-name>Коваль</last-name>
+    </author>
+    <author>
+      <first-name>Брэдли</first-name>
+      <middle-name>Х.</middle-name>
+      <last-name>Сайнор</last-name>
+    </author>
+    <author>
+      <first-name>Роб</first-name>
+      <last-name>Роджерс</last-name>
+    </author>
+    <author>
+      <first-name>Тони</first-name>
+      <last-name>Пи</last-name>
+    </author>
+    <author>
+      <first-name>Кристофер</first-name>
+      <last-name>Роден</last-name>
+    </author>
+    <book-title>Невероятные расследования Шерлока Холмса</book-title>
+    <annotation>
+      <p>Шерлок Холмс, первый в истории — и самый знаменитый — частный детектив, предстал перед читателями более ста двадцати лет назад. Но далеко не все приключения великого сыщика успел описать его гениальный «отец» сэр Артур Конан Дойл.</p>
+      <p>В этой антологии собраны лучшие произведения холмсианы, созданные за последние тридцать лет. И каждое из них — это встреча с невероятным, то есть с тем, во что Холмс всегда категорически отказывался верить. Призраки, проклятия, динозавры, пришельцы и даже злые боги — что ни расследование, то дерзкий вызов его знаменитому профессиональному рационализму.</p>
+    </annotation>
+    <keywords>частный детектив, Шерлок Холмс</keywords>
+    <date value="2013-01-01">2013</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Алексей</first-name>
+      <middle-name>Константинович</middle-name>
+      <last-name>Смирнов</last-name>
+    </translator>
+    <translator>
+      <first-name>Николай</first-name>
+      <middle-name>Сергеевич</middle-name>
+      <last-name>Горелов</last-name>
+    </translator>
+    <translator>
+      <first-name>Геннадий</first-name>
+      <middle-name>Львович</middle-name>
+      <last-name>Корчагин</last-name>
+    </translator>
+    <translator>
+      <first-name>Алла</first-name>
+      <middle-name>Ильдаровна</middle-name>
+      <last-name>Ахмерова</last-name>
+    </translator>
+    <translator>
+      <first-name>Николай</first-name>
+      <last-name>Кудрявцев</last-name>
+    </translator>
+    <translator>
+      <first-name>Анастасия</first-name>
+      <middle-name>Михайловна</middle-name>
+      <last-name>Бродоцкая</last-name>
+    </translator>
+    <translator>
+      <first-name>Михаил</first-name>
+      <last-name>Вассерман</last-name>
+    </translator>
+    <translator>
+      <first-name>Кирилл</first-name>
+      <middle-name>Петрович</middle-name>
+      <last-name>Плешков</last-name>
+      <nickname>Threvor Jones</nickname>
+    </translator>
+    <translator>
+      <first-name>Ольга</first-name>
+      <middle-name>Викторовна</middle-name>
+      <last-name>Полей</last-name>
+    </translator>
+    <translator>
+      <first-name>Владислав</first-name>
+      <middle-name>Адольфович</middle-name>
+      <last-name>Русанов</last-name>
+    </translator>
+    <translator>
+      <first-name>Дмитрий</first-name>
+      <middle-name>Сергеевич</middle-name>
+      <last-name>Могилевцев</last-name>
+    </translator>
+    <sequence name="Шерлок Холмс. Свободные продолжения"/>
+  </title-info>
+  <src-title-info>
+    <genre>det_classic</genre>
+    <genre>sf_detective</genre>
+    <genre>sf</genre>
+    <genre>sf_mystic</genre>
+    <genre>sf_fantasy_city</genre>
+    <author>
+      <first-name>John</first-name>
+      <middle-name>Joseph</middle-name>
+      <last-name>Adams</last-name>
+    </author>
+    <book-title>Improbable Adventures of Sherlock Holmes</book-title>
+    <date/>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>MCat78</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6, AlReader.Droid</program-used>
+    <date value="2013-09-18">18 September 2013</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=6135737</src-url>
+    <id>7204587c-201f-11e3-88f0-002590591dd6</id>
+    <version>1.1</version>
+    <history>
+      <p>v 1.0 — создание fb2 — (MCat78)</p>
+      <p>1.1 — дополнительная вычитка, унификация форматирования, добавление потерянного переводчика — Isais.</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Невероятные расследования Шерлока Холмса: Антология</book-name>
+    <publisher>Азбука : Азбука-Аттикус</publisher>
+    <city>Санкт-Петербург</city>
+    <year>2013</year>
+    <isbn>978-5-389-04401-2</isbn>
+    <sequence name="Шерлок Холмс. Игра продолжается"/>
+  </publish-info>
+  <custom-info info-type="">Copyright © John Joseph Adams
+This edition published by arrangement with Barry Goldblatt Literary LLC and Synopsis Literary Agency
+© А. Ахмерова, перевод, 2013
+© А. Бродоцкая, перевод, 2013
+© Н. Горелов (наследник), перевод, 2013
+© Г. Корчагин, перевод, 2013
+© Н. Кудрявцев, перевод, 2013
+© Д. Могилевцев, перевод, 2013
+© К. Плешков, перевод, 2013
+© О. Полей, перевод, 2013
+© В. Русанов, перевод, 2013
+© А. Смирнов, перевод, 2013
+© ООО «Издательская Группа „Азбука-Аттикус“», 2013
+Издательство АЗБУКА®
+Все права защищены. Никакая часть электронной версии этой книги не может быть воспроизведена в какой бы то ни было форме и какими бы то ни было средствами, включая размещение в сети Интернет и в корпоративных сетях, для частного и публичного использования без письменного разрешения владельца авторских прав.
+© Электронная версия книги подготовлена компанией ЛитРес (www.litres.ru)
+!!!Опубликованный в оригинале сборника рассказ Стивена Кинга «Дело доктора» (The Doctor's Case) в файле ОТСУТСТВУЕТ!</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

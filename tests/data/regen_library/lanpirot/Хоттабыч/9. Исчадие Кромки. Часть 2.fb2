@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <book-title>Позывной "Хоттабыч"#9. Исчадие Кромки (ч. 2)</book-title>
+   <author>
+    <first-name>lanpirot</first-name>
+    <home-page>https://author.today/u/lanpirotdub/works</home-page>
+   </author>
+   <annotation>
+    <p>Первая книга цикла здесь</p>
+    <p><a l:href="https://author.today/work/186810">https://author.today/work/186810</a></p>
+    <p>Приключения старика Хоттабыча на Кромке продолжаются...</p>
+    <p>Вторая:</p>
+    <p><a l:href="https://author.today/work/198266">https://author.today/work/198266</a></p>
+    <p>Третья:</p>
+    <p><a l:href="https://author.today/work/206138">https://author.today/work/206138</a></p>
+    <p>Четвертая:</p>
+    <p><a l:href="https://author.today/work/227357">https://author.today/work/227357</a></p>
+    <p>Пятая:</p>
+    <p><a l:href="https://author.today/work/255334">https://author.today/work/255334</a></p>
+    <p>Шестая:</p>
+    <p><a l:href="https://author.today/work/305794">https://author.today/work/305794</a></p>
+    <p>Седьмая:</p>
+    <p><a l:href="https://author.today/work/319038">https://author.today/work/319038</a></p>
+    <p>Восьмая:</p>
+    <p><a l:href="https://author.today/work/337580">https://author.today/work/337580</a></p>
+   </annotation>
+   <coverpage>
+    <image l:href="#c7b66fc2-2d04-49bf-813e-ccf88afcc386.jpg"/>
+   </coverpage>
+   <lang>ru</lang>
+   <sequence name="Хоттабыч" number="9"/>
+   <genre>popadantsy_v_magicheskie_miry</genre>
+   <genre>sf_history</genre>
+   <genre>adventure</genre>
+   <date value="2024-08-22 23:56">2024-08-22 23:56</date>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <date value="2024-08-22 23:58">2024-08-22 23:58</date>
+   <src-url>https://author.today/work/358367</src-url>
+   <program-used>Elib2Ebook, PureFB2 4.12</program-used>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

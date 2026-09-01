@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Роберт</first-name>
+    <last-name>Сойер</last-name>
+   </author>
+   <book-title>Жить дальше</book-title>
+   <date value="2014-11-03">2014</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Владислав</first-name>
+    <last-name>Слободян</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Robert</first-name>
+    <middle-name>J.</middle-name>
+    <last-name>Sawyer</last-name>
+   </author>
+   <book-title>Rollback</book-title>
+   <date>2007</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Verdi1</nickname>
+   </author>
+   <program-used>Fiction Book Designer, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2014-11-03">03.11.2014</date>
+   <id>FBD-6830FE-B802-834A-C68B-8259-53F7-E5C64C</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

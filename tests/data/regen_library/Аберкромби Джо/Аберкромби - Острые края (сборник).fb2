@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_heroic</genre>
+   <genre>fantasy_fight</genre>
+   <genre>foreign_fantasy</genre>
+   <author>
+    <first-name>Джо</first-name>
+    <last-name>Аберкромби</last-name>
+    <id>37457dca-38ea-11e2-a193-002590591ea6</id>
+   </author>
+   <book-title>Острые края (сборник)</book-title>
+   <annotation>
+    <p>С возвращением в мир Земного Круга, любезный читатель! И лучше бы тебе знать его героев и негодяев, в противном случае истории, собранные в этой книге, могут тебя шокировать.</p>
+    <p>Шеведайя, лучшая воровка Стирии, и Джавра, львица Хоскоппа, – две столь разные женщины, и все же подруги.</p>
+    <p>Бетод, король Севера, и Логен Девятипалый – совершенная машина для убийства. Только можно ли достичь желанного мира, когда твой друг безумен?</p>
+    <p>Занд дан Глокта – блестящий офицер армии Его Величества: непревзойденный мастер фехтования, любимец фельдмаршала и… отъявленный негодяй. Определенно, ему есть о чем потолковать с гурками.</p>
+    <p>Впервые на русском языке!</p>
+   </annotation>
+   <keywords>авторский сборник,опасные приключения,магические миры,эпическое фэнтези,dark fantasy,темное фэнтези</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Андрей</first-name>
+    <middle-name>Васильевич</middle-name>
+    <last-name>Гришин</last-name>
+   </translator>
+   <sequence name="Земной Круг"/>
+   <sequence name="Черная Фэнтези"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>irul</nickname>
+   </author>
+   <program-used>OOoFBTools-2.40 (ExportToFB21), FictionBook Editor Release 2.6</program-used>
+   <date value="2017-05-14">14.05.2017</date>
+   <id>7FF7853B-78D9-459A-B22A-3D04EDC51700</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 (irul)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Джо Аберкромби. Острые края</book-name>
+   <publisher>Издательство «Э»</publisher>
+   <city>Москва</city>
+   <year>2017</year>
+   <isbn>978-5-699-96309-6</isbn>
+   <sequence name="Черная Фэнтези"/>
+  </publish-info>
+  <custom-info info-type="">Joe Abercrombie Sharp Ends Collection copyright © Joe Abercrombie 2016 A Beautiful Bastard copyright © Joe Abercrombie 2016 Small Kindnesses copyright © Joe Abercrombie 2016 The Fool Jobs copyright © Joe Abercrombie. First Published in Swords of Dark Magic, edited by Jonathan Strahan, 2010 Skipping Town copyright © Joe Abercrombie. First published in Legends, edited by Ian Whates, 2013 Hell copyright © Joe Abercrombie 2016 Two’s Company copyright © Joe Abercrombie 2016 Wrong Place, Wrong Time copyright © Joe Abercrombie 2016 Some Desperado copyright © Joe Abercrombie. First published in Dangerous Women, edited by Gardner Dozois and George R.R. Martin, 2013 Yesterday, Near a Village Called Barden… copyright © Joe Abercrombie. First published in The Heroes, 2012 Three’s A Crowd copyright © Joe Abercrombie 2016 Freedom! copyright © Joe Abercrombie. First published in Red Country, 2013 Tough Times All Over copyright © Joe Abercrombie. First published in Rogues edited by Gardner Dozois and George R.R. Martin, 2015 Made a Monster copyright © Joe Abercrombie 2016 First published by Gollancz, London © Гришин А., перевод на русский язык, 2016 © Издание на русском языке, оформление. ООО «Издательство «Э», 2017</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

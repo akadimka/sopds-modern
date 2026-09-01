@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_history</genre>
+   <genre>urban_fantasy</genre>
+   <genre>popadancy</genre>
+   <author>
+    <first-name>lanpirot</first-name>
+    <last-name></last-name>
+    <home-page>https://author.today/u/lanpirotdub/works</home-page>
+   </author>
+   <book-title>Товарищ "Чума"#5</book-title>
+   <annotation>
+    <p>Он попал в прошлое, на поля сражений минувшей войны. В мрачный мир магии и темных сил. «Мастер Проклятий» - трусливо шептали нацисты. Но кто же он на самом деле?</p>
+   </annotation>
+   <date value="2025-02-08 00:00">2025-02-08 00:00</date>
+   <coverpage>
+    <image l:href="#4c270eaf-8660-4238-9315-5c292b7cdc7a.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Товарищ &quot;Чума&quot;" number="5"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <last-name></last-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <program-used>Elib2Ebook, PureFB2 4.12, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2025-02-08 00:16">2025-02-08 00:16</date>
+   <src-url>https://author.today/work/406428</src-url>
+   <id>2A0DE20F-A2DF-4605-A877-F37E82125DF6</id>
+   <version>1.0</version>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

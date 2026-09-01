@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <author>
+      <first-name>Павел</first-name>
+      <last-name>Смолин</last-name>
+    </author>
+    <book-title>Самый лучший комсомолец. Том шестой [СИ]</book-title>
+    <annotation>
+      <p>Восьмой том "пионерского" цикла про похождения Сергея Ткачева в СССР конца 60-х.</p>
+      <p>Все персонажи и события являются полностью вымышленными, автор любит Родину во всех ее проявлениях, и всей душой радеет за сохранение ее территориальной целостности.</p>
+    </annotation>
+    <keywords>альтернативная история, дружба, культурная экспансия, попаданец в ссср, развитие поселения, романтика</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Самый лучший пионер" number="8"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Цокольный этаж</nickname>
+    </author>
+    <program-used>CoolLib fb2 creator</program-used>
+    <date value="2023-11-09">2023-11-09</date>
+    <src-url>https://coollib.net/b/679567-pavel-smolin-samyiy-luchshiy-komsomolets-tom-shestoy</src-url>
+    <src-ocr>Текст загружен пользователями сайта.</src-ocr>
+    <id>679567</id>
+    <version>1.001</version>
+    <history>
+      <p>v 1.001 (CoolLib.net) pva2408: правка названия</p>
+    </history>
+  </document-info>
+  <publish-info/>
+  <custom-info info-type="CoolLib BookId 679567"/>
+  <custom-info info-type="quality-1"/>
+  <custom-info info-type="">truefulltexttrue</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  
+</FictionBook>

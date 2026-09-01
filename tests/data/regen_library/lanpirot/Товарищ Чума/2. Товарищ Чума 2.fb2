@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_history</genre>
+   <genre>popadantsy_vo_vremeni</genre>
+   <genre>urban_fantasy</genre>
+   <author>
+    <first-name>lanpirot</first-name>
+    <last-name></last-name>
+    <home-page>https://author.today/u/lanpirotdub/works</home-page>
+   </author>
+   <book-title>Товарищ "Чума"#2</book-title>
+   <annotation>
+    <p>"Meister der Flüche" - так пугливо называли его фрицы, назначая за голову неуловимого врага невероятную награду. Ведь там, где он появлялся, у фашистов буквально горела земля под ногами и рушились все планы.</p>
+    <p>В Ставке Верховного главнокомандующего ему был заочно присвоен оперативный псевдоним "Товарищ "Чума". Однако, откуда взялся этот неизвестный "народный мститель", не знал даже сам Сталин.</p>
+    <p>Никто на всем белом свете не мог и предположить, что под этим псевдонимом скрывается попаданец из будущего, обладающий очень опасным Даром, ставшим для нацистов настоящим Проклятием.</p>
+   </annotation>
+   <date value="2024-10-22 00:03">2024-10-22 00:03</date>
+   <coverpage>
+    <image l:href="#b3d421c9-051e-4a01-b588-8336290cffe9.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Товарищ &quot;Чума&quot;" number="2"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <last-name></last-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <program-used>Elib2Ebook, PureFB2 4.12, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2024-10-22 00:13">2024-10-22 00:13</date>
+   <src-url>https://author.today/work/378474</src-url>
+   <id>5537A568-F3A3-44F0-A7F4-207BE86CE3C4</id>
+   <version>1.0</version>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

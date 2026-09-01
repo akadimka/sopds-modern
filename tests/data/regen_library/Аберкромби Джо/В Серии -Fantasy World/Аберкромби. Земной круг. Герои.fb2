@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Джо</first-name>
+    <last-name>Аберкромби</last-name>
+   </author>
+   <book-title>Герои</book-title>
+   <annotation>
+    <p>Ничем не примечательный холм, никому не известная долина, забытые всеми каменные истуканы – «Герои».</p>
+    <p>Именно здесь три дня будет длиться битва, в которой сойдутся тысячи воинов и решится судьба Севера.</p>
+    <p>Армия короля Союза против армии Черного Доу.</p>
+    <p>Ни одного героя.</p>
+    <p>Впервые на русском языке! От автора культовой трилогии «Первый Закон»!</p>
+   </annotation>
+   <keywords>интриги,средние века,эпоха возрождения,становление героя,позднее средневековье,волшебные миры</keywords>
+   <date value="2011-01-01">2011</date>
+   <coverpage>
+    <image l:href="#cover1__w600.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Александр</first-name>
+    <last-name>Шабрин</last-name>
+   </translator>
+   <sequence name="Земной Круг" number="5"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date></date>
+   <src-url>http://www.litres.ru/</src-url>
+   <src-ocr>Текст предоставлен издательством</src-ocr>
+   <id>1499D43E-3DA1-4E3E-A5F5-5D2D9D2C07E2</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 – (On84ly)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Герои</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2018</year>
+   <isbn>978-5-04-091990-1</isbn>
+   <sequence name="Fantasy World. Лучшая современная фэнтези"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+</FictionBook>

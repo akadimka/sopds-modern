@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <stylesheet type="text/css">
+                 ,    - Efedrin                            
+</stylesheet>
+ <description>
+  <title-info>
+   <genre>fantasy_fight</genre>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <book-title></book-title>
+   <annotation>
+    <p>      ,    .       ,        .           .</p>
+    <p>  .</p>
+    <p>      ,     ,       .        ,          .</p>
+    <p>  .</p>
+    <p>     ,  ,          ,    .</p>
+    <p>   ,     ?</p>
+    <p>      ,       ,   :   ,   .</p>
+    <p>       ,      .</p>
+    <empty-line/>
+    <p><image l:href="#i_001.png"/></p>
+   </annotation>
+   <date>2014</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>bydloman</first-name>
+    <last-name></last-name>
+   </translator>
+   <sequence name="" number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Efedrin</nickname>
+   </author>
+   <program-used>MS Office, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2014-08-26">26 August 2014</date>
+   <id>E1E0FEE1-AAED-41FB-A9AD-FD4472426571</id>
+   <version>1.1</version>
+   <history>
+    <p>1.0   ,      Efedrin.</p>
+    <p>v 1.1    n3wb13</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Half a King</book-name>
+   <publisher>Del Rey</publisher>
+   <city>New York</city>
+   <year>2014</year>
+   <isbn>978-0804178327</isbn>
+   <sequence name="Half Trilogy" number="1"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

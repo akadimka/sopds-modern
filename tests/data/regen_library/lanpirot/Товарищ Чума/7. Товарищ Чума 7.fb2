@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <book-title>Товарищ "Чума"#7</book-title>
+   <author>
+    <first-name>lanpirot</first-name>
+    <home-page>https://author.today/u/lanpirotdub/works</home-page>
+   </author>
+   <annotation>
+    <p>Первая книга здесь</p>
+    <p><a l:href="https://author.today/work/358686">https://author.today/work/358686</a></p>
+    <p>Аннотация, похоже, осталась в кургане умертвия)))</p>
+   </annotation>
+   <coverpage>
+    <image l:href="#76ecfd17-c72d-4200-a992-fdc13c733207.jpg"/>
+   </coverpage>
+   <lang>ru</lang>
+   <sequence name="Товарищ &quot;Чума&quot;" number="7"/>
+   <genre>sf_history</genre>
+   <genre>popadancy</genre>
+   <genre>urban_fantasy</genre>
+   <date value="2025-04-20 00:03">2025-04-20 00:03</date>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <date value="2025-04-20 00:17">2025-04-20 00:17</date>
+   <src-url>https://author.today/work/431256</src-url>
+   <program-used>Elib2Ebook, PureFB2 4.12</program-used>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

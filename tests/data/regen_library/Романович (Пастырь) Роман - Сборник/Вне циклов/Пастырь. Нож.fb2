@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>sf_fantasy_city</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <book-title>Нож</book-title>
+    <annotation>
+      <p>Небольшой рассказ. В мире внезапно перед каждым человеком появился нож. Что это и к чему приведет, вот в чем вопрос?</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#_1484595995_17.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <program-used>calibre 4.23.0, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-11-21">21.11.2020</date>
+    <id>5d1b6d84-08ca-4d26-b6a1-86980455a38f</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

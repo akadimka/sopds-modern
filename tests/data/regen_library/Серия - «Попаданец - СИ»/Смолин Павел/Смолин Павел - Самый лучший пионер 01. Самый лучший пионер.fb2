@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Павел</first-name>
+      <last-name>Смолин</last-name>
+    </author>
+    <book-title>Самый лучший пионер</book-title>
+    <annotation>
+      <p>Спасение текстового СССР с маленькой сложностью. Начало — 1968 год.</p>
+    </annotation>
+    <date>2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Самый лучший пионер" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name>Starkosta</last-name>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-03-08">08 March 2023</date>
+    <src-url>https://author.today/work/251220</src-url>
+    <id>B27FA53C-33B2-4D66-90CA-54F6AF203AB2</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <publisher>АТ</publisher>
+    <year>2023</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

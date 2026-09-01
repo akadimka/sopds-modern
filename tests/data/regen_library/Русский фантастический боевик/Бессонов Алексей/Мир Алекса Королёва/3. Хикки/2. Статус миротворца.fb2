@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_space</genre>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <book-title> </book-title>
+   <annotation>
+    <p>       .     ,      .          ,    ,     ,                 .  ,  .      ,     </p>
+   </annotation>
+   <date>2005-12-03</date>
+   <coverpage>
+    <image l:href="#cover_miro.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>ru</src-lang>
+   <sequence name="" number="2"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name>pall</last-name>
+    <nickname>ZulZen</nickname>
+   </author>
+   <program-used>doc2fb</program-used>
+   <date>2008-08-01</date>
+   <id>324577CE-FAD1-421F-BA4B-5766923B156B</id>
+   <version>1</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

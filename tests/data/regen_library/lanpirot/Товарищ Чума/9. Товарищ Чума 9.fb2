@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <book-title>Товарищ "Чума"#9</book-title>
+   <author>
+    <first-name>lanpirot</first-name>
+    <home-page>https://author.today/u/lanpirotdub/works</home-page>
+   </author>
+   <annotation>
+    <p>Первая книга здесь</p>
+    <p><a l:href="https://author.today/work/358686">https://author.today/work/358686</a></p>
+    <p>Маски сброшены, карты розданы... Лишь теперь товарищ Чума начал осознавать, что Великие мира магического, до сих пор его попросту не замечали, реализуя планы по порабощению мира, в котором Третий Рейх и нацисты были лишь слепым орудием...</p>
+   </annotation>
+   <coverpage>
+    <image l:href="#1833e8cb-7001-434e-87b9-d34e4846f02e.jpg"/>
+   </coverpage>
+   <lang>ru</lang>
+   <sequence name="Товарищ &quot;Чума&quot;" number="9"/>
+   <genre>popadancy</genre>
+   <genre>urban_fantasy</genre>
+   <genre>sf_history</genre>
+   <date value="2025-07-10 00:02">2025-07-10 00:02</date>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <date value="2025-07-10 00:20">2025-07-10 00:20</date>
+   <src-url>https://author.today/work/454862</src-url>
+   <program-used>Elib2Ebook, PureFB2 4.12</program-used>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

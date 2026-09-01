@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>Джо</first-name>
+      <last-name>Аберкромби</last-name>
+    </author>
+    <book-title>Прежде, чем их повесят</book-title>
+    <annotation>
+      <p>У наставника Глокты проблема. Как защитить город, окруженный врагами и изобилующий предателями, если союзникам нельзя доверять, а предшественник исчез без следа? Этого хватит, чтобы пыточных дел мастеру захотелось сбежать — если бы он только мог передвигаться без трости.</p>
+      <p>Северяне хлынули через границу Инглии и несут огонь и смерть по замороженной стране. Кронпринц Ладислав намерен отбросить их и завоевать вечную славу. Есть только одна проблема: он командует самой плохо вооруженной, плохо обученной и плохо управляемой армией в мире.</p>
+      <p>И Байяз, Первый из Магов, ведёт группу отважных путешественников в опасную миссию по руинам прошлого. Самая ненавистная женщина Юга, самый страшный человек Севера и самый себялюбивый парень Союза составляют странный альянс, но смертоносный. Возможно, у них даже появился бы шанс спасти человечество от едоков. Если бы они только не ненавидели друг друга так сильно.</p>
+      <p>Будут раскрыты древние секреты. Кровавые битвы выиграны и проиграны. Злейшие враги будут прощены — но не прежде, чем их повесят.</p>
+    </annotation>
+    <date>2007</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name></first-name>
+      <last-name>bydloman</last-name>
+    </translator>
+    <sequence name="Земной Круг" number="2"/>
+    <sequence name="Первый Закон" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>user</first-name>
+      <last-name/>
+    </author>
+    <program-used>doc2fb, FictionBook Editor Release 2.6</program-used>
+    <date value="2017-01-19">2016-12-27</date>
+    <src-url>http://bydloman.livejournal.com/</src-url>
+    <id>9CD15369-857E-4912-81FB-F00C4D56B5A2</id>
+    <version>2</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

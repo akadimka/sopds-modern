@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <book-title> </book-title>
+   <annotation>
+    <p>       ,  ,        .</p>
+    <p> ,  ,     .  ,         .</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name></first-name>
+    <last-name>booktran</last-name>
+   </translator>
+   <sequence name=" " number="8"/>
+  </title-info>
+  <src-title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Joe</first-name>
+    <last-name>Abercrombie</last-name>
+   </author>
+   <book-title>Skipping Town</book-title>
+   <date></date>
+   <lang>en</lang>
+   <src-lang>en</src-lang>
+   <sequence name="The Circle of the World " number="8"/>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name>booktran</last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2014-08-30">30 August 2014</date>
+   <src-url>http://booktran.ru</src-url>
+   <id>5E8C4578-4C15-483F-A0A9-A10A8117CEE3</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0   </p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

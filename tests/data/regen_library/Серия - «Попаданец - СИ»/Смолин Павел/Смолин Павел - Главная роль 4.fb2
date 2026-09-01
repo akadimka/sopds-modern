@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Павел</first-name>
+      <last-name>Смолин</last-name>
+    </author>
+    <book-title>Главная роль 4</book-title>
+    <annotation>
+      <p>Начинающему актеру несказанно повезло получить второстепенную, но очень важную роль Великого Князя Георгия Александровича Романова в сериале о молодости Николая II. Последний вечер в родном городе должен был стать началом новой жизни - жизни кинозвезды Всероссийского масштаба, но у мироздания были другие планы: наш герой очнулся на крейсере "Память Азова" посреди Восточного путешествия цесаревича Николая. Очнулся в теле того, кого должен был играть в сериале. Вот уж в прямом смысле "вжился в роль"!</p>
+      <p>P.S. Аутентичной концу XIX века речи персонажей здесь не найти, но я стараюсь придавать колорит.</p>
+      <empty-line/>
+    </annotation>
+    <keywords>альтернативная история, попаданцы по времени, производственный роман, романовы, романтика</keywords>
+    <date>2024-08-05 15:38</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Главная роль" number="4"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Цокольный этаж</first-name>
+      <last-name/>
+      <home-page>https://searchfloor.org/</home-page>
+    </author>
+    <program-used>Elib2Ebook, PureFB2 4.12, FictionBook Editor Release 2.7.2</program-used>
+    <date>2024-08-05 15:38</date>
+    <src-url>https://author.today/work/357782</src-url>
+    <id>0BDC5119-3D7C-4CB3-B441-779148EB05C4</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <year>2024</year>
+  </publish-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

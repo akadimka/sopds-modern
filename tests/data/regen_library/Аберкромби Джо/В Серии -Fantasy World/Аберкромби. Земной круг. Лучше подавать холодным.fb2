@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Джо</first-name>
+    <last-name>Аберкромби</last-name>
+   </author>
+   <book-title>Лучше подавать холодным</book-title>
+   <annotation>
+    <p>Алчность, гордыня, вражда и холодный расчет правят балом в Стирии.</p>
+    <p>Влиятельный герцог Орсо не может позволить наемнице Монце Меркатто, Змее Талина, предводительнице Тысячи Мечей, захватить власть. Потерявшая брата и чудом выжившая, она идет на сделку с ворами, лицедеями и убийцами, чтобы отомстить предателю. Военные, политические интриги опутывают Стирию — и только месть Меркатто должна расставить все по местам.</p>
+   </annotation>
+   <keywords>иные миры,интриги,квест,героическое фэнтези</keywords>
+   <date value="2009-01-01">2009</date>
+   <coverpage>
+    <image l:href="#cover1__w600.jpg"/></coverpage>
+   <lang>ru</lang>
+   <translator>
+    <first-name>Инна</first-name>
+    <last-name>Шаргородская</last-name>
+   </translator>
+   <sequence name="Земной Круг" number="4"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date></date>
+   <src-url>http://www.litres.ru</src-url>
+   <src-ocr>Текст предоставлен издательством</src-ocr>
+   <id>2a9a541f-a914-11e2-8901-002590591dd6</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Лучше подавать холодным</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2018</year>
+   <isbn>978-5-04-090300-9</isbn>
+   <sequence name="Fantasy World"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

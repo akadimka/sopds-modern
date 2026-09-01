@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Роберт</first-name>
+    <middle-name>Дж.</middle-name>
+    <last-name>Сойер</last-name>
+   </author>
+   <book-title>Вспомни, что будет</book-title>
+   <annotation>
+    <p>Две минуты, изменившие судьбу всех людей, живущих на планете Земля.</p>
+    <p>Две минуты, когда сознание всего человечества было перенесено в будущее.</p>
+    <p>Две минуты, поставившие вопросы, которые нельзя оставить без ответа. Что послужило причиной катастрофы?</p>
+    <p>Неудачный эксперимент безответственных специалистов, запустивших Большой адронный коллайдер для того, чтобы удовлетворить непомерные научные амбиции?</p>
+    <p>Вспышка сверхновой эпидемии?</p>
+    <p>Как дальше жить людям, которые хотят изменить будущее или предотвратить его?</p>
+    <p>Как дальше жить людям, вспомнившим, что будет?</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover_rus.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Надежда</first-name>
+    <last-name>Сосновская</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Robert</first-name>
+    <middle-name>James</middle-name>
+    <last-name>Sawyer</last-name>
+   </author>
+   <book-title>Flashforward</book-title>
+   <date>1999</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name>abgiperon</first-name>
+    <last-name></last-name>
+    <nickname>abgiperon</nickname>
+    <email>abgiperon@yandex.ru</email>
+   </author>
+   <program-used>doc2fb, FictionBook Editor Release 2.5, FB Editor v2.0, FB Editor v2.3</program-used>
+   <date value="2010-08-11">2010-08-10</date>
+   <src-url>http://oldmaglib.com</src-url>
+   <src-ocr>Scan - Alex1979. OCR &amp; ReadCheck - abgiperon</src-ocr>
+   <id>30292A8F-F00B-4B35-873B-A691D19F6D3E</id>
+   <version>1</version>
+  </document-info>
+  <publish-info>
+   <book-name>Роберт Дж. Сойер "Вспомни, что будет"</book-name>
+   <publisher>Эксмо, Домино</publisher>
+   <city>Москва, СПб.</city>
+   <year>2010</year>
+   <isbn>978-5-699-42433-7</isbn>
+  </publish-info>
+  <custom-info info-type="">УДК 82(1-87)
+ББК 84(7США)
+С 54
+Составитель серии ("Проект бестселлер") Александр Жикаренцев
+Оформление Сергея Шикина</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

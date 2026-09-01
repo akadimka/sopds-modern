@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>network_literature</genre>
+   <genre>popadancy</genre>
+   <genre>sf_technofantasy</genre>
+   <author>
+    <first-name></first-name>
+    <last-name>lanpirot</last-name>
+   </author>
+   <book-title>Аватар Х (Ч. 2)</book-title>
+   <annotation>
+    <empty-line/>
+    <p>Он очнулся через год после тяжелого ранения на фронте. Пришел в себя, как раз в тот момент, когда его семью пришли убивать. Не повезло... бандитам. Но он так ничего не вспомнил о своей прошлой жизни. Его посещали лишь смутные воспоминания, принадлежавшие, как ему казалось, совсем другому человеку. Да и человеку ли?</p>
+    <p>Большой выбор разных книг. Перейти по ссылке и добавить сайт в закладки <a l:href="https://booksfb2.ru/">https://booksfb2.ru</a></p>
+   </annotation>
+   <date value="2024-03-19 08:07">2024-03-19 08:07</date>
+   <coverpage>
+    <image l:href="#1fe82ac8-0804-416e-8303-bedeeb3dd57c.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Хоттабыч" number="7"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Цокольный этаж</first-name>
+    <last-name></last-name>
+    <home-page>https://searchfloor.org/</home-page>
+   </author>
+   <program-used>Elib2Ebook, PureFB2 4.7, FictionBook Editor Release 2.6</program-used>
+   <date value="2024-03-19 08:10">2024-03-19 08:10</date>
+   <src-url>https://author.today/work/319038</src-url>
+   <id>E096F7C7-DEB9-4C70-8084-94FC97927AB4</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <year>2024</year>
+  </publish-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

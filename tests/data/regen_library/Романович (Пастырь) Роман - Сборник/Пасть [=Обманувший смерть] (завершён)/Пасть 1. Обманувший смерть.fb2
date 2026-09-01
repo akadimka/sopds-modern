@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>popadancy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Роман</first-name>
+      <last-name>Пастырь</last-name>
+    </author>
+    <book-title>Обманувший смерть</book-title>
+    <annotation>
+      <p>Род уничтожен, ты последний выживший. Тебя сделали инвалидом и держат в больнице, как назидание другим.</p>
+      <p>Пора умирать, но к тебе явился дух чужого рода и предложил месть. Для этого всего лишь надо отправиться в другой мир, выжить, обрести силу и… Обмануть смерть.</p>
+    </annotation>
+    <keywords>борьба за выживание,боевая магия,иные миры</keywords>
+    <date value="2020-01-01">2020</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Обманувший смерть (Пасть)" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Jinn</nickname>
+    </author>
+    <program-used>OOoFBTools-2.56 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2020-11-30">30.11.2020</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=63420836</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>22d93fdd-3482-11eb-b47e-0cc47a5f137d</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (Jinn)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Обманувший смерть</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2020</year>
+    <isbn>978-5-17-134143-5</isbn>
+    <sequence name="Попаданец" number="98"/>
+    <sequence name="Попаданцы - боевик"/>
+  </publish-info>
+  <custom-info info-type="copyright">© Роман Романович, 2020 © ООО «Издательство АСТ», 2020</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

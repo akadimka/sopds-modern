@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Роберт</first-name>
+    <last-name>Сойер</last-name>
+   </author>
+   <book-title>Вы видите, но вы не наблюдаете</book-title>
+   <date>1999</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>О.</first-name>
+    <last-name>Перфильев</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name>Robert</first-name>
+    <middle-name>J.</middle-name>
+    <last-name>Sawyer</last-name>
+   </author>
+   <book-title>You See But You Do Not Observe</book-title>
+   <date>1995</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>XtraVert</nickname>
+    <home-page>lib.rus.ec</home-page>
+   </author>
+   <program-used>doc2fb, FictionBook Editor Release 2.6</program-used>
+   <date value="2012-01-13">2012-01-12</date>
+   <src-url>lib.rus.ec</src-url>
+   <src-ocr>Scan: XtraVert; OCR &amp; ReadCheck: Ergo80</src-ocr>
+   <id>6E294EE8-6381-48E7-9CEF-C3DFC548AFC7</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Шерлок Холмс на орбите</book-name>
+   <publisher>ТЕРРА — Книжный клуб</publisher>
+   <city>Москва</city>
+   <year>1999</year>
+   <isbn>5-300-02660-3</isbn>
+   <sequence name="Тайны Бейкер - стрит"/>
+  </publish-info>
+  <custom-info info-type="">Copyright © 1995 by Sirius, Inc. and Martin H. Greenberg
+© ТЕРРА—Книжный клуб, 1999
+Публикуется с разрешения Daw Books Inc. (США) и Агентства Александра Коржекевского (Россия)
+Sherlock Holmes in Orbit
+AUTHORIZED BY
+Dame Jean Conan Doyle
+EDITED BY
+Mike Resnick and Martin H. Greenberg
+Перевод с английского О. Перфильева
+Разработка оформления серии художника И. Марева
+Иллюстрация на суперобложке художника И. Воронина
+Редактор А. Пятковская Художественный редактор И. Марев Технический редактор Т. Фатюхина Корректор Т. Семочкина
+ЛР № 071673 от 01.06.98 г. Изд. № 0599152. Подписано в печать 07.04.99 г.
+Гарнитура Таймс. Печать высокая.
+Уч.-изд. л. 23,28. Заказ № 612.
+ТЕРРА—Книжный клуб.
+113093, Москва, ул. Щипок, 2, а/я 27.
+Оригинал-макет подготовлен ТОО «Макет». 141700, Московская обл., г. Долгопрудный, ул. Первомайская, 21.
+Отпечатано в ОАО «Ярославский полиграфкомбинат». 150049, Ярославль, ул. Свободы, 97.
+</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

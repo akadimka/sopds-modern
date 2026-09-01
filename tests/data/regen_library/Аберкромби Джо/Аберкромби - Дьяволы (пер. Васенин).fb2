@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>fan_translation</genre>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>Джо</first-name>
+      <last-name>Аберкромби</last-name>
+    </author>
+    <book-title>Дьяволы</book-title>
+    <annotation>
+      <p>Порой святое дело требует нечестивых деяний.</p>
+      <empty-line/>
+      <p>Брат Диас был вызван в Святой Город, где, как он уверен, его ждёт почёт и важное святое задание. Но его новая паства состоит из нераскаявшихся убийц, практикующих ужасную магию, и откровенных монстров. Миссия, которую он должен выполнить, потребует от них всех ужасных мер для достижения праведных целей.</p>
+      <p>Эльфы таятся у людских границ и жаждут нашей плоти, в то время как жадные правители заботятся только о своих амбициях и комфорте. В предстоящем адском путешествии брату Диасу повезло иметь дьяволов на своей стороне.</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Дмитрий</first-name>
+      <last-name>Васенин</last-name>
+    </translator>
+    <sequence name="Дьяволы [Аберкромби]" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Джо</first-name>
+      <last-name>Аберкромби</last-name>
+    </author>
+    <program-used>calibre 8.9.0, FictionBook Editor Release 2.7.8</program-used>
+    <date value="2025-09-12">11.9.2025</date>
+    <id>c5e02ffc-0cb7-4c6e-9359-df9c138c041b</id>
+    <version>1.1</version>
+  </document-info>
+  <publish-info>
+    <publisher>vk.com/dmitriy_ab</publisher>
+    <year>2025</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

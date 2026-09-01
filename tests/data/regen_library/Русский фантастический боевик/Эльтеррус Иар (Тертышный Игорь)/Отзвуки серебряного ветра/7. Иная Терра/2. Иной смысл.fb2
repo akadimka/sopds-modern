@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Иар</first-name>
+    <last-name>Эльтеррус</last-name>
+   </author>
+   <author>
+    <first-name>Влад</first-name>
+    <last-name>Вегашин</last-name>
+   </author>
+   <book-title>Иной смысл</book-title>
+   <annotation>
+    <p>Если бы путь к звездам усеивали одни тернии, наверное, было бы легче. Но когда преградами встают ложь, зависть, предательство, бессмысленное и беспощадное право сильного — дорога становится во сто крат труднее. Стасу Ветровскому казалось, что после смерти приемного отца с ним уже ничего более страшного случиться не может. Вокруг единомышленники, дела созданного молодыми романтиками Ордена идут в гору. Цели ясны и понятны. Однако все обрушилось в одночасье. И если бы не друзья, отказавшиеся поверить в страшные обвинения, подставившие плечо в самый тяжелый момент, если бы не загадочные Силы, заинтересованные в продвижении Терры по пути к Свету, Стас бы не выжил. И не смог идти дальше…</p>
+   </annotation>
+   <date>2011</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Иная Терра" number="2"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Посейдон-М</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.5</program-used>
+   <date value="2012-04-04">04 April 2012</date>
+   <src-url>http://lib.rus.ec</src-url>
+   <src-ocr>Scan - Посейдон-М; OCR, ReadCheck - Ergo80</src-ocr>
+   <id>F68845E0-E192-433F-9EEA-D43815F153A7</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла (Посейдон-М)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Иар Эльтеррус, Влад Вегашин «Иной смысл»</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2011</year>
+   <isbn>978-5-699-52694-9</isbn>
+   <sequence name="Русский фантастический боевик"/>
+  </publish-info>
+  <custom-info info-type="">Оформление серии: Е. Савченко 
+Иллюстрация на обложке: М. Петрова
+Ответственный редактор: В. Мельник 
+Редактор: Е. Самойлова 
+Художественный редактор: Е. Савченко 
+Технический редактор: О. Куликова 
+Компьютерная верстка: Е. Кумшаева 
+Корректор: И. Топоровская
+Подписано в печать: 03.10.2011. 
+Страниц: 384 стр.
+Формат: 84x108/32 (130х205 мм)
+Тираж: 7000 экз.</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

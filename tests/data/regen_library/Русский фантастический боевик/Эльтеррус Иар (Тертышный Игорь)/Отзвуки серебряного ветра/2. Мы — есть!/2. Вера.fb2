@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Иар</first-name>
+    <last-name>Эльтеррус</last-name>
+    <id>7d79beb2-2a81-102a-9ae1-2dfe723fe7c7</id>
+   </author>
+   <book-title>Мы – есть! Вера</book-title>
+   <annotation>
+    <p>Надвигаются грозные события. Но не ждать же их, покорно опустив руки? Нет, конечно. И снова выходят из гиперпространства рядом с маленькой планетой Земля крейсера ордена Аарн. И десятки тысяч землян становятся аарн. Именно им суждено изменить очень и очень многое в ордене. Именно они сумеют добиться того, чего еще не добивались никогда.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#Vera.jpeg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>prussol</nickname>
+   </author>
+   <program-used>ExportToFB21, FB Editor v2.0, FictionBook Editor Release 2.6</program-used>
+   <date></date>
+   <src-url>http://www.litres.ru</src-url>
+   <src-ocr>«Текст предоставлен правообладателем»</src-ocr>
+   <id>6246758C-244E-4FB7-910A-972A98F4CCC2</id>
+   <version>1.0</version>
+   <history>
+    <p>V 1.0 by prussol</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Мы – есть! Вера</book-name>
+   <publisher>Эксмо</publisher>
+   <year>2012</year>
+   <isbn>978-5-699-58613-4</isbn>
+   <sequence name="Русский фантастический боевик"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

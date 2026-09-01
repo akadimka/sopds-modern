@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>network_literature</genre>
+   <genre>popadancy</genre>
+   <genre>sf_history</genre>
+   <genre>sf_technofantasy</genre>
+   <author>
+    <first-name></first-name>
+    <last-name>lanpirot</last-name>
+   </author>
+   <book-title>Позывной "Хоттабыч"</book-title>
+   <annotation>
+    <p>Он стар. Очень стар. Сто два года — тяжелый груз! Особенно для одинокого пенсионера–ветерана. Все, чего он еще хотел в этой жизни — это спокойно уйти. Но неумолимая судьба распорядилась иначе: он ушел с боем, погибнув в неравной схватке. Но ушел победителем, прихватив с собою на тот свет и своих врагов. </p>
+    <p>Но жестокосердной судьбе и этого оказалось недостаточно! Он возродился в прошлом, на алтаре горнила минувшей войны под острым ножом жреца Черного Ордена СС. Но он выжил и вновь встал на защиту Отечества. Несмотря на то, что это даже и не его мир. И не его страна. И не его война. Но свобода и справедливость любого мира дорогого стоят, их не грех и кровушкой окропить…</p>
+    <empty-line/>
+    <p>Арт обложки художника Эдуарда Набиуллина</p>
+   </annotation>
+   <keywords>альтернативный мир, боевая магия, война, назад в ссср, попаданцы, сверхспособности, сильный герой, техномагия</keywords>
+   <date>2022</date>
+   <coverpage>
+    <image l:href="#img_0.png"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Хоттабыч" number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>OOoFBTools-2.57 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2022-06-09">09.06.2022</date>
+   <src-url>https://author.today/work/186810</src-url>
+   <id>999320CC-E168-4629-9726-550183D5163A</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 - создание файла.</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <year>2022</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
