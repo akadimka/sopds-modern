@@ -5,6 +5,10 @@ CSV Regeneration Service - 6-PASS Architecture 2.0 (Modular Edition)
 PRECACHE + PASS 1-6 system with each PASS in separate module.
 
 Reference: REGEN_CSV_ARCHITECTURE.md
+
+Приоритет источников серии/номера тома (folder > filename > metadata,
+включая правила вложенных подсерий и коллизий номеров) задокументирован
+в docs/series-priority.md — единый источник правды, не выводить заново.
 """
 
 import csv
