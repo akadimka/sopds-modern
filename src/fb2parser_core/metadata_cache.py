@@ -45,8 +45,36 @@ class MetadataCache:
     def __init__(self, cache_path: Path = Path("metadata_cache.db")):
         self.cache_path = cache_path
         self._parser_version = _compute_parser_version()
-        self._init_db()
-        self._check_parser_version()
+        self._disabled = False
+        try:
+            self._init_db()
+            self._check_parser_version()
+        except sqlite3.Error as e:
+            # Повреждённый файл кэша (например, после SIGKILL посреди записи —
+            # это чистая опция производительности, кэш создаётся заново на каждый
+            # файл в отдельном воркере, поэтому раньше необработанное исключение
+            # здесь роняло КАЖДЫЙ файл в пуле, а не только эту одну попытку).
+            # Пробуем пересоздать файл с нуля один раз; если и это не помогло
+            # (гонка с другим воркером, делающим то же самое одновременно) —
+            # просто отключаем кэш для этого экземпляра, пайплайн продолжает
+            # работать без него (все методы ниже проверяют self._disabled).
+            print(f"[CACHE] Повреждена БД кэша метаданных ({e}) — пересоздаю")
+            try:
+                self._recreate_cache_file()
+                self._init_db()
+                self._check_parser_version()
+            except sqlite3.Error as e2:
+                print(f"[CACHE] Не удалось восстановить кэш ({e2}) — кэш отключён для этого воркера")
+                self._disabled = True
+
+    def _recreate_cache_file(self) -> None:
+        """Удалить файл кэша (и WAL/SHM/journal-спутники), чтобы начать с чистого листа."""
+        for suffix in ('', '-wal', '-shm', '-journal'):
+            p = Path(str(self.cache_path) + suffix)
+            try:
+                p.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def _connect(self) -> sqlite3.Connection:
         """Открыть соединение с БД с таймаутом и WAL-режимом.
@@ -112,6 +140,8 @@ class MetadataCache:
         Returns (metadata_dict, content_hash) or (None, '') on miss/error.
         content_hash — SHA-256 первых 256 КБ содержимого (для поиска дубликатов).
         """
+        if self._disabled:
+            return None, ''
         try:
             stat = file_path.stat()
             current_mtime = stat.st_mtime
@@ -126,7 +156,7 @@ class MetadataCache:
                     metadata_json, cached_hash, content_hash = row
                     if self._calculate_hash(file_path) == cached_hash:
                         return json.loads(metadata_json), (content_hash or '')
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError, sqlite3.Error):
             pass
         return None, ''
 
@@ -147,18 +177,21 @@ class MetadataCache:
             file_hash = hashlib.md5(raw).hexdigest()
             content_hash = hashlib.sha256(raw[:_CONTENT_HASH_BYTES]).hexdigest()
 
-            with self._connect() as conn:
-                conn.execute(
-                    """INSERT OR REPLACE INTO file_metadata
-                       (file_path, file_hash, content_hash, mtime, metadata, cached_at)
-                       VALUES (?, ?, ?, ?, ?, ?)""",
-                    (str(file_path), file_hash, content_hash, stat.st_mtime,
-                     json.dumps(metadata), datetime.now().timestamp())
-                )
-                conn.commit()
-        except (OSError, sqlite3.OperationalError):
-            # Блокировка БД при параллельной записи — некритично,
-            # файл будет перечитан при следующем запуске.
+            if not self._disabled:
+                with self._connect() as conn:
+                    conn.execute(
+                        """INSERT OR REPLACE INTO file_metadata
+                           (file_path, file_hash, content_hash, mtime, metadata, cached_at)
+                           VALUES (?, ?, ?, ?, ?, ?)""",
+                        (str(file_path), file_hash, content_hash, stat.st_mtime,
+                         json.dumps(metadata), datetime.now().timestamp())
+                    )
+                    conn.commit()
+        except (OSError, sqlite3.Error):
+            # Блокировка/повреждение БД при параллельной записи — некритично,
+            # файл будет перечитан при следующем запуске. content_hash уже
+            # посчитан к этому моменту (не зависит от кэша), так что вызывающий
+            # код всё равно получает его для поиска дубликатов.
             pass
         return content_hash
 
