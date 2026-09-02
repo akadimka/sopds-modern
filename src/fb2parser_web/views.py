@@ -1744,16 +1744,11 @@ def _serialize_compiler_group(svc, g):
     kept_list = [str(p) for p in (g.kept_paths or [])]
 
     try:
-        vol_m = re.match(r'^(\d+)-(\d+)$', g.volume_range or '')
-        lo = int(vol_m.group(1)) if vol_m else 0
-        hi = int(vol_m.group(2)) if vol_m else 0
-        # Для cleanup_only групп g.books пуст (компилировать нечего, только удалить
-        # дубликаты старого предкомпилированного файла) — число томов берём из
-        # диапазона volume_range, а не из len(g.books), иначе получаем "в 0 книгах".
-        # См. cleanup_only-ветку compile_group() в fb2_compiler.py — та же формула.
-        n_vols = (hi - lo + 1) if vol_m else len(g.books)
-        suffix = svc._series_suffix(n_vols, lo, hi, g.part_count,
-                                     series_complete=g.series_complete)
+        # Единый источник с реальной сборкой (compile_group() в fb2_compiler.py)
+        # — раньше здесь была отдельная урезанная копия формулы суффикса,
+        # из-за чего превью могло показывать "Дилогия", а реальная сборка —
+        # "Дилогия в 8 книгах" (2 арки, каждая — уже готовая тетралогия).
+        suffix, _lo, _hi = svc.compute_group_suffix(g)
         clean_s = FB2CompilerService._clean_series_name(g.series)
         safe_a = re.sub(r'[\\/:*?"<>|]', '_', g.author)
         safe_s = re.sub(r'[/:*?"<>|]', '_', FB2CompilerService._series_to_display(clean_s))

@@ -3053,6 +3053,150 @@ class FB2CompilerService:
         # Есть пробелы — не создаём ложный диапазон, возвращаем пустую строку
         return ''
 
+    def compute_group_suffix(self, group: 'CompilationGroup') -> Tuple[str, int, int]:
+        """Вычислить суффикс имени файла компиляции ("Дилогия в 8 книгах" и
+        т.п.) и верхнеуровневый диапазон позиций (top_lo, top_hi).
+
+        Единственный источник этой логики — раньше `compile_group()` и
+        веб-превью группы (`_serialize_compiler_group()` в
+        fb2parser_web/views.py) считали суффикс каждый по-своему, из-за
+        чего превью до компиляции могло показывать другое (более бедное)
+        имя, чем реальный результат: превью — "Мир вечного (Дилогия)",
+        реальная сборка — "Мир вечного (Дилогия в 8 книгах)" (2 арки,
+        каждая — уже готовая тетралогия из 4 книг). Теперь оба места
+        зовут этот метод, разойтись физически не могут.
+
+        НЕ применяет `_suppress_redundant_suffix` — это требует
+        `safe_series`, вычисление которого специфично для вызывающей
+        стороны (реальная сборка использует `_clean_series_name`, веб-превью
+        может отличаться).
+        """
+        if not group.books:
+            # cleanup_only-группа: книг для интроспекции (arc-слов и т.п.)
+            # нет — берём диапазон из volume_range, как и в собственной
+            # cleanup_only-ветке compile_group() (переименование уже
+            # существующего kept_paths-файла).
+            vol_m = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', group.volume_range or '')
+            if vol_m:
+                lo, hi = int(vol_m.group(1)), int(vol_m.group(2))
+                n_volumes = hi - lo + 1
+            else:
+                lo = hi = 0
+                n_volumes = 0
+            suffix = self._series_suffix(
+                n_volumes, lo, hi, 0,
+                series_complete=getattr(group, 'series_complete', True),
+            )
+            return suffix, lo, hi
+
+        part_count = getattr(group, 'part_count', 0)
+        top_lo, top_hi, n_volumes, has_subseries, n_top_arcs = self._run_stats(group.books)
+
+        # Позиция run'а идёт в суффикс: полная серия → слово, частичная → «т. N-M».
+        # Если группа содержит подсерии, слово выбирается по числу верхних дуг (n_top_arcs),
+        # а не по общему числу книг, чтобы «Пенталогия» (5 дуг) + «в 9 книгах» (9 файлов).
+        # Если пользователь исключил книги — серия неполная, всегда т. N-M
+
+        # Для компиляций из arc-позиционных предкомпиляций вычисляем суммарное
+        # число томов по сервисным словам (Дилогия→2, Трилогия→3 и т.д.).
+        # Пример: Сафари 1 (Дилогия) + Сафари 2 (Трилогия) + Сафари 3 (Трилогия)
+        # → arc_count=3, total_books=8 → «Трилогия в 8 книгах».
+        _arc_part_count = 0
+        # Arc-unit: книга либо является arc-point предкомпиляцией (lo==hi>0),
+        # либо занимает ровно одну плоскую arc-позицию (sk=(0,N,0,0)).
+        # Второй случай позволяет считать «в N книгах» даже когда одна дуга
+        # представлена одиночным файлом без сервисного слова в имени.
+        def _is_arc_unit(b: 'CompilationBook') -> bool:
+            lo, hi = self._precompiled_range(b, group.series)
+            if lo == hi > 0:
+                return True
+            return (b.sort_key[0] == 0 and b.sort_key[1] > 0
+                    and b.sort_key[2] == 0)
+
+        _all_arc_point = bool(group.books) and all(_is_arc_unit(b) for b in group.books)
+        if _all_arc_point:
+            _swords_idx = {kw.lower(): idx
+                           for idx, kw in enumerate(self._SERIES_WORDS) if kw}
+            _swords_pat = re.compile(
+                '|'.join(re.escape(kw) for kw in _swords_idx),
+                re.IGNORECASE | re.UNICODE,
+            )
+            for b in group.books:
+                lo, hi = self._precompiled_range(b, group.series)
+                if lo == hi > 0:
+                    # Arc-point предкомпиляция: считаем по сервисному слову/диапазону
+                    _st = (b.abs_path.stem + ' ' + (b.record.file_title or '')).lower()
+                    _m = _swords_pat.search(_st)
+                    if _m:
+                        _arc_part_count += _swords_idx[_m.group(0).lower()]
+                    else:
+                        _rng_in_stem = re.search(r'(\d+)\s*[-–—]\s*(\d+)', b.abs_path.stem)
+                        if _rng_in_stem:
+                            _r_lo, _r_hi = int(_rng_in_stem.group(1)), int(_rng_in_stem.group(2))
+                            if _r_hi > _r_lo and _r_hi - _r_lo < 50:
+                                _arc_part_count += _r_hi - _r_lo + 1
+                            else:
+                                _arc_part_count += 1
+                        else:
+                            _arc_part_count += 1
+                else:
+                    # Одиночная книга на плоской arc-позиции → 1 книга
+                    _arc_part_count += 1
+            if _arc_part_count <= n_volumes:
+                _arc_part_count = 0  # не имеет смысла если не больше числа arc'ов
+
+        # Проверяем пробелы в top-level arc-позициях.
+        # Для предкомпиляций используем volume_label («1-2», «3-4»…): если hi+1 >= lo
+        # следующего диапазона — пробела нет. Иначе проверяем по позициям.
+        def _vl_hi(b: 'CompilationBook') -> int:
+            rng = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
+            return int(rng.group(2)) if rng else b.sort_key[1]
+
+        _arc_books_sorted = sorted(
+            [b for b in group.books if b.sort_key[0] == 0 and b.sort_key[1]],
+            key=lambda b: b.sort_key[1],
+        )
+        if len(_arc_books_sorted) < 2:
+            _arc_has_gaps = False
+        else:
+            _arc_has_gaps = any(
+                _arc_books_sorted[i].sort_key[1] > _vl_hi(_arc_books_sorted[i - 1]) + 1
+                for i in range(1, len(_arc_books_sorted))
+            )
+
+        _sc_compile = not (group.excluded_paths or group.auto_excluded_paths) and getattr(group, 'series_complete', True)
+        _has_exclusions = bool(group.excluded_paths or group.auto_excluded_paths)
+        # Arc-point группы с неполной серией → «ч. N в K книгах»
+        _arc_partial = _all_arc_point and _arc_part_count > 0 and not getattr(group, 'series_complete', True)
+        if _has_exclusions:
+            _lbl = 'ч.' if (has_subseries and n_top_arcs and n_top_arcs >= 2) else 'т.'
+            suffix = f'{_lbl} {top_lo}' if top_lo == top_hi else f'{_lbl} {top_lo}-{top_hi}'
+        elif _arc_has_gaps:
+            _total = _arc_part_count or n_volumes
+            suffix = f'в {_total} книгах'
+        elif _arc_partial:
+            _lbl = 'ч.'
+            _base = f'{_lbl} {top_lo}' if top_lo == top_hi else f'{_lbl} {top_lo}-{top_hi}'
+            suffix = f'{_base} в {_arc_part_count} книгах'
+        elif has_subseries and n_top_arcs and n_top_arcs >= 2 and not _all_arc_point:
+            # Слияние нескольких "сырых" (не предкомпилированных) дуг
+            # в одну книгу серии — по договорённости просто "в N книгах"
+            # (N = реальное число физических файлов), без словесной формы.
+            suffix = f'в {len(group.books)} книгах'
+        elif has_subseries and n_top_arcs and n_top_arcs >= 2:
+            suffix = self._series_suffix(n_top_arcs, top_lo, top_hi,
+                                         _arc_part_count or n_volumes, use_parts=True,
+                                         series_complete=_sc_compile)
+        elif has_subseries and n_top_arcs == 1 and n_volumes > 1 and top_lo > 1:
+            # Одна дуга внутри многодуговой серии, arc-позиция > 1:
+            # «ч. 2 в 3 книгах» — показывает и позицию в родителе, и объём.
+            suffix = f'ч. {top_lo} в {n_volumes} книгах'
+        else:
+            suffix = self._series_suffix(n_volumes, top_lo, top_hi,
+                                         _arc_part_count or part_count,
+                                         series_complete=_sc_compile)
+        return suffix, top_lo, top_hi
+
     # ------------------------------------------------------------------
     # Компиляция
     # ------------------------------------------------------------------
@@ -3262,119 +3406,15 @@ class FB2CompilerService:
             # --- Статистика run'а и именование ---
             clean_series = self._clean_series_name(group.series)
             safe_author = re.sub(r'[\\/:*?"<>|]', '_', group.author)
-
-            part_count = getattr(group, 'part_count', 0)
-            top_lo, top_hi, n_volumes, has_subseries, n_top_arcs = self._run_stats(group.books)
-
             safe_series = re.sub(r'[/:*?"<>|]', '_', self._series_to_display(clean_series))
 
             # --- Папка назначения: явная или рядом с исходниками ---
             dest_dir = output_dir if output_dir is not None else group.books[0].abs_path.parent
 
-            # --- Суффикс и XML ---
-            # Позиция run'а идёт в суффикс: полная серия → слово, частичная → «т. N-M».
-            # Если группа содержит подсерии, слово выбирается по числу верхних дуг (n_top_arcs),
-            # а не по общему числу книг, чтобы «Пенталогия» (5 дуг) + «в 9 книгах» (9 файлов).
-            # Если пользователь исключил книги — серия неполная, всегда т. N-M
-
-            # Для компиляций из arc-позиционных предкомпиляций вычисляем суммарное
-            # число томов по сервисным словам (Дилогия→2, Трилогия→3 и т.д.).
-            # Пример: Сафари 1 (Дилогия) + Сафари 2 (Трилогия) + Сафари 3 (Трилогия)
-            # → arc_count=3, total_books=8 → «Трилогия в 8 книгах».
-            _arc_part_count = 0
-            # Arc-unit: книга либо является arc-point предкомпиляцией (lo==hi>0),
-            # либо занимает ровно одну плоскую arc-позицию (sk=(0,N,0,0)).
-            # Второй случай позволяет считать «в N книгах» даже когда одна дуга
-            # представлена одиночным файлом без сервисного слова в имени.
-            def _is_arc_unit(b: 'CompilationBook') -> bool:
-                lo, hi = self._precompiled_range(b, group.series)
-                if lo == hi > 0:
-                    return True
-                return (b.sort_key[0] == 0 and b.sort_key[1] > 0
-                        and b.sort_key[2] == 0)
-
-            _all_arc_point = bool(group.books) and all(_is_arc_unit(b) for b in group.books)
-            if _all_arc_point:
-                _swords_idx = {kw.lower(): idx
-                               for idx, kw in enumerate(self._SERIES_WORDS) if kw}
-                _swords_pat = re.compile(
-                    '|'.join(re.escape(kw) for kw in _swords_idx),
-                    re.IGNORECASE | re.UNICODE,
-                )
-                for b in group.books:
-                    lo, hi = self._precompiled_range(b, group.series)
-                    if lo == hi > 0:
-                        # Arc-point предкомпиляция: считаем по сервисному слову/диапазону
-                        _st = (b.abs_path.stem + ' ' + (b.record.file_title or '')).lower()
-                        _m = _swords_pat.search(_st)
-                        if _m:
-                            _arc_part_count += _swords_idx[_m.group(0).lower()]
-                        else:
-                            _rng_in_stem = re.search(r'(\d+)\s*[-–—]\s*(\d+)', b.abs_path.stem)
-                            if _rng_in_stem:
-                                _r_lo, _r_hi = int(_rng_in_stem.group(1)), int(_rng_in_stem.group(2))
-                                if _r_hi > _r_lo and _r_hi - _r_lo < 50:
-                                    _arc_part_count += _r_hi - _r_lo + 1
-                                else:
-                                    _arc_part_count += 1
-                            else:
-                                _arc_part_count += 1
-                    else:
-                        # Одиночная книга на плоской arc-позиции → 1 книга
-                        _arc_part_count += 1
-                if _arc_part_count <= n_volumes:
-                    _arc_part_count = 0  # не имеет смысла если не больше числа arc'ов
-
-            # Проверяем пробелы в top-level arc-позициях.
-            # Для предкомпиляций используем volume_label («1-2», «3-4»…): если hi+1 >= lo
-            # следующего диапазона — пробела нет. Иначе проверяем по позициям.
-            def _vl_hi(b: 'CompilationBook') -> int:
-                rng = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
-                return int(rng.group(2)) if rng else b.sort_key[1]
-
-            _arc_books_sorted = sorted(
-                [b for b in group.books if b.sort_key[0] == 0 and b.sort_key[1]],
-                key=lambda b: b.sort_key[1],
-            )
-            if len(_arc_books_sorted) < 2:
-                _arc_has_gaps = False
-            else:
-                _arc_has_gaps = any(
-                    _arc_books_sorted[i].sort_key[1] > _vl_hi(_arc_books_sorted[i - 1]) + 1
-                    for i in range(1, len(_arc_books_sorted))
-                )
-
-            _sc_compile = not (group.excluded_paths or group.auto_excluded_paths) and getattr(group, 'series_complete', True)
-            _has_exclusions = bool(group.excluded_paths or group.auto_excluded_paths)
-            # Arc-point группы с неполной серией → «ч. N в K книгах»
-            _arc_partial = _all_arc_point and _arc_part_count > 0 and not getattr(group, 'series_complete', True)
-            if _has_exclusions:
-                _lbl = 'ч.' if (has_subseries and n_top_arcs and n_top_arcs >= 2) else 'т.'
-                suffix = f'{_lbl} {top_lo}' if top_lo == top_hi else f'{_lbl} {top_lo}-{top_hi}'
-            elif _arc_has_gaps:
-                _total = _arc_part_count or n_volumes
-                suffix = f'в {_total} книгах'
-            elif _arc_partial:
-                _lbl = 'ч.'
-                _base = f'{_lbl} {top_lo}' if top_lo == top_hi else f'{_lbl} {top_lo}-{top_hi}'
-                suffix = f'{_base} в {_arc_part_count} книгах'
-            elif has_subseries and n_top_arcs and n_top_arcs >= 2 and not _all_arc_point:
-                # Слияние нескольких "сырых" (не предкомпилированных) дуг
-                # в одну книгу серии — по договорённости просто "в N книгах"
-                # (N = реальное число физических файлов), без словесной формы.
-                suffix = f'в {len(group.books)} книгах'
-            elif has_subseries and n_top_arcs and n_top_arcs >= 2:
-                suffix = self._series_suffix(n_top_arcs, top_lo, top_hi,
-                                             _arc_part_count or n_volumes, use_parts=True,
-                                             series_complete=_sc_compile)
-            elif has_subseries and n_top_arcs == 1 and n_volumes > 1 and top_lo > 1:
-                # Одна дуга внутри многодуговой серии, arc-позиция > 1:
-                # «ч. 2 в 3 книгах» — показывает и позицию в родителе, и объём.
-                suffix = f'ч. {top_lo} в {n_volumes} книгах'
-            else:
-                suffix = self._series_suffix(n_volumes, top_lo, top_hi,
-                                             _arc_part_count or part_count,
-                                             series_complete=_sc_compile)
+            # --- Суффикс и диапазон томов ---
+            # Общая логика с _serialize_compiler_group() в fb2parser_web/views.py
+            # (веб-превью группы до компиляции) — см. compute_group_suffix().
+            suffix, top_lo, top_hi = self.compute_group_suffix(group)
             # Реальный диапазон томов для <sequence number> в метаданных.
             # top_lo=0 означает что сортировка через sort_key[2] (подсерии без числа в корне).
             _eff_lo = top_lo if top_lo else 1
