@@ -372,11 +372,17 @@ class SeriesProcessor:
 
             # Требуем строгое большинство: консенсус-автор должен занимать ≥50% high-priority записей.
             # Это блокирует сборники, где десятки авторов и нет доминирующего.
+            # Дополнительно требуем ≥2 high-priority голосов: при ОДНОМ high-priority
+            # файле "большинство" (100% от 1) проходит тривиально, из-за чего один
+            # случайно правильно определённый автор навязывался всей папке-антологии
+            # с десятками разных настоящих авторов (баг: 45-файловая коллекция
+            # "Скандинавская линия «НордБук»" с 33 разными metadata-авторами вся
+            # получила автора единственного high-priority файла).
             total_hp = len(high_priority) if high_priority else len(all_sourced)
             if total_hp > 0:
                 consensus_share = author_counts[consensus_author] / total_hp
-                if consensus_share < 0.5:
-                    continue  # нет большинства — не применяем
+                if consensus_share < 0.5 or (high_priority and len(high_priority) < 2):
+                    continue  # нет большинства, либо слишком мало голосов для доверия
 
             # Применить ко всем файлам с низкоприоритетным или пустым источником
             for record in group_records:

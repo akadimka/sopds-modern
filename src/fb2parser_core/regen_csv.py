@@ -1139,6 +1139,13 @@ class RegenCSVService:
             for prefix in prefixes:
                 if s.startswith(prefix):
                     remainder = s[len(prefix):]
+                    # Если префикс сам открывает кавычку («Серия - «»),
+                    # парная закрывающая » остаётся висеть в хвосте после
+                    # обрезки — обрезаем и её. Пример: "Серия - «Колычев.
+                    # Лучшая криминальная драма»" без этой правки оставался
+                    # с висячей ».
+                    if prefix.rstrip().endswith('«') and remainder.rstrip().endswith('»'):
+                        remainder = remainder.rstrip()[:-1].rstrip()
                     record.proposed_series = remainder
                     s = remainder
                     stripped += 1
