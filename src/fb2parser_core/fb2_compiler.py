@@ -998,6 +998,45 @@ class FB2CompilerService:
                 regular_count = len(regular_books)
                 # Берём предкомпиляцию с максимальным охватом
                 best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
+
+                # Защита от урезанных изданий: широкий диапазон сам по себе не
+                # значит "больше контента" — более старая/сокращённая редакция
+                # может номинально покрывать томы 1-5, но реально содержать
+                # меньше текста, чем более новые переиздания по частям.
+                # Пример (реальный): "Странник. Пенталогия" (2010, ~4.3 МБ,
+                # тома 1-5) выигрывала у "Странник 1-3" (2021) + "Академик
+                # (Странник 4-5)" (2022) — вместе ~7.5 МБ, почти вдвое больше —
+                # хотя выбиралась как "лучшая" только по ширине диапазона.
+                # Если другие предкомпиляции ТОЧНО (без пропусков/наложений)
+                # замощают тот же диапазон и суммарно заметно крупнее —
+                # считаем best_pre подозрительно неполным и заменяем его.
+                _others = [e for e in precompiled if e[0] is not best_pre]
+                _tiling = sorted(_others, key=lambda t: t[1])
+                _is_exact_tiling = (
+                    bool(_tiling)
+                    and _tiling[0][1] == best_lo
+                    and _tiling[-1][2] == best_hi
+                    and all(_tiling[i][2] + 1 == _tiling[i + 1][1] for i in range(len(_tiling) - 1))
+                )
+                if _is_exact_tiling:
+                    def _sz(b: 'CompilationBook') -> int:
+                        try:
+                            return b.abs_path.stat().st_size
+                        except OSError:
+                            return 0
+                    _best_size = _sz(best_pre)
+                    _tiling_size = sum(_sz(e[0]) for e in _tiling)
+                    if _best_size < _tiling_size * 0.7:
+                        self._log(
+                            f"  ⚠ {best_pre.abs_path.name} покрывает {best_lo}-{best_hi} шире всех, "
+                            f"но заметно меньше по размеру суммы {[e[0].abs_path.name for e in _tiling]} "
+                            f"({_best_size // 1024} КБ vs {_tiling_size // 1024} КБ) — вероятно, урезанное "
+                            f"издание. Предпочитаем более полные части."
+                        )
+                        duplicate_paths.append(best_pre.abs_path)
+                        precompiled = _others
+                        best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
+
                 best_count = best_hi - best_lo + 1
 
                 # Фаза 1: дедуплицировать контент-дубли (файлы с одинаковым диапазоном).
