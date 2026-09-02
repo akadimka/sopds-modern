@@ -5,13 +5,16 @@
 поэтому проверяется на синтетических BookRecord вместо
 tests/data/regen_library.
 """
-from fb2parser_core.author_normalizer_extended import BookRecord
+from fb2parser_core.passes.pass1_read_files import BookRecord
 from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_core.series_processor import SeriesProcessor
 from fb2parser_web.fb2parser_bridge import _config_path
 
 
 def _rec(path, meta_author, proposed_author, author_source, **kw):
+    kw.setdefault("metadata_series", "")
+    kw.setdefault("proposed_series", "")
+    kw.setdefault("series_source", "")
     return BookRecord(
         file_path=path, file_title="T", metadata_authors=meta_author,
         proposed_author=proposed_author, author_source=author_source, **kw,
@@ -69,6 +72,37 @@ class TestAuthorConsensusLegitimateCase:
         sp.apply_author_consensus(records)
         assert records[2].proposed_author == "Иванов Петр"
         assert records[2].author_source == "consensus"
+
+
+class TestSeriesConsensusFolderPathLeak:
+    """extracted_series_candidate по докстрингу в pass1_read_files.py —
+    "серия из имени файла", путей папок в ней быть не должно. Но найдена
+    реальная запись, где туда попал путь с именем автора-папки
+    ("Данильченко-Олег\\Имперский вояж" вместо чистого "Имперский
+    вояж") — из-за чего этот "грязный" текст мог навязываться другим
+    файлам той же серии через apply_series_consensus(), физически
+    разрывая одну серию на несколько при компиляции (тот же класс
+    бага, что чинили для Эльтеррус/"Отзвуки серебряного ветра").
+
+    NB: этот тест подтверждает, что при описанном входе результат
+    консенсуса чист ("Имперский вояж"), но НЕ воспроизводит byte-в-byte
+    исходный триггер бага на реальных файлах — см. docs/quality-roadmap.md,
+    пункт 5, баг №3, для деталей и незавершённой части разбора.
+    """
+
+    def test_folder_path_stripped_before_consensus_propagation(self):
+        sp = SeriesProcessor(_config_path())
+        records = [
+            _rec("СЕРИЯ.LitRPG\\...\\Данильченко-Олег\\Имперский вояж\\1. Из варяг в небо.fb2",
+                 "Данильченко Олег", "Данильченко Олег", "folder_dataset",
+                 proposed_series="Имперский вояж", series_source="folder_dataset",
+                 extracted_series_candidate="Данильченко-Олег\\Имперский вояж"),
+            _rec("Боевая фантастика. Коллекция\\Данильченко. Цикл «Имперский вояж».fb2",
+                 "Данильченко Олег", "Данильченко Олег", "metadata"),
+        ]
+        sp.apply_series_consensus(records)
+        assert records[1].proposed_series == "Имперский вояж"
+        assert "\\" not in records[1].proposed_series
 
 
 class TestSeriesFolderPrefixTrailingQuote:

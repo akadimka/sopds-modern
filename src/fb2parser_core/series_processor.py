@@ -430,7 +430,17 @@ class SeriesProcessor:
 
             for record in author_records:
                 if record.extracted_series_candidate:
-                    normalized = self.normalizer.normalize_series_for_consensus(record.extracted_series_candidate)
+                    candidate = record.extracted_series_candidate
+                    # extracted_series_candidate — "серия из имени файла" (см. docstring
+                    # поля в pass1_read_files.py), путей папок в ней быть не должно. Но
+                    # некоторые пути извлечения (pass2_series_filename.py) сохраняют сюда
+                    # СЫРОЙ кандидат ДО очистки от имени автора-папки, из-за чего
+                    # backslash-артефакт («Данильченко-Олег\Имперский вояж» вместо чистого
+                    # «Имперский вояж») потом навязывался консенсусом другим файлам того
+                    # же автора в СОВСЕМ других папках. Берём только хвост после '\\'.
+                    if '\\' in candidate:
+                        candidate = candidate.rsplit('\\', 1)[-1].strip()
+                    normalized = self.normalizer.normalize_series_for_consensus(candidate)
                     if normalized not in series_base_map:
                         series_base_map[normalized] = []
                     series_base_map[normalized].append(record)
