@@ -1,13 +1,16 @@
 """Регрессионные тесты для консенсус-логики автора/серии
 (`series_processor.SeriesProcessor`, `regen_csv.RegenCSVService`
-пост-чеки) — обнаружены на реальной библиотеке пользователя
-(см. docs/quality-roadmap.md, пункт 5), fb2-файлы недоступны локально,
-поэтому проверяется на синтетических BookRecord вместо
-tests/data/regen_library.
+пост-чеки, `passes.pass4_consensus.Pass4Consensus`) — обнаружены на
+реальной библиотеке пользователя (см. docs/quality-roadmap.md, пункт 5),
+fb2-файлы недоступны локально, поэтому проверяется на синтетических
+BookRecord вместо tests/data/regen_library.
 """
+from fb2parser_core.logger import Logger
 from fb2parser_core.passes.pass1_read_files import BookRecord
+from fb2parser_core.passes.pass4_consensus import Pass4Consensus
 from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_core.series_processor import SeriesProcessor
+from fb2parser_core.settings_manager import SettingsManager
 from fb2parser_web.fb2parser_bridge import _config_path
 
 
@@ -103,6 +106,58 @@ class TestSeriesConsensusFolderPathLeak:
         sp.apply_series_consensus(records)
         assert records[1].proposed_series == "Имперский вояж"
         assert "\\" not in records[1].proposed_series
+
+
+class TestSeriesSuffixCorrectionFolderPathLeak:
+    """Подтверждено на реальных файлах ("Поселягин Владимир\\Криминал",
+    live-проверка на машине с доступом к \\\\turnkey\\Docs\\Books —
+    см. docs/quality-roadmap.md, пункт 5, баг №3): изначальный фикс
+    apply_series_consensus() (TestSeriesConsensusFolderPathLeak выше) не
+    останавливал утечку — на реальной библиотеке она шла через ДРУГОЙ,
+    независимый механизм: "SERIES SUFFIX CORRECTION" в
+    Pass4Consensus.execute() (pass4_consensus.py).
+
+    На момент, когда этот блок выполняется, proposed_series
+    folder_dataset-записи из вложенной "Автор\\Серия" структуры
+    ("...\\Поселягин-Владимир\\Криминал\\1. Дон.fb2") ещё содержит сырой
+    "Поселягин-Владимир\\Криминал" — POST-CHECK в regen_csv.py, который
+    его отрезает, выполняется ПОЗЖЕ, после Pass 4. SUFFIX CORRECTION
+    считает этот сырой длинный вариант "полной" версией серии автора и
+    "исправляет" соседний чистый filename-файл ("Поселягин Владимир -
+    Криминал 1. Дон.fb2", proposed_series="Криминал") до грязного
+    "Поселягин-Владимир\\Криминал", т.к. короткое "криминал" оказывается
+    суффиксом длинного (endswith-проверка).
+
+    Live-подтверждение (293 реальных файла автора + вся папка
+    "Серия - «Боевая фантастика»(ЛенИздат)" as-is, 727 файлов/232
+    автора — без фильтрации по автору, иначе multi-author guard в
+    pass2_series_filename.py не даёт репрезентативной картины): без
+    фикса — 11 протёкших записей (Криминал, Гаврош, Зург, Освобожденный,
+    Ремонтник, Собиратель, Сопротивленец), с фиксом — 0.
+    """
+
+    def test_raw_folder_dataset_series_not_used_as_suffix_correction_source(self):
+        folder_dataset_path = (
+            "СЕРИЯ.LitRPG\\Hеофициальная серия книг (разные издательства)"
+            "\\Поселягин-Владимир\\Криминал\\1. Дон.fb2"
+        )
+        clean_filename_path = (
+            "Серия - «Боевая фантастика»(ЛенИздат)"
+            "\\Поселягин Владимир - Криминал 1. Дон.fb2"
+        )
+        records = [
+            # Сырое, ещё не вычищенное POST-CHECK'ом состояние folder_dataset-записи.
+            _rec(folder_dataset_path, "Владимир Геннадьевич Поселягин", "Поселягин Владимир",
+                 "folder_dataset", proposed_series="Поселягин-Владимир\\Криминал",
+                 series_source="folder_dataset"),
+            # Чистая filename-запись той же серии в другой папке.
+            _rec(clean_filename_path, "Владимир Геннадьевич Поселягин", "Поселягин Владимир",
+                 "filename", proposed_series="Криминал", series_source="filename"),
+        ]
+        Pass4Consensus(Logger(), settings=SettingsManager(_config_path())).execute(records)
+        clean_rec = next(r for r in records if r.file_path == clean_filename_path)
+        assert clean_rec.proposed_series == "Криминал"
+        assert "\\" not in clean_rec.proposed_series
 
 
 class TestSeriesFolderPrefixTrailingQuote:

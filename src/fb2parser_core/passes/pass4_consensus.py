@@ -1091,9 +1091,17 @@ class Pass4Consensus:
             confirmed_bases: dict = {}
             for rec in grp:
                 if rec.series_source in STRONG_SERIES_SOURCES and rec.extracted_series_candidate:
-                    base = self._normalize_series_for_consensus(rec.extracted_series_candidate)
+                    # extracted_series_candidate не должен содержать путь папки (см. docstring
+                    # в pass1_read_files.py), но некоторые пути извлечения сохраняют сюда сырой
+                    # кандидат до очистки от имени автора-папки (тот же баг, что чинили в
+                    # series_processor.apply_series_consensus() — здесь дублирующая логика).
+                    # Берём только хвост после последнего '\\'.
+                    _candidate = rec.extracted_series_candidate
+                    if '\\' in _candidate:
+                        _candidate = _candidate.rsplit('\\', 1)[-1].strip()
+                    base = self._normalize_series_for_consensus(_candidate)
                     if base and base not in confirmed_bases:
-                        confirmed_bases[base] = rec.proposed_series or rec.extracted_series_candidate
+                        confirmed_bases[base] = rec.proposed_series or _candidate
 
             if not confirmed_bases:
                 continue
@@ -1134,11 +1142,19 @@ class Pass4Consensus:
         suffix_fix_count = 0
         for author, grp in _auth_groups.items():
             # Собираем все подтверждённые полные серии
+            # rec.proposed_series для folder_dataset-записей на этом этапе иногда ещё
+            # содержит сырой "Автор\Серия" (папочная иерархия) — окончательно от него
+            # избавляется только POST-CHECK в regen_csv.py, который выполняется ПОСЛЕ
+            # Pass 4. Если не отфильтровать такие значения здесь, длинный "грязный"
+            # вариант ("Поселягин-Владимир\Криминал") попадёт в full_series и заразит
+            # им соседние filename-записи с чистым "Криминал" как будто это она —
+            # обрезанный суффикс полного имени серии.
             full_series: list = sorted(
                 {
                     rec.proposed_series
                     for rec in grp
                     if rec.proposed_series and rec.series_source in STRONG_SERIES_SOURCES
+                    and '\\' not in rec.proposed_series
                 },
                 key=len, reverse=True  # длинные первыми
             )
