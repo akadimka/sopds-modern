@@ -1946,7 +1946,8 @@ class FB2CompilerService:
         try:
             if not abs_path.exists():
                 return 0, 0
-            raw = abs_path.read_bytes()[:65536]
+            with abs_path.open('rb') as f:
+                raw = f.read(65536)
             try:
                 text = raw.decode('utf-8', errors='replace')
             except Exception:
@@ -2796,7 +2797,8 @@ class FB2CompilerService:
         try:
             if not path.exists():
                 return None
-            chunk = path.read_bytes()[:8192]
+            with path.open('rb') as f:
+                chunk = f.read(8192)
             try:
                 text = chunk.decode('utf-8', errors='replace')
             except Exception:
@@ -2833,9 +2835,9 @@ class FB2CompilerService:
         try:
             if not path.exists():
                 return None
-            raw = path.read_bytes()
             # Минимальное чтение — только первые 8 КБ (метаданные в начале)
-            chunk = raw[:8192]
+            with path.open('rb') as f:
+                chunk = f.read(8192)
             try:
                 text = chunk.decode('utf-8', errors='replace')
             except Exception:

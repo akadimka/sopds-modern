@@ -43,7 +43,8 @@ def _maybe_swap_via_metadata(folder: Path, author_name: str) -> str:
                 continue
             checked += 1
             try:
-                raw = item.read_bytes()[:65536]
+                with item.open('rb') as f:
+                    raw = f.read(65536)
                 try:
                     text = raw.decode('utf-8')
                 except UnicodeDecodeError:
