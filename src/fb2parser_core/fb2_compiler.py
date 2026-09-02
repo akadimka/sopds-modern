@@ -231,17 +231,28 @@ class FB2CompilerService:
             n_volumes = len({b.sort_key[1] for b in level0})
         else:
             # Диапазоны считаем через объединение множеств (чтобы не задваивать пересечения).
-            # Индивидуальные книги считаем по +1 — у них нет пересечений после dedup.
+            # Индивидуальные книги с известной позицией (sort_key[1]) добавляем В ТО ЖЕ
+            # множество под этой позицией — иначе два разных файла на одной и той же
+            # позиции (например дубль/опечатка нумерации: "09. Последний бог.fb2" и
+            # "09.Проклятие королей.fb2" — оба sort_key[1]=9) считались бы как 2 разных
+            # тома вместо одного, раздувая "в N книгах" сверх реального числа позиций
+            # (реальная компиляция дедуплицирует такие коллизии через covered_hi —
+            # см. compile_group() — а этот подсчёт должен давать тот же результат).
+            # Книги без определённой позиции (sort_key[1]==0) по-прежнему считаем
+            # каждую отдельно — для них дедуплицировать не по чему.
             _range_covered: set = set()
-            _individual = 0
+            _next_unique = -1
             for b in level0:
                 vl = (b.volume_label or '').strip()
                 m = _RNG.match(vl)
                 if m:
                     _range_covered.update(range(int(m.group(1)), int(m.group(2)) + 1))
+                elif b.sort_key[1]:
+                    _range_covered.add(b.sort_key[1])
                 else:
-                    _individual += 1
-            n_volumes = len(_range_covered) + _individual
+                    _range_covered.add(_next_unique)
+                    _next_unique -= 1
+            n_volumes = len(_range_covered)
 
         # Для групп с подсериями (has_subseries=True) определяем число верхних дуг —
         # различных значений sort_key[1]. Именно они определяют слово «Пенталогия» и т.п.,
