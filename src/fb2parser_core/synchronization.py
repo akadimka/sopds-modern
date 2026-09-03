@@ -478,13 +478,22 @@ class SynchronizationService:
         'сборник': None,
     }
 
-    def _classify_record(self, record) -> Tuple[str, set]:
+    def _classify_record(self, record) -> Tuple[str, set, bool]:
         """Классифицировать запись как компиляцию или одиночный том.
 
         Returns:
-            ('compilation', covered_volumes) | ('single', {volume_num}) | ('unknown', set())
+            ('compilation', covered_volumes, confident) | ('single', {volume_num}, True)
+            | ('unknown', set(), False)
             covered_volumes — set номеров томов, которые охватывает компиляция.
-            Пустой set означает «является компиляцией, но diапазон неизвестен».
+            Пустой set означает «является компиляцией, но диапазон неизвестен».
+            confident — True, если covered_volumes получен из ЯВНОГО числового
+            источника (series_number-диапазон, "(N-M)" в имени/заголовке, "Том N").
+            False — диапазон УГАДАН по ключевому слову ("трилогия"→{1,2,3}): у
+            двух РАЗНЫХ файлов одной серии/автора, оба классифицированных только
+            по слову, совпадающий guessed-диапазон НЕ доказывает, что это один и
+            тот же контент (в отличие от явного числового диапазона) — такие
+            records нельзя использовать как основание для удаления другого
+            файла как "дубликата" в _deduplicate_by_compilation().
         """
         sn = (getattr(record, 'series_number', '') or '').strip()
 
@@ -492,7 +501,7 @@ class SynchronizationService:
         range_m = re.match(r'^(\d+)\s*[-–]\s*(\d+)$', sn)
         if range_m:
             lo, hi = int(range_m.group(1)), int(range_m.group(2))
-            return 'compilation', set(range(lo, hi + 1))
+            return 'compilation', set(range(lo, hi + 1)), True
 
         stem = Path(record.file_path).stem.lower()
         title_lower = (record.file_title or '').lower()
@@ -502,34 +511,34 @@ class SynchronizationService:
         paren_range = re.search(r'\(\s*(\d+)\s*[-–]\s*(\d+)\s*\)', combined)
         if paren_range:
             lo, hi = int(paren_range.group(1)), int(paren_range.group(2))
-            return 'compilation', set(range(lo, hi + 1))
+            return 'compilation', set(range(lo, hi + 1)), True
 
         # Одиночный том — series_number — целое число (проверяем до эвристик по заголовку,
         # чтобы "Серия. Том N. Название" не ложно классифицировалось как компиляция)
         if sn and re.match(r'^\d+$', sn):
-            return 'single', {int(sn)}
+            return 'single', {int(sn)}, True
 
         # "Том N" / "том N" в заголовке или имени файла — явный признак одиночного тома
         tom_m = re.search(r'\bтом\s+(\d{1,3})\b', combined, re.IGNORECASE)
         if tom_m:
-            return 'single', {int(tom_m.group(1))}
+            return 'single', {int(tom_m.group(1))}, True
 
-        # Ключевые слова компиляции
+        # Ключевые слова компиляции — диапазон УГАДАН по слову, не подтверждён числами.
         for kw, count in self._COMPILATION_KEYWORDS.items():
             if kw in combined:
-                return 'compilation', set(range(1, count + 1)) if count else set()
+                return 'compilation', set(range(1, count + 1)) if count else set(), False
 
         # Несколько заголовков перечислены через ". " или ":" в file_title → компиляция
         title = record.file_title or ''
         if len(re.findall(r'\.\s+[А-ЯЁA-Z]', title)) >= 2:
-            return 'compilation', set()
+            return 'compilation', set(), False
 
         # Пробуем извлечь номер из паттерна "... N. Title" или "... - N. Title"
         num_m = re.search(r'(?:[-–\s])(\d{1,3})\.\s+[А-ЯЁA-Z]', Path(record.file_path).stem)
         if num_m:
-            return 'single', {int(num_m.group(1))}
+            return 'single', {int(num_m.group(1))}, True
 
-        return 'unknown', set()
+        return 'unknown', set(), False
 
     def _deduplicate_by_compilation(
         self,
@@ -569,9 +578,9 @@ class SynchronizationService:
         for (author, series), group in groups.items():
             classified = [(rec, self._classify_record(rec)) for rec in group]
 
-            compilations = [(rec, vols) for rec, (kind, vols) in classified if kind == 'compilation']
-            singles      = [(rec, vols) for rec, (kind, vols) in classified if kind == 'single']
-            unknowns     = [rec         for rec, (kind, _)    in classified if kind == 'unknown']
+            compilations = [(rec, vols, conf) for rec, (kind, vols, conf) in classified if kind == 'compilation']
+            singles      = [(rec, vols)       for rec, (kind, vols, _)    in classified if kind == 'single']
+            unknowns     = [rec               for rec, (kind, _, _)      in classified if kind == 'unknown']
 
             if not compilations:
                 # Нет компиляций — нечего дедублировать
@@ -582,7 +591,7 @@ class SynchronizationService:
             # известным диапазоном. Компиляции с неизвестным диапазоном в этом
             # покрытии не участвуют — см. пояснение у to_keep/to_delete ниже.
             covered: set = set()
-            for _, vols in compilations:
+            for _, vols, _conf in compilations:
                 if vols:
                     covered |= vols
 
@@ -590,8 +599,41 @@ class SynchronizationService:
                       f"{len(compilations)} компил., {len(singles)} одиночных, "
                       f"покрытие={sorted(covered) if covered else '?'}")
 
-            # Компиляции и неизвестные — всегда оставляем
-            to_keep.extend(rec for rec, _ in compilations)
+            # Компиляция-компиляцию тоже дедуплицируем: несколько диапазонных
+            # файлов одной серии (напр. "1-2", "3-4" рядом с уже готовым
+            # "1-4") иначе physически дублируют контент — оба файла
+            # переезжают в библиотеку как отдельные книги, хотя один
+            # полностью покрывает другой. Жадно: от большего диапазона к
+            # меньшему, оставляем компиляцию только если она добавляет
+            # НЕПОКРЫТЫЕ ранее позиции; компиляции с неизвестным диапазоном
+            # (vols пуст) всегда оставляем — не с чем сравнивать.
+            #
+            # ВАЖНО: участвуют в этом (и как "покрывающая", и как "покрытая"
+            # редуднантная") ТОЛЬКО confident-компиляции (диапазон из явного
+            # числа — series_number/"(N-M)"/"Том N"), НЕ угаданные по слову
+            # ("трилогия"→{1,2,3}). Найдено на реальном случае: три РАЗНЫХ
+            # файла серии "Волжане" (Архипов) — "Поветлужье (трилогия)",
+            # "Волжане (Волжане. Трилогия)" (sn="1-3", confident), "Цикл
+            # «Волжане»" — все дают guessed/явный диапазон {1,2,3}, но
+            # совпадение guessed-диапазона по слову НЕ доказывает, что это
+            # тот же контент (в отличие от явного числового диапазона, как у
+            # Рэйша: "01-02"+"03-04" content-идентичны файлу "1-4"). Жадное
+            # удаление по одному лишь совпадению guessed-диапазона рисковало
+            # необратимо удалить неточно опознанные, но самостоятельные файлы.
+            _confident = [(rec, vols) for rec, vols, conf in compilations if conf]
+            _unconfident_recs = [rec for rec, vols, conf in compilations if not conf]
+            _by_size = sorted(_confident, key=lambda p: -len(p[1]))
+            _covered_so_far: set = set()
+            for rec, vols in _by_size:
+                if vols and vols.issubset(_covered_so_far):
+                    self._log(f"    ✗ УДАЛИТЬ (компиляция): {Path(rec.file_path).name} "
+                              f"(тома {sorted(vols)} ⊆ {sorted(_covered_so_far)})")
+                    to_delete.append(rec)
+                    total_deleted += 1
+                else:
+                    _covered_so_far |= vols
+                    to_keep.append(rec)
+            to_keep.extend(_unconfident_recs)
             to_keep.extend(unknowns)
 
             for rec, vols in singles:
@@ -711,25 +753,28 @@ class SynchronizationService:
         # Обрабатываем такой случай веткой ниже (одиночные/неопределённые) —
         # там имя строится из серии+названия или просто названия книги, а не
         # из диапазона томов, поэтому коллизий не даёт.
+        # ВАЖНО: суффикс НЕ строится здесь из "своего" covered_volumes этой
+        # записи — на момент этого шага соседние compilation-записи той же
+        # серии (другие диапазоны) ещё не слиты в один физический файл (это
+        # делает отдельный, более поздний шаг — auto_compile_library() через
+        # find_groups()/compile_group(), у которого есть ПОЛНАЯ картина всех
+        # томов серии). Если считать суффикс здесь по локальному диапазону
+        # ОДНОЙ записи (напр. "01-02" → "Дилогия"), для 9-томной серии,
+        # разбитой на несколько диапазонных файлов (1-2, 3-4, 5-6, 7-8),
+        # получается набор внутренне противоречивых имён ("Дилогия", "т.
+        # 3-4", "т. 5-6", "т. 7-8") вместо одной книги — и хуже: диапазон
+        # томов, до этого читавшийся из series_number, при таком
+        # переименовании необратимо теряется из имени файла (в "Дилогия"
+        # числа уже нет), из-за чего последующий auto-compile не может
+        # восстановить эти позиции и считает диапазон серии неверно
+        # (реальный случай: Лисина Александра / Артур Рэйш — превью показывало
+        # "Ноналогия", но после sync-переименования auto-compile выдавал
+        # "Октология"). Поэтому здесь просто сохраняем оригинальное имя файла
+        # — оно уже содержит корректный числовой диапазон/позицию, финальное
+        # имя со сборным суффиксом ("Ноналогия" и т.п.) строит именно
+        # auto-compile, когда реально объединяет все части в одну книгу.
         if kind == 'compilation' and covered_volumes:
-            try:
-                from .fb2_compiler import FB2CompilerService
-                clean_series = FB2CompilerService._clean_series_name(
-                    (record.proposed_series or '').strip()
-                )
-            except Exception:
-                clean_series = (record.proposed_series or '').strip()
-
-            lo, hi = min(covered_volumes), max(covered_volumes)
-            volume_range = str(lo) if lo == hi else f'{lo}-{hi}'
-
-            try:
-                from .fb2_compiler import FB2CompilerService
-                suffix = FB2CompilerService._series_suffix(len(covered_volumes), lo, hi)
-            except Exception:
-                suffix = f'т. {volume_range}'
-
-            return f"{author} - {_safe(clean_series)} ({suffix}).fb2"
+            return f"{_safe(Path(record.file_path).name)}"
 
         # ── Одиночные тома и неопределённые (в т.ч. "компиляция" с ────
         # неизвестным диапазоном томов — см. комментарий выше) ─────────
@@ -839,7 +884,7 @@ class SynchronizationService:
 
                 # Build source and target file paths
                 source_file = self.last_scan_path / record.file_path
-                kind, covered = self._classify_record(record)
+                kind, covered, _confident = self._classify_record(record)
                 target_name = self._build_target_filename(record, kind, covered)
                 target_file = target_dir / target_name
                 
