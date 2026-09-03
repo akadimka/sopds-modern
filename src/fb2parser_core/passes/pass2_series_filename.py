@@ -3195,8 +3195,6 @@ class Pass2SeriesFilename:
         # "Серия. Название - 2019" → "Серия. Название"
         name_for_parsing = re.sub(r'(?:\s*[-–—])?\s*(?:19|20)\d{2}\s*$', '', name_for_parsing).strip()
 
-
-        
         # 🔑 Флаг: найден паттерн БЕЗ Series информации
         pattern_found_without_series = False
         # 🔑 Флаг: блок-матчер нашёл серию с высокой уверенностью (score=1.0)
@@ -3749,7 +3747,8 @@ class Pass2SeriesFilename:
         # "Борисов Олег - Туман 1. Золото" должен дать "Туман", не "Борисов Олег - Туман"
         if '. ' in name_for_parsing:
             potential_series = name_for_parsing.split('. ')[0].strip()
-            
+            _rest_after_first = name_for_parsing.split('. ', 1)[1].strip()
+
             # Если содержит " - ", это скорее всего "Author - Series" паттерн
             if ' - ' in potential_series:
                 pass  # Skip: config pattern was first priority, don't fall back to Rule 3
@@ -3764,7 +3763,34 @@ class Pass2SeriesFilename:
                     (len(_ps_words[-1]) == 1 and _ps_words[-1][0].isupper()) or
                     bool(re.search(r'[А-ЯA-Z]\.[А-Яа-яA-Za-z]', potential_series))
                 )
-                if _is_author_pattern:
+                # ИСКЛЮЧЕНИЕ: если то, что идёт ПОСЛЕ первой точки — это не
+                # заголовок книги, а служебная фраза сборника/компиляции
+                # (collection_keywords: "Компиляция", "Сборник", "Книги N-M"
+                # и т.п.), то single-word "potential_series" почти наверняка
+                # НЕ фамилия автора, а само (однословное) имя серии — реальный
+                # случай: "Времена. Книги 1-10" ошибочно давал кандидата
+                # "Книги" (через Правило 3B, где "Времена" бралось за
+                # псевдо-автора), а не «Времена» — файл выпадал из группировки
+                # по серии, не распознавался как дубликат уже существующих
+                # 10 файлов серии и переезжал в библиотеку лишней, никак не
+                # помеченной книгой.
+                _rest_is_collection_marker = bool(
+                    (self.collection_keywords and
+                     any(_rest_after_first.lower().startswith(kw.lower())
+                         for kw in self.collection_keywords if kw)) or
+                    # "Книги 1-10" / "Тома 1-5" / "Части 1-3" — само по себе
+                    # не заголовок, а обёртка вокруг диапазона томов.
+                    re.match(r'^(?:книги|книга|тома|том|части|часть)\s+\d',
+                             _rest_after_first, re.IGNORECASE)
+                )
+                if _rest_is_collection_marker:
+                    # "Рест" — служебная фраза сборника, не заголовок книги →
+                    # first_part не может быть псевдо-автором (Rule 3B), это
+                    # само (возможно однословное) имя серии. Возвращаем сразу,
+                    # минуя и author-check, и numeric-suffix-defer к Rule 3B.
+                    if not validate or self._is_valid_series(potential_series, extracted_author=proposed_author):
+                        return potential_series
+                elif _is_author_pattern:
                     pass  # Likely author name format, not a series
                 elif _has_numeric_suffix:
                     pass  # Пропускаем, Rule 3B обработает корректнее
