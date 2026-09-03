@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+<title-info>
+<genre>sf</genre>
+<author><first-name>Тест</first-name><last-name>Автор3</last-name></author>
+<book-title>Книга А</book-title>
+</title-info>
+</description>
+<body>
+<title><p>Книга А</p></title>
+<section><p>Тестовый текст fixture.</p></section>
+</body>
+</FictionBook>

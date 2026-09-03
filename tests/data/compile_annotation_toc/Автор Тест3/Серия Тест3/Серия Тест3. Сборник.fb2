@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+<title-info>
+<genre>sf</genre>
+<author><first-name>Тест</first-name><last-name>Автор3</last-name></author>
+<book-title>Серия Тест3. Сборник</book-title>
+<annotation>
+<p>Аннотация сборника.</p>
+<empty-line/>
+<p><strong>Содержание:</strong></p>
+<p>1. <strong>Тест Автор3</strong>: Книга А <emphasis>(2021)</emphasis></p>
+<p>2. <strong>Тест Автор3</strong>: Книга Б <emphasis>(2021)</emphasis></p>
+<p>3. <strong>Тест Автор3</strong>: Книга В <emphasis>(2021)</emphasis></p>
+<p>4. <strong>Тест Автор3</strong>: Книга Г <emphasis>(2022)</emphasis></p>
+<p>5. <strong>Тест Автор3</strong>: Книга Д <emphasis>(2022)</emphasis></p>
+</annotation>
+</title-info>
+</description>
+<body>
+<title><p>Серия Тест3. Сборник</p></title>
+<section><p>Тестовый текст fixture — книга А.</p></section>
+<section><p>Тестовый текст fixture — книга Б.</p></section>
+<section><p>Тестовый текст fixture — книга В.</p></section>
+<section><p>Тестовый текст fixture — книга Г.</p></section>
+<section><p>Тестовый текст fixture — книга Д.</p></section>
+</body>
+</FictionBook>

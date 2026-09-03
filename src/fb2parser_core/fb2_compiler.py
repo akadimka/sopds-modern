@@ -2066,11 +2066,75 @@ class FB2CompilerService:
             # Голые цифры в заголовке секции (без слов-маркеров) намеренно пропускаем:
             # это почти всегда нумерация глав внутри книги, не томов компиляции.
 
-        if not nums:
+        if nums:
+            lo, hi = min(nums), max(nums)
+            # Требуем хотя бы 2 разных номера, чтобы не принять один том за диапазон
+            if lo != hi and hi - lo <= 20:  # слишком большой пробел — ненадёжно
+                return lo, hi
+
+        # Способ 3: текстовое оглавление внутри <annotation> — некоторые готовые
+        # сборники (напр. "Клан Медведя. Сборник.fb2", "Vitovt"-компиляции вида
+        # "Циклы фантастических романов") не размечают тома структурно
+        # (<sequence>/заголовки секций), а просто перечисляют их вольным текстом:
+        # "Содержание: 1. <strong>Автор</strong>: Название (год) ...". Без этого
+        # способа такой файл выглядит как "позиция неизвестна" и на равных правах
+        # смешивается с отдельными файлами тех же томов вместо того, чтобы быть
+        # опознанным как уже полная предкомпиляция.
+        return self._annotation_toc_range(text, series)
+
+    _ANNOTATION_HEADER_RE = re.compile(
+        r'<p>\s*<strong>\s*([^<]{2,60}?)\s*:?\s*</strong>\s*</p>', re.IGNORECASE
+    )
+    _ANNOTATION_ITEM_RE = re.compile(r'<p>\s*(\d{1,3})\.\s*<strong>', re.IGNORECASE)
+
+    def _annotation_toc_range(self, text: str, series: str) -> Tuple[int, int]:
+        """Разобрать текстовое оглавление вида "N. <strong>Автор</strong>: Title"
+        внутри <annotation>. Если аннотация перечисляет НЕСКОЛЬКО серий под
+        заголовками-подписями ("АРТУР РЭЙШ:", "НЕ ВЫХОДИТЕ ЗАМУЖ НА СПОР:") —
+        берём только пункты из сегмента, чей заголовок совпадает с искомой
+        серией; при отсутствии заголовков (одна серия на весь сборник) —
+        весь список целиком.
+        """
+        ann_m = re.search(r'<annotation[^>]*>(.*?)</annotation>', text, re.DOTALL | re.IGNORECASE)
+        if not ann_m:
+            return 0, 0
+        annotation = ann_m.group(1)
+
+        items = list(self._ANNOTATION_ITEM_RE.finditer(annotation))
+        if not items:
+            return 0, 0
+
+        # Общая подпись вида "Содержание:"/"Оглавление:" — не название серии,
+        # а просто ярлык перед списком. Некоторые сборники оборачивают её в
+        # <strong> точно так же, как настоящие заголовки-разделители серий —
+        # без фильтра она ложно считается "серией, которая не совпала",
+        # и весь список ошибочно отбрасывается как принадлежащий чужой серии.
+        _TOC_LABEL_RE = re.compile(r'^(содержание|оглавление|contents)\s*$', re.IGNORECASE)
+        headers = [
+            h for h in self._ANNOTATION_HEADER_RE.finditer(annotation)
+            if not _TOC_LABEL_RE.match(h.group(1).strip())
+        ]
+        if headers:
+            series_words = [w for w in re.split(r'[\s\\]+', series.lower().replace('ё', 'е')) if len(w) >= 4]
+            target_start = target_end = None
+            for i, h in enumerate(headers):
+                h_norm = h.group(1).lower().replace('ё', 'е')
+                # all(), не any(): у "Первая серия" и "Вторая серия" общее слово
+                # "серия" само по себе не должно засчитываться как совпадение.
+                if series_words and all(w in h_norm for w in series_words):
+                    target_start = h.end()
+                    target_end = headers[i + 1].start() if i + 1 < len(headers) else len(annotation)
+                    break
+            if target_start is None:
+                return 0, 0  # многосерийный сборник, но нужная серия не найдена среди заголовков
+            nums = [int(m.group(1)) for m in items if target_start <= m.start() < target_end]
+        else:
+            nums = [int(m.group(1)) for m in items]
+
+        if len(nums) < 2:
             return 0, 0
         lo, hi = min(nums), max(nums)
-        # Требуем хотя бы 2 разных номера, чтобы не принять один том за диапазон
-        if lo == hi or hi - lo > 20:  # слишком большой пробел — ненадёжно
+        if lo == hi or hi - lo > 20:
             return 0, 0
         return lo, hi
 
