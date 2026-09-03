@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import threading
+import time
 
 from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.admin.views.decorators import staff_member_required
@@ -690,9 +691,13 @@ def assign_genre_multi(request):
                 if conflicts:
                     result["conflicts"] = conflicts
                 results.append(result)
+                abs_path = os.path.abspath(path)
                 assignments = genre_assignments.get()
-                assignments[os.path.abspath(path)] = genre
+                assignments[abs_path] = genre
                 genre_assignments.set(assignments)
+                times = genre_assignment_times.get()
+                times[abs_path] = time.time()
+                genre_assignment_times.set(times)
             else:
                 results.append({"path": path, "success": False, "count": 0,
                                  "error": "FB2-файлы не найдены или не изменены"})
@@ -2096,6 +2101,18 @@ sync_job = JobState("fb2parser:sync", {
 sync_stop_flag = JobFlag("fb2parser:sync:stop")
 # {abs_path: genre_name} — папки с назначенным жанром в текущей сессии
 genre_assignments = SharedDict("fb2parser:genre_assignments")
+# {abs_path: unix_timestamp} — когда жанр был назначен (для отсева устаревших
+# записей от прошлых, давно закрытых сессий браузера — см. sync()).
+genre_assignment_times = SharedDict("fb2parser:genre_assignment_times")
+# Записи старше этого возраста считаются "устаревшими" при открытии диалога
+# синхронизации — накопительный кэш assign_genre_multi() иначе хранит их
+# бессрочно (TTL кэша продлевается при каждой новой записи), и через
+# несколько дней/недель в списке "Folders to synchronize" незаметно
+# накапливаются папки из давно забытых сессий браузера (обнаружено на
+# реальном случае: 2 подпапки, жанр которым назначили за много дней до
+# этого запуска, показывались рядом со свежевыбранной родительской папкой,
+# неотличимые от неё из-за обрезки длинного общего пути в UI).
+_GENRE_ASSIGNMENT_MAX_AGE = 3 * 60 * 60  # 3 часа
 
 
 @staff_member_required(login_url="/web/login/")
@@ -2115,10 +2132,22 @@ def sync(request):
     # вручную), остаются в этом кеше 6 часов — без проверки существования панель
     # при повторном открытии продолжает показывать их как "к синхронизации".
     stale = [path for path in assignments if not os.path.isdir(path)]
+    # Отдельно — записи, назначенные слишком давно (см. _GENRE_ASSIGNMENT_MAX_AGE):
+    # отсутствие метки времени (запись сделана до появления этого механизма)
+    # тоже считаем устаревшим — безопасный дефолт для уже накопленного мусора.
+    times = genre_assignment_times.get()
+    now = time.time()
+    stale += [
+        path for path in assignments
+        if path not in stale
+        and now - times.get(path, 0) > _GENRE_ASSIGNMENT_MAX_AGE
+    ]
     if stale:
         for path in stale:
             assignments.pop(path, None)
+            times.pop(path, None)
         genre_assignments.set(assignments)
+        genre_assignment_times.set(times)
     from fb2parser_core.settings_manager import SettingsManager
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
@@ -2137,6 +2166,7 @@ def sync_clear_assignments(request):
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
     genre_assignments.clear()
+    genre_assignment_times.clear()
     from django.http import HttpResponse
     return HttpResponse("ok")
 
@@ -2308,9 +2338,12 @@ def sync_start(request):
     # Снимаем отмеченные папки с очереди — иначе они останутся в
     # genre_assignments и подмешаются в следующий запуск синхронизации
     # (см. комментарий выше), даже если этот запуск ещё не завершился.
+    times = genre_assignment_times.get()
     for p in selected_paths:
         assignments.pop(p, None)
+        times.pop(p, None)
     genre_assignments.set(assignments)
+    genre_assignment_times.set(times)
 
     threading.Thread(target=_run_sync_thread, daemon=True).start()
     return _render_sync_status(sync_job.get())
