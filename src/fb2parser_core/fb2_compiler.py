@@ -216,12 +216,24 @@ class FB2CompilerService:
                     top_hi_vals.append(int(m.group(2)) if m else b.sort_key[1])
             top_hi = max(top_hi_vals)
 
-            _top_pos_list = [b.sort_key[1] for b in level0]
-        # has_subseries: либо у кого-то sort_key[2]!=0, либо несколько файлов
-        # занимают одну и ту же top-позицию (разные подсерии одной дуги).
+        # has_subseries: либо у кого-то sort_key[2]!=0, либо ОДНА и та же
+        # top-позиция (sort_key[1]) встречается с РАЗНОЙ под-идентичностью
+        # (sort_key[2], sort_key[3]) у разных файлов (разные подсерии/части
+        # одной дуги — sort_key[2] для "5.1"/"5.2"/..., sort_key[3] для
+        # "inline"-частей вида "Часть 1"/"Часть 2" при одинаковом sort_key[2]).
+        # Важно требовать именно РАЗНУЮ под-идентичность, а не просто
+        # "несколько файлов на одной позиции" — иначе банальный дубль/опечатка
+        # номера тома (два разных файла с одинаковым sort_key=(0,9,0,0) —
+        # реальный случай: "09. Последний бог.fb2" и "09.Проклятие
+        # королей.fb2") ошибочно распознаётся как "N дуг" вместо честного
+        # "1 позиция, дубль", раздувая словесную форму суффикса ("Тетралогия"
+        # вместо плоского "в N книгах").
+        _pos_subkeys: dict = {}
+        for b in level0:
+            _pos_subkeys.setdefault(b.sort_key[1], set()).add((b.sort_key[2], b.sort_key[3]))
         has_subseries = (
             any(b.sort_key[2] != 0 for b in level0)
-            or len(_top_pos_list) > len(set(_top_pos_list))
+            or any(len(v) > 1 for v in _pos_subkeys.values())
         )
 
         # dot_part: «Том N Книга M» — secondary = номер книги внутри тома.
@@ -231,17 +243,35 @@ class FB2CompilerService:
             n_volumes = len({b.sort_key[1] for b in level0})
         else:
             # Диапазоны считаем через объединение множеств (чтобы не задваивать пересечения).
-            # Индивидуальные книги считаем по +1 — у них нет пересечений после dedup.
+            # Одиночные книги с известной позицией (sort_key[1]) добавляем В ТО ЖЕ
+            # множество под этой позицией — иначе два разных файла на одной и той же
+            # позиции (дубль/опечатка нумерации, см. комментарий про has_subseries
+            # выше) считались бы как 2 разных тома вместо одного, раздувая "в N
+            # книгах" сверх реального числа позиций (реальная компиляция
+            # дедуплицирует такие коллизии через covered_hi — см. compile_group() —
+            # этот подсчёт должен давать тот же результат). Книги без определённой
+            # позиции (sort_key[1]==0) по-прежнему считаем каждую отдельно.
             _range_covered: set = set()
-            _individual = 0
+            _next_unique = -1
             for b in level0:
                 vl = (b.volume_label or '').strip()
                 m = _RNG.match(vl)
                 if m:
                     _range_covered.update(range(int(m.group(1)), int(m.group(2)) + 1))
+                elif b.sort_key[1]:
+                    # Ключ — полная под-идентичность (top, sub, inline), а НЕ
+                    # только верхняя позиция: иначе легитимные разные
+                    # под-книги одной дуги (sort_key[2] разный — "5.1"/"5.2"/
+                    # "5.3"/"5.4", или sort_key[3] разный — "Часть 1"/"Часть 2"
+                    # при одинаковом sort_key[2]) схлопывались бы в одну, раз
+                    # у них общий sort_key[1]. Совпадает — только когда ВСЕ
+                    # три координаты совпадают, что и есть настоящий
+                    # дубль/опечатка (см. комментарий у has_subseries выше).
+                    _range_covered.add((b.sort_key[1], b.sort_key[2], b.sort_key[3]))
                 else:
-                    _individual += 1
-            n_volumes = len(_range_covered) + _individual
+                    _range_covered.add(_next_unique)
+                    _next_unique -= 1
+            n_volumes = len(_range_covered)
 
         # Для групп с подсериями (has_subseries=True) определяем число верхних дуг —
         # различных значений sort_key[1]. Именно они определяют слово «Пенталогия» и т.п.,
