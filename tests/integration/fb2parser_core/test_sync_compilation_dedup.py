@@ -93,3 +93,56 @@ class TestGuessedRangeCompilationsNeverConsideredRedundant:
             "Волжане (Волжане. Трилогия).fb2",
             "Цикл «Волжане».fb2",
         }
+
+
+def _detect_sole_full_compilation_paths(sync, kept):
+    """Воспроизводит вычисление `_sole_full_compilation_paths` из
+    synchronize() — используется только в тестах, реальный код строит его
+    inline сразу после _deduplicate_by_compilation()."""
+    paths = set()
+    buckets = {}
+    for rec in kept:
+        a = (rec.proposed_author or '').strip()
+        s = (rec.proposed_series or '').strip()
+        if a and s:
+            buckets.setdefault((a.lower(), s.lower()), []).append(rec)
+    for recs in buckets.values():
+        if len(recs) != 1:
+            continue
+        kind, vols, conf = sync._classify_record(recs[0])
+        if kind == 'compilation' and vols and conf and min(vols) <= 1:
+            paths.add(recs[0].file_path)
+    return paths
+
+
+class TestSoleSurvivingCompilationGetsProperName:
+    """"Времена" (Лисина Александра): дедупликация выше корректно удаляет
+    ВСЕ 10 одиночных томов как покрытые уже готовым файлом всей серии —
+    но тогда этот файл остаётся ЕДИНСТВЕННЫМ выжившим для своей (автор,
+    серия) связки. find_groups()/auto_compile_library() группу из 1 файла
+    не видят (нужно ≥2) и никогда её не переименуют — раньше файл так и
+    оставался под сырым исходным именем ("Времена. Книги 1-10.fb2") вместо
+    "Автор - Серия (Суффикс).fb2", как у всех остальных серий автора.
+    """
+
+    AUTHOR = "Лисина Александра"
+
+    def _records(self):
+        return [
+            *[_rec(f"Времена\\{n:02d}.fb2", author=self.AUTHOR, series="Времена",
+                   series_number=str(n)) for n in range(1, 11)],
+            _rec("Сборники\\Времена. Книги 1-10.fb2", author=self.AUTHOR,
+                 series="Времена", series_number="1-10"),
+        ]
+
+    def test_sole_survivor_renamed_with_full_suffix(self):
+        sync = _sync()
+        kept, deleted = sync._deduplicate_by_compilation(self._records(), None)
+        assert len(kept) == 1
+        assert len(deleted) == 10
+
+        sync._sole_full_compilation_paths = _detect_sole_full_compilation_paths(sync, kept)
+        survivor = kept[0]
+        kind, vols, _conf = sync._classify_record(survivor)
+        name = sync._build_target_filename(survivor, kind, vols)
+        assert name == "Лисина Александра - Времена (Декалогия).fb2"

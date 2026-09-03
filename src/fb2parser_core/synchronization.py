@@ -254,6 +254,31 @@ class SynchronizationService:
                 self._log(f"  Компиляционная дедупликация: удалено {len(compilation_deletions)} одиночных томов")
                 self._delete_records_and_files(compilation_deletions, self.last_scan_path)
 
+            # После дедупликации: если для (автор, серия) в итоге остался РОВНО
+            # один compilation-файл с известным диапазоном, начинающимся с 1 —
+            # это уже вся серия целиком, других томов/фрагментов не осталось.
+            # find_groups()/auto_compile_library() такую "группу" из 1 файла
+            # не видят вовсе (минимум 2 файла для группы) и никогда её не
+            # переименуют — файл так и остался бы под СВОИМ исходным именем
+            # без автора/суффикса серии (напр. "Времена. Книги 1-10.fb2"
+            # вместо "Лисина Александра - Времена (Ноналогия).fb2", реальный
+            # случай, найденный после того как дедупликация выше стала верно
+            # убирать фрагменты/дубликаты). Строим финальное имя здесь же —
+            # мы ТОЧНО знаем полный диапазон (это единственный источник).
+            self._sole_full_compilation_paths = set()
+            _series_buckets: Dict[Tuple[str, str], List] = {}
+            for rec in records:
+                a = (rec.proposed_author or '').strip()
+                s = (rec.proposed_series or '').strip()
+                if a and s:
+                    _series_buckets.setdefault((a.lower(), s.lower()), []).append(rec)
+            for bucket_recs in _series_buckets.values():
+                if len(bucket_recs) != 1:
+                    continue
+                _kind, _vols, _conf = self._classify_record(bucket_recs[0])
+                if _kind == 'compilation' and _vols and _conf and min(_vols) <= 1:
+                    self._sole_full_compilation_paths.add(bucket_recs[0].file_path)
+
             # Step 3: Build folder structure and detect duplicates
             if progress_callback:
                 progress_callback(15, 100, "Анализ дубликатов")
@@ -773,7 +798,28 @@ class SynchronizationService:
         # — оно уже содержит корректный числовой диапазон/позицию, финальное
         # имя со сборным суффиксом ("Ноналогия" и т.п.) строит именно
         # auto-compile, когда реально объединяет все части в одну книгу.
+        #
+        # ИСКЛЮЧЕНИЕ: если это ЕДИНСТВЕННЫЙ выживший файл своей (автор,
+        # серия) связки (см. `_sole_full_compilation_paths`, заполняется в
+        # synchronize() сразу после дедупликации) — откладывать переименование
+        # на auto-compile нельзя: find_groups() требует ≥2 файлов, чтобы
+        # вообще считать это группой, и такой одиночный файл НИКОГДА не
+        # будет переименован позже. Раз он один и покрывает диапазон с 1 —
+        # это вся серия целиком, полная картина уже известна, строим
+        # финальное имя сразу.
         if kind == 'compilation' and covered_volumes:
+            if record.file_path in getattr(self, '_sole_full_compilation_paths', ()):
+                lo, hi = min(covered_volumes), max(covered_volumes)
+                try:
+                    from .fb2_compiler import FB2CompilerService
+                    clean_series = FB2CompilerService._clean_series_name(
+                        (record.proposed_series or '').strip()
+                    )
+                    suffix = FB2CompilerService._series_suffix(len(covered_volumes), lo, hi)
+                except Exception:
+                    clean_series = (record.proposed_series or '').strip()
+                    suffix = f'т. {lo}-{hi}' if lo != hi else f'т. {lo}'
+                return f"{author} - {_safe(clean_series)} ({suffix}).fb2"
             return f"{_safe(Path(record.file_path).name)}"
 
         # ── Одиночные тома и неопределённые (в т.ч. "компиляция" с ────
