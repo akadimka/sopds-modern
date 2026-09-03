@@ -1,0 +1,63 @@
+{% load i18n %}
+{% if state.running %}
+<div id="compress-status"
+     hx-get="{% url 'fb2parser:compress_status' %}"
+     hx-trigger="every 2s"
+     hx-target="#compress-status"
+     hx-swap="outerHTML">
+
+    <div class="callout primary" style="margin-bottom:1rem;">
+        <strong>{% trans "⏳ Compressing..." %}</strong>
+        {% if state.current %}
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+            {% trans "File:" %} {{ state.current }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="margin-bottom:0.5rem; font-size:0.85rem;">
+        {% trans "Processed:" %} <strong>{{ state.processed }}</strong>
+        {% if state.total > 0 %} {% trans "of" %} {{ state.total }} ({{ pct }}%){% endif %}
+    </div>
+    <div class="progress" style="height:1.5rem; margin-bottom:1rem;">
+        <span class="progress-meter" style="width:{{ pct }}%; background:#16a085;">
+            <span class="progress-meter-text">{{ pct }}%</span>
+        </span>
+    </div>
+</div>
+
+{% elif state.done %}
+<div id="compress-status">
+    <div class="callout success">
+        <strong>{% trans "✅ Compression complete" %}</strong>
+        {% if state.stopped %}<span style="color:var(--text-muted);"> ({% trans "stopped early" %})</span>{% endif %}
+    </div>
+    <table class="unstriped" style="max-width:400px; font-size:0.9rem;">
+        <tr><td>{% trans "Files compressed:" %}</td><td><strong>{{ state.compressed }}</strong>{% if state.total and state.total != state.compressed %} / {{ state.total }}{% endif %}</td></tr>
+        <tr><td>{% trans "Space freed:" %}</td><td>{{ state.bytes_saved|filesizeformat }}</td></tr>
+        <tr><td>{% trans "Errors:" %}</td><td style="color:{% if state.errors %}#c0392b{% else %}inherit{% endif %}">{{ state.errors|length }}</td></tr>
+    </table>
+    {% if state.errors %}
+    <details style="margin-top:0.5rem; font-size:0.82rem;">
+        <summary>{% trans "Show errors" %}</summary>
+        <ul style="max-height:200px; overflow-y:auto;">
+            {% for err in state.errors %}<li style="font-family:monospace;">{{ err }}</li>{% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</div>
+
+{% elif state.error %}
+<div id="compress-status">
+    <div class="callout alert">
+        <strong>{% trans "❌ Error:" %}</strong> {{ state.error }}
+    </div>
+</div>
+
+{% else %}
+<div id="compress-status">
+    <div class="callout secondary" style="font-size:0.9rem;">
+        {% trans "Compression not started." %}
+    </div>
+</div>
+{% endif %}

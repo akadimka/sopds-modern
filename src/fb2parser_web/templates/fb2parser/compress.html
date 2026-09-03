@@ -1,0 +1,50 @@
+{% extends "fb2parser/base.html" %}
+{% load i18n %}
+{% block content %}
+<h2>{% trans "🗜️ FB2 Compression" %}</h2>
+<p style="color:var(--text-muted); font-size:0.88rem; margin-top:-0.5rem;">
+    {% trans "Compresses every previously uncompressed .fb2 file in the library into .fb2.zip. Already-zipped files and multi-book archives are left untouched." %}
+</p>
+
+<div class="grid-x grid-margin-x">
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>{% trans "Library" %}</strong></div>
+            <div class="card-section">
+                {% csrf_token %}
+                <code style="overflow-wrap:anywhere;">{{ library_path|default:"—" }}</code>
+                <div style="margin-top:0.8rem; display:flex; align-items:center; gap:1rem;">
+                    <button id="compress-btn"
+                            class="button"
+                            style="background:#16a085; margin:0;"
+                            hx-post="{% url 'fb2parser:compress_start' %}"
+                            hx-target="#compress-status"
+                            hx-swap="outerHTML"
+                            hx-indicator="#compress-spinner">
+                        {% trans "▶ Start compression" %}
+                    </button>
+                    <button type="button" class="button secondary"
+                            style="margin:0;"
+                            hx-post="{% url 'fb2parser:compress_stop' %}"
+                            hx-target="#compress-status"
+                            hx-swap="outerHTML">
+                        {% trans "⏹ Stop" %}
+                    </button>
+                    <span id="compress-spinner" class="htmx-indicator" style="font-size:0.85rem; color:var(--text-muted);">
+                        {% trans "Starting..." %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>{% trans "Progress" %}</strong></div>
+            <div class="card-section">
+                {% include "fb2parser/compress_status.html" with state=state pct=0 %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

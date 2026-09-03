@@ -379,6 +379,109 @@ def genre_scan_files(request):
     return HttpResponse(html)
 
 
+# ── Сжатие FB2 в библиотеке (только library_path, только голые .fb2) ─────────
+
+compress_job = JobState("fb2parser:compress", {
+    "running": False,
+    "done": False,
+    "error": None,
+    "processed": 0,
+    "total": 0,
+    "current": "",
+    "compressed": 0,
+    "bytes_saved": 0,
+    "errors": [],
+    "stopped": False,
+})
+compress_stop_flag = JobFlag("fb2parser:compress_stop")
+
+
+def _run_compress_thread(library_path):
+    from django import db
+    db.connections.close_all()
+    try:
+        from pathlib import Path
+        from fb2parser_core.compress_service import compress_library
+
+        def _on_progress(done, total, current):
+            compress_job.update(processed=done, total=total, current=current)
+
+        result = compress_library(
+            Path(library_path),
+            progress_callback=_on_progress,
+            stop_check=compress_stop_flag.is_set,
+        )
+        compress_job.update(
+            done=True, running=False,
+            processed=result["processed"], total=result["total"],
+            compressed=result["compressed"], bytes_saved=result["bytes_saved"],
+            errors=result["errors"], stopped=result["stopped"],
+        )
+    except Exception as exc:
+        compress_job.update(error=str(exc), running=False)
+    finally:
+        compress_stop_flag.clear()
+        from django import db as _db
+        _db.connections.close_all()
+        compress_job.finish()
+
+
+@staff_member_required(login_url="/web/login/")
+def compress(request):
+    from .fb2parser_bridge import _config_path
+    from fb2parser_core.settings_manager import SettingsManager
+    library_path = SettingsManager(_config_path()).get_library_path()
+    return render(request, "fb2parser/compress.html", _ctx(
+        "compress", "Сжатие FB2", library_path=library_path, state=compress_job.get(),
+    ))
+
+
+@staff_member_required(login_url="/web/login/")
+def compress_start(request):
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    if compress_job.get()["running"]:
+        return _render_compress_status(compress_job.get())
+
+    from .fb2parser_bridge import _config_path
+    from fb2parser_core.settings_manager import SettingsManager
+    library_path = SettingsManager(_config_path()).get_library_path()
+    if not library_path or not os.path.isdir(library_path):
+        return HttpResponse(
+            '<div id="compress-status"><div class="callout alert">'
+            f'❌ Папка библиотеки не найдена: {library_path}</div></div>'
+        )
+
+    compress_stop_flag.clear()
+    if not compress_job.try_start(library_path=library_path):
+        return _render_compress_status(compress_job.get())
+
+    t = threading.Thread(target=_run_compress_thread, args=(library_path,), daemon=True)
+    t.start()
+    return _render_compress_status(compress_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+def compress_stop(request):
+    compress_stop_flag.set()
+    return _render_compress_status(compress_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+def compress_status(request):
+    return _render_compress_status(compress_job.get())
+
+
+def _render_compress_status(state):
+    pct = 0
+    if state["total"] > 0:
+        pct = min(100, int(state["processed"] / state["total"] * 100))
+    from django.template.loader import render_to_string
+    html = render_to_string("fb2parser/compress_status.html", {"state": state, "pct": pct})
+    return HttpResponse(html)
+
+
 # ── Браузер папок ────────────────────────────────────────────────────────────
 
 @staff_member_required(login_url="/web/login/")

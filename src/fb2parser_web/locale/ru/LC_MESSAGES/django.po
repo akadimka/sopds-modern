@@ -953,3 +953,31 @@ msgstr "конфликт жанра:"
 
 msgid ", genre conflicts: "
 msgstr ", конфликтов жанра: "
+
+# --- compress.html / compress_status.html ---
+msgid "Compress"
+msgstr "Сжать"
+
+msgid "🗜️ FB2 Compression"
+msgstr "🗜️ Сжатие FB2"
+
+msgid "Compresses every previously uncompressed .fb2 file in the library into .fb2.zip. Already-zipped files and multi-book archives are left untouched."
+msgstr "Сжимает все ранее несжатые .fb2 файлы в библиотеке в .fb2.zip. Уже сжатые файлы и многотомные архивы не трогаются."
+
+msgid "▶ Start compression"
+msgstr "▶ Начать сжатие"
+
+msgid "⏳ Compressing..."
+msgstr "⏳ Сжатие..."
+
+msgid "✅ Compression complete"
+msgstr "✅ Сжатие завершено"
+
+msgid "Files compressed:"
+msgstr "Сжато файлов:"
+
+msgid "Space freed:"
+msgstr "Освобождено места:"
+
+msgid "Compression not started."
+msgstr "Сжатие не запущено."

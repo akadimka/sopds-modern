@@ -80,6 +80,48 @@ def write_fb2_bytes(path: Path, xml_bytes: bytes) -> None:
         path.write_bytes(xml_bytes)
 
 
+def compress_fb2_file(path: Path) -> int:
+    """Сжать плоский .fb2 файл в .fb2.zip рядом, удалить оригинал.
+
+    Пишет во временный файл, проверяет его round-trip (распакованное
+    содержимое совпадает с оригиналом побайтово) и только потом заменяет
+    оригинал — при сбое посреди операции реальный файл не теряется.
+
+    Returns:
+        Число освобождённых байт (может быть отрицательным для очень
+        маленьких файлов, где zip-заголовок съедает всю экономию).
+
+    Raises:
+        ValueError: если path уже .fb2.zip.
+        Exception: при ошибке чтения/записи/round-trip — оригинал не тронут.
+    """
+    if path.name.lower().endswith('.fb2.zip'):
+        raise ValueError(f"Уже сжат: {path}")
+
+    original_bytes = path.read_bytes()
+    target = path.with_name(path.name + '.zip')
+    tmp = path.with_name(path.name + '.zip.tmp')
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        zf.writestr(path.name, original_bytes)
+    zip_bytes = buf.getvalue()
+
+    tmp.write_bytes(zip_bytes)
+    try:
+        with zipfile.ZipFile(tmp) as zf:
+            if zf.read(path.name) != original_bytes:
+                raise ValueError("Round-trip проверка не прошла: содержимое не совпадает")
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+    original_size = path.stat().st_size
+    path.unlink()
+    tmp.rename(target)
+    return original_size - len(zip_bytes)
+
+
 def has_fb2_files(directory: Path) -> bool:
     """True если в директории есть хотя бы один FB2/FB2.ZIP файл."""
     for _ in directory.rglob('*.fb2'):
