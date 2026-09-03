@@ -641,12 +641,26 @@ class FB2CompilerService:
                     canon_sk = sk2 if series_dir == 12 else sk1
                     short_sk  = sk1 if series_dir == 12 else sk2
 
-                    # Метаподтверждение для серийного суффикса
+                    # Метаподтверждение для серийного суффикса.
+                    # ВАЖНО: metadata_series записи из ДЛИННОГО бакета часто
+                    # буквально повторяет имя ЕГО ЖЕ папки/серии (canon_sk) —
+                    # тогда "short_sk — суффикс metadata_series" проходит
+                    # ТРИВИАЛЬНО, если short_sk оказывается общим бытовым
+                    # словом, которое и так входит в состав canon_sk (пример:
+                    # short_sk="времена", canon_sk="темные времена" — книга
+                    # из папки «Тёмные времена» с metadata_series="Темные
+                    # времена" "подтверждала" слияние с СОВСЕМ другой, не
+                    # связанной серией «Времена» только потому, что "времена" —
+                    # последнее слово в названии ЕЁ ЖЕ собственной длинной
+                    # серии). Такое самоподтверждение не доказывает связи с
+                    # короткой серией — исключаем metadata, совпадающую с
+                    # canon_sk целиком.
                     if series_dir != 0:
                         long_recs = buckets.get((ak1, sk1) if series_dir == 21 else (ak2, sk2), [])
                         confirmed = any(
-                            _punct_norm(r.metadata_series or '') == short_sk
-                            or _word_suffix_key(short_sk, _punct_norm(r.metadata_series or ''))
+                            (mn := _punct_norm(r.metadata_series or ''))
+                            and mn != canon_sk
+                            and (mn == short_sk or _word_suffix_key(short_sk, mn))
                             for r in long_recs
                         )
                         if not confirmed:
