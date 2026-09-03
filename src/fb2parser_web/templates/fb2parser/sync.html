@@ -33,7 +33,7 @@
         {% for path, genre in assignments.items %}
         <label style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem; cursor:pointer;">
             <span style="display:flex; align-items:center; overflow:hidden; flex:1; margin-right:0.5rem;">
-                <input type="checkbox" class="sync-folder-cb" value="{{ path }}"
+                <input type="checkbox" class="sync-folder-cb" value="{{ path }}" checked
                        style="margin-right:0.5rem; flex-shrink:0; accent-color:#27ae60; cursor:pointer;">
                 <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);">{{ path }}</span>
             </span>
