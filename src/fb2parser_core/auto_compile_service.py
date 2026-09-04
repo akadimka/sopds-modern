@@ -41,12 +41,32 @@ def auto_compile_library(
         _devnull.close()
 
     compiler = FB2CompilerService()
-    groups = compiler.find_groups(records, Path(library_path))
+    lib_path = Path(library_path)
+    groups = compiler.find_groups(records, lib_path)
 
     ok_cnt = 0
     fail_cnt = 0
     for g in groups:
-        result = compiler.compile_group(g, None, delete_sources=True)
+        # Жанр итогового файла берём из genre-папки библиотеки (первый
+        # сегмент пути группы относительно library_path), а не только из
+        # <genre> метаданных первой исходной книги — та часто пуста у
+        # файлов-кандидатов на компиляцию ("Дилогия"/"в N книгах"), из-за
+        # чего компилятор жёстко подставлял заглушку "other", хотя файлы
+        # физически уже лежат в правильной жанровой папке (см.
+        # compile_group()'s genre_override и docs/quality-roadmap.md).
+        # Единственный вызывающий код auto_compile_library() (см.
+        # fb2parser_web.views._run_compile_pass) всегда передаёт сюда
+        # library_path — реальную, genre-организованную библиотеку — так
+        # что первый сегмент относительного пути всегда genre-папка.
+        genre_override = ''
+        if g.books:
+            try:
+                rel_parts = g.books[0].abs_path.resolve().relative_to(lib_path.resolve()).parts
+                if rel_parts:
+                    genre_override = rel_parts[0]
+            except ValueError:
+                pass
+        result = compiler.compile_group(g, None, delete_sources=True, genre_override=genre_override)
         if result.success:
             ok_cnt += 1
         else:

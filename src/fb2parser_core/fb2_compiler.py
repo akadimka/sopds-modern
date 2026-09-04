@@ -364,6 +364,72 @@ class FB2CompilerService:
         if self.logger:
             self.logger.log(msg)
 
+    def _resolve_compile_genre(self, meta_genre: str, genre_override: str,
+                                first_book_path: Optional[Path]) -> str:
+        """Определить жанр итогового скомпилированного файла.
+
+        Порядок приоритета:
+        1. genre_override — явно передан вызывающим кодом, который уже
+           точно знает жанр (см. auto_compile_library()).
+        2. <genre> метаданных первой исходной книги, если непусто.
+        3. Имя genre-папки библиотеки — ищем среди сегментов пути первой
+           книги совпадение (без учёта регистра) с именем узла из
+           genres.xml. Нужно как safety-net для вызывающего кода, который
+           НЕ прокидывает genre_override явно (например ручной инструмент
+           компиляции — normalize/compiler в веб-UI, compiler_run()) —
+           реальный случай: 3 файла ("Квантовые джунгли", "Игра не для
+           всех", "Зург") получили genre="other", хотя лежали внутри
+           "Фантастика", потому что были скомпилированы через ЭТОТ путь,
+           а не через auto_compile_library() (см. docs/quality-roadmap.md,
+           баг №18/19).
+        4. "other" — совсем ничего не найдено (как и раньше).
+        """
+        if genre_override:
+            return genre_override
+        if meta_genre:
+            return meta_genre
+        if first_book_path is not None:
+            try:
+                names = {n.name.lower() for n in self._genre_node_names()}
+                for part in first_book_path.parts:
+                    if part.lower() in names:
+                        return part
+            except Exception:
+                pass
+        return ''
+
+    def _genre_node_names(self):
+        """Плоский список всех узлов genres.xml (кэшируется на инстансе)."""
+        cached = getattr(self, '_genre_nodes_cache', None)
+        if cached is not None:
+            return cached
+        nodes = []
+        try:
+            from .genres_manager import GenresManager
+            from .settings_manager import SettingsManager
+            _fb2_data_dir = Path(__file__).resolve().parent.parent / 'fb2_data'
+            _config_path = str(_fb2_data_dir / 'settings' / 'config.json')
+            # get_genres_file_path() может вернуть путь, реально не
+            # существующий (напр. сохранённое по умолчанию относительное
+            # "genres.xml", которое не резолвится в текущий рабочий каталог
+            # процесса) — не доверяем ему "как есть", сами проверяем и при
+            # необходимости используем тот же дефолт, что
+            # fb2parser_bridge._genres_path().
+            genres_path = SettingsManager(_config_path).get_genres_file_path() or ''
+            if not genres_path or not Path(genres_path).exists():
+                genres_path = str(_fb2_data_dir / 'genres.xml')
+            gm = GenresManager(genres_path)
+
+            def _collect(ns):
+                for n in ns:
+                    nodes.append(n)
+                    _collect(n.children)
+            _collect(gm.root_nodes)
+        except Exception:
+            nodes = []
+        self._genre_nodes_cache = nodes
+        return nodes
+
     # ------------------------------------------------------------------
     # Ручное управление составом группы (перенесено из десктопной версии,
     # gui_compiler.py: _exclude_book/_restore_book/_recalc_consecutive_runs)
@@ -3328,6 +3394,7 @@ class FB2CompilerService:
         group: CompilationGroup,
         output_dir: Optional[Path],
         delete_sources: bool = False,
+        genre_override: str = '',
     ) -> CompilationResult:
         """Скомпилировать группу в один FB2-файл.
 
@@ -3336,6 +3403,20 @@ class FB2CompilerService:
             output_dir: Папка, куда поместить результирующий файл.
                         None — сохранить рядом с исходными файлами.
             delete_sources: Удалить исходники после успешной компиляции.
+            genre_override: Если задан — используется как жанр итогового
+                файла ВМЕСТО чтения `<genre>` из метаданных первой книги.
+                Нужен вызывающему коду, который уже ЗНАЕТ правильный жанр
+                независимо от содержимого исходников (см.
+                auto_compile_library() — библиотека организована по
+                жанровым папкам, и жанр компиляции однозначно определяется
+                тем, в какой из них лежат файлы группы). Без этого жанр
+                брался ТОЛЬКО из `<genre>` первой исходной книги — а у
+                многих скрейпленных файлов-кандидатов на компиляцию (напр.
+                "Дилогия"/"в N книгах") этот тег в метаданных пуст, из-за
+                чего компилятор жёстко подставлял заглушку "other",
+                игнорируя факт, что файлы физически уже лежат в правильной
+                жанровой папке (реальный случай — 34 книги получили
+                genre="other" при живом использовании, docs/quality-roadmap.md).
 
         Returns:
             CompilationResult с результатами.
@@ -3548,7 +3629,10 @@ class FB2CompilerService:
                 author=group.author,
                 series=clean_series,
                 suffix=suffix,
-                genre=meta.get('genre', ''),
+                genre=self._resolve_compile_genre(
+                    meta.get('genre', ''), genre_override,
+                    group.books[0].abs_path if group.books else None,
+                ),
                 bodies=bodies,
                 binaries=collected_binaries,
                 cover_image_id=cover_image_id,
