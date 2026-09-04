@@ -108,6 +108,47 @@ class TestSeriesConsensusFolderPathLeak:
         assert "\\" not in records[1].proposed_series
 
 
+class TestSubfolderHierarchyAuthorFolderWithMidwordParens:
+    """`_postcheck_build_subfolder_hierarchy()` (regen_csv.py) ошибочно
+    принимал саму папку автора за "серию верхнего уровня", когда в её
+    имени скобки стоят НЕ в конце ("Горъ (Гозалишвили) Василий" — реальная
+    фамилия автора вставлена между псевдонимом и именем), а не как целиком
+    завершающий суффикс "Псевдоним (Реал)". Guard "дедушка совпадает с
+    proposed_author" сравнивал имя папки только после обрезки СКОБОК С
+    КОНЦА строки — для середины строки скобки не обрезались, из-за чего
+    сравнение не совпадало, guard не срабатывал, и в proposed_series
+    протекал весь путь "Автор\\Серия" целиком вместо чистого имени серии.
+
+    Реальный случай: "Русский фантастический боевик\\Горъ (Гозалишвили)
+    Василий\\Демон\\1. Демон.fb2" — 5 файлов серии "Демон" получали
+    proposed_series="Горъ (Гозалишвили) Василий\\Демон" вместо "Демон".
+    """
+
+    def _service(self, records):
+        from pathlib import Path
+        service = RegenCSVService(_config_path())
+        service.work_dir = Path(r"C:\Library")
+        service.author_folder_cache = {}  # намеренно пусто — как в реальном случае
+        service.records = records
+        return service
+
+    def test_author_folder_with_midword_parens_not_treated_as_series(self):
+        records = [
+            _rec(f"Горъ (Гозалишвили) Василий\\Демон\\{n}. Т{n}.fb2",
+                 "Василий Горъ", "Горъ Василий", "folder_dataset",
+                 proposed_series="Демон", series_source="folder_dataset")
+            for n in range(1, 6)
+        ]
+        service = self._service(records)
+        service._postcheck_build_subfolder_hierarchy()
+        for r in records:
+            assert r.proposed_series == "Демон", (
+                f"'{r.file_path}': proposed_series стало {r.proposed_series!r} — "
+                "имя папки автора протекло в серию"
+            )
+            assert "\\" not in r.proposed_series
+
+
 class TestSeriesSuffixCorrectionFolderPathLeak:
     """Подтверждено на реальных файлах ("Поселягин Владимир\\Криминал",
     live-проверка на машине с доступом к \\\\turnkey\\Docs\\Books —

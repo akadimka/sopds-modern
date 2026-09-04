@@ -1554,8 +1554,22 @@ class RegenCSVService:
                 gp_norm = gp_name_stripped.lower().replace('ё', 'е').strip()
                 auth_norm = record.proposed_author.lower().replace('ё', 'е').strip()
                 auth_parts = auth_norm.split()
+                # ВАЖНО: скобки могут стоять НЕ в конце, а внутри имени папки —
+                # "Горъ (Гозалишвили) Василий" (псевдоним + реальная фамилия
+                # автора в скобках + продолжение псевдонима), а не только
+                # "Псевдоним (Реал)" целиком в конце. gp_name_stripped выше
+                # обрезает скобки ТОЛЬКО с конца строки, поэтому для такого
+                # случая остаётся нетронутым — сравниваем ЕЩЁ и с версией, где
+                # скобки вырезаны отовсюду в строке, а не только с конца.
+                # Без этого guard не срабатывает: реальная папка автора
+                # ошибочно принимается за "серию верхнего уровня", и в
+                # proposed_series протекает весь путь "Автор\Серия" целиком
+                # (найдено на реальной библиотеке — Горъ (Гозалишвили) Василий).
+                gp_norm_noparens = re.sub(r'\s*\([^)]*\)\s*', ' ', gp_name).lower().replace('ё', 'е')
+                gp_norm_noparens = re.sub(r'\s+', ' ', gp_norm_noparens).strip()
                 if (gp_norm == auth_norm
                         or gp_norm.startswith(auth_norm)
+                        or gp_norm_noparens == auth_norm
                         or (auth_parts and auth_parts[0] in gp_norm and len(gp_norm) <= len(auth_norm) + 5)):
                     continue
                 # Псевдоним в скобках: "Дубина-Родион (Дарки)" → parenthetical == proposed_author
