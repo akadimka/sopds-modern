@@ -183,8 +183,14 @@ class FB2SAXExtractor:
                 parts = []
                 if author.get('first_name', '').strip():
                     parts.append(author['first_name'].strip())
-                if author.get('middle_name', '').strip():
-                    parts.append(author['middle_name'].strip())
+                # Раздвигаем слитные инициалы ("С.А." → "С. А.") — ТОЛЬКО в
+                # middle_name, не во всём объединённом имени: см. пояснение
+                # и реальный случай ("N.B." псевдоним без фамилии) в
+                # _extract_all_metadata_at_once().
+                middle_name = author.get('middle_name', '').strip()
+                if middle_name:
+                    middle_name = re.sub(r'([А-ЯЁA-Z])\.(?=[А-ЯЁA-Z]\.)', r'\1. ', middle_name)
+                    parts.append(middle_name)
                 if author.get('last_name', '').strip():
                     parts.append(author['last_name'].strip())
 
@@ -1264,9 +1270,31 @@ class FB2SAXExtractor:
             authors_parts = []
             seen_lower: set = set()
             for author in handler.authors:
+                # Составные инициалы без пробела внутри тега <middle-name> —
+                # "С.А." вместо "С. А." — встречаются в реальных FB2 (пример:
+                # серия "Пространство"/"The Expanse", автор "Джеймс С.А.
+                # Кори"). Без пробела это выглядит как ОДИН непрерывный
+                # токен — дальнейшие проходы (нормализация порядка слов,
+                # консенсус по серии, author_surname_conversions) ожидают
+                # отдельные "И." "О." токены и не распознают такую склейку,
+                # из-за чего файл с ней не проходит те же преобразования,
+                # что и соседи по серии с обычным написанием ("Джеймс
+                # Кори"/"Джеймс С. А. Кори") — и в итоге получает другого
+                # "финального" автора при полной сборке библиотеки.
+                # Раздвигаем такие инициалы пробелом здесь же, у источника —
+                # ТОЛЬКО в middle_name, не в объединённой строке целиком:
+                # иначе цепляет и самостоятельные псевдонимы-инициалы без
+                # фамилии вовсе (напр. "N.B." — <first-name>N.B.</first-name>
+                # с пустым last-name, реальный случай "N.B. ОЯШ 1-2.fb2") —
+                # такие двухбуквенные "имена" не разделяются и не переставляются
+                # порядком слов, это цельный псевдоним, а не имя+фамилия.
+                middle_name = re.sub(
+                    r'([А-ЯЁA-Z])\.(?=[А-ЯЁA-Z]\.)', r'\1. ',
+                    author.get('middle_name', '').strip(),
+                )
                 parts = [
                     author.get('first_name', '').strip(),
-                    author.get('middle_name', '').strip(),
+                    middle_name,
                     author.get('last_name', '').strip(),
                 ]
                 name = ' '.join(p for p in parts if p)
