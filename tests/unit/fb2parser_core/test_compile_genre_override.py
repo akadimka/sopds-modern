@@ -110,6 +110,39 @@ class TestCompileGroupGenreOverride:
         assert "<genre>Фантастика</genre>" in text
         assert "<genre>other</genre>" not in text
 
+    def test_brand_new_genre_not_yet_in_genres_xml_still_detected(self, tmp_path):
+        """Повторение бага №18/19 с ещё одним триггером: genres.xml — это
+        статический справочник, который genre_assign.py никогда не
+        обновляет (жанр — произвольная строка, введённая пользователем
+        через UI). Папка нового, только что присвоенного жанра, которого
+        ещё нет в genres.xml, раньше проваливала tier-3 (совпадение по
+        genres.xml) и всё равно давала genre="other". Теперь tier-3
+        сначала проверяет РЕАЛЬНЫЕ папки верхнего уровня библиотеки
+        (ground truth файловой системы), только потом genres.xml.
+        """
+        genre_name = "Совсем Новый Жанр"
+        genre_dir = tmp_path / genre_name / "Автор Тест"
+        genre_dir.mkdir(parents=True)
+        _write_book(genre_dir, "Автор Тест - Серия Тест 1.fb2", "Серия Тест 1", "1")
+        _write_book(genre_dir, "Автор Тест - Серия Тест 2.fb2", "Серия Тест 2", "2")
+
+        from fb2parser_core import regen_csv
+        service = regen_csv.RegenCSVService(_config_path())
+        records = service.generate_csv(str(tmp_path), output_csv_path=None)
+
+        svc = FB2CompilerService()
+        # Не трогаем настоящий config.json/library_path — просто заполняем
+        # кэш инстанса напрямую, как будто library_path=tmp_path.
+        svc._library_folder_names_cache = [genre_name]
+        groups = svc.find_groups(records, tmp_path)
+        group = next(g for g in groups if g.author == "Автор Тест")
+
+        result = svc.compile_group(group, output_dir=None, delete_sources=False)
+        assert result.success
+        text = result.output_path.read_text(encoding="utf-8")
+        assert f"<genre>{genre_name}</genre>" in text
+        assert "<genre>other</genre>" not in text
+
 
 class TestAutoCompileLibraryDerivesGenreFromFolder:
     """auto_compile_library() вычисляет genre_override из первого сегмента

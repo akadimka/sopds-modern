@@ -372,23 +372,38 @@ class FB2CompilerService:
         1. genre_override — явно передан вызывающим кодом, который уже
            точно знает жанр (см. auto_compile_library()).
         2. <genre> метаданных первой исходной книги, если непусто.
-        3. Имя genre-папки библиотеки — ищем среди сегментов пути первой
-           книги совпадение (без учёта регистра) с именем узла из
-           genres.xml. Нужно как safety-net для вызывающего кода, который
-           НЕ прокидывает genre_override явно (например ручной инструмент
-           компиляции — normalize/compiler в веб-UI, compiler_run()) —
-           реальный случай: 3 файла ("Квантовые джунгли", "Игра не для
-           всех", "Зург") получили genre="other", хотя лежали внутри
-           "Фантастика", потому что были скомпилированы через ЭТОТ путь,
-           а не через auto_compile_library() (см. docs/quality-roadmap.md,
-           баг №18/19).
-        4. "other" — совсем ничего не найдено (как и раньше).
+        3. Имя РЕАЛЬНОЙ genre-папки библиотеки — ищем среди сегментов пути
+           первой книги совпадение (без учёта регистра) с именем папки
+           верхнего уровня, ФАКТИЧЕСКИ существующей в library_path.
+           Присвоение жанра папке (genre_assign.py) лишь пишет `<genre>` в
+           метаданные файлов и не трогает genres.xml вообще — жанр может
+           быть произвольной строкой, которую пользователь только что
+           ввёл, ещё не зарегистрированной там. Ground truth — сама
+           файловая система библиотеки, не статический справочник.
+        4. То же самое, но по именам узлов genres.xml — на случай, если
+           library_path недоступен (не настроен/не существует), считаем
+           это менее надёжным резервом ради обратной совместимости.
+           Нужно как safety-net для вызывающего кода, который НЕ прокидывает
+           genre_override явно (например ручной инструмент компиляции —
+           normalize/compiler в веб-UI, compiler_run()) — реальный случай:
+           3 файла ("Квантовые джунгли", "Игра не для всех", "Зург")
+           получили genre="other", хотя лежали внутри "Фантастика", потому
+           что были скомпилированы через ЭТОТ путь, а не через
+           auto_compile_library() (см. docs/quality-roadmap.md, баг №18/19).
+        5. "other" — совсем ничего не найдено (как и раньше).
         """
         if genre_override:
             return genre_override
         if meta_genre:
             return meta_genre
         if first_book_path is not None:
+            try:
+                lib_names = {n.lower() for n in self._library_folder_names()}
+                for part in first_book_path.parts:
+                    if part.lower() in lib_names:
+                        return part
+            except Exception:
+                pass
             try:
                 names = {n.name.lower() for n in self._genre_node_names()}
                 for part in first_book_path.parts:
@@ -397,6 +412,28 @@ class FB2CompilerService:
             except Exception:
                 pass
         return ''
+
+    def _library_folder_names(self):
+        """Имена папок верхнего уровня реальной библиотеки (кэшируется на
+        инстансе) — фактические genre-папки на диске, актуальнее статического
+        genres.xml (который присвоение жанра никогда не обновляет)."""
+        cached = getattr(self, '_library_folder_names_cache', None)
+        if cached is not None:
+            return cached
+        names = []
+        try:
+            from .settings_manager import SettingsManager
+            _fb2_data_dir = Path(__file__).resolve().parent.parent / 'fb2_data'
+            _config_path = str(_fb2_data_dir / 'settings' / 'config.json')
+            library_path = SettingsManager(_config_path).get_library_path() or ''
+            if library_path:
+                lib_dir = Path(library_path)
+                if lib_dir.is_dir():
+                    names = [p.name for p in lib_dir.iterdir() if p.is_dir()]
+        except Exception:
+            names = []
+        self._library_folder_names_cache = names
+        return names
 
     def _genre_node_names(self):
         """Плоский список всех узлов genres.xml (кэшируется на инстансе)."""
