@@ -146,3 +146,62 @@ class TestSoleSurvivingCompilationGetsProperName:
         kind, vols, _conf = sync._classify_record(survivor)
         name = sync._build_target_filename(survivor, kind, vols)
         assert name == "Лисина Александра - Времена (Декалогия).fb2"
+
+
+class TestResolveTargetCollision:
+    """Обнаружено на реальной библиотеке (Васильев Андрей / "Ученики
+    Ворона"): в исходную папку заново попал файл, целиком дублирующий уже
+    ранее синхронизированную и переименованную компиляцию ("Гепталогия").
+    Итоговое имя строится детерминированно из автора+серии+числа охваченных
+    томов (см. _sole_full_compilation_paths выше) — поэтому совпадает с уже
+    существующим файлом в библиотеке байт-в-байт по ИМЕНИ. Раньше
+    `target_file.exists()` только пропускал перемещение — источник навсегда
+    оставался лежать в исходной папке без какой-либо очистки.
+
+    Фикс: `_resolve_target_collision()` при таком совпадении имени сравнивает
+    размеры — источник удаляется, только если он НЕ БОЛЬШЕ уже существующего
+    (иначе, при подозрении на более полную версию, оставляем оба файла на
+    ручную проверку).
+    """
+
+    def test_smaller_or_equal_source_deleted(self, tmp_path):
+        source = tmp_path / "source.fb2"
+        target = tmp_path / "target.fb2"
+        source.write_bytes(b"x" * 10)
+        target.write_bytes(b"x" * 1000)
+
+        sync = _sync()
+        sync.stats = {"duplicates_deleted": 0, "errors": 0}
+        sync._resolve_target_collision(source, target)
+
+        assert not source.exists()
+        assert target.exists()
+        assert sync.stats["duplicates_deleted"] == 1
+        assert sync.stats["errors"] == 0
+
+    def test_equal_size_source_deleted(self, tmp_path):
+        source = tmp_path / "source.fb2"
+        target = tmp_path / "target.fb2"
+        source.write_bytes(b"x" * 500)
+        target.write_bytes(b"x" * 500)
+
+        sync = _sync()
+        sync.stats = {"duplicates_deleted": 0, "errors": 0}
+        sync._resolve_target_collision(source, target)
+
+        assert not source.exists()
+        assert sync.stats["duplicates_deleted"] == 1
+
+    def test_larger_source_kept_for_manual_review(self, tmp_path):
+        source = tmp_path / "source.fb2"
+        target = tmp_path / "target.fb2"
+        source.write_bytes(b"x" * 1000)
+        target.write_bytes(b"x" * 10)
+
+        sync = _sync()
+        sync.stats = {"duplicates_deleted": 0, "errors": 0}
+        sync._resolve_target_collision(source, target)
+
+        assert source.exists()  # не удалён — возможно более полная версия
+        assert target.exists()
+        assert sync.stats["duplicates_deleted"] == 0

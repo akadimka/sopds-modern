@@ -742,6 +742,35 @@ class SynchronizationService:
             except Exception as e:
                 self._log(f"  Ошибка при удалении из БД: {e}")
     
+    def _resolve_target_collision(self, source_file: Path, target_file: Path) -> None:
+        """Источник, чьё вычисленное итоговое имя совпало с уже существующим
+        файлом в библиотеке, почти наверняка избыточная копия — но точного
+        совпадения имени недостаточно, чтобы бездумно удалить источник:
+        могло быть другое издание с тем же числом томов. Удаляем источник,
+        только если он НЕ БОЛЬШЕ уже существующего файла (иначе — вдруг
+        более полная версия — оставляем оба файла на ручную проверку; тот
+        же принцип, что при выборе "лучшей" предкомпиляции в
+        fb2_compiler.py, баг №8).
+        """
+        try:
+            source_size = source_file.stat().st_size if source_file.exists() else -1
+            target_size = target_file.stat().st_size
+        except OSError:
+            source_size = target_size = -1
+        if 0 <= source_size <= target_size:
+            try:
+                source_file.unlink()
+                self._log(f"  🗑️  Дубликат уже существующей компиляции удалён из источника: "
+                          f"{source_file.name} ({source_size} Б ⊆ {target_file.name}, {target_size} Б)")
+                self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
+            except OSError as e:
+                self._log(f"  ✗ Не удалось удалить дубликат {source_file.name}: {e}")
+                self.stats['errors'] += 1
+        else:
+            self._log(f"⚠️  Файл уже существует в библиотеке: {target_file}")
+            self._log(f"    Источник БОЛЬШЕ существующего ({source_size} Б > {target_size} Б) — "
+                      f"оставляем оба файла на ручную проверку, не удаляем")
+
     # Символы, недопустимые в именах файлов Windows
     _UNSAFE_CHARS_RE = re.compile(r'[\\/:*?"<>|]')
 
@@ -934,10 +963,21 @@ class SynchronizationService:
                 target_name = self._build_target_filename(record, kind, covered)
                 target_file = target_dir / target_name
                 
-                # Check if file already exists at target
+                # Check if file already exists at target.
+                #
+                # Итоговое имя (с суффиксом вида "(Гепталогия)") строится
+                # ДЕТЕРМИНИРОВАННО из автора+серии+числа охваченных томов
+                # (см. _build_target_filename — ветка _sole_full_compilation_paths).
+                # Совпадение с уже существующим файлом означает: библиотека
+                # уже содержит компиляцию ЭТОЙ ЖЕ серии этого же автора с ЭТИМ
+                # ЖЕ числом томов — источник практически наверняка избыточная
+                # копия (нашлась заново после того, как оригинал уже был
+                # синхронизирован в более раннем прогоне). Реальный случай:
+                # Васильев Андрей / Ученики Ворона — "1-7.fb2" оставался в
+                # исходной папке НАВСЕГДА, т.к. проверка только пропускала
+                # перемещение, не решая судьбу теперь избыточного источника.
                 if target_file.exists():
-                    self._log(f"⚠️  Файл уже существует в библиотеке: {target_file}")
-                    self._log(f"    Пропускаем перемещение")
+                    self._resolve_target_collision(source_file, target_file)
                     self.stats['duplicates_found'] += 1
                     continue
                 
