@@ -2188,7 +2188,10 @@ class FB2CompilerService:
     _ANNOTATION_HEADER_RE = re.compile(
         r'<p>\s*<strong>\s*([^<]{2,60}?)\s*:?\s*</strong>\s*</p>', re.IGNORECASE
     )
-    _ANNOTATION_ITEM_RE = re.compile(r'<p>\s*(\d{1,3})\.\s*<strong>', re.IGNORECASE)
+    # <strong> после номера — необязателен: "N. <strong>Автор</strong>: Title"
+    # (Клан Медведя, Циклы фантастических романов) и просто "N. Title (год)"
+    # без автора вообще (Темный паладин. Сборник) — оба реальных формата.
+    _ANNOTATION_ITEM_RE = re.compile(r'<p>\s*(\d{1,3})\.\s*(?:<strong>)?', re.IGNORECASE)
 
     def _annotation_toc_range(self, text: str, series: str) -> Tuple[int, int]:
         """Разобрать текстовое оглавление вида "N. <strong>Автор</strong>: Title"

@@ -161,3 +161,25 @@ class TestAnnotationTableOfContentsRange:
         assert svc._annotation_toc_range(text, "Первая серия") == (1, 2)
         assert svc._annotation_toc_range(text, "Вторая серия") == (1, 3)
         assert svc._annotation_toc_range(text, "Совсем другая серия") == (0, 0)
+
+    def test_annotation_toc_without_strong_wrapped_items(self):
+        """Обнаружено на реальной библиотеке (Маханенко Василий / "Темный
+        паладин"): "Темный паладин. Сборник.fb2" перечисляет тома как
+        "N. Title (год)" БЕЗ <strong>Автор</strong> вообще (в отличие от
+        "Клан Медведя. Сборник.fb2", где каждый пункт оборачивал автора в
+        <strong>) — _ANNOTATION_ITEM_RE требовал <strong> сразу после
+        номера и не находил вообще ни одного пункта, из-за чего файл (уже
+        полная трилогия) считался "позиция неизвестна" и не мог быть
+        распознан как готовая предкомпиляция.
+        """
+        text = (
+            '<annotation>'
+            '<p>Аннотация.</p>'
+            '<p>Содержание:</p>'
+            '<p>1. Темный паладин (2017)</p>'
+            '<p>2. Темный Паладин. Поиск (2017)</p>'
+            '<p>3. Темный Паладин. Рестарт (2018)</p>'
+            '</annotation>'
+        )
+        svc = FB2CompilerService()
+        assert svc._annotation_toc_range(text, "Темный паладин") == (1, 3)
