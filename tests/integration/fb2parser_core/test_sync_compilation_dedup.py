@@ -159,9 +159,10 @@ class TestResolveTargetCollision:
     оставался лежать в исходной папке без какой-либо очистки.
 
     Фикс: `_resolve_target_collision()` при таком совпадении имени сравнивает
-    размеры — источник удаляется, только если он НЕ БОЛЬШЕ уже существующего
-    (иначе, при подозрении на более полную версию, оставляем оба файла на
-    ручную проверку).
+    размеры — источник НЕ БОЛЬШЕ существующего считается избыточным дублем и
+    удаляется; источник БОЛЬШЕ (потенциально более полная версия) заменяет
+    старый файл в библиотеке — возвращает True, и вызывающий код (synchronize())
+    перемещает источник на освободившееся место обычным путём.
     """
 
     def test_smaller_or_equal_source_deleted(self, tmp_path):
@@ -172,8 +173,9 @@ class TestResolveTargetCollision:
 
         sync = _sync()
         sync.stats = {"duplicates_deleted": 0, "errors": 0}
-        sync._resolve_target_collision(source, target)
+        replaced = sync._resolve_target_collision(source, target)
 
+        assert replaced is False
         assert not source.exists()
         assert target.exists()
         assert sync.stats["duplicates_deleted"] == 1
@@ -187,12 +189,13 @@ class TestResolveTargetCollision:
 
         sync = _sync()
         sync.stats = {"duplicates_deleted": 0, "errors": 0}
-        sync._resolve_target_collision(source, target)
+        replaced = sync._resolve_target_collision(source, target)
 
+        assert replaced is False
         assert not source.exists()
         assert sync.stats["duplicates_deleted"] == 1
 
-    def test_larger_source_kept_for_manual_review(self, tmp_path):
+    def test_larger_source_replaces_existing_file(self, tmp_path):
         source = tmp_path / "source.fb2"
         target = tmp_path / "target.fb2"
         source.write_bytes(b"x" * 1000)
@@ -200,8 +203,10 @@ class TestResolveTargetCollision:
 
         sync = _sync()
         sync.stats = {"duplicates_deleted": 0, "errors": 0}
-        sync._resolve_target_collision(source, target)
+        replaced = sync._resolve_target_collision(source, target)
 
-        assert source.exists()  # не удалён — возможно более полная версия
-        assert target.exists()
+        assert replaced is True
+        assert source.exists()  # удаление/перемещение источника — забота вызывающего кода
+        assert not target.exists()  # старая версия в библиотеке удалена, место освобождено
         assert sync.stats["duplicates_deleted"] == 0
+        assert sync.stats["errors"] == 0
