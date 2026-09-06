@@ -140,6 +140,17 @@ class Command(BaseCommand):
         self.logger.debug("Updating library statistics")
         Counter.objects.update_known_counters()
         Counter.objects.update("auto_scan", Counter.objects.get_counter("allbooks"))
+        # Разбудить фетчеры рейтингов сразу же, если появились новые книги —
+        # тот же приём, что и у ручной кнопки "Scan library" в веб-UI (см.
+        # sopds_web_backend.views._run_sopds_scan). Раньше это было только
+        # там: ночной sopds-scan.service (как и sopds_watch — см. этот же
+        # docs/quality-roadmap.md) никогда не будил фетчеры, из-за чего новые
+        # книги ждали своей очереди до 24 часов (собственный idle-цикл
+        # фетчера), даже если библиотека обновлялась именно этим сервисом,
+        # а не ручным сканом.
+        if scanner.books_added:
+            from opds_catalog.ratings_fetchers import poke_fetchers_for_new_books
+            poke_fetchers_for_new_books()
         self.logger.debug("Releasing lock")
         self.scan_is_active = False
 

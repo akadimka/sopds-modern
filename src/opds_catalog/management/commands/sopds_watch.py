@@ -105,6 +105,15 @@ class Command(BaseCommand):
             f"Startup scan complete: added={scanner.books_added} "
             f"deleted={scanner.books_deleted} skipped={scanner.books_skipped}"
         )
+        # Разбудить фетчеры рейтингов сразу, если стартовый скан нашёл новые
+        # книги — без этого им пришлось бы ждать своего собственного
+        # 24-часового idle-цикла. Тот же приём, что у ручной кнопки "Scan
+        # library" в веб-UI (см. sopds_web_backend.views._run_sopds_scan) —
+        # раньше он был подключён только там; ни этот демон, ни ночной
+        # sopds-scan.service новые книги фетчерам не анонсировали вообще.
+        if scanner.books_added:
+            from opds_catalog.ratings_fetchers import poke_fetchers_for_new_books
+            poke_fetchers_for_new_books()
 
         tracker = LibraryDirtyTracker()
         observer = Observer()
@@ -138,6 +147,7 @@ class Command(BaseCommand):
     def _flush(self, dirs: list, scanner) -> None:
         self._reconnect_if_needed()
         self.stdout.write(f"Rescanning {len(dirs)} changed folder(s)...")
+        books_added_before = scanner.books_added
         with transaction.atomic():
             for d in dirs:
                 if not os.path.isdir(d):
@@ -153,3 +163,10 @@ class Command(BaseCommand):
                     scanner.scan_path(d)
                 opdsdb.books_del_phisical_scoped(rel_path)
             opdsdb.cleanup_orphan_entities()
+        # Та же логика, что при стартовом скане выше — новые книги от точечных
+        # inotify-пересканов иначе никогда не анонсируются фетчерам рейтингов.
+        # books_added — кумулятивный счётчик на всё время жизни scanner (см.
+        # sopdscan.py), поэтому сравниваем со значением до этого батча.
+        if scanner.books_added > books_added_before:
+            from opds_catalog.ratings_fetchers import poke_fetchers_for_new_books
+            poke_fetchers_for_new_books()
