@@ -1553,6 +1553,60 @@ class Pass2SeriesFilename:
         """
         from collections import defaultdict
 
+        # --- Проход 0: «Франшиза. ИмяАрки-N» (дефис перед номером, БЕЗ
+        # подзаголовка после числа) ---
+        # Реальный случай (docs/quality-roadmap.md, баг №27, часть 2):
+        # "Галеев Эдуард - S-T-I-K-S. Сварной-1.fb2" … "…Сварной-5.fb2" —
+        # франшиза-обёртка "S-T-I-K-S" уже извлечена как proposed_series
+        # (голый корень, без арки), но имя арки "Сварной" вообще не
+        # распознавалось: _ARC_RE_ANY (ниже) требует "Корень N. Заголовок"
+        # (пробел перед числом, точка+пробел+текст ПОСЛЕ числа) — здесь же
+        # номер идёт через ДЕФИС сразу после имени арки и явно завершает
+        # имя файла, без подзаголовка вовсе.
+        _DASH_ARC_RE = re.compile(
+            r'^(?:.+?\s*-\s*)?(.+?)\.\s+(.+?)-(\d{1,3})$',
+            re.UNICODE,
+        )
+        _dash_groups: dict = defaultdict(list)
+        for rec in records:
+            if not rec.proposed_series or '\\' in rec.proposed_series:
+                continue
+            if (rec.series_source or '') == 'filename_named_arc':
+                continue
+            if 'filename' not in (rec.series_source or ''):
+                continue
+            stem = Path(rec.file_path).stem
+            m = _DASH_ARC_RE.match(stem)
+            if not m:
+                continue
+            root_cand = _norm_s(m.group(1))
+            series_norm = _norm_s(rec.proposed_series)
+            if root_cand != series_norm:
+                continue  # корень в стеме не совпадает с уже извлечённой серией
+            arc_name = m.group(2).strip()
+            arc_norm = _norm_s(arc_name)
+            if not arc_norm or len(arc_norm) < 3 or arc_norm == series_norm:
+                continue
+            vol_num = int(m.group(3))
+            folder_k = str(Path(rec.file_path).parent)
+            key = (_norm_s(rec.proposed_author or ''), series_norm, arc_norm, folder_k)
+            _dash_groups[key].append((rec, vol_num, arc_name))
+
+        for (_author_k, _series_k, _arc_k, _folder_k), entries in _dash_groups.items():
+            if len(entries) < 2:
+                continue  # уникальное совпадение — не подтверждённая дуга
+            vols = sorted(v for _, v, _ in entries)
+            if vols[0] == vols[-1]:
+                continue  # дубли одного номера — не реальная дуга
+            arc_display = max((a for _, _, a in entries), key=len)
+            root_display = entries[0][0].proposed_series
+            new_series = f'{root_display}\\{arc_display}'
+            for rec, vol_num, _ in entries:
+                rec.proposed_series = new_series
+                rec.series_number = str(vol_num)
+                rec.series_number_source = 'filename_named_arc'
+                rec.series_source = 'filename_named_arc'
+
         # Zero-padded паттерн: «SeriesRoot 0N. ArcTitle»
         # Захватываем серию, номер тома (zero-padded) и arc candidate.
         # Допускаем многосоставный arc title с точками внутри: «Другая жизнь. Назад в СССР»
