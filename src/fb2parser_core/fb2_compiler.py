@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
-from .fb2_utils import write_fb2_bytes
+from .fb2_utils import read_fb2_bytes, write_fb2_bytes
 
 try:
     from .series_normalizer import _nfc_lower_yo as _norm_key
@@ -1169,8 +1169,14 @@ class FB2CompilerService:
                 )
                 if _is_exact_tiling:
                     def _sz(b: 'CompilationBook') -> int:
+                        # Сравниваем длину распакованного содержимого, а не
+                        # байты на диске: сжатый .fb2.zip (см. функцию "Сжать"
+                        # в Library) на диске меньше несжатого .fb2 с тем же
+                        # или даже большим реальным содержимым — сравнение
+                        # .stat().st_size ложно посчитало бы сжатый файл
+                        # урезанным изданием.
                         try:
-                            return b.abs_path.stat().st_size
+                            return len(read_fb2_bytes(b.abs_path))
                         except OSError:
                             return 0
                     _best_size = _sz(best_pre)
@@ -2395,8 +2401,11 @@ class FB2CompilerService:
             return (1 if len(sk) > 2 and sk[2] != 0 else 0) + (1 if len(sk) > 3 and sk[3] != 0 else 0)
 
         def _file_size(b: CompilationBook) -> int:
+            # Распакованное содержимое, а не байты на диске — иначе сжатый
+            # .fb2.zip (см. функцию "Сжать" в Library) ложно проигрывал бы
+            # несжатому дублю с тем же или меньшим реальным содержимым.
             try:
-                return b.abs_path.stat().st_size
+                return len(read_fb2_bytes(b.abs_path))
             except OSError:
                 return 0
 
