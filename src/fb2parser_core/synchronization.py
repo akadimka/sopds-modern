@@ -807,6 +807,34 @@ class SynchronizationService:
         """Заменить недопустимые символы в имени файла на '_'."""
         return cls._UNSAFE_CHARS_RE.sub('_', s).strip()
 
+    # Windows MAX_PATH без включённой поддержки длинных путей — реальный случай:
+    # "Микишин Федор - Хан Батый и десантники. Книга 1. Выживание.
+    # Альтернативная история с попаданцами. Посвящается курсантам военных
+    # училищ СССР т. 1.fb2" (длинное название с подзаголовком-посвящением)
+    # давало путь ровно в 260 символов — os.rename/CopyFile2 падали с
+    # "[WinError 3] Системе не удается найти указанный путь", хотя и
+    # исходная, и целевая папки существовали.
+    _MAX_PATH = 259
+
+    def _shorten_filename_for_path_limit(self, target_dir: Path, filename: str) -> str:
+        """Укоротить `filename`, если итоговый путь в `target_dir` превышает
+        MAX_PATH — обрезаем "хвост" имени файла (не каталог: он определяется
+        жанром/автором/серией и трогать его нельзя), сохраняя расширение.
+        """
+        full_len = len(str(target_dir / filename))
+        overflow = full_len - self._MAX_PATH
+        if overflow <= 0:
+            return filename
+        if '.' in filename:
+            stem, ext = filename.rsplit('.', 1)
+            ext = '.' + ext
+        else:
+            stem, ext = filename, ''
+        keep = len(stem) - overflow - 1  # -1 за добавляемый "…"
+        if keep < 1:
+            keep = 1
+        return stem[:keep].rstrip(' .') + '…' + ext
+
     def _build_target_filename(self, record, kind: str, covered_volumes: set) -> str:
         """Build proper target filename based on record metadata.
 
@@ -989,6 +1017,7 @@ class SynchronizationService:
                 source_file = self.last_scan_path / record.file_path
                 kind, covered, _confident = self._classify_record(record)
                 target_name = self._build_target_filename(record, kind, covered)
+                target_name = self._shorten_filename_for_path_limit(target_dir, target_name)
                 target_file = target_dir / target_name
                 
                 # Check if file already exists at target.
