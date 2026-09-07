@@ -758,21 +758,31 @@ class SynchronizationService:
         стороне), что при выборе "лучшей" предкомпиляции в fb2_compiler.py,
         баг №8.
 
+        ВАЖНО: `target_file` может оказаться уже СЖАТЫМ библиотечным файлом
+        (`.fb2.zip` — см. функцию "Сжать" в Library). Источник (`source_file`)
+        всегда приходит из папки синхронизации НЕсжатым. Сравнивать
+        `.stat().st_size` НАПРЯМУЮ в этом случае некорректно: сжатый .zip на
+        диске почти всегда МЕНЬШЕ несжатого .fb2 с тем же (или даже большим)
+        реальным содержимым — источник ошибочно считался бы "полнее" и
+        заменял бы корректный сжатый файл избыточным дублем. Сравниваем длину
+        РАСПАКОВАННОГО XML-содержимого (`read_fb2_bytes` прозрачно читает оба
+        формата), а не байты на диске.
+
         Returns:
             True если старый файл в библиотеке удалён и источник нужно
             переместить на его место; False если ничего перемещать не нужно
             (источник удалён как дубль, либо удаление не удалось).
         """
         try:
-            source_size = source_file.stat().st_size if source_file.exists() else -1
-            target_size = target_file.stat().st_size
+            source_size = len(read_fb2_bytes(source_file)) if source_file.exists() else -1
+            target_size = len(read_fb2_bytes(target_file))
         except OSError:
             source_size = target_size = -1
         if 0 <= source_size <= target_size:
             try:
                 source_file.unlink()
                 self._log(f"  🗑️  Дубликат уже существующей компиляции удалён из источника: "
-                          f"{source_file.name} ({source_size} Б ⊆ {target_file.name}, {target_size} Б)")
+                          f"{source_file.name} ({source_size} Б содержимого ⊆ {target_file.name}, {target_size} Б)")
                 self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
             except OSError as e:
                 self._log(f"  ✗ Не удалось удалить дубликат {source_file.name}: {e}")
@@ -782,7 +792,7 @@ class SynchronizationService:
         try:
             target_file.unlink()
             self._log(f"  ♻️  Источник БОЛЬШЕ уже существующего файла в библиотеке "
-                      f"({source_size} Б > {target_size} Б) — заменяю: {target_file.name}")
+                      f"({source_size} Б содержимого > {target_size} Б) — заменяю: {target_file.name}")
             return True
         except OSError as e:
             self._log(f"  ✗ Не удалось удалить старую версию для замены {target_file.name}: {e}")
@@ -1000,8 +1010,19 @@ class SynchronizationService:
                 # старый и проваливаемся в обычную логику перемещения ниже
                 # (она сама переместит источник на освободившееся место и
                 # пропатчит теги, как для любого нового файла).
-                if target_file.exists():
-                    replaced = self._resolve_target_collision(source_file, target_file)
+                #
+                # Уже лежащий в библиотеке файл может быть СЖАТ (см. функцию
+                # "Сжать" в Library) — тогда на диске он называется не
+                # "<target_name>", а "<target_name>.zip". Проверяем оба
+                # варианта, иначе коллизия с уже сжатым файлом остаётся
+                # незамеченной, и источник молча ложится рядом как дубликат.
+                target_file_zip = target_dir / (target_name + '.zip')
+                existing_target = (
+                    target_file if target_file.exists()
+                    else (target_file_zip if target_file_zip.exists() else None)
+                )
+                if existing_target is not None:
+                    replaced = self._resolve_target_collision(source_file, existing_target)
                     self.stats['duplicates_found'] += 1
                     if not replaced:
                         continue

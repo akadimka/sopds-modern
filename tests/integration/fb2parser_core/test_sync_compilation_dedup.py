@@ -210,3 +210,55 @@ class TestResolveTargetCollision:
         assert not target.exists()  # старая версия в библиотеке удалена, место освобождено
         assert sync.stats["duplicates_deleted"] == 0
         assert sync.stats["errors"] == 0
+
+
+class TestResolveTargetCollisionWithCompressedLibraryTarget:
+    """Библиотечный файл может быть СЖАТ (.fb2.zip — функция "Сжать" в
+    Library), а источник при синхронизации всегда приходит несжатым.
+    Сравнение `.stat().st_size` НАПРЯМУЮ ошибочно: сжатый .zip на диске
+    почти всегда меньше несжатого .fb2 с ТЕМ ЖЕ реальным содержимым —
+    источник ложно считался бы "полнее" и заменял бы корректный сжатый
+    файл избыточным дублем. `_resolve_target_collision()` должен сравнивать
+    длину РАСПАКОВАННОГО содержимого (`read_fb2_bytes`), а не байты на диске.
+    """
+
+    @staticmethod
+    def _make_zip(path, content: bytes):
+        import zipfile
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(path.stem, content)
+
+    def test_equal_content_compressed_target_not_replaced(self, tmp_path):
+        content = ("<FictionBook>" + "текст " * 500 + "</FictionBook>").encode("utf-8")
+        source = tmp_path / "source.fb2"
+        target = tmp_path / "target.fb2.zip"
+        source.write_bytes(content)
+        self._make_zip(target, content)
+
+        # На диске сжатый .zip заметно меньше несжатого источника с тем же
+        # содержимым — раньше это ложно выглядело бы как "источник больше".
+        assert target.stat().st_size < source.stat().st_size
+
+        sync = _sync()
+        sync.stats = {"duplicates_deleted": 0, "errors": 0}
+        replaced = sync._resolve_target_collision(source, target)
+
+        assert replaced is False  # реальное содержимое одинаковое — источник избыточен
+        assert not source.exists()
+        assert target.exists()
+        assert sync.stats["duplicates_deleted"] == 1
+
+    def test_genuinely_larger_source_still_replaces_compressed_target(self, tmp_path):
+        small_content = b"<FictionBook>" + b"x" * 10 + b"</FictionBook>"
+        large_content = b"<FictionBook>" + b"x" * 100000 + b"</FictionBook>"
+        source = tmp_path / "source.fb2"
+        target = tmp_path / "target.fb2.zip"
+        source.write_bytes(large_content)
+        self._make_zip(target, small_content)
+
+        sync = _sync()
+        sync.stats = {"duplicates_deleted": 0, "errors": 0}
+        replaced = sync._resolve_target_collision(source, target)
+
+        assert replaced is True
+        assert not target.exists()
