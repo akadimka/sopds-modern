@@ -1272,6 +1272,43 @@ class RegenCSVService:
         if not keywords_norm:
             return
 
+        # Реальный случай (баг №34): "Лазарев Василий - S-T-I-K-S #25. И
+        # пришёл Лесник! 19.fb2" … "…S-T-I-K-S #29. И пришёл Лесник!
+        # 23.fb2" — filename-экстракция даёт "S-T-I-K-S #25" (франшиза +
+        # СОБСТВЕННЫЙ авторский счётчик эпизодов автора, не номер тома
+        # арки), теряя настоящее имя арки "И пришёл Лесник!" целиком — оно
+        # остаётся ТОЛЬКО в metadata_series ("S-T-I-K-S. И пришёл
+        # Лесник!", одинаковое у всех файлов). Без восстановления запись
+        # просто очищалась бы как голая франшиза (см. часть 3 бага №27).
+        # Восстанавливаем арку из metadata_series, только если очищенное
+        # имя арки повторяется у ≥2 записей ТОГО ЖЕ автора — иначе это
+        # обычный одиночный рассказ (Богданов/Горшенев, баг №27/№30),
+        # который по-прежнему должен просто исчезнуть.
+        _meta_arc_re = re.compile(r'^(.+?)[.\s]+(.+)$', re.UNICODE)
+        _meta_arc_counts: dict = {}
+        _meta_arc_cache: dict = {}
+        for _r in self.records:
+            _ms = (_r.metadata_series or '').strip()
+            if not _ms:
+                continue
+            _ms_norm = self._norm_for_series_cmp(_ms)
+            _kw_hit = next((kw for kw in keywords_norm
+                            if _ms_norm == kw or re.match(r'^' + re.escape(kw) + r'\b', _ms_norm)), None)
+            if not _kw_hit:
+                continue
+            _m = _meta_arc_re.match(_ms.strip())
+            if not _m:
+                continue
+            _arc_from_meta = _m.group(2).strip()
+            _arc_norm = self._norm_for_series_cmp(_arc_from_meta)
+            if not _arc_norm or _arc_norm == _kw_hit:
+                continue
+            _author_norm = self._norm_for_series_cmp(_r.proposed_author or '')
+            _key = (_author_norm, _arc_norm)
+            _meta_arc_counts[_key] = _meta_arc_counts.get(_key, 0) + 1
+            _meta_arc_cache[id(_r)] = (_key, _arc_from_meta)
+
+        _recovered = 0
         _count = 0
         _stripped = 0
         for record in self.records:
@@ -1291,12 +1328,25 @@ class RegenCSVService:
             s_norm = self._norm_for_series_cmp(s)
             if any(s_norm == kw or re.match(r'^' + re.escape(kw) + r'\b', s_norm)
                    for kw in keywords_norm):
+                _meta_hit = _meta_arc_cache.get(id(record))
+                if _meta_hit and _meta_arc_counts.get(_meta_hit[0], 0) >= 2:
+                    record.proposed_series = _meta_hit[1]
+                    record.series_source = 'metadata_arc_consensus'
+                    _num_m = re.search(r'\s+(\d{1,3})\s*$', (record.file_title or '').strip())
+                    if _num_m:
+                        record.series_number = _num_m.group(1)
+                        record.series_number_source = 'metadata_arc_consensus'
+                    _recovered += 1
+                    continue
                 record.proposed_series = ''
                 record.series_source = ''
                 record.series_number = ''
                 record.series_number_source = ''
                 _count += 1
 
+        if _recovered:
+            print(f"[POST-CHECK] Recovered {_recovered} named-arc series from metadata after franchise-keyword extraction failure")
+            self.logger.log(f"[OK] POST-CHECK: Recovered {_recovered} named-arc series from metadata")
         if _count:
             print(f"[POST-CHECK] Cleared {_count} bare universe-keyword series values")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_count} bare universe-keyword series values")
