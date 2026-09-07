@@ -1107,6 +1107,23 @@ class RegenCSVService:
             print(f"[POST-CHECK] Stripped {_count} metadata co-authors absent from filename")
             self.logger.log(f"[OK] POST-CHECK: Stripped {_count} metadata co-authors not in filename")
 
+    def _strip_series_folder_prefix(self, s: str) -> str:
+        """Обрезать служебный декоративный префикс папки ("Серия - «") из
+        отдельного имени папки — та же логика обрезки префиксов, что и в
+        `_postcheck_series_folder_blacklist`, но применима к ОДНОМУ сегменту
+        имени папки (а не ко всему готовому значению серии), чтобы вызывающий
+        код мог очистить дедушку/родителя ДО того, как он попадёт в
+        proposed_series (см. `_postcheck_build_subfolder_hierarchy`).
+        """
+        prefixes = self.settings.get_series_folder_prefixes_to_strip() or []
+        for prefix in prefixes:
+            if s.startswith(prefix):
+                remainder = s[len(prefix):]
+                if prefix.rstrip().endswith('«') and remainder.rstrip().endswith('»'):
+                    remainder = remainder.rstrip()[:-1].rstrip()
+                return remainder
+        return s
+
     def _postcheck_series_folder_blacklist(self) -> None:
         """Очищает организационные значения серий и обрезает служебные префиксы папок.
 
@@ -1537,6 +1554,23 @@ class RegenCSVService:
             if gp_name.lower() in FILE_EXTENSION_FOLDER_NAMES:
                 continue
 
+            # Дедушка — декоративный организационный контейнер вида "Серия -
+            # «Название»" (см. series_folder_prefixes_to_strip). Это НЕ
+            # настоящая "серия верхнего уровня", а просто ярлык-обёртка,
+            # под которой пользователь группирует разные подсерии/арки одной
+            # франшизы как отдельные ПЛОСКИЕ папки — сравни соседние подсерии
+            # той же обёртки ("1. Похождения Карата", "2. Приключения Элли"
+            # и т.п.): они получают чистое proposed_series БЕЗ этой обёртки,
+            # т.к. guard ниже (parent_name_norm == ps_norm) не совпадает,
+            # пока в имени папки есть порядковый номер. "Дополнения" (без
+            # номера) совпадает буква-в-букву — единственная причина, по
+            # которой обёртка вообще подмешивалась именно сюда. Чтобы не
+            # ломать её название по случайному совпадению цифр, пропускаем
+            # такого дедушку целиком — не только текст префикса.
+            if any(gp_name.startswith(p) for p in
+                   (self.settings.get_series_folder_prefixes_to_strip() or [])):
+                continue
+
             # Дедушка не должен быть авторской папкой
             gp_abs = str(self.work_dir / grandparent).lower()
             if gp_abs in _author_cache_lower:
@@ -1614,6 +1648,13 @@ class RegenCSVService:
             gp_clean = re.sub(r'\s*\([^)]*\)\s*$', '', gp_name).strip()
             if not gp_clean:
                 continue
+            # Дедушка — папка-контейнер вида "Серия - «Название»" (декоративный
+            # префикс, а не часть имени серии) — раньше этот "сырой" текст
+            # прилипал целиком к proposed_series ("Серия - «Вселенная
+            # S-T-I-K-S»\Дополнения"), т.к. `_postcheck_series_folder_blacklist`
+            # (обрезающий именно такие префиксы) отрабатывает РАНЬШЕ этого
+            # постчека и не видит текст, добавленный только что здесь.
+            gp_clean = self._strip_series_folder_prefix(gp_clean)
 
             if parent_name_norm == ps_norm:
                 # Случай А: родитель совпадает с текущей серией — prepend дедушку
@@ -1625,6 +1666,7 @@ class RegenCSVService:
                 # Случай Б: дедушка совпадает с текущей серией — append родителя.
                 # "Девятимечье\З. Синий мир\1.fb2", series="Девятимечье" → "Девятимечье\З. Синий мир"
                 parent_clean = re.sub(r'\s*\([^)]*\)\s*$', '', parent.name).strip()
+                parent_clean = self._strip_series_folder_prefix(parent_clean)
                 if parent_clean:
                     record.proposed_series = record.proposed_series + '\\' + parent_clean
                     record.series_source = record.series_source + '+subfolder_hierarchy'

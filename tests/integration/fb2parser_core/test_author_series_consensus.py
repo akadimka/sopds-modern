@@ -149,6 +149,60 @@ class TestSubfolderHierarchyAuthorFolderWithMidwordParens:
             assert "\\" not in r.proposed_series
 
 
+class TestSubfolderHierarchySkipsDecorativeContainerFolder:
+    """`_postcheck_build_subfolder_hierarchy()` (regen_csv.py) подмешивало
+    ДЕДУШКИНУ папку-контейнер вида "Серия - «Название»" (см.
+    `series_folder_prefixes_to_strip` в app_settings.json) в proposed_series,
+    хотя такая папка — чисто декоративная организационная обёртка, а не
+    настоящая "серия верхнего уровня".
+
+    Реальный случай (замечен пользователем в CSV): контейнер "Серия -
+    «Вселенная S-T-I-K-S»" содержит несколько ПЛОСКИХ подсерий-папок —
+    "1. Похождения Карата", "2. Приключения Элли", "3. Наемник Айвэн" и
+    т.д., а также "Дополнения" (без номера). Для пронумерованных подсерий
+    guard (parent_name_norm == ps_norm) никогда не совпадает — их имя папки
+    содержит номер ("1. Похождения Карата"), а proposed_series уже
+    очищено от номера ("Похождения Карата") — поэтому дедушка для них НЕ
+    подмешивается, и результат корректный: чистое "Похождения Карата".
+    "Дополнения" совпадает буква-в-букву (номера нет), guard срабатывает,
+    и дедушка ("Серия - «Вселенная S-T-I-K-S»") протекает в
+    proposed_series — единственно из-за случайного совпадения по
+    отсутствию номера, а не из-за реальной иерархии серий.
+
+    Фикс: дедушкина папка, чьё имя начинается с одного из
+    `series_folder_prefixes_to_strip`, — заведомо декоративный контейнер,
+    а не годная "серия верхнего уровня"; такой дедушка пропускается
+    целиком (постчек не срабатывает вообще), а не только чистится текст
+    префикса постфактум.
+    """
+
+    def _service(self, records):
+        from pathlib import Path
+        service = RegenCSVService(_config_path())
+        service.work_dir = Path(r"C:\Library")
+        service.author_folder_cache = {}
+        service.records = records
+        return service
+
+    def test_decorative_container_grandparent_not_mixed_into_series(self):
+        records = [
+            _rec(
+                f"Серия - «Вселенная S-T-I-K-S»\\Дополнения\\{n}. Файл.fb2",
+                "Автор Тест", "Автор Тест", "folder_dataset",
+                proposed_series="Дополнения", series_source="folder_dataset",
+            )
+            for n in range(1, 3)
+        ]
+        service = self._service(records)
+        service._postcheck_build_subfolder_hierarchy()
+        for r in records:
+            assert r.proposed_series == "Дополнения", (
+                f"'{r.file_path}': proposed_series стало {r.proposed_series!r} — "
+                "декоративный контейнер-обёртка протёк в серию"
+            )
+            assert "\\" not in r.proposed_series
+
+
 class TestSeriesSuffixCorrectionFolderPathLeak:
     """Подтверждено на реальных файлах ("Поселягин Владимир\\Криминал",
     live-проверка на машине с доступом к \\\\turnkey\\Docs\\Books —
