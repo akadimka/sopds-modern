@@ -52,10 +52,13 @@ class TestClearBareUniverseKeywordSeries:
             assert r.series_number == ""
             assert r.series_number_source == ""
 
-    def test_confirmed_named_arc_not_cleared(self):
+    def test_confirmed_named_arc_root_stripped_not_cleared(self):
+        # Реальная арка не удаляется целиком, а обрезается до имени дуги —
+        # "S-T-I-K-S\Сварной" → "Сварной" (баг №30: без этого один и тот же
+        # подцикл расходился на два представления в библиотеке одновременно).
         recs = [_rec("S-T-I-K-S\\Сварной")]
         self._run(recs)
-        assert recs[0].proposed_series == "S-T-I-K-S\\Сварной"
+        assert recs[0].proposed_series == "Сварной"
 
     def test_unrelated_series_containing_keyword_as_suffix_not_cleared(self):
         # "Магия S-T-I-K-S" — ключевое слово в КОНЦЕ, а не в начале —

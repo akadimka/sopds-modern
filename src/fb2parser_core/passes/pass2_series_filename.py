@@ -2281,7 +2281,7 @@ class Pass2SeriesFilename:
 
             # Ищем плоские записи: тот же автор, proposed_series == root_base
             _sub_re = re.compile(
-                re.escape(sub_norm) + r'\s+\d',
+                re.escape(sub_norm) + r'\s+(\d{1,3})',
                 re.UNICODE,
             )
             for rec in records:
@@ -2293,12 +2293,29 @@ class Pass2SeriesFilename:
                 if _norm_s(rec.proposed_series or '') != root_k:
                     continue
                 stem_norm = _norm_s(Path(rec.file_path).stem)
-                if _sub_re.search(stem_norm):
+                _num_m = _sub_re.search(stem_norm)
+                if _num_m:
                     rec.proposed_series = flat_series_display
+                    # ВАЖНО: помечаем как подтверждённую именованную дугу
+                    # (тот же series_source, что и _detect_named_arcs) — иначе
+                    # запись остаётся с series_source="filename", и более
+                    # поздний консенсус (Pass4Consensus, "Collapsed unconfirmed
+                    # filename subseries") откатывает только что установленную
+                    # иерархию ОБРАТНО в плоский корень, т.к. не считает
+                    # обычный "filename" источник подтверждением. Реальный
+                    # случай: "Елисеев Алексей - S-T-I-K-S. Пройти через
+                    # туман 2/3/4.fb2" теряли верно восстановленную серию
+                    # "S-T-I-K-S\Пройти через туман" (docs/quality-roadmap.md,
+                    # баг №29).
+                    rec.series_source = 'filename_named_arc'
+                    if not (rec.series_number or '').strip():
+                        rec.series_number = _num_m.group(1)
+                        rec.series_number_source = 'filename_named_arc'
 
             # 3. Нормализуем сами иерархические записи
             for root_b, sub_d, rec in entries:
                 rec.proposed_series = flat_series_display
+                rec.series_source = 'filename_named_arc'
 
     def _split_numbered_subseries(self, records: List[BookRecord]) -> None:
         """Обнаружить и разбить группы «Серия N. Заголовок. Том/Книга M» на подсерии.

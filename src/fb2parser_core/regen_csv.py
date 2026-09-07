@@ -958,6 +958,14 @@ class RegenCSVService:
             # тут же подставлял её назад из метаданных).
             self._postcheck_clear_universe_keyword_series()
 
+            # Повторный вызов: после обрезки franchise-обёртки ("S-T-I-K-S\Пройти
+            # через туман" → "Пройти через туман") безномерная книга-1 того же
+            # цикла, чей title совпадает с этим ТЕПЕРЬ ПЛОСКИМ именем, ещё не
+            # была связана первым вызовом (тогда серия соседей была
+            # иерархической, с другим корнем "S-T-I-K-S"). Идемпотентен —
+            # трогает только записи с пустым proposed_series.
+            self._postcheck_link_base_arc_book_into_named_series()
+
             self._clear_series_for_compilations()
             self.logger.log("[OK] Series cleared for compilations")
 
@@ -1163,9 +1171,13 @@ class RegenCSVService:
             if (rec.series_source or '') != 'filename_named_arc':
                 continue
             s = rec.proposed_series or ''
-            if '\\' not in s:
+            if not s:
                 continue
-            root = s.split('\\', 1)[0]
+            # Иерархическая арка "Корень\ИмяАрки" — берём корень; но арка
+            # может быть уже ПЛОСКОЙ (после _postcheck_clear_universe_keyword_
+            # series обрезал franchise-обёртку — "S-T-I-K-S\Пройти через
+            # туман" → "Пройти через туман") — тогда берём значение целиком.
+            root = s.split('\\', 1)[0] if '\\' in s else s
             root_base = _ROOT_NUM_RE.sub('', root).strip()
             if not root_base:
                 continue
@@ -1227,10 +1239,17 @@ class RegenCSVService:
         названию книги (fb2_compiler эту логику не трогает — заголовки
         книг сохраняются).
 
-        ИСКЛЮЧЕНИЕ: если серия уже иерархическая ("Корень\\ИмяАрки" —
-        подтверждённая именованная дуга, см. `_detect_named_arcs()`,
-        часть 2 того же бага) — не трогаем: "S-T-I-K-S\\Сварной" остаётся
-        настоящей серией.
+        Если серия уже иерархическая ("Корень\\ИмяАрки" — подтверждённая
+        именованная дуга, см. `_detect_named_arcs()`, часть 2 того же
+        бага) И "Корень" — то же ключевое слово — franchise-обёртка не
+        удаляется целиком (арка настоящая, реальный подцикл), а
+        ОБРЕЗАЕТСЯ до одного лишь имени дуги: "S-T-I-K-S\\Сварной" →
+        "Сварной". Без этого один и тот же подцикл одного автора
+        расходился на ДВА разных представления в библиотеке
+        одновременно — "S-T-I-K-S\\Пройти через туман" (иерархическое, у
+        части томов) и голое "Пройти через туман" (у других томов того
+        же цикла, подтверждённых по-другому — см. баг №28) — вместо
+        единой серии.
         """
         keywords = self.settings.get_series_universe_keywords()
         if not keywords:
@@ -1240,9 +1259,20 @@ class RegenCSVService:
             return
 
         _count = 0
+        _stripped = 0
         for record in self.records:
             s = record.proposed_series or ''
-            if not s or '\\' in s:
+            if not s:
+                continue
+            if '\\' in s:
+                root, arc = s.split('\\', 1)
+                root_norm = self._norm_for_series_cmp(root)
+                if arc.strip() and any(
+                    root_norm == kw or re.match(r'^' + re.escape(kw) + r'\b', root_norm)
+                    for kw in keywords_norm
+                ):
+                    record.proposed_series = arc.strip()
+                    _stripped += 1
                 continue
             s_norm = self._norm_for_series_cmp(s)
             if any(s_norm == kw or re.match(r'^' + re.escape(kw) + r'\b', s_norm)
@@ -1256,6 +1286,9 @@ class RegenCSVService:
         if _count:
             print(f"[POST-CHECK] Cleared {_count} bare universe-keyword series values")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_count} bare universe-keyword series values")
+        if _stripped:
+            print(f"[POST-CHECK] Stripped universe-keyword root from {_stripped} named-arc series")
+            self.logger.log(f"[OK] POST-CHECK: Stripped universe-keyword root from {_stripped} named-arc series")
 
     def _postcheck_series_folder_blacklist(self) -> None:
         """Очищает организационные значения серий и обрезает служебные префиксы папок.
@@ -2015,6 +2048,33 @@ class RegenCSVService:
                     ))
         _title_series_fp_count = 0
         _title_num_re = re.compile(r'\s+\d{1,2}\s*$')
+
+        # Реальный случай: "Волков. Город сестёр 1.fb2" (title="Город сестёр
+        # (СИ)" — НЕ сводится к "серия+номер", независимо подтверждает серию)
+        # + "Волков. Город сестёр 2.fb2" (title="Город сестёр 2" — СВОДИТСЯ к
+        # "серия+номер", формально ложно-положительный паттерн). Раньше
+        # _confirmed_series_pairs строился ТОЛЬКО из meta-подтверждённых
+        # источников — том 1 (чисто filename-источник) никогда не попадал
+        # туда, хотя сам по себе доказывает, что серия настоящая: другой том
+        # ТОГО ЖЕ автора+серии, чьё title НЕ сводится к паттерну "серия+номер"
+        # (несёт независимый смысл сверх номера), — это и есть подтверждение.
+        # Без этого том 2 терял верно извлечённую серию, откатываясь на голое
+        # metadata_series (общее название вселенной, а не серии книги).
+        for _r in self.records:
+            if 'filename' not in (_r.series_source or ''):
+                continue
+            if not _r.proposed_series or not _r.proposed_author:
+                continue
+            _ft = (_r.file_title or '').strip().lower().replace('ё', 'е')
+            _ps = _r.proposed_series.strip().lower().replace('ё', 'е')
+            _sn = (_r.series_number or '').strip()
+            _reconstructed = (_ps + ' ' + _sn).strip() if _sn else None
+            _is_fp_shaped = bool(_reconstructed and _ft == _reconstructed)
+            if _ft and not _is_fp_shaped:
+                _confirmed_series_pairs.add((
+                    (_r.proposed_author or '').strip().lower().replace('ё', 'е'),
+                    _ps,
+                ))
         # author-consensus без metadata → серия == title → ложная серия
         _ac_cleared = 0
         for record in self.records:
