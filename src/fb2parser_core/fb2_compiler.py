@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
+from .fb2_utils import write_fb2_bytes
+
 try:
     from .series_normalizer import _nfc_lower_yo as _norm_key
 except ImportError:
@@ -3487,6 +3489,8 @@ class FB2CompilerService:
                                         self._series_to_display(clean_series))
                     suffix = self._suppress_redundant_suffix(safe_series, suffix)
                     new_name = f"{safe_author} - {safe_series} ({suffix}).fb2" if suffix else f"{safe_author} - {safe_series}.fb2"
+                    if old_path.name.lower().endswith('.fb2.zip'):
+                        new_name += '.zip'
                     new_path = old_path.parent / new_name
                     if old_path != new_path:
                         try:
@@ -3685,9 +3689,23 @@ class FB2CompilerService:
             suffix = self._suppress_redundant_suffix(safe_series, suffix)
             fname = f"{safe_author} - {safe_series} ({suffix}).fb2" if suffix else f"{safe_author} - {safe_series}.fb2"
 
+            # Если один из исходников — уже сжатый .fb2.zip (напр. ранее
+            # скомпилированный и сжатый через "Сжать" в Library, теперь
+            # дополняемый новым томом), пишем результат тоже сжатым — иначе
+            # компиляция молча "расжимала" бы серию обратно в plain .fb2,
+            # рассинхронизируя её формат с остальной сжатой библиотекой.
+            was_compressed = any(
+                b.abs_path.name.lower().endswith('.fb2.zip') for b in group.books
+            )
+            if was_compressed:
+                fname += '.zip'
+
             output_path = dest_dir / fname
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(output_xml, encoding='utf-8')
+            if was_compressed:
+                write_fb2_bytes(output_path, output_xml.encode('utf-8'))
+            else:
+                output_path.write_text(output_xml, encoding='utf-8')
 
             self._log(f"  ✓ Создан файл: {output_path.name}")
 
