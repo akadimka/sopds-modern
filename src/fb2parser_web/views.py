@@ -1813,6 +1813,7 @@ def _serialize_compiler_group(svc, g):
     Общая логика для первоначального скана и для повторной отдачи состава
     группы после ручного исключения/восстановления книги (compiler_exclude).
     """
+    from pathlib import Path
     from fb2parser_core.fb2_compiler import FB2CompilerService
 
     if g.cleanup_only:
@@ -1857,12 +1858,21 @@ def _serialize_compiler_group(svc, g):
         # из-за чего превью могло показывать "Дилогия", а реальная сборка —
         # "Дилогия в 8 книгах" (2 арки, каждая — уже готовая тетралогия).
         suffix, _lo, _hi = svc.compute_group_suffix(g)
-        clean_s = FB2CompilerService._clean_series_name(g.series)
-        safe_a = re.sub(r'[\\/:*?"<>|]', '_', g.author)
-        safe_s = re.sub(r'[/:*?"<>|]', '_', FB2CompilerService._series_to_display(clean_s))
-        if suffix:
-            suffix = svc._suppress_redundant_suffix(safe_s, suffix)
-        out_name = f"{safe_a} - {safe_s} ({suffix}).fb2" if suffix else f"{safe_a} - {safe_s}.fb2"
+        if g.cleanup_only and not suffix and g.kept_paths:
+            # Вырожденный cleanup_only без настоящего диапазона томов
+            # (напр. дедуп свёлся к единственному выжившему файлу) —
+            # compile_group() в этом случае НЕ переименовывает файл,
+            # оставляет как есть (docs/quality-roadmap.md, баг №36).
+            # Превью должно показывать РЕАЛЬНЫЙ итог, а не выдуманное
+            # "Автор - Серия.fb2" по шаблону.
+            out_name = Path(g.kept_paths[0]).name
+        else:
+            clean_s = FB2CompilerService._clean_series_name(g.series)
+            safe_a = re.sub(r'[\\/:*?"<>|]', '_', g.author)
+            safe_s = re.sub(r'[/:*?"<>|]', '_', FB2CompilerService._series_to_display(clean_s))
+            if suffix:
+                suffix = svc._suppress_redundant_suffix(safe_s, suffix)
+            out_name = f"{safe_a} - {safe_s} ({suffix}).fb2" if suffix else f"{safe_a} - {safe_s}.fb2"
     except Exception:
         out_name = ""
 

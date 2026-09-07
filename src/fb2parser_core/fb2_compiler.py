@@ -3302,12 +3302,16 @@ class FB2CompilerService:
             # cleanup_only-ветке compile_group() (переименование уже
             # существующего kept_paths-файла).
             vol_m = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', group.volume_range or '')
-            if vol_m:
-                lo, hi = int(vol_m.group(1)), int(vol_m.group(2))
-                n_volumes = hi - lo + 1
-            else:
-                lo = hi = 0
-                n_volumes = 0
+            if not vol_m:
+                # Нет настоящего диапазона томов (напр. дедуп выродился в
+                # единственный выживший файл без диапазона) — суффикс не
+                # строим вовсе, а не вырожденное "в 0 книгах" (docs/
+                # quality-roadmap.md, баг №36). Реальный compile_group()
+                # в этом случае тоже не переименовывает файл — оставляет
+                # как есть.
+                return '', 0, 0
+            lo, hi = int(vol_m.group(1)), int(vol_m.group(2))
+            n_volumes = hi - lo + 1
             suffix = self._series_suffix(
                 n_volumes, lo, hi, 0,
                 series_complete=getattr(group, 'series_complete', True),
