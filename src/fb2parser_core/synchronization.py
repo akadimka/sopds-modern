@@ -441,6 +441,7 @@ class SynchronizationService:
                     if file_to_delete.exists():
                         os.unlink(str(file_to_delete))
                         self._log(f"       ✓ Удален")
+                        self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
                     else:
                         self._log(f"       ⚠️  Файл не найден для удаления")
                 except Exception as e:
