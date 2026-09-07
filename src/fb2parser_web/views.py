@@ -2285,6 +2285,23 @@ def _run_sync_thread():
         # в отчёте синхронизации (sync_status.html рендерит все ключи stats).
         stats.pop("touched_author_dirs", None)
 
+        # duplicates_found и duplicates_deleted считают РАЗНОЕ (см.
+        # SynchronizationService.stats): duplicates_found — только точные
+        # совпадения (автор, серия, название) с БД или коллизии итогового
+        # имени файла компиляции; duplicates_deleted — суммарно ВСЕ реально
+        # удалённые файлы-дубли за прогон (включая гораздо более частую
+        # дедупликацию отдельных томов, покрытых уже готовыми сборниками).
+        # Одинаковые "duplicates_*" названия вводили пользователя в
+        # заблуждение (выглядело как "found=6, но удалено=86" — будто
+        # второе должно быть подмножеством первого). Переименовываем ключи
+        # только для отображения — сам stats из SynchronizationService не
+        # трогаем.
+        _display_labels = {
+            "duplicates_found": "точных совпадений (БД/имя файла)",
+            "duplicates_deleted": "всего удалено дублей",
+        }
+        stats = {_display_labels.get(k, k): v for k, v in stats.items()}
+
         sync_job.update(done=True, running=False, stats=stats)
 
     except Exception as exc:
