@@ -949,6 +949,15 @@ class RegenCSVService:
             # Вызов идемпотентен (трогает только записи с пустым proposed_series).
             self._postcheck_metadata_rescue()
 
+            # ВАЖНО: очистка голой франшизы-вселенной идёт ПОСЛЕ отката к
+            # метаданным, а не до — иначе _postcheck_metadata_rescue() тут же
+            # восстанавливает только что очищенное значение ОБРАТНО из
+            # metadata_series (реальный случай: "Богданов. Цепные псы.fb2" —
+            # metadata_series="S-T-I-K-S" буквально совпадает с franchise-
+            # keyword; клир до отката давал пустую серию, но следующий же шаг
+            # тут же подставлял её назад из метаданных).
+            self._postcheck_clear_universe_keyword_series()
+
             self._clear_series_for_compilations()
             self.logger.log("[OK] Series cleared for compilations")
 
@@ -1201,6 +1210,52 @@ class RegenCSVService:
         if _count:
             print(f"[POST-CHECK] Linked {_count} base-arc books into named series")
             self.logger.log(f"[OK] POST-CHECK: Linked {_count} base-arc books into named series")
+
+    def _postcheck_clear_universe_keyword_series(self) -> None:
+        """Очищает серию, если это голое название франшизы/поджанра-вселенной
+        (`series_universe_keywords` в app_settings.json), не подтверждённое
+        настоящей именованной дугой.
+
+        Реальный случай (docs/quality-roadmap.md, баг №27, часть 3):
+        антология-вселенная "S-T-I-K-S" — десятки НИКАК не связанных
+        авторов пишут отдельные повести в общем сеттинге. Для большинства
+        из них (Горшенев Герман: "S-T-I-K-S 1. ...", "S-T-I-K-S В
+        Космосе 1. ...", "S-T-I-K-S. Ганслер", "S-T-I-K-S - Рассказы" и
+        т.п.) proposed_series сводился к голому "S-T-I-K-S" (+ иногда
+        мусорный хвост) — не настоящая серия, а название сеттинга,
+        случайно попавшее в поле серии. Читатель ориентируется по
+        названию книги (fb2_compiler эту логику не трогает — заголовки
+        книг сохраняются).
+
+        ИСКЛЮЧЕНИЕ: если серия уже иерархическая ("Корень\\ИмяАрки" —
+        подтверждённая именованная дуга, см. `_detect_named_arcs()`,
+        часть 2 того же бага) — не трогаем: "S-T-I-K-S\\Сварной" остаётся
+        настоящей серией.
+        """
+        keywords = self.settings.get_series_universe_keywords()
+        if not keywords:
+            return
+        keywords_norm = [self._norm_for_series_cmp(kw) for kw in keywords if kw.strip()]
+        if not keywords_norm:
+            return
+
+        _count = 0
+        for record in self.records:
+            s = record.proposed_series or ''
+            if not s or '\\' in s:
+                continue
+            s_norm = self._norm_for_series_cmp(s)
+            if any(s_norm == kw or re.match(r'^' + re.escape(kw) + r'\b', s_norm)
+                   for kw in keywords_norm):
+                record.proposed_series = ''
+                record.series_source = ''
+                record.series_number = ''
+                record.series_number_source = ''
+                _count += 1
+
+        if _count:
+            print(f"[POST-CHECK] Cleared {_count} bare universe-keyword series values")
+            self.logger.log(f"[OK] POST-CHECK: Cleared {_count} bare universe-keyword series values")
 
     def _postcheck_series_folder_blacklist(self) -> None:
         """Очищает организационные значения серий и обрезает служебные префиксы папок.

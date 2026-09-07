@@ -491,6 +491,16 @@ class SettingsManager:
         lst = self.settings.get('series_folder_prefixes_to_strip')
         return list(lst) if lst else []
 
+    def get_series_universe_keywords(self):
+        """Названия франшиз/поджанров-вселенных (напр. "S-T-I-K-S"), которые
+        НИКОГДА не являются настоящей продолжающейся серией сами по себе —
+        десятки не связанных авторов пишут отдельные произведения в общем
+        сеттинге. Такое значение серии без подтверждённой именованной дуги
+        (`\\`-иерархии) должно очищаться целиком, а не выступать псевдо-серией.
+        """
+        lst = self.settings.get('series_universe_keywords')
+        return list(lst) if lst else []
+
     def get_author_subfolder_collections(self):
         """Папки-коллекции, чьи непосредственные подпапки всегда считаются авторскими."""
         lst = self.settings.get('author_subfolder_collections')
