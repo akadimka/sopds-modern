@@ -2280,6 +2280,11 @@ def _run_sync_thread():
         stats["compiled_groups"] = compiled_groups
         stats["compile_errors"] = compile_errors
 
+        # Технический служебный набор путей для фильтрации автокомпиляции
+        # (см. комментарий выше) — не предназначен для показа пользователю
+        # в отчёте синхронизации (sync_status.html рендерит все ключи stats).
+        stats.pop("touched_author_dirs", None)
+
         sync_job.update(done=True, running=False, stats=stats)
 
     except Exception as exc:
