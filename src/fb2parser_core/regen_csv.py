@@ -1344,6 +1344,58 @@ class RegenCSVService:
                 record.series_number_source = ''
                 _count += 1
 
+        # Реальный случай (баг №34, продолжение): "Лазарев Василий -
+        # S-T-I-K-S #9. И пришёл Лесник! 3.fb2" — та же арка "И пришёл
+        # Лесник!" (уже подтверждённая у 8 других файлов автора выше), но
+        # metadata_series у ЭТОГО файла вообще пуста (нет тега <sequence>)
+        # — восстановить через него нечем. Franchise-метка тут не
+        # префиксом, а скобочным суффиксом в title: "И пришел Лесник! 3
+        # (S-T-I-K-S)". Последний шанс: сравнить title (без скобочной
+        # метки и хвостового номера) с уже подтверждённым именем арки
+        # ТОГО ЖЕ автора (`filename_named_arc`/`metadata_arc_consensus`,
+        # установленными выше в этом же прогоне).
+        _confirmed_arcs: dict = {}
+        for _r in self.records:
+            if (_r.series_source or '') not in ('filename_named_arc', 'metadata_arc_consensus'):
+                continue
+            _s2 = _r.proposed_series or ''
+            _arc2 = _s2.split('\\', 1)[1].strip() if '\\' in _s2 else _s2.strip()
+            if not _arc2:
+                continue
+            _author_norm2 = self._norm_for_series_cmp(_r.proposed_author or '')
+            _confirmed_arcs.setdefault(_author_norm2, {})[self._norm_for_series_cmp(_arc2)] = _arc2
+
+        _title_recovered = 0
+        _kw_paren_re = re.compile(
+            r'\s*[\(\[]\s*(?:' + '|'.join(re.escape(kw) for kw in keywords) + r')\s*[\)\]]\s*$',
+            re.IGNORECASE,
+        )
+        for record in self.records:
+            if record.proposed_series or not record.file_title:
+                continue
+            _author_norm3 = self._norm_for_series_cmp(record.proposed_author or '')
+            _arcs_for_author = _confirmed_arcs.get(_author_norm3)
+            if not _arcs_for_author:
+                continue
+            _title_clean = _kw_paren_re.sub('', record.file_title.strip())
+            _num_m3 = re.search(r'\s+(\d{1,3})\s*$', _title_clean)
+            if _num_m3:
+                _title_clean = _title_clean[:_num_m3.start()].strip()
+            _title_norm = self._norm_for_series_cmp(_title_clean)
+            _arc_display = _arcs_for_author.get(_title_norm)
+            if not _arc_display:
+                continue
+            record.proposed_series = _arc_display
+            record.series_source = 'metadata_arc_consensus'
+            # Число в title не найдено — это безномерная база (том 1),
+            # как и в `_postcheck_link_base_arc_book_into_named_series()`.
+            record.series_number = _num_m3.group(1) if _num_m3 else '1'
+            record.series_number_source = 'metadata_arc_consensus'
+            _title_recovered += 1
+
+        if _title_recovered:
+            print(f"[POST-CHECK] Recovered {_title_recovered} named-arc series by title match against confirmed sibling arc")
+            self.logger.log(f"[OK] POST-CHECK: Recovered {_title_recovered} named-arc series by title match")
         if _recovered:
             print(f"[POST-CHECK] Recovered {_recovered} named-arc series from metadata after franchise-keyword extraction failure")
             self.logger.log(f"[OK] POST-CHECK: Recovered {_recovered} named-arc series from metadata")
@@ -2387,9 +2439,29 @@ class RegenCSVService:
             self.logger.log(f"[OK] POST-CHECK: Inferred first-volume number for {_count} records")
 
     def _postcheck_strip_service_words(self) -> None:
-        """Убирает хвостовые сервисные слова (Книга, Том, Часть, Book, Vol) из серий."""
+        """Убирает хвостовые сервисные слова (Книга, Том, Часть, Book, Vol) из серий.
+
+        Обрезает и голое служебное слово ("...Книга"), и слово+номер
+        позиции ("...Книга 2") — оба варианта одинаково являются
+        внутренней меткой позиции тома, а не частью названия арки.
+
+        Реальный случай (docs/quality-roadmap.md, баг №35): "Тимофеев
+        Денис / Дети Пекла" — арка "Человек из Пекла" разбита на "Книга
+        1" (1 файл), "Книга 2" (3 файла: "Часть 1/2/3") и "Книга 3" (1
+        файл). Одиночные "Книга N" (файлы 1 и 5) корректно схлопывались в
+        чистое "Человек из Пекла" — их номер попадал под общий числовой
+        стрип ещё в `_detect_named_arcs()`, оставляя голое "...Книга" (без
+        числа), которое эта функция ловила. Но "Книга 2" (файлы 2-4)
+        сохраняло номер — оно было устойчивым, повторяющимся сегментом
+        внутри `_detect_named_arcs()` (3 файла его разделяют), поэтому
+        число НЕ стриплось там, а данная функция раньше ловила только
+        ГОЛОЕ служебное слово, без числа после него. В итоге серия
+        физически расходилась на "Человек из Пекла" (1, 5) и "Человек из
+        Пекла. Книга 2" (2-4) — компилятор группирует по ТОЧНОЙ строке и
+        видел ДВЕ разные серии вместо одной последовательности 1-5.
+        """
         _service_tail_re = re.compile(
-            r'\s+(?:книга|том|часть|book|vol|volume)\.?\s*$',
+            r'\.?\s+(?:книга|том|часть|book|vol|volume)\.?(?:\s+\d{1,3})?\.?\s*$',
             re.IGNORECASE | re.UNICODE,
         )
         _count = 0

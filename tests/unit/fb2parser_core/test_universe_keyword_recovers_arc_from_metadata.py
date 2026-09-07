@@ -60,3 +60,40 @@ class TestRecoverArcFromMetadataWhenFilenameExtractionFails:
 
         assert recs[0].proposed_series == ""
         assert recs[0].series_source == ""
+
+
+class TestRecoverArcByTitleMatchAgainstConfirmedSiblingArc:
+    """Продолжение бага №34: "Лазарев Василий - S-T-I-K-S #9. И пришёл
+    Лесник! 3.fb2" — та же арка "И пришёл Лесник!" (уже подтверждена у
+    других файлов автора через metadata_arc_consensus), но у ЭТОГО файла
+    metadata_series вообще пуста (нет тега <sequence>) — восстановить
+    через метаданные нечем. Franchise-метка здесь не префиксом, а
+    скобочным суффиксом в title: "И пришел Лесник! 3 (S-T-I-K-S)".
+    Последний шанс: сравнить title (без скобочной метки и номера) с уже
+    подтверждённым именем арки того же автора.
+    """
+
+    def test_title_with_parenthetical_franchise_suffix_matched_to_confirmed_arc(self):
+        recs = [
+            # Уже подтверждённые (как после metadata_arc_consensus).
+            BookRecord(
+                file_path="Лазарев - S-T-I-K-S #25. И пришёл Лесник! 19.fb2",
+                file_title="И пришел Лесник! 19", metadata_authors="Василий Лазарев",
+                proposed_author="Лазарев Василий", author_source="filename",
+                metadata_series="", proposed_series="И пришёл Лесник!",
+                series_source="metadata_arc_consensus", series_number="19",
+            ),
+            # Без metadata_series, franchise-метка скобочным суффиксом.
+            BookRecord(
+                file_path="Лазарев - S-T-I-K-S #9. И пришёл Лесник! 3.fb2",
+                file_title="И пришел Лесник! 3 (S-T-I-K-S)", metadata_authors="Василий Лазарев",
+                proposed_author="Лазарев Василий", author_source="filename",
+                metadata_series="", proposed_series="S-T-I-K-S #9",
+                series_source="filename",
+            ),
+        ]
+        service = _service(recs)
+        service._postcheck_clear_universe_keyword_series()
+
+        assert recs[1].proposed_series == "И пришёл Лесник!"
+        assert recs[1].series_number == "3"
