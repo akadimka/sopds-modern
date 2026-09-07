@@ -57,3 +57,29 @@ class TestUniverseKeywordUnifiesNamedArcWithFlatConfirmedSeries:
         assert recs[1].proposed_series == "Пройти через туман"
         assert recs[2].proposed_series == "Пройти через туман"
         assert recs[2].series_number == "1"
+
+
+class TestBaseBookLinkedDespiteFranchisePrefixInTitle:
+    """Баг №31 (продолжение): "Елисеев Алексей - S-T-I-K-S. Богиня
+    Смерти.fb2" (безномерная книга-1) оставался без серии, хотя "…Богиня
+    Смерти 2.fb2" уже подтверждён как arc "Богиня Смерти". Причина: в
+    отличие от "Пройти через туман" (file_title уже чистый), у "Богиня
+    Смерти" file_title = "S-T-I-K-S. Богиня Смерти" — franchise-префикс
+    ЕЩЁ НЕ обрезан (он есть только в NAME файла, не в proposed_series
+    соседей), поэтому точное сравнение с уже обрезанным корнем не
+    совпадало.
+    """
+
+    def test_base_book_matched_after_stripping_franchise_prefix_from_title(self):
+        recs = [
+            _rec("Елисеев - S-T-I-K-S. Богиня Смерти 2.fb2",
+                 "Богиня Смерти", "filename_named_arc", "2",
+                 title="Богиня Смерти II"),
+            _rec("Елисеев - S-T-I-K-S. Богиня Смерти.fb2",
+                 "", "", "", title="S-T-I-K-S. Богиня Смерти"),
+        ]
+        service = _service(recs)
+        service._postcheck_link_base_arc_book_into_named_series()
+
+        assert recs[1].proposed_series == "Богиня Смерти"
+        assert recs[1].series_number == "1"

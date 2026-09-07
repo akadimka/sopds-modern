@@ -706,14 +706,24 @@ class Pass4Consensus:
                 r.proposed_series for r in author_records
                 if r.proposed_series and '\\' in r.proposed_series
             )
+            # 'filename_named_arc' тоже авторитетен без повторного count-
+            # подтверждения здесь: `_detect_named_arcs()` УЖЕ требует ≥2
+            # вхождений имени арки, чтобы присвоить эту метку — повторная
+            # проверка "Y встречается у ≥2 книг" здесь считает по ТОЧНОЙ
+            # строке "Корень\Арка", а не по имени арки — если у остальных
+            # книг цикла та же арка хранится в ДРУГОЙ форме (напр. плоское
+            # "Иные" после author-consensus, без "S-T-I-K-S\"), count
+            # ошибочно видит "уникальную" подсерию и откатывает её в голый
+            # франшизный корень. Реальный случай: "Ефремова Е. S-T-I-K-S.
+            # Иные 3. Трио.fb2" (docs/quality-roadmap.md, баг №32).
             _FOLD_SRC = {'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus',
-                         'folder_metadata_confirmed'}
+                         'folder_metadata_confirmed', 'filename_named_arc'}
             for record in author_records:
                 s = record.proposed_series or ''
                 if '\\' not in s:
                     continue
                 if (record.series_source or '') in _FOLD_SRC:
-                    continue  # папочная иерархия авторитетна без count-подтверждения
+                    continue  # папочная иерархия / подтверждённая арка авторитетны без count-подтверждения
                 if subseries_counts[s] >= 2:
                     continue
                 # Уникальная подсерия — сбрасываем в базовую серию

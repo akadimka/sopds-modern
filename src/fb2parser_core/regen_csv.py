@@ -1208,6 +1208,20 @@ class RegenCSVService:
             title_norm = self._norm_for_series_cmp(rec.file_title)
             root_base = roots_for_key.get(title_norm)
             if not root_base:
+                # file_title может нести franchise-префикс, который уже
+                # обрезан из proposed_series соседей ("S-T-I-K-S. Богиня
+                # Смерти" в названии файла vs корень "Богиня Смерти" после
+                # _postcheck_clear_universe_keyword_series) — пробуем
+                # сравнить и без него.
+                for kw in (self.settings.get_series_universe_keywords() or []):
+                    kw_norm = self._norm_for_series_cmp(kw)
+                    if kw_norm and title_norm.startswith(kw_norm):
+                        _stripped_title = title_norm[len(kw_norm):].lstrip(' .')
+                        if _stripped_title and _stripped_title in roots_for_key:
+                            title_norm = _stripped_title
+                            break
+                root_base = roots_for_key.get(title_norm)
+            if not root_base:
                 continue
             key_title = ((author_norm, folder), title_norm)
             if key_title in _taken_one:
