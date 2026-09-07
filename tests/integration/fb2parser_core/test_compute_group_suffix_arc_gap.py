@@ -10,6 +10,10 @@
 уже корректно вычислен как False — есть разрыв в нумерации дуг). Раз
 серия неполная, диапазон дуг несёт полезную информацию и должен
 попадать в суффикс: "ч. 1-3 в 9 книгах" — как у одиночной дуги.
+
+Если же разрыва нет (серия полностью завершена на этом run'е) — суффикс
+получает словесную форму ("Трилогия в 9 книгах") вместо голого "в 9
+книгах": см. баг №22, docs/quality-roadmap.md.
 """
 from pathlib import Path
 from types import SimpleNamespace
@@ -73,12 +77,15 @@ class TestMergedArcsWithGapShowArcRangeInSuffix:
         assert suffix == "ч. 5 в 4 книгах"
         assert (lo, hi) == (5, 5)
 
-    def test_merged_complete_arcs_stay_plain(self):
+    def test_merged_complete_arcs_get_word_form(self):
         """Без разрыва в нумерации (серия завершена на этом run'е) —
-        диапазон дуг не несёт новой информации, суффикс остаётся простым.
+        диапазон дуг не несёт новой информации, но словесная форма
+        ("Трилогия") безопасна и даёт больше информации, чем голое "в N
+        книгах" (см. баг №22, docs/quality-roadmap.md — Бэккер Ричард /
+        "Второй Апокалипсис", 2 дуги → "Дилогия в 7 книгах").
         """
         group = self._arcs_1_3_group()
         group.series_complete = True
         svc = FB2CompilerService()
         suffix, _lo, _hi = svc.compute_group_suffix(group)
-        assert suffix == "в 9 книгах"
+        assert suffix == "Трилогия в 9 книгах"
