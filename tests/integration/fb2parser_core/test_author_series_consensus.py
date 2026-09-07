@@ -203,6 +203,89 @@ class TestSubfolderHierarchySkipsDecorativeContainerFolder:
             assert "\\" not in r.proposed_series
 
 
+class TestLinkBaseArcBookIntoNamedSeries:
+    """`_postcheck_link_base_arc_book_into_named_series()` (regen_csv.py) —
+    реальный случай (замечен пользователем в CSV): "hawk1. Фарт.fb2" (arc 1,
+    БЕЗ номера в имени файла) оставался вообще без серии, хотя "hawk1.
+    Фарт 2. По следам друзей..." (arc 2, тот же автор и папка) уже
+    подтверждён как часть серии "Фарт" через `filename_named_arc`. Файлы
+    без номера в имени не совпадают ни с одним паттерном извлечения
+    arc-номера — серия оставалась пустой, разрывая связь между книгами
+    одного цикла.
+    """
+
+    @staticmethod
+    def _rec2(path, meta_author, proposed_author, author_source, file_title, **kw):
+        kw.setdefault("metadata_series", "")
+        kw.setdefault("proposed_series", "")
+        kw.setdefault("series_source", "")
+        return BookRecord(
+            file_path=path, file_title=file_title, metadata_authors=meta_author,
+            proposed_author=proposed_author, author_source=author_source, **kw,
+        )
+
+    def _service(self, records):
+        service = RegenCSVService(_config_path())
+        service.records = records
+        return service
+
+    def _arc2_records(self):
+        return [
+            self._rec2(
+                "Фанфики\\hawk1. Фарт 2. По следам друзей. Часть 1.fb2",
+                "[unknown]", "Hawk1", "filename",
+                "Фарт. По следам друзей. Часть I.",
+                proposed_series="Фарт 2\\По следам друзей",
+                series_source="filename_named_arc", series_number="2.1",
+            ),
+            self._rec2(
+                "Фанфики\\hawk1. Фарт 2. По следам друзей. Часть 2.fb2",
+                "[unknown]", "Hawk1", "filename",
+                "По следам друзей. Часть II (СИ)",
+                proposed_series="Фарт 2\\По следам друзей",
+                series_source="filename_named_arc", series_number="2.2",
+            ),
+        ]
+
+    def test_unnumbered_base_book_linked_as_arc_one(self):
+        base = self._rec2(
+            "Фанфики\\hawk1. Фарт.fb2", "hawk1", "Hawk1", "metadata", "Фарт",
+        )
+        records = self._arc2_records() + [base]
+        self._service(records)._postcheck_link_base_arc_book_into_named_series()
+
+        assert base.proposed_series == "Фарт"
+        assert base.series_number == "1"
+        assert base.series_source == "filename_base_arc_consensus"
+
+    def test_conflicting_number_one_not_overwritten(self):
+        # Номер "1" в серии "Фарт" уже кем-то занят — не трогаем безномерную книгу,
+        # чтобы не создать дублирующую нумерацию.
+        base = self._rec2(
+            "Фанфики\\hawk1. Фарт.fb2", "hawk1", "Hawk1", "metadata", "Фарт",
+        )
+        already_numbered = self._rec2(
+            "Фанфики\\hawk1. Фарт 1. Другое.fb2", "[unknown]", "Hawk1", "filename",
+            "Другое",
+            proposed_series="Фарт 1\\Другое", series_source="filename_named_arc",
+            series_number="1",
+        )
+        records = self._arc2_records() + [base, already_numbered]
+        self._service(records)._postcheck_link_base_arc_book_into_named_series()
+
+        assert base.proposed_series == ""
+
+    def test_different_author_or_folder_not_linked(self):
+        # Тот же file_title "Фарт", но другой автор — не должно совпасть.
+        other_author_base = self._rec2(
+            "Фанфики\\other. Фарт.fb2", "other", "Other Author", "metadata", "Фарт",
+        )
+        records = self._arc2_records() + [other_author_base]
+        self._service(records)._postcheck_link_base_arc_book_into_named_series()
+
+        assert other_author_base.proposed_series == ""
+
+
 class TestSeriesSuffixCorrectionFolderPathLeak:
     """Подтверждено на реальных файлах ("Поселягин Владимир\\Криминал",
     live-проверка на машине с доступом к \\\\turnkey\\Docs\\Books —

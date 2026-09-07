@@ -938,6 +938,7 @@ class RegenCSVService:
             self._postcheck_strip_leading_number()  # повторно, после backslash-стрипинга
             self._postcheck_fill_empty_authors()
             self._postcheck_strip_digit_prefix_author()
+            self._postcheck_link_base_arc_book_into_named_series()
 
             # Финальный откат к мете (приоритет Папка(3) > Файл(2) > Мета(1)):
             # к этому моменту и папочный, и файловый источники уже честно
@@ -1123,6 +1124,83 @@ class RegenCSVService:
                     remainder = remainder.rstrip()[:-1].rstrip()
                 return remainder
         return s
+
+    def _postcheck_link_base_arc_book_into_named_series(self) -> None:
+        """Присоединяет "безномерную" книгу-arc-1 к уже подтверждённой серии.
+
+        Реальный случай (замечен пользователем): "hawk1. Фарт.fb2" (arc 1,
+        без цифры в имени файла) оставался вообще БЕЗ серии, хотя "hawk1.
+        Фарт 2. По следам друзей..." (arc 2, тот же автор и папка) уже
+        подтверждён как часть серии "Фарт" через `filename_named_arc`
+        (pass2_series_filename.py). Файлы без номера в имени не совпадают
+        ни с одним паттерном извлечения arc-номера — серия остаётся
+        пустой, разрывая связь между книгами одного цикла.
+
+        Условия — специально узкие, чтобы не зацепить чужие случаи:
+          - `proposed_series` у записи пусто;
+          - есть другая запись ТОГО ЖЕ автора и ТОЙ ЖЕ папки с
+            `series_source == 'filename_named_arc'`, чей "корень" серии
+            (первый сегмент до '\\', без номера в конце — "Фарт 2" → "Фарт")
+            совпадает по названию с `file_title` текущей записи;
+          - номер "1" в этой серии/авторе/папке ещё НИКЕМ не занят (иначе —
+            конфликт нумерации, запись не трогаем).
+        """
+        _ROOT_NUM_RE = re.compile(r'\s+\d+(?:\s*[-–—]\s*\d+)?\s*$')
+
+        # (author_norm, folder) -> {title_norm: root_base}
+        _roots: dict = {}
+        _taken_one: set = set()
+        for rec in self.records:
+            if (rec.series_source or '') != 'filename_named_arc':
+                continue
+            s = rec.proposed_series or ''
+            if '\\' not in s:
+                continue
+            root = s.split('\\', 1)[0]
+            root_base = _ROOT_NUM_RE.sub('', root).strip()
+            if not root_base:
+                continue
+            author_norm = self._norm_for_series_cmp(rec.proposed_author or '')
+            if not author_norm:
+                continue
+            folder = str(Path(rec.file_path).parent)
+            key = (author_norm, folder)
+            root_norm = self._norm_for_series_cmp(root_base)
+            _roots.setdefault(key, {}).setdefault(root_norm, root_base)
+            sn = (rec.series_number or '').split('.')[0].strip()
+            if sn == '1':
+                _taken_one.add((key, root_norm))
+
+        _count = 0
+        for rec in self.records:
+            if rec.proposed_series:
+                continue
+            if not rec.proposed_author or rec.proposed_author == 'Сборник':
+                continue
+            if not rec.file_title:
+                continue
+            author_norm = self._norm_for_series_cmp(rec.proposed_author)
+            folder = str(Path(rec.file_path).parent)
+            roots_for_key = _roots.get((author_norm, folder))
+            if not roots_for_key:
+                continue
+            title_norm = self._norm_for_series_cmp(rec.file_title)
+            root_base = roots_for_key.get(title_norm)
+            if not root_base:
+                continue
+            key_title = ((author_norm, folder), title_norm)
+            if key_title in _taken_one:
+                continue
+            rec.proposed_series = root_base
+            rec.series_number = '1'
+            rec.series_number_source = 'filename_base_arc_consensus'
+            rec.series_source = 'filename_base_arc_consensus'
+            _taken_one.add(key_title)
+            _count += 1
+
+        if _count:
+            print(f"[POST-CHECK] Linked {_count} base-arc books into named series")
+            self.logger.log(f"[OK] POST-CHECK: Linked {_count} base-arc books into named series")
 
     def _postcheck_series_folder_blacklist(self) -> None:
         """Очищает организационные значения серий и обрезает служебные префиксы папок.
