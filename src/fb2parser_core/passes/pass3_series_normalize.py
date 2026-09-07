@@ -155,6 +155,21 @@ class Pass3SeriesNormalize:
         # Если несколько вариантов одной серии отличаются только пунктуацией
         # (напр. "Ревизор. Возвращение в СССР" и "Ревизор возвращение в СССР"),
         # выбираем каноническое название по приоритету источника.
+        #
+        # ВАЖНО: ключ группировки — (author_norm, punct_key), а НЕ один punct_key
+        # на всю библиотеку. Реальный случай (докс/quality-roadmap.md): анто-
+        # логия-вселенная "S-T-I-K-S" — десятки НИКАК не связанных авторов
+        # пишут отдельные повести в общем сеттинге; у одного файла ("Лазарев
+        # Василий - S-T-I-K-S #9...") экстракция серии из имени ошибочно
+        # роняла цифру, оставляя "S-T-I-K-S #" (то же punct_key, что и у
+        # чистого "S-T-I-K-S": решётка — не \w-символ, тоже схлопывается в
+        # пробел). Библиотека-широкая унификация по одному punct_key (без
+        # автора) считала эту ОДНУ испорченную запись "тем же самым", что и
+        # "S-T-I-K-S" у ~15 других, никак не связанных авторов — и как более
+        # длинная строка (при равном приоритете источника) побеждала как
+        # "канон", перетирая proposed_series всем им разом. Группировка
+        # только внутри одного автора не даёт чужим, случайно совпадающим по
+        # пунктуации сеттингам заражать друг друга.
         _SRC_PRIORITY = {
             'folder_dataset': 6, 'folder_hierarchy': 5,
             'folder_meta_consensus': 4, 'folder_metadata_confirmed': 3,
@@ -165,13 +180,14 @@ class Pass3SeriesNormalize:
             s = _nfc_lower_yo(s.strip())
             return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', ' ', s)).strip()
 
-        # Собираем: punct_key → список (priority, series_value)
+        # Собираем: (author_norm, punct_key) → список (priority, series_value)
         from collections import defaultdict
         _key_variants: dict = defaultdict(list)
         for rec in records:
             if not rec.proposed_series:
                 continue
-            pk = _punct_key(rec.proposed_series)
+            author_norm = _nfc_lower_yo((rec.proposed_author or '').strip())
+            pk = (author_norm, _punct_key(rec.proposed_series))
             pri = _SRC_PRIORITY.get(rec.series_source or '', 0)
             _key_variants[pk].append((pri, rec.proposed_series))
 
@@ -187,7 +203,8 @@ class Pass3SeriesNormalize:
         for rec in records:
             if not rec.proposed_series:
                 continue
-            pk = _punct_key(rec.proposed_series)
+            author_norm = _nfc_lower_yo((rec.proposed_author or '').strip())
+            pk = (author_norm, _punct_key(rec.proposed_series))
             canon = _canonical.get(pk)
             if canon and canon != rec.proposed_series:
                 rec.proposed_series = canon
