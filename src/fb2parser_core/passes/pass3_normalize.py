@@ -292,10 +292,21 @@ class Pass3Normalize:
                             if record.metadata_authors and record.metadata_authors != '[unknown]' else []
                         _meta_ends = set()
                         for _ma in _meta_authors_raw:
-                            _ma_words = _ma.strip().split()
-                            if _ma_words:
-                                _meta_ends.add(_ma_words[0].lower().replace('ё', 'е'))
-                                _meta_ends.add(_ma_words[-1].lower().replace('ё', 'е'))
+                            _ma = _ma.strip()
+                            # Реальный случай: Александр Айзенберг / "Берг" (псевдоним,
+                            # author_surname_conversions: "Айзенберг"→"Берг"). Метаданные
+                            # хранят настоящую фамилию ("Айзенберг"), а не псевдоним, из-за
+                            # чего сверка по СЫРЫМ словам метаданных никогда не подтверждала
+                            # перестановку normalize_format в "Берг Александр" — реордер
+                            # молча откатывался, оставляя "Александр Берг" (ИФ, неверный
+                            # порядок). Добавляем в _meta_ends СЛОВА ПОСЛЕ конвертации
+                            # псевдонима — тогда "Айзенберг" тоже подтверждает "Берг".
+                            _ma_converted = self.normalizer.apply_conversions(_ma)
+                            for _variant in (_ma, _ma_converted):
+                                _variant_words = _variant.split()
+                                if _variant_words:
+                                    _meta_ends.add(_variant_words[0].lower().replace('ё', 'е'))
+                                    _meta_ends.add(_variant_words[-1].lower().replace('ё', 'е'))
                         if norm_first and norm_first in _meta_ends:
                             # Metadata confirms the reorder — trust normalization (includes ё→е)
                             normalized = normalized_candidate
