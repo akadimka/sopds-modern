@@ -992,6 +992,12 @@ class FB2CompilerService:
                 m = _SWORDS_PAT.search(stem_title)
                 if not m:
                     continue
+                # Сервисное слово — часть САМОГО НАЗВАНИЯ серии (не структурный
+                # маркер "N-в-одном файле") — см. пояснение в _precompiled_range,
+                # баг №51. Иначе КАЖДЫЙ отдельный том серии вроде "Трилогия
+                # Дэвабада" ложно принудительно помечался диапазоном 1-N.
+                if m.group(0).lower() in series.lower():
+                    continue
                 n_vols = _SWORDS_IDX[m.group(0).lower()]
                 # Условие: все тома 1..N присутствуют среди других книг группы
                 if set(range(1, n_vols + 1)).issubset(_known_positions):
@@ -2118,6 +2124,16 @@ class FB2CompilerService:
         _stem_lower = book.abs_path.stem.lower()
         for idx, kw in enumerate(self._SERIES_WORDS):
             if kw and kw.lower() in _stem_lower:
+                # Сервисное слово — часть САМОГО НАЗВАНИЯ серии (не структурный
+                # маркер "это N-в-одном файле"). Реальный случай (docs/quality-
+                # roadmap.md, баг №51): серия "Трилогия Дэвабада" — "трилогия"
+                # тут собственное имя серии, а не признак того, что КАЖДЫЙ
+                # отдельный том 1/2/3 сам по себе является предкомпиляцией всех
+                # трёх. Без этой проверки каждый отдельный том ложно считался
+                # диапазоном (1,3), и дедуп вычищал 3 из 4 разных книг как
+                # "дубликаты" одной и той же предкомпиляции.
+                if kw.lower() in series_lower:
+                    continue
                 if _has_series_link(_stem_lower):
                     # «Серия N (Дилогия)» — N — номер подсерии, а не счётчик томов.
                     # В контексте зонтичной серии этот файл занимает одну позицию N,
@@ -2166,6 +2182,10 @@ class FB2CompilerService:
                 continue
             for idx, kw in enumerate(self._SERIES_WORDS):
                 if kw and kw.lower() in _kw_text:
+                    # См. пояснение в Критерии 2.5 — сервисное слово, входящее
+                    # в само название серии, не структурный маркер.
+                    if kw.lower() in series_lower:
+                        continue
                     if _has_series_link(_kw_text):
                         # Та же проверка «N (ServiceWord)» что и в Критерии 2.5:
                         # если перед сервисным словом стоит число N и серия N не содержит,
