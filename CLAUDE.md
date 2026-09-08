@@ -68,3 +68,9 @@ compilemessages` — `msgfmt` может отсутствовать в сист�
 - Коммитить только по явному подтверждению пользователя.
 - `git fetch origin` + проверка расхождения перед каждым push.
 - Коммит-сообщения заканчиваются `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
+- `src/fb2_data/settings/app_settings.json` и `src/fb2_data/genres.xml` —
+  общие данные, коммитятся и пушатся как обычные файлы (не исключать
+  их из `git add` по умолчанию).
+- `src/fb2_data/settings/config.json` — всегда только локальный
+  (в `.gitignore`), содержит исключительно локальные настройки машины —
+  никогда не коммитить и не пушить.
