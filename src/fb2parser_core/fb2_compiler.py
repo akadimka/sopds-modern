@@ -2596,6 +2596,16 @@ class FB2CompilerService:
 
         return [b for b in books if id(b) not in to_remove]
 
+    # Хвостовые пометки источника/издания, не являющиеся частью самого
+    # названия: "[СИ]", "(СИ)", "[litres]", "(ЛП)" и т.п. — та же логика,
+    # что и в passes/pass2_filename.py при сравнении title с автором.
+    _TITLE_NOISE_RE = re.compile(r'(?:\s*(?:\[[^\[\]]*\]|\([^()]*\)))+\s*$')
+
+    @classmethod
+    def _strip_title_noise(cls, title: str) -> str:
+        """Убрать хвостовые пометки источника перед сравнением названий."""
+        return cls._TITLE_NOISE_RE.sub('', title).strip()
+
     def _dedup_by_position(
         self,
         books: List[CompilationBook],
@@ -2682,9 +2692,26 @@ class FB2CompilerService:
             # 1. Схожесть названия с другими книгами группы (больше = лучше = меньший ключ)
             fit_key = -_naming_fit(book)
 
-            # 2. Дата из FB2 <date> — лексикографически сравниваем, инвертируем
+            # 2. Год из FB2 <date> (title-info) — только год, без месяца/дня.
+            # <date> в title-info описывает год НАПИСАНИЯ произведения — общее
+            # свойство самого текста, поэтому у двух изданий одной и той же
+            # книги он обычно совпадает буквально. Сравнивать нужно именно
+            # год: если брать дату целиком как есть, два файла с ОДИНАКОВЫМ
+            # годом, но разной точностью записи в исходном XML (один хранит
+            # только "2015", другой — "2015-01-01", т.к. атрибут value у него
+            # заполнен) дают кортежи РАЗНОЙ длины — (-2015,) и (-2015,-1,-1) —
+            # и Python сравнивает их как -2015 < -2015 при равном префиксе:
+            # короткий кортеж лексикографически меньше длинного, так что менее
+            # точная запись побеждала бы как "более свежая", хотя даты на
+            # самом деле идентичны (реальный случай: Иторр Кайл, "Золотая
+            # лихорадка" — обе версии написаны в 2015-м, но у переиздания 2018
+            # года <date value="2015-01-01"> точнее прежнего <date value="">,
+            # из-за чего именно САМИЗДАТОВСКАЯ версия 2015 года ошибочно
+            # обгоняла официальное переиздание 2018 года). При равном годе
+            # решение отдаётся следующим критериям (год из имени файла и т.д.).
             date_str = self._extract_date_from_fb2(book.abs_path) or ''
-            date_key = tuple(-int(x) for x in date_str.split('-')) if date_str else (0,)
+            date_year = date_str.split('-', 1)[0] if date_str else ''
+            date_key = (-int(date_year),) if date_year.isdigit() else (0,)
 
             # 3. Ключевые слова в имени/названии
             text = f"{book.abs_path.stem} {book.record.file_title or ''}"
@@ -2694,8 +2721,9 @@ class FB2CompilerService:
             _ft = book.record.file_title or ''
             multi_key = 1 if len(re.findall(r'\.\s+[А-ЯЁA-Z]', _ft)) >= 2 else 0
 
-            # 5. Год из имени файла (например "- 2022" → свежее 2018)
-            year_m = re.search(r'[-–\s](\d{4})\b', book.abs_path.stem)
+            # 5. Год из имени файла (например "- 2022" → свежее 2018, "(2022)" —
+            # тоже частый формат, скобка перед годом должна распознаваться так же).
+            year_m = re.search(r'[-–\s(](\d{4})\b', book.abs_path.stem)
             year_key = -int(year_m.group(1)) if year_m else 0
 
             return (cohesion_key, fit_key, date_key, kw_key, multi_key, year_key, str(book.abs_path))
@@ -2714,9 +2742,20 @@ class FB2CompilerService:
                     # Одинаковый номер в серии — проверяем title.
                     # Если названия разные (издатель присвоил один номер двум разным книгам)
                     # — оставляем обе, не считаем дублем.
+                    #
+                    # Перед сравнением убираем хвостовые пометки источника
+                    # ("[СИ]", "(СИ)", "[litres]" и т.п. — та же логика, что в
+                    # pass2_filename.py) — иначе одна и та же книга, выложенная
+                    # автором и на Самиздате, и в издательской версии, ложно
+                    # считается двумя разными книгами с совпавшим номером тома
+                    # (реальный случай: Иторр Кайл, "Зелёный луч" — "Золотая
+                    # лихорадка" т.3 и "Золотая лихорадка [СИ]" т.3 обе
+                    # попадали в компиляцию как разные тома).
                     existing = seen_positions[pos_key]
-                    existing_title = _norm_key(existing.record.file_title or existing.abs_path.stem)
-                    this_title = _norm_key(book.record.file_title or book.abs_path.stem)
+                    existing_title = _norm_key(self._strip_title_noise(
+                        existing.record.file_title or existing.abs_path.stem))
+                    this_title = _norm_key(self._strip_title_noise(
+                        book.record.file_title or book.abs_path.stem))
                     if existing_title != this_title:
                         result.append(book)  # разные книги с одним номером — берём обе
                     else:
