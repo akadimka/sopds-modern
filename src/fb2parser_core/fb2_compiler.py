@@ -643,6 +643,40 @@ class FB2CompilerService:
             base_key = _punct_norm(root_no_num) if root_no_num else _punct_norm(series)
             return f'{base_key}|{sub_key}' if sub_key else base_key
 
+        # Предпроход: иерархические серии «Корень\Подсерия», где КОРЕНЬ без
+        # числа, а ВСЕ записи подсерии делят ОДИН и тот же series_number —
+        # это "гостевой" под-цикл, занимающий РОВНО один слот в общей
+        # нумерации родителя (не самостоятельный многотомный цикл на
+        # несколько позиций). Реальный случай (docs/quality-roadmap.md,
+        # баг №37): Роллинс Джеймс / "Отряд «Сигма»" 1-17 — позиция 8
+        # занята тетралогией "Такер Уэйн" (4 книги, ВСЕ с series_number=
+        # "8"). По явному запросу пользователя такой под-цикл СЛИВАЕТСЯ с
+        # плоским корнем в бакет-группировке ниже — итог: ОДНА серия
+        # "Отряд «Сигма»" 1-17, где позиция 8 — сама тетралогия внутри.
+        _covered_positions: Dict[Tuple[str, str], set] = {}
+        for rec in records:
+            _series_r = (rec.proposed_series or '').strip()
+            if '\\' not in _series_r:
+                continue
+            _root_r = _series_r.split('\\', 1)[0].strip()
+            if re.sub(r'\s+\d{1,4}(?:\s*[-–—]\s*\d{1,4})?\s*$', '', _root_r).strip() != _root_r:
+                continue  # корень уже с числом — не наш случай (отдельная логика выше)
+            _author_r = (rec.proposed_author or '').strip()
+            _sn_r = (rec.series_number or '').split('.')[0].strip()
+            if not _sn_r or not _sn_r.isdigit():
+                continue
+            _slot_key = (_norm_key(_author_r), _series_r)
+            _covered_positions.setdefault(_slot_key, set()).add(int(_sn_r))
+        # Только "однослотовые" под-циклы (ВСЕ записи делят один номер) считаются
+        # гостевой вставкой — многопозиционная подсерия (своя нумерация 1..N)
+        # остаётся настоящим самостоятельным пробелом, не закрытием позиции.
+        _single_slot_by_root: Dict[Tuple[str, str], set] = {}
+        for (_author_k2, _series_k2), _positions in _covered_positions.items():
+            if len(_positions) != 1:
+                continue
+            _root_k2 = _series_k2.split('\\', 1)[0].strip()
+            _single_slot_by_root.setdefault((_author_k2, _punct_norm(_root_k2)), set()).update(_positions)
+
         buckets: Dict[Tuple[str, str], List] = {}
         for rec in records:
             author = (rec.proposed_author or '').strip()
@@ -659,6 +693,16 @@ class FB2CompilerService:
                 if _arc_base != _arc_root:
                     # Корень с числом → ключ = корень без числа (сливаем с плоскими томами)
                     sk = _punct_norm(_arc_base)
+                elif (_norm_key(author), _punct_norm(_arc_root)) in _single_slot_by_root:
+                    # Гостевой однослотовый под-цикл (напр. "Такер Уэйн" — вся
+                    # тетралогия занимает позицию 8 родителя) — по явному
+                    # запросу пользователя сливается ФИЗИЧЕСКИ с плоским
+                    # корнем: итоговая компиляция — ОДНА серия "Отряд «Сигма»"
+                    # 1-17, где позиция 8 — сама тетралогия внутри (не
+                    # отдельный файл). См. также сортировку в
+                    # _determine_sort_key() — arc_n остаётся общим слотом (8),
+                    # внутренняя нумерация подсерии идёт вторым уровнем.
+                    sk = _punct_norm(_arc_root)
                 else:
                     # Корень без числа → подсерия потенциально независима, используем полный путь
                     sk = _series_group_key(series)
@@ -1549,6 +1593,35 @@ class FB2CompilerService:
                 valid_runs = [r for r in self._split_into_consecutive_runs(numeric) if len(r) >= 2]
                 lone_numeric = [b for r in self._split_into_consecutive_runs(numeric) if len(r) < 2 for b in r]
 
+                # Мостим раны через позиции, ЗАКРЫТЫЕ гостевым однослотовым
+                # под-циклом того же автора+корня (см. _single_slot_by_root
+                # выше) — реальный случай (баг №37): "Отряд «Сигма»" 1-7 +
+                # 9-17 физически рвались на два отдельных, formально
+                # неполных куска только потому, что позицию 8 занимает
+                # отдельно скомпилированная тетралогия "Такер Уэйн". Раны
+                # НЕ мержим по книгам произвольно — соединяем только если
+                # ВЕСЬ промежуток между ними целиком закрыт такой вставкой.
+                _covered_here = _single_slot_by_root.get(
+                    (_norm_key(author), _punct_norm(series)), set(),
+                )
+                if _covered_here and len(valid_runs) > 1:
+                    def _run_lo(_r):
+                        return min(b.sort_key[1] for b in _r)
+
+                    def _run_hi(_r):
+                        return max(b.sort_key[1] for b in _r)
+
+                    _sorted_runs = sorted(valid_runs, key=_run_lo)
+                    _bridged = [_sorted_runs[0]]
+                    for _run in _sorted_runs[1:]:
+                        _prev = _bridged[-1]
+                        _gap = set(range(_run_hi(_prev) + 1, _run_lo(_run)))
+                        if _gap and _gap <= _covered_here:
+                            _bridged[-1] = _prev + _run
+                        else:
+                            _bridged.append(_run)
+                    valid_runs = _bridged
+
                 # Серия считается завершённой только если это ЕДИНСТВЕННЫЙ ран в бакете
                 # и нет одиночных томов за его пределами. Наличие ЛЮБЫХ других ранов —
                 # признак того, что серия продолжается за пределами этого куска (даже если
@@ -1566,7 +1639,7 @@ class FB2CompilerService:
                         run_range = f'{toms[0]}-{toms[-1]}' if len(toms) > 1 else str(toms[0])
                         run_part_count = len(run)
                     else:
-                        run_range = self._compute_volume_range(run)
+                        run_range = self._compute_volume_range(run, covered=_covered_here)
                         run_part_count = 0
                     _emit(CompilationGroup(
                         author=author,
@@ -2635,11 +2708,34 @@ class FB2CompilerService:
         # Исключение: filename_named_arc — series_number это ГЛОБАЛЬНАЯ позиция тома
         # (выставлена нашим же кодом в _detect_named_arcs), не позиция в подсерии.
         # Используем напрямую, минуя обычную subseries-логику.
+        #
+        # ИСКЛЮЧЕНИЕ ИЗ ИСКЛЮЧЕНИЯ: гостевой под-цикл из НЕСКОЛЬКИХ книг в
+        # ОДНОМ родительском слоте (напр. Роллинс Джеймс / "Отряд «Сигма»"
+        # 08 — вся тетралогия "Такер Уэйн" занимает позицию 8, но это её
+        # ЧЕТЫРЕ РАЗНЫЕ книги, не одна). series_number у всех книг подсерии
+        # ОДИНАКОВ — если использовать его как sort_key[1] напрямую (как
+        # для одиночного гостя), все 4 получают ОДИНАКОВЫЙ sort_key и
+        # схлопываются в одну позицию через dedup-по-контенту (docs/
+        # quality-roadmap.md, баг №37), хотя это не дубли, а разные тома
+        # внутри своей мини-серии. Если у стема есть СОБСТВЕННАЯ
+        # внутренняя нумерация подсерии ("Такер Уэйн 2" → 2) — кладём её
+        # ВТОРЫМ уровнем sort_key (родительский слот 8 остаётся первым
+        # уровнем, как и для любой другой книги основной серии) — по
+        # запросу пользователя такая подсерия физически сливается с
+        # основной серией в один compile-group (см. find_groups()).
         if sn and is_subseries and (rec.series_source or '') == 'filename_named_arc':
             if re.match(r'^\d+$', sn):
                 _arc_n = int(sn)
                 if _arc_n and _arc_n < 1900:
-                    return (0, _arc_n, 0, 0), 'series_number', False, sn
+                    _sub_name = (rec.proposed_series or '').split('\\', 1)[1].strip()
+                    _inner_n = 0
+                    if _sub_name:
+                        _inner_m = re.search(
+                            re.escape(_sub_name) + r'\s+(\d{1,3})\b', stem,
+                        )
+                        if _inner_m:
+                            _inner_n = int(_inner_m.group(1))
+                    return (0, _arc_n, _inner_n, 0), 'series_number', False, sn
 
         # Дробный sn вида «8.1», «8.2» или «0.1», «0.2» — позиция внутри тома/пролога.
         # Создаётся _detect_named_arcs или правилом 1.5 из дробного префикса имени файла.
@@ -3236,8 +3332,14 @@ class FB2CompilerService:
         sorted_books = sorted(books, key=_eff_sort_key)
         return sorted_books, not has_ambiguous, False
 
-    def _compute_volume_range(self, books: List[CompilationBook]) -> str:
-        """Вернуть строку диапазона томов, например '1-7'."""
+    def _compute_volume_range(self, books: List[CompilationBook], covered: Optional[set] = None) -> str:
+        """Вернуть строку диапазона томов, например '1-7'.
+
+        covered — позиции, которые считаются "закрытыми" внешне (гостевым
+        под-циклом того же корня, занимающим ровно этот слот — см.
+        _single_slot_by_root в find_groups(), баг №37) и НЕ должны
+        считаться пропуском, даже если книги этой позиции в `books` нет.
+        """
         nums = []
         for b in books:
             level = b.sort_key[0]
@@ -3272,7 +3374,7 @@ class FB2CompilerService:
         if lo == hi:
             return str(lo)
         # Проверяем: все тома от lo до hi реально присутствуют (нет пробелов)?
-        present = set(nums)
+        present = set(nums) | (covered or set())
         if all(v in present for v in range(lo, hi + 1)):
             return f'{lo}-{hi}'
         # Есть пробелы — не создаём ложный диапазон, возвращаем пустую строку
