@@ -2201,6 +2201,47 @@ class Pass2SeriesFilename:
             record.series_number = f'{lo_b}-{hi_b}'
             record.series_number_source = 'filename_bare_range'
 
+        # Правило 4b: голый диапазон РИМСКИМИ цифрами в конце стема — римский
+        # аналог Правила 4. Реальный случай (docs/quality-roadmap.md, баг
+        # №43): «Баркер Клайв - Книги крови. I–III.fb2» и «…Запретное.
+        # IV-VI.fb2» → series_number='1-3' / '4-6'. Серия уже определена
+        # (по имени/метаданным), но арабское Правило 4 не видит римские
+        # цифры вовсе.
+        _ROMAN_TOKEN = r'M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})'
+        _BARE_ROMAN_RANGE_RE = re.compile(
+            r'(?<![A-ZА-ЯЁ])(' + _ROMAN_TOKEN + r')\s*[-–—]\s*(' + _ROMAN_TOKEN + r')\s*$',
+            re.IGNORECASE | re.UNICODE,
+        )
+
+        def _roman_to_int_range(s: str):
+            s = s.upper().strip()
+            if not s:
+                return None
+            vals = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+            result = 0
+            prev = 0
+            for ch in reversed(s):
+                v = vals[ch]
+                result += v if v >= prev else -v
+                prev = v
+            return result if result > 0 else None
+
+        for record in records:
+            if record.series_number:
+                continue  # уже есть — не трогаем
+            if not record.file_path:
+                continue
+            stem = Path(record.file_path).stem
+            mrr = _BARE_ROMAN_RANGE_RE.search(stem)
+            if not mrr:
+                continue
+            lo_r = _roman_to_int_range(mrr.group(1))
+            hi_r = _roman_to_int_range(mrr.group(2))
+            if lo_r is None or hi_r is None or lo_r >= hi_r:
+                continue
+            record.series_number = f'{lo_r}-{hi_r}'
+            record.series_number_source = 'filename_bare_roman_range'
+
         # Правило 5: «<текст> NN <ЗаглавнаяБуква…>» без знака препинания перед
         # числом — например «Тамоников 10 Мятежные воины.fb2». Только для
         # папочных серий (folder_dataset и т.п.): там сама серия уже надёжно
