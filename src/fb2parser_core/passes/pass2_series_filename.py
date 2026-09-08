@@ -670,7 +670,13 @@ class Pass2SeriesFilename:
             if record.proposed_series or not record.metadata_series:
                 continue
             meta = record.metadata_series.strip()
-            if record.proposed_author and meta.lower() == record.proposed_author.lower():
+            # Серия == автор обычно ошибка конвертера (продублировал имя автора
+            # в поле серии) — НО не когда сама метадата ещё и даёт номер тома
+            # (<sequence name="X" number="N">): совпадение имени с псевдонимом
+            # автора ПЛЮС согласованный номер тома — это реальная одноимённая
+            # серия под псевдонимом (например "Анонимус"), а не опечатка.
+            if (record.proposed_author and meta.lower() == record.proposed_author.lower()
+                    and record.series_number_source != 'metadata'):
                 continue
             meta_lower = meta.lower()
             _has_bl = False
@@ -688,7 +694,16 @@ class Pass2SeriesFilename:
             series = self._remove_blacklist_words(series)
             if not series:
                 continue
-            if not self._is_valid_series(series, extracted_author=record.proposed_author or None):
+            # См. пояснение выше: та же серия-совпадает-с-автором ситуация —
+            # _is_valid_series() отдельно отвергает текст, выглядящий как имя
+            # автора, при равенстве extracted_author. Тот же обход нужен и
+            # здесь при подтверждённом метадатой номере тома.
+            _skip_author_chk = bool(
+                record.proposed_author and series.lower() == record.proposed_author.lower()
+                and record.series_number_source == 'metadata'
+            )
+            if not self._is_valid_series(series, extracted_author=record.proposed_author or None,
+                                          skip_author_check=_skip_author_chk):
                 continue
             record.proposed_series = self._fix_russian_grammar(series)
             record.series_source = "metadata"
@@ -2147,12 +2162,20 @@ class Pass2SeriesFilename:
             fn_lo2 = int(fn_val2.split('-')[0])
             if 1900 <= fn_lo2 <= 2099:
                 continue
-            if record.series_number and record.series_number == fn_val2:
+            # Сравниваем без ведущих нулей: «Анонимус 08» в стеме и
+            # series_number="8" из метаданных — одно и то же значение,
+            # ведущий ноль — просто форматирование имени файла, а не
+            # признак несовпадения с метадатой (иначе ложно перезаписывали
+            # verного series_number с source='metadata' на 'filename_series_root'
+            # с зубчатым «08» только из-за padding).
+            _norm_num = lambda s: '-'.join(str(int(p)) for p in s.split('-'))
+            fn_val2_norm = _norm_num(fn_val2)
+            if record.series_number and _norm_num(record.series_number) == fn_val2_norm:
                 continue  # уже верное значение
             # Не перезаписываем дробный sn вида «8.1» (временная подсерия):
             if record.series_number and re.match(r'^\d+\.\d+$', record.series_number):
                 continue
-            record.series_number = fn_val2
+            record.series_number = fn_val2_norm
             record.series_number_source = 'filename_series_root'
             # Если диапазон N-M и серия была иерархической «Корень\Арк» —
             # выпрямляем: «Арк» это подзаголовок компиляции, а не настоящая подсерия.

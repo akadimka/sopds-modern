@@ -1538,7 +1538,11 @@ class RegenCSVService:
                 continue
             author_norm = self._norm_for_series_cmp(record.proposed_author or '')
             meta_norm = self._norm_for_series_cmp(meta)
-            if author_norm and meta_norm == author_norm:
+            # См. пояснение в pass2_series_filename._postpass_metadata_fallback:
+            # согласованный номер тома ИЗ ТОЙ ЖЕ метадаты — признак реальной
+            # одноимённой с автором серии (псевдоним-серия), не опечатки.
+            if (author_norm and meta_norm == author_norm
+                    and record.series_number_source != 'metadata'):
                 continue
             _meta_l = meta.lower()
             if any(_bl.search(_meta_l) for _bl in self._compiled_blacklist):

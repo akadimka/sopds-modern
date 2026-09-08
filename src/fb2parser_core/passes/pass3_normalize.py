@@ -2,6 +2,7 @@
 PASS 3: Normalize author names to standard format.
 """
 
+import re
 import unicodedata
 from typing import List, Optional
 from ..author_normalizer_extended import AuthorNormalizer
@@ -20,6 +21,45 @@ def _strip_diacritics(s: str) -> str:
     return unicodedata.normalize('NFC',
         ''.join(c for c in unicodedata.normalize('NFD', s)
                 if c != '́'))
+
+
+# Латинские буквы, визуально неотличимые от кириллических — частая опечатка
+# в метаданных FB2 (издатель/конвертер случайно набрал не той раскладкой).
+_LATIN_TO_CYRILLIC_HOMOGLYPHS = str.maketrans({
+    'A': 'А', 'a': 'а', 'B': 'В', 'E': 'Е', 'e': 'е',
+    'K': 'К', 'M': 'М', 'H': 'Н', 'O': 'О', 'o': 'о',
+    'P': 'Р', 'p': 'р', 'C': 'С', 'c': 'с', 'T': 'Т',
+    'X': 'Х', 'x': 'х', 'Y': 'У', 'y': 'у',
+})
+
+
+def _fix_mixed_script_homoglyphs(s: str) -> str:
+    """Заменить латинские буквы-омоглифы на кириллические внутри слов, где
+    кириллица преобладает.
+
+    Реальный случай (docs/quality-roadmap.md, баг №42): 15 из 18 файлов
+    серии "Анонимус" дают автора "Анонимyс" (латинская 'y' вместо
+    кириллической 'у') — опечатка при наборе метаданных в FB2. Компилятор
+    группирует книги по (автор, серия); буквальное различие в написании
+    автора разбивало единую серию на несвязанные бакеты. Слова ЦЕЛИКОМ на
+    латинице (настоящие иностранные имена/псевдонимы) не трогаем — меняем
+    только когда в слове кириллицы БОЛЬШЕ, чем латиницы (стрей-символ
+    внутри кириллического слова, а не осознанно латинское слово).
+    """
+    if not s:
+        return s
+    tokens = re.split(r'(\s+)', s)
+    fixed = []
+    for tok in tokens:
+        cyr = sum(1 for ch in tok if 'а' <= ch.lower() <= 'я' or ch.lower() == 'ё')
+        lat = sum(1 for ch in tok if 'a' <= ch.lower() <= 'z')
+        if cyr > 0 and lat > 0 and cyr > lat:
+            fixed.append(tok.translate(_LATIN_TO_CYRILLIC_HOMOGLYPHS))
+        else:
+            fixed.append(tok)
+    return ''.join(fixed)
+
+
 class Pass3Normalize:
     """PASS 3: Normalize author names to standard format.
     
@@ -52,8 +92,15 @@ class Pass3Normalize:
             records: List of BookRecord objects to process
         """
         print("[PASS 3] Normalizing author names...")
-        
+
         normalized_count = 0
+
+        # Опечатки латиница/кириллица ("Анонимyс" вместо "Анонимус") — ДО
+        # остальной нормализации, чтобы дальнейшие сравнения (дедуп имён,
+        # консенсус, группировка компилятора) видели один и тот же автора.
+        for record in records:
+            if record.proposed_author:
+                record.proposed_author = _fix_mixed_script_homoglyphs(record.proposed_author)
 
         # Build set of pinned author names from author_surname_conversions values.
         # These are used verbatim and must not be reordered by normalize_format.
