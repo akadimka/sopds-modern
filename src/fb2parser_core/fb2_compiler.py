@@ -1570,17 +1570,20 @@ class FB2CompilerService:
             books_sorted, order_determined, alphabetical_order = self._sort_books(books)
 
             if alphabetical_order:
-                # Порядок по названию — нет номеров томов, пропуски неприменимы
-                volume_range = ''
-                _emit(CompilationGroup(
-                    author=author,
-                    series=series,
-                    books=books_sorted,
-                    order_determined=order_determined,
-                    volume_range=volume_range,
-                    duplicate_paths=duplicate_paths,
-                    alphabetical_order=True,
-                ))
+                # ВСЕ книги бакета имеют полностью неопределённый порядок
+                # (order_ambiguous=True у каждой — нет ни номера тома, ни
+                # даты, ничего) — единственный детерминированный порядок
+                # был бы алфавитным по названию, что не отражает никакого
+                # реального порядка чтения. Реальный случай (docs/
+                # quality-roadmap.md, баг №47): Житинский Александр /
+                # "Младший научный сотрудник Петр Верлухин" — 6 рассказов
+                # без series_number вообще. По решению пользователя такие
+                # группы НЕ компилируются вовсе — если это на самом деле
+                # пронумерованная серия с нераспознанным номером (а не
+                # сборник самостоятельных рассказов), молчаливая
+                # компиляция в произвольном порядке была бы хуже, чем
+                # оставить файлы как есть.
+                continue
             else:
                 # Разбиваем числовые и нечисловые книги независимо:
                 #   • числовые (level-0) → непрерывные подгруппы, пропуски не допускаются
@@ -3576,6 +3579,23 @@ class FB2CompilerService:
             # Одна дуга внутри многодуговой серии, arc-позиция > 1:
             # «ч. 2 в 3 книгах» — показывает и позицию в родителе, и объём.
             suffix = f'ч. {top_lo} в {n_volumes} книгах'
+        elif not has_subseries and top_lo == top_hi and n_volumes > 1:
+            # `top_lo == top_hi` при `n_volumes > 1` и БЕЗ подсерий возможно
+            # только когда `_run_stats()` не нашла НИ У ОДНОЙ книги реальной
+            # позиции: либо все sort_key[0]==0 c sort_key[1]==0 (см.
+            # `_fake_zero_range` в `_series_suffix`), либо (этот случай,
+            # docs/quality-roadmap.md, баг №46) НИ ОДНА книга вообще не
+            # прошла level0-фильтр (все `sort_key[0]!=0` — источник
+            # "unknown", порядок полностью неопределён) — тогда
+            # `_run_stats()` возвращает `(1, 1, len(books), False, None)`
+            # как общий placeholder. С реальной позицией `top_lo==top_hi`
+            # при `n_volumes>1` не бывает НИКОГДА (has_subseries тогда был
+            # бы True — см. её вычисление). Реальный случай: Житинский
+            # Александр / "Младший научный сотрудник Петр Верлухин" — 6
+            # рассказов без единой определённой позиции получали суффикс
+            # "Гексалогия", как будто это последовательная 6-томная серия.
+            _n_books = _arc_part_count or part_count or n_volumes
+            suffix = 'в 1 книге' if _n_books == 1 else f'в {_n_books} книгах'
         else:
             suffix = self._series_suffix(n_volumes, top_lo, top_hi,
                                          _arc_part_count or part_count,
