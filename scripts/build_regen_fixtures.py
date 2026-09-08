@@ -34,6 +34,11 @@ SOURCES = [
     (r"Аберкромби Джо\В Серии -Fantasy World", None, False),
     (r"Аберкромби Джо\Земной Круг", None, False),
     (r"Аберкромби Джо\Море Осколков", None, False),
+    (r"Азбука Социальной Фантастики (833)\С\Стругацки Аркадий", None, False),
+    (r"Азбука Социальной Фантастики (833)\С\Стругацкие Аркадий и Борис", None, False),
+    (r"Азбука Социальной Фантастики (833)\Ю\Юдин Борис Петрович", None, False),
+    (r"Азбука Социальной Фантастики (833)\Ю\Юнгер Эрнст", None, False),
+    (r"Азбука Социальной Фантастики (833)\Ю\Юрьев Зиновий Юрьевич", None, False),
 ]
 
 _BODY_RE = re.compile(r"<body\b[^>]*>.*?</body>", re.DOTALL | re.IGNORECASE)
@@ -82,7 +87,26 @@ def main():
         dst_dir = DST_ROOT / rel
         dst_dir.mkdir(parents=True, exist_ok=True)
         for f in fb2_files:
-            raw = f.read_text(encoding="utf-8", errors="ignore")
+            raw_bytes = f.read_bytes()
+            enc_m = re.search(rb'encoding\s*=\s*["\']([^"\']+)["\']', raw_bytes[:256], re.IGNORECASE)
+            declared_enc = enc_m.group(1).decode("ascii", errors="ignore") if enc_m else "utf-8"
+            try:
+                raw = raw_bytes.decode("utf-8", errors="strict")
+            except UnicodeDecodeError:
+                # Объявленная кодировка не UTF-8 (или UTF-8 не подходит побайтово) —
+                # используем то, что реально объявлено в файле (обычно windows-1251).
+                # Иначе utf-8 errors='ignore' молча роняет кириллицу, оставляя
+                # <author>/<book-title> пустыми — см. docs/quality-roadmap.md, баг №48.
+                try:
+                    raw = raw_bytes.decode(declared_enc, errors="strict")
+                except (LookupError, UnicodeDecodeError):
+                    raw = raw_bytes.decode("cp1251", errors="replace")
+            # Файл всегда записывается как UTF-8 (см. write_text ниже) — декларация
+            # должна совпадать, иначе выходит файл с несовпадающей меткой кодировки.
+            raw = re.sub(
+                r'(<\?xml[^>]*encoding\s*=\s*["\'])[^"\']+(["\'])',
+                r'\g<1>utf-8\g<2>', raw, count=1, flags=re.IGNORECASE,
+            )
             stripped = strip_fb2(raw)
             out_path = dst_dir / f.relative_to(src_dir)
             out_path.parent.mkdir(parents=True, exist_ok=True)

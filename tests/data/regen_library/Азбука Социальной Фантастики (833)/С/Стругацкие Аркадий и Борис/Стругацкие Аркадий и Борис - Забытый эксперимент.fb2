@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+
+ <description>
+
+  <title-info>
+
+   <genre>sf_social</genre>
+
+   <author>
+
+    <first-name>Аркадий и Борис</first-name>
+
+    <last-name>Стругацкие</last-name>
+
+    <id>4317149f-2a81-102a-9ae1-2dfe723fe7c7</id>
+
+   </author>
+
+   <book-title>Забытый эксперимент</book-title>
+
+   <date>1959</date>
+
+   <coverpage>
+
+    <image l:href="#cover.jpg"/></coverpage>
+
+   <lang>ru</lang>
+
+   <sequence name="Предполуденный цикл"/>
+
+  </title-info>
+
+  <document-info>
+
+   <author>
+
+    <nickname>MCat78</nickname>
+
+   </author>
+
+   <author>
+
+    <nickname>ravenger</nickname>
+
+   </author>
+
+   <program-used>FictionBook Editor 2.4</program-used>
+
+   <date value="2007-12-24">2007-12-24</date>
+
+   <src-url>http://www.litres.ru</src-url>
+
+   <src-ocr>Авторский текст</src-ocr>
+
+   <id>42c7df67-ceea-102a-94d5-07de47c81719</id>
+
+   <version>1.6</version>
+
+   <history>
+
+    <p>v 1.5 – Авторский текст – (MCat78)</p>
+
+   </history>
+
+  </document-info>
+
+  <publish-info>
+
+   <book-name>Хищные вещи века. Чрезвычайные происшествия. Полдень, XXII век</book-name>
+
+   <publisher>АСТ</publisher>
+
+   <city>Москва</city>
+
+   <year>1997</year>
+
+   <isbn>5-7841-0627-9</isbn>
+
+   <sequence name="Миры братьев Стругацких"/>
+
+  </publish-info>
+
+ </description>
+
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+ 
+
+</FictionBook>
+

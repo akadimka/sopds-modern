@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_social</genre>
+   <author>
+    <first-name>Эрнст</first-name>
+    <last-name>Юнгер</last-name>
+   </author>
+   <book-title>Гелиополь</book-title>
+   <annotation>
+    <p>«Демократию я ненавижу, как чуму!» — еще в 1920-м говаривал один из его героев. Уйдя с первого курса университета, Эрнст Юнгер (1895–1998) вступает добровольцем в Иностранный легион и отправляется в Африку. К моменту начала Второй мировой его мундир капитана вермахта был украшен всеми высшими воинскими наградами Германии. Юнгер был солдатом, философом и авантюристом. Так же, как и персонажи его романов, автор «Гелиополя» должен был выбирать между светом и тьмой, озарением и пропагандой, человеком и сверхчеловеком. Выбор этот часто оказывался неверным, но всегда был красив. Для посмертной литературной славы этого достаточно.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#mb2510_18_10.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>de</src-lang>
+   <translator>
+    <first-name>Галина</first-name>
+    <last-name>Косарик</last-name>
+   </translator>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Lion</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2011-01-08">08 January 2011</date>
+   <id>B2C8468C-6965-4327-976C-AD3720BA8AAC</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

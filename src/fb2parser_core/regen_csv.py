@@ -208,12 +208,33 @@ class RegenCSVService:
         folder_words = [w for w in folder_words if w]
 
         # Каждая уникальная фамилия должна совпадать хотя бы с одним словом папки.
-        # startswith учитывает форму множественного числа (Живов → Живовы)
+        # startswith учитывает форму множественного числа (Живов → Живовы).
+        # surname.startswith(fw) c допуском в 1 букву — фамилии на "-ий"/"-ый"
+        # иногда встречаются в папках усечёнными без последней буквы (болгарская
+        # орфография без архаичного окончания, встречается в болгарских изданиях —
+        # реальный случай, докс/quality-roadmap.md, баг №48: папка "Стругацки
+        # Аркадий" для автора "Стругацкий Аркадий" — без этого допуска папка
+        # автора ошибочно принималась за подпапку серии).
         for surname in unique_surnames:
-            if not any(fw == surname or fw.startswith(surname) for fw in folder_words):
+            if not any(
+                fw == surname or fw.startswith(surname)
+                or (len(surname) - len(fw) == 1 and surname.startswith(fw))
+                for fw in folder_words
+            ):
                 return False
 
         return True
+
+    def _is_alphabet_index_folder(self, folder_name: str) -> bool:
+        """True если папка — буква алфавитного указателя ("С", "А", "Б"…).
+
+        Крупные скан-коллекции нередко сортируют авторов по папкам-буквам
+        первой буквы фамилии. Такая папка — не часть серии/названия, а
+        просто индекс, но раньше ничем не отличалась от настоящей
+        серийной подпапки (docs/quality-roadmap.md, баг №48).
+        """
+        name = folder_name.strip()
+        return len(name) == 1 and name.isalpha()
 
     def _folder_is_author_login(self, folder_name: str, proposed_author: str) -> bool:
         """Проверяет, является ли папка логином/псевдонимом автора на латинице.
@@ -680,6 +701,13 @@ class RegenCSVService:
 
                     series_folders = []
                     for _sf in subfolders:
+                        # Папка-буква алфавитного указателя («С», «А», «Б»…) — типичная
+                        # структура крупных коллекций (авторы рассортированы по первой
+                        # букве фамилии). Реальный случай (docs/quality-roadmap.md, баг
+                        # №48): "Азбука Социальной Фантастики (833)\С\Стругацки Аркадий\
+                        # ...fb2" — без этого фильтра "С" считалась частью серии.
+                        if self._is_alphabet_index_folder(_sf):
+                            continue
                         if not author or not self._surnames_match_folder(author, _sf):
                             # Дополнительная проверка: папка = латинский логин/транслит автора
                             if self._folder_is_author_login(_sf, author):
@@ -774,8 +802,11 @@ class RegenCSVService:
 
                     elif root_type == FolderType.UNKNOWN and len(parent_parts) > 1:
                         # Автор не найден, но есть подпапки в UNKNOWN-папке.
-                        # Берём все подпапки (начиная с index 1) как серию.
-                        series_folders = parent_parts[1:]
+                        # Берём все подпапки (начиная с index 1) как серию —
+                        # кроме папок алфавитного указателя (см. баг №48 выше).
+                        series_folders = tuple(
+                            f for f in parent_parts[1:] if not self._is_alphabet_index_folder(f)
+                        )
                         if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
                             result = ('', 'no_series_folder')
                         else:

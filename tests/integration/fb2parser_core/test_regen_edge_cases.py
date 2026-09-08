@@ -123,3 +123,81 @@ class TestSmolinZeroPaddedPrefix:
             "Смолин Павел - Самый лучший пионер 01. Самый лучший пионер.fb2",
         )
         assert rec.series_number_source == "filename_prefix"
+
+
+class TestAlphabetIndexFolderAndAuthorSpellingLeak:
+    """Баг №48: "Азбука Социальной Фантастики (833)\\С\\Стругацки Аркадий\\*.fb2" —
+    два независимых бага давали proposed_series="С\\Стругацки Аркадий":
+
+    1. "С" — папка алфавитного указателя (авторы рассортированы по первой
+       букве фамилии) — не была распознана как индексная и текла в серию
+       наравне с настоящими подпапками-сериями.
+    2. Папка автора "Стругацки Аркадий" (болгарское издание — болгарская
+       орфография без архаичного русского окончания "-ий") не совпадала с
+       каноничным именем автора "Стругацкий Аркадий" в `_surnames_match_folder()`
+       (допуск был только на МНОЖЕСТВЕННОЕ число — "Живов"→"Живовы", не на
+       усечённое единственное), поэтому папка автора ошибочно принималась
+       за подпапку серии вместо того, чтобы быть распознанной и исключённой.
+
+    Реальные метаданные серии (`<sequence>`) там, где они есть в файле,
+    должны браться как есть; там, где их нет — серия должна остаться
+    пустой (а не "С\\Стругацки Аркадий").
+    """
+
+    FOLDER_A = ("Азбука Социальной Фантастики (833)", "С", "Стругацки Аркадий")
+    FOLDER_B = ("Азбука Социальной Фантастики (833)", "С", "Стругацкие Аркадий и Борис")
+
+    def test_no_fake_hierarchical_series_without_metadata(self, records):
+        rec = _by_suffix(records, *self.FOLDER_A, "Стругацки Аркадий - Времето на дъжда.fb2")
+        assert rec.proposed_series == ""
+        assert "С\\" not in (rec.proposed_series or "")
+        assert rec.proposed_author == "Стругацкий Аркадий"
+
+    def test_real_metadata_series_preserved(self, records):
+        rec = _by_suffix(
+            records, *self.FOLDER_B,
+            "Стругацкие Аркадий и Борис - Забытый эксперимент.fb2",
+        )
+        assert rec.proposed_series == "Предполуденный цикл"
+
+    def test_coauthor_folder_author_correct(self, records):
+        rec = _by_suffix(
+            records, *self.FOLDER_B,
+            "Стругацкие Аркадий и Борис - Град обреченный.fb2",
+        )
+        assert rec.proposed_author == "Стругацкий Аркадий, Стругацкий Борис"
+        assert rec.proposed_series == ""
+
+
+class TestAlphabetIndexFolderMisreadAsAuthor:
+    """Баг №49 (тот же класс, что и Баг №48, но в АВТОРСКОЙ, а не серийной
+    эвристике): "Азбука Социальной Фантастики (833)\\Ю\\Юдин Борис
+    Петрович\\*.fb2" — папка алфавитного указателя "Ю" сама по себе
+    совпала со словом в словаре мужских имён (редкое имя "Ю" в
+    male_names) и была принята precache'ом за автора с низкой
+    уверенностью. Настоящая папка автора "Юдин Борис Петрович" на
+    следующем уровне после этого считалась "конфликтующей с родителем"
+    (не пересекается словами с "Ю") и ошибочно принималась papки за
+    подсерию вместо автора — итог: proposed_author="Ю.",
+    proposed_series="Юдин Борис Петрович".
+    """
+
+    FOLDER_YUDIN = ("Азбука Социальной Фантастики (833)", "Ю", "Юдин Борис Петрович")
+    FOLDER_YUNGER = ("Азбука Социальной Фантастики (833)", "Ю", "Юнгер Эрнст")
+    FOLDER_YURIEV = ("Азбука Социальной Фантастики (833)", "Ю", "Юрьев Зиновий Юрьевич")
+
+    def test_single_letter_index_not_mistaken_for_author(self, records):
+        rec = _by_suffix(records, *self.FOLDER_YUDIN, "Юдин Борис Петрович - Город, который сошел с ума.fb2")
+        assert rec.proposed_author != "Ю."
+        assert rec.proposed_series != "Юдин Борис Петрович"
+        assert rec.proposed_series == ""
+
+    def test_real_author_folder_recognized(self, records):
+        rec = _by_suffix(records, *self.FOLDER_YUNGER, "Юнгер Эрнст - Гелиополь.fb2")
+        assert rec.proposed_author == "Юнгер Эрнст"
+        assert rec.proposed_series == ""
+
+    def test_patronymic_author_folder_recognized(self, records):
+        rec = _by_suffix(records, *self.FOLDER_YURIEV, "Юрьев Зиновий Юрьевич - Человек под копирку.fb2")
+        assert rec.proposed_series == ""
+        assert rec.proposed_author != "Ю."

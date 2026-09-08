@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+
+ <description>
+
+  <title-info>
+
+   <genre>sf_social</genre>
+
+   <author>
+
+    <first-name>Аркадий и Борис</first-name>
+
+    <last-name>Стругацкие</last-name>
+
+    <id>4317149f-2a81-102a-9ae1-2dfe723fe7c7</id>
+
+   </author>
+
+   <book-title>Частные предположения</book-title>
+
+   <annotation>
+
+    <p>Все, кто интересовался теорией относительности, знают парадокс близнецов. Космонавт может пролететь за пару лет огромное расстояние, но когда он вернётся домой, там уже пройдут столетия, все родные его погибнут, а мир изменится до неузнаваемости. Так влияет скорость на время. А как влияет ускорение? На этот счёт у Звездолётчика Валентина Петрова есть свои соображения. И есть ради чего рисковать собой — ведь дома его ждут родные, которые уже не надеются его снова увидеть.</p>
+
+    <empty-line/>
+
+    <p>Рассказ состоит из трёх частей, которые описывают невероятные события от лица трёх их участников.</p>
+
+   </annotation>
+
+   <date>1959</date>
+
+   <coverpage>
+
+    <image l:href="#cover.jpg"/></coverpage>
+
+   <lang>ru</lang>
+
+   <sequence name="Рассказы"/>
+
+  </title-info>
+
+  <document-info>
+
+   <author>
+
+    <first-name></first-name>
+
+    <last-name>MCat78</last-name>
+
+    <nickname>MCat78</nickname>
+
+    <email>MCat78@mail.ru</email>
+
+   </author>
+
+   <program-used>FB Writer v2.2, FictionBook Editor 2.4</program-used>
+
+   <date value="2007-12-25">25 December 2007</date>
+
+   <src-url>http://www.litres.ru</src-url>
+
+   <src-ocr>Авторский текст</src-ocr>
+
+   <id>A8CD1FC5-2987-41F0-8413-B14D23907636</id>
+
+   <version>1.5</version>
+
+   <history>
+
+    <p>v 1.5 – Авторский текст – (MCat78)</p>
+
+   </history>
+
+  </document-info>
+
+ </description>
+
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+ 
+
+</FictionBook>
+

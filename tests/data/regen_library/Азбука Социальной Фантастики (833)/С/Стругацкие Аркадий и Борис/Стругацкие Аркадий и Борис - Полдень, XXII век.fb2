@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+
+  <description>
+
+    <title-info>
+
+      <genre>sf_social</genre>
+
+      <author>
+
+        <first-name>Аркадий и Борис</first-name>
+
+        <last-name>Стругацкие</last-name>
+
+        <id>4317149f-2a81-102a-9ae1-2dfe723fe7c7</id>
+
+      </author>
+
+      <book-title>Полдень, XXII век</book-title>
+
+      <annotation>
+
+        <p>«Полдень, XXII век». Центральное произведение знаменитого цикла братьев Стругацких о мире будущего. Шедевр отечественной (и мировой) утопической фантастики, выдержавший проверку временем – и сейчас читающийся с таким же удовольствием, как и десятилетия назад. Роман, который сами авторы называли книгой о «Светлом, Чистом, Интересном мире».</p>
+
+      </annotation>
+
+      <coverpage>
+
+        <image l:href="#cover.jpg" />
+
+      </coverpage>
+
+      <lang>ru</lang>
+
+    </title-info>
+
+    <document-info>
+
+      <author>
+
+        <nickname>FB2Fix</nickname>
+
+      </author>
+
+      <program-used>FB Writer v2.2, FB Editor v2.0</program-used>
+
+      <date value="2007-12-23">2007-12-23</date>
+
+      <id>E6DA87D3-8C51-44BB-8489-1E69F63AB930</id>
+
+      <version>1.01</version>
+
+      <history>
+
+        <p>v 1.0 – создание fb2 – (Faiber)</p>
+
+      </history>
+
+    </document-info>
+
+    <custom-info info-type="pre-librusec-origin">From collection Litres4415</custom-info>
+
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+
+  </description>
+
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+  
+
+</FictionBook>

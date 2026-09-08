@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>sf_social</genre>
+      <author>
+        <first-name>Борис</first-name>
+        <middle-name>Петрович</middle-name>
+        <last-name>Юдин</last-name>
+        <id>ae995dcd-ed90-102a-9d2a-1f07c3bd69d8</id>
+      </author>
+      <book-title>Город, который сошел с ума</book-title>
+      <annotation>
+        <p>Новый роман Бориса Юдина, если угодно – антиутопия, фантазия, уходящая корнями в партийно-комсомольскую юность со всеми отсюда вытекающими.</p>
+        <p>Антиутопия, да не совсем.</p>
+        <p>Начало ничего необычного не сулит: эмигрант приезжает в родной город. И вполне оправдываются его ожидания от встречи с Родиной. Но вдруг Город один за другим подбрасывает герою сюрпризы. Начинается с небольшой странности, та влечет за собой другую, за нею тянется следующая, и вот они уже как снежный ком закрутили нашего героя вихрем событий, в которых реальные персонажи тесно переплелись с мифологическими. Городская фантасмагория? Вымысел? Герой книги мучительно ищет выход из этого «идеального» мифического болота.</p>
+        <p>Легкий слог, ироничные диалоги, оригинальный сюжет – все это делает роман чтением, от которого невозможно оторваться.</p>
+      </annotation>
+      <coverpage>
+        <image l:href="#_1000521918.jpg" />
+      </coverpage>
+      <lang>ru</lang>
+    </title-info>
+    <document-info>
+      <author>
+        <nickname>Roland</nickname>
+        <email>roland@aldebaran.ru</email>
+      </author>
+      <program-used>doc2fb, FB Writer v2.2</program-used>
+      <date value="2007-12-06">2007-12-06</date>
+      <id>ff8ea58c-f4a6-102a-9d2a-1f07c3bd69d8</id>
+      <version>2.0</version>
+    </document-info>
+    <publish-info>
+      <book-name>Город, который сошел с ума</book-name>
+      <publisher>Жук</publisher>
+      <city>Москва</city>
+      <year>2007</year>
+      <isbn>978-5-903305-03-2, 5-903305-03-2</isbn>
+    </publish-info>
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+  </description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

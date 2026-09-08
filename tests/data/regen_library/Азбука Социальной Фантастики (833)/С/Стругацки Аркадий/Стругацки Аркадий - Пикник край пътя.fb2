@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+
+ <description>
+
+  <title-info>
+
+   <genre>sf_social</genre>
+
+   <author>
+
+    <first-name>Аркадий</first-name>
+
+    <last-name>Стругацки</last-name>
+
+   </author>
+
+   <author>
+
+    <first-name>Борис</first-name>
+
+    <last-name>Стругацки</last-name>
+
+   </author>
+
+   <book-title>Пикник край пътя</book-title>
+
+   <date></date>
+
+   <lang>bg</lang>
+
+  </title-info>
+
+  <document-info>
+
+   <author>
+
+    <first-name></first-name>
+
+    <last-name></last-name>
+
+   </author>
+
+   <program-used>FB Editor v2.0</program-used>
+
+   <date value="2009-03-20">20 March 2009</date>
+
+   <id>6C69E0E3-809C-4D0F-89E6-CA043C516249</id>
+
+   <version>1.0</version>
+
+  </document-info>
+
+ </description>
+
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+</FictionBook>
+

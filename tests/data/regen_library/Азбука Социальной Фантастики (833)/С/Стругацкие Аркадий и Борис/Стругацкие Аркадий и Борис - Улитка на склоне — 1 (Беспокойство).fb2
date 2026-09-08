@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+
+ <description>
+
+  <title-info>
+
+   <genre>sf_social</genre>
+
+   <author>
+
+    <first-name>Аркадий и Борис</first-name>
+
+    <last-name>Стругацкие</last-name>
+
+   </author>
+
+   <book-title>Улитка на склоне — 1 (Беспокойство)</book-title>
+
+   <annotation>
+
+    <p>Планета Пандора покрыта густым, загадочным, непонятным лесом. На краю обрыва сидит прославленный звездолётчик Леонид Горбовский, который понимает, что человечество, достигнув Полдня, зашло в тупик. Люди не готовы ко встрече с чем-то по-настоящему Чужим.</p>
+
+    <p>А тем временем Атос-Сидоров, попавший в лес из-за аварии, пытается выбраться «к своим». Но прежде ему нужно понять, что же происходит в лесу, что за война ведётся против жителей деревень.</p>
+
+    <p>Примечание:</p>
+
+    <p>В 1990 г. опубликован сокращённый вариант повести (главы Горбовского) под заглавием «Беспокойство».</p>
+
+    <p>Полный вариант опубликован в 1991 г. под заглавием «Улитка на склоне — 1».</p>
+
+   </annotation>
+
+   <date>2010-04-08</date>
+
+   <coverpage>
+
+    <image l:href="#doc2fb_image_03000001.png"/></coverpage>
+
+   <lang>ru</lang>
+
+   <src-lang>ru</src-lang>
+
+   <sequence name="Миры братьев Стругацких"/>
+
+  </title-info>
+
+  <document-info>
+
+   <author>
+
+    <first-name>Бенджамин Спендер</first-name>
+
+    <last-name></last-name>
+
+   </author>
+
+   <program-used>doc2fb, FB Editor v2.0</program-used>
+
+   <date value="2010-04-08">2010-04-08</date>
+
+   <id>9F30AD83-51AB-4F14-B215-7593F538EC19</id>
+
+   <version>2.1</version>
+
+  </document-info>
+
+  <publish-info>
+
+   <book-name>Беспокойство [Улитка на склоне — 1]</book-name>
+
+   <publisher>Сталкер</publisher>
+
+   <year>2004</year>
+
+   <sequence name="Мир Полудня" number="3"/>
+
+  </publish-info>
+
+ </description>
+
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+ 
+
+</FictionBook>
+

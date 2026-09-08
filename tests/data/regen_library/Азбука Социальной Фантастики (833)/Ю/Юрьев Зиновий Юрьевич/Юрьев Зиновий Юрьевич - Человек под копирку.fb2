@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>sf_social</genre>
+      <author>
+        <first-name>Зиновий</first-name>
+        <middle-name>Юрьевич</middle-name>
+        <last-name>Юрьев</last-name>
+        <id>7c6fbc2a-2a81-102a-9ae1-2dfe723fe7c7</id>
+      </author>
+      <book-title>Человек под копирку</book-title>
+      <annotation>
+        <p>Ученый Грейсон изобрел способ выращивания из любой клетки человека его полной копии. Копии – «слепки» – предназначены на запчасти в случае болезни или травмы клиента. Слепки безумны, их не учат языку, но одного из них покровительница тайно учила с детства и он стал человеком.</p>
+        <p>Произведение, изобилующее острыми приключенческими и детективными эпизодами, также показывает деградацию потребительского общества и место в нем честного человека.</p>
+      </annotation>
+      <date>1973</date>
+      <coverpage>
+        <image l:href="#cover.jpg" />
+      </coverpage>
+      <lang>ru</lang>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Ego</first-name>
+        <last-name />
+        <home-page>http://ego2666.narod.ru</home-page>
+        <email>ego1978@mail.ru</email>
+      </author>
+      <program-used>FB Writer v1.1</program-used>
+      <date value="2007-07-26">26 July 2007</date>
+      <src-url>publ.lib.ru</src-url>
+      <src-ocr>Scan, OCR, SpellCheck: Хас, 2005</src-ocr>
+      <id>47082e8f-89e9-102a-94d5-07de47c81719</id>
+      <version>1.0</version>
+      <history>
+        <p>v1.0 – создание fb2 Ego</p>
+      </history>
+    </document-info>
+    <publish-info>
+      <book-name>Белое снадобье. Научно-фантастические роман и повесть. Для старшего возраста.</book-name>
+      <publisher>Детская литература</publisher>
+      <city>Москва</city>
+      <year>1974</year>
+    </publish-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  
+  
+  
+  
+  
+</FictionBook>
