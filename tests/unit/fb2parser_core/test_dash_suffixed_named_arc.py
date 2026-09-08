@@ -120,3 +120,46 @@ class TestSoleNumberedVolumeConfirmedByUnnumberedBase:
         _pass2()._detect_named_arcs(records)
         assert records[0].proposed_series == "Франшиза"
         assert records[0].series_source == "filename"
+
+
+class TestBareServiceWordNotTreatedAsArcName:
+    """Баг №50: "Гаррисон Гарри - Рассказы. Часть 1.fb2" … "…Часть 4.fb2"
+    — "Часть" распозналось `_DASH_ARC_RE`-подобным паттерном как имя
+    именованной дуги ("Рассказы\\Часть"), хотя "часть" здесь строго
+    эквивалентна словам "том"/"книга" — просто номер тома основной серии,
+    не уникальное название под-арки.
+    """
+
+    def test_chast_word_not_registered_as_named_arc(self):
+        records = [
+            _rec(f"Гаррисон Гарри - Рассказы. Часть {n}.fb2",
+                 "Гаррисон Гарри", "Рассказы")
+            for n in range(1, 5)
+        ]
+        _pass2()._detect_named_arcs(records)
+        for rec in records:
+            assert rec.proposed_series == "Рассказы"
+            assert "\\" not in rec.proposed_series
+            assert rec.series_source == "filename"
+
+    def test_other_service_words_also_rejected(self):
+        for word in ("Том", "Книга", "Выпуск", "Свиток"):
+            records = [
+                _rec(f"Автор Тест - Серия. {word} {n}.fb2", "Автор Тест", "Серия")
+                for n in range(1, 3)
+            ]
+            _pass2()._detect_named_arcs(records)
+            for rec in records:
+                assert rec.proposed_series == "Серия", word
+
+    def test_genuine_arc_name_still_recognized(self):
+        # Sanity: настоящее (не служебное) имя дуги по-прежнему распознаётся —
+        # фикс не должен отсеивать реальные арки.
+        records = [
+            _rec(f"Автор Тест - Франшиза. Спасатель {n}.fb2", "Автор Тест", "Франшиза")
+            for n in range(1, 3)
+        ]
+        _pass2()._detect_named_arcs(records)
+        for rec in records:
+            assert rec.proposed_series == "Франшиза\\Спасатель"
+            assert rec.series_source == "filename_named_arc"

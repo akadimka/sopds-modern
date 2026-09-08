@@ -52,6 +52,14 @@ _TOM_WORD_RE = re.compile(
     re.IGNORECASE | re.UNICODE,
 )
 
+# Голое служебное слово (без номера) — используется для отсева ложных
+# "именованных дуг", где на месте имени дуги на самом деле стоит служебное
+# слово тома/части (см. _detect_named_arcs, баг №50).
+_BARE_SERVICE_WORD_RE = re.compile(
+    r'^(?:свиток|том|книга|часть|выпуск|арка|book|vol\.?|part)$',
+    re.IGNORECASE | re.UNICODE,
+)
+
 
 def _author_matches_folder(proposed_author: str, folder_part: str) -> bool:
     """Проверить, является ли folder_part папкой автора proposed_author.
@@ -1605,6 +1613,15 @@ class Pass2SeriesFilename:
             arc_name = m.group(2).strip()
             arc_norm = _norm_s(arc_name)
             if not arc_norm or len(arc_norm) < 3 or arc_norm == series_norm:
+                continue
+            # Голое служебное слово (том/часть/книга/выпуск…) — это не имя
+            # именованной дуги, а просто номер тома/части основной серии.
+            # Реальный случай (docs/quality-roadmap.md, баг №50): "Гаррисон
+            # Гарри - Рассказы. Часть 1.fb2" ... "…Часть 4.fb2" — "Часть"
+            # ошибочно распозналась как имя дуги ("Рассказы\Часть"), хотя
+            # "часть" здесь строго эквивалентна словам "том"/"книга" — это
+            # просто номер тома основной серии "Рассказы".
+            if _BARE_SERVICE_WORD_RE.match(arc_norm):
                 continue
             vol_num = int(m.group(3))
             folder_k = str(Path(rec.file_path).parent)
