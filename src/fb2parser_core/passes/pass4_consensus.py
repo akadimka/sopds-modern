@@ -14,6 +14,7 @@ from ..series_normalizer import _nfc_lower_yo
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
 from ..series_processor import SeriesProcessor
+from .pass2_series_filename import _TOM_WORD_RE
 
 
 class Pass4Consensus:
@@ -816,6 +817,22 @@ class Pass4Consensus:
                 # из-за которой без этой проверки два разных тома (10 и 11)
                 # получали одинаковый series_number=10.
                 if record.series_number_source == 'filename_prefix':
+                    continue
+                # Не перезаписываем номер, если он подтверждён явным ключевым
+                # словом тома («Том N»/«Часть N»/«Книга N») в имени файла —
+                # это однозначный маркер позиции самого файла, тогда как
+                # число сразу после имени серии в стеме может быть номером
+                # арки/части внутри серии. Источник текущего значения
+                # неважен — оно может быть верным и из метаданных
+                # (<sequence number="N">), не только из filename_word_number.
+                # Реальный случай («15 ножевых», Вязовский Алексей): 4 файла
+                # «...15 ножевых 1. Пятнадцать ножевых. Том 2/3/4/5.fb2» — в
+                # метаданных у каждого корректный <sequence number="2..5">,
+                # но у всех после имени серии стоит один и тот же «1» (номер
+                # части, не тома) — без этой проверки «финальный рефикс»
+                # откатывал верные 2/3/4/5 обратно к одинаковой «1».
+                _tom_m = _TOM_WORD_RE.search(stem)
+                if _tom_m and _tom_m.group(1) == _cur_sn:
                     continue
                 record.series_number = fn_num
                 record.series_number_source = 'filename_series_refix'
