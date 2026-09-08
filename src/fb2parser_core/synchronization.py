@@ -35,6 +35,28 @@ except ImportError:
     from .fb2_utils import read_fb2_bytes, write_fb2_bytes, fb2_rglob, has_fb2_files as _has_fb2_util
 
 
+# Символы, недопустимые в имени файла/папки на Windows.
+_ILLEGAL_PATH_CHARS_RE = re.compile(r'[<>:"/\\|?*]')
+
+
+def _sanitize_path_component(value: str, fallback: str) -> str:
+    """Убрать недопустимые для Windows-путей символы из сегмента пути.
+
+    Реальный случай (docs/quality-roadmap.md, баг №44): жанр в метаданных
+    некоторых FB2-файлов оказался буквально испорчен на уровне ИСХОДНОГО
+    файла — `<genre>??????????</genre>` (10 литеральных '?', вероятно
+    старый конвертер не смог записать кириллицу и подставил заполнитель).
+    `_build_folder_structure()`/`_move_files()` использовали такое значение
+    НАПРЯМУЮ как имя папки → `target_dir.mkdir()` падал с WinError 123
+    ("синтаксическая ошибка в имени файла... "), и ВСЯ синхронизация
+    (даже не связанные с этим файлом записи) останавливалась с ошибкой.
+    Здесь недопустимые символы вырезаются; если после этого сегмент пуст
+    (как в случае "??????????" → '') — используется fallback.
+    """
+    cleaned = _ILLEGAL_PATH_CHARS_RE.sub('', value).strip().strip('.')
+    return cleaned or fallback
+
+
 class SynchronizationService:
     """Service for synchronizing FB2 library into organized structure."""
     
@@ -419,10 +441,17 @@ class SynchronizationService:
             author = record.proposed_author or "Неизвестный автор"
             series, subseries = self._split_series(record.proposed_series or "")
             title = record.file_title or Path(record.file_path).stem
-            
+
             # Handle genre with multiple entries
             genres = [g.strip() for g in genre.split(',') if g.strip()]
             primary_genre = genres[0] if genres else "Без жанра"
+
+            # Защита от недопустимых для Windows-путей символов в значениях
+            # ИЗ САМИХ ФАЙЛОВ (испорченные метаданные) — см. _sanitize_path_component.
+            primary_genre = _sanitize_path_component(primary_genre, "Без жанра")
+            author = _sanitize_path_component(author, "Неизвестный автор")
+            series = _sanitize_path_component(series, "") if series else ""
+            subseries = _sanitize_path_component(subseries, "") if subseries else ""
             
             # Detect duplicates
             dup_key = (author, series, title)
