@@ -44,7 +44,8 @@
                   hx-swap="innerHTML"
                   hx-confirm="{% trans 'Restart server?' %}"
                   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>{% trans "⟳ Restart" %}</span>
-            <a href="{% url 'web:logout' %}">{% trans "Logout" %} ({{ user.username }})</a>
+            <a href="{% url 'web:profile' %}">{{ user.username }}</a>
+            (<a href="{% url 'web:logout' %}">{% trans "Logout" %}</a>)
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
                 <span class="icon-moon">🌙</span>
                 <span class="icon-sun">☀️</span>
