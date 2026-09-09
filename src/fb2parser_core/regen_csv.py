@@ -989,6 +989,14 @@ class RegenCSVService:
             # тут же подставлял её назад из метаданных).
             self._postcheck_clear_universe_keyword_series()
 
+            # Схлопывает "Корень\Арка" под РАЗНЫМИ по виду корнями (или
+            # "Корень\Арка" + плоскую "Арка") в одну плоскую серию, когда та
+            # же арка встречается у ОДНОГО автора под ≥2 разными корнями —
+            # см. docstring метода. Идёт ПОСЛЕ очистки franchise-обёртки
+            # выше, чтобы уже ОЧИЩЕННАЯ плоская форма (без "(фанфик)" и
+            # т.п.) участвовала в сравнении как канонический вид.
+            self._postcheck_reconcile_diverging_arc_roots()
+
             # Повторный вызов: после обрезки franchise-обёртки ("S-T-I-K-S\Пройти
             # через туман" → "Пройти через туман") безномерная книга-1 того же
             # цикла, чей title совпадает с этим ТЕПЕРЬ ПЛОСКИМ именем, ещё не
@@ -1397,8 +1405,15 @@ class RegenCSVService:
             _confirmed_arcs.setdefault(_author_norm2, {})[self._norm_for_series_cmp(_arc2)] = _arc2
 
         _title_recovered = 0
+        # Ключевые слова могут быть заданы как с обёрточными скобками
+        # (пользователь может добавить "(фанфик)" через UI буквально с
+        # ними), так и без — приводим к голому виду перед тем, как
+        # оборачивать в СОБСТВЕННЫЕ скобки регэкспа, иначе "(фанфик)" даёт
+        # шаблон, ищущий буквальное "((фанфик))" и никогда не совпадает.
         _kw_paren_re = re.compile(
-            r'\s*[\(\[]\s*(?:' + '|'.join(re.escape(kw) for kw in keywords) + r')\s*[\)\]]\s*$',
+            r'\s*[\(\[]\s*(?:' + '|'.join(
+                re.escape(kw.strip('()[] \t')) for kw in keywords if kw.strip('()[] \t')
+            ) + r')\s*[\)\]]\s*$',
             re.IGNORECASE,
         )
         for record in self.records:
@@ -1424,6 +1439,59 @@ class RegenCSVService:
             record.series_number_source = 'metadata_arc_consensus'
             _title_recovered += 1
 
+        # Хвостовой квалификатор В САМОМ ИМЕНИ СЕРИИ: "Серия (фанфик)"/
+        # "Серия [фанфик]" — не франшиза-обёртка (та обрабатывается выше,
+        # как ПРЕФИКС/голое имя), а ярлык на КОНЦЕ, который издатель/автор
+        # проставляет непоследовательно от тома к тому. Реальный случай
+        # (Вязовский Алексей / "Режим бога"): у части томов
+        # metadata_series="Режим бога (фанфик)", у остальных — просто
+        # "Режим бога" — без унификации это две разные серии в каталоге и
+        # компиляторе вместо одной. Стрипаем квалификатор ТОЛЬКО когда
+        # получившееся голое имя уже используется ДРУГОЙ записью ТОГО ЖЕ
+        # автора без квалификатора — иначе квалификатор может быть
+        # значимой частью уникального названия, а не шумом.
+        _bare_keywords = [kw.strip('()[] \t') for kw in keywords]
+        _bare_keywords = [self._norm_for_series_cmp(kw) for kw in _bare_keywords if kw.strip()]
+        _qualifier_stripped = 0
+        if _bare_keywords:
+            _qual_suffix_re = re.compile(
+                r'\s*[\(\[]\s*(?:' + '|'.join(re.escape(kw) for kw in _bare_keywords) + r')\s*[\)\]]\s*$',
+                re.IGNORECASE | re.UNICODE,
+            )
+            _clean_series_by_author: dict = {}
+            for _r in self.records:
+                _s = _r.proposed_series or ''
+                if not _s or '\\' in _s:
+                    continue
+                if _qual_suffix_re.search(self._norm_for_series_cmp(_s)):
+                    continue  # сама с квалификатором — не образец для сравнения
+                _clean_key = (self._norm_for_series_cmp(_r.proposed_author or ''),
+                              self._norm_for_series_cmp(_s))
+                _clean_series_by_author[_clean_key] = _s
+
+            for record in self.records:
+                s = record.proposed_series or ''
+                if not s or '\\' in s:
+                    continue
+                s_norm = self._norm_for_series_cmp(s)
+                m_suf = _qual_suffix_re.search(s_norm)
+                if not m_suf:
+                    continue
+                base_norm = s_norm[:m_suf.start()].strip()
+                if not base_norm:
+                    continue
+                key = (self._norm_for_series_cmp(record.proposed_author or ''), base_norm)
+                clean_display = _clean_series_by_author.get(key)
+                if not clean_display:
+                    continue
+                record.proposed_series = clean_display
+                _qualifier_stripped += 1
+
+        if _qualifier_stripped:
+            print(f"[POST-CHECK] Unified {_qualifier_stripped} series values with a qualifier suffix "
+                  f"against a sibling record of the same author")
+            self.logger.log(f"[OK] POST-CHECK: Unified {_qualifier_stripped} qualifier-suffixed series values")
+
         if _title_recovered:
             print(f"[POST-CHECK] Recovered {_title_recovered} named-arc series by title match against confirmed sibling arc")
             self.logger.log(f"[OK] POST-CHECK: Recovered {_title_recovered} named-arc series by title match")
@@ -1436,6 +1504,80 @@ class RegenCSVService:
         if _stripped:
             print(f"[POST-CHECK] Stripped universe-keyword root from {_stripped} named-arc series")
             self.logger.log(f"[OK] POST-CHECK: Stripped universe-keyword root from {_stripped} named-arc series")
+
+    def _postcheck_reconcile_diverging_arc_roots(self) -> None:
+        """Схлопывает «Корень\\Арка» с РАЗНЫМИ корнями (или плоскую «Арка»
+        без корня вовсе) в одну плоскую серию — когда сама Арка общая для
+        нескольких записей ОДНОГО автора под РАЗНЫМИ по виду корнями.
+
+        Реальный случай (Вязовский Алексей / "Режим бога"): 12 файлов одной
+        саги получили ТРИ разных представления серии из имени файла —
+        "С.К.С.\\Режим бога" (старый псевдоним автора как корень),
+        "Вязовский\\Режим бога" (фамилия автора как корень) и просто
+        "Режим бога" (без корня). Корень здесь — не настоящая франшиза или
+        подсерия, а случайный шум конкретного имени файла (то псевдоним, то
+        фамилия, то ничего). Сам факт, что арка встречается у ОДНОГО автора
+        сразу под НЕСКОЛЬКИМИ разными корнями (или под корнем и без него) —
+        доказательство, что корень не несёт смысловой нагрузки: реальная
+        серия — это имя арки, а не пара "корень+арка".
+
+        Условие безопасности: применяется только когда для (автор, арка)
+        встречается ≥2 РАЗНЫХ вариантов корня (включая "без корня" как один
+        из вариантов) — единственная иерархическая форма без такого
+        расхождения не трогается: может быть настоящей осмысленной
+        подсерией франшизы. Короткие/общие имена арки (< 4 символов после
+        нормализации) тоже не трогаем — риск случайного совпадения растёт.
+        """
+        from collections import defaultdict
+
+        groups: dict = defaultdict(lambda: defaultdict(list))
+        for rec in self.records:
+            s = (rec.proposed_series or '').strip()
+            if not s:
+                continue
+            author_norm = self._norm_for_series_cmp(rec.proposed_author or '')
+            if not author_norm:
+                continue
+            if '\\' in s:
+                root, arc = s.split('\\', 1)
+                arc = arc.strip()
+                if not arc:
+                    continue
+                root_key = self._norm_for_series_cmp(root.strip())
+            else:
+                arc = s
+                root_key = None
+            arc_norm = self._norm_for_series_cmp(arc)
+            if not arc_norm or len(arc_norm) < 4:
+                continue
+            groups[(author_norm, arc_norm)][root_key].append(rec)
+
+        reconciled = 0
+        for by_root in groups.values():
+            if len(by_root) < 2:
+                continue  # один и тот же корень (или единственная плоская форма) — расхождения нет
+
+            # Отображаемое имя арки: предпочитаем уже существующую плоскую
+            # форму (root_key=None) — она обычно ближе к финальному, "чистому"
+            # виду (см. _postcheck_clear_universe_keyword_series выше).
+            flat_recs = by_root.get(None)
+            if flat_recs:
+                display_arc = flat_recs[0].proposed_series.strip()
+            else:
+                _any_recs = next(iter(by_root.values()))
+                display_arc = _any_recs[0].proposed_series.split('\\', 1)[1].strip()
+
+            for recs in by_root.values():
+                for rec in recs:
+                    if rec.proposed_series.strip() == display_arc:
+                        continue
+                    rec.proposed_series = display_arc
+                    rec.series_source = 'arc_root_reconciled'
+                    reconciled += 1
+
+        if reconciled:
+            print(f"[POST-CHECK] Reconciled {reconciled} records with diverging arc roots into a flat series")
+            self.logger.log(f"[OK] POST-CHECK: Reconciled {reconciled} diverging arc-root series values")
 
     def _postcheck_series_folder_blacklist(self) -> None:
         """Очищает организационные значения серий и обрезает служебные префиксы папок.
