@@ -949,13 +949,18 @@ class FB2CompilerService:
             books = [self._make_book(rec, work_dir) for rec in recs]
             duplicate_paths: List[Path] = []
 
+            # Названия всех книг группы — запасная привязка диапазона к серии
+            # в _precompiled_range() для франшиз, где имя серии-зонтика не
+            # встречается в именах отдельных томов (см. docstring метода).
+            _group_titles = [b.record.file_title or b.abs_path.stem for b in books]
+
             # --- Если все книги в группе — уже предкомпиляции с разными series_number,
             # это отдельные скомпилированные подсерии — не объединяем их дальше.
             # Пример: "Вселенная Сафари 2. Егерь (Трилогия)" + "Вселенная Сафари 3.
             # Чёрный археолог (Трилогия)" → оба уже готовы, merge не нужен.
             # volume_label может быть ещё "2"/"3" (до контекстной коррекции),
             # поэтому проверяем через _precompiled_range напрямую.
-            _precomp_ranges = {id(b): self._precompiled_range(b, series) for b in books}
+            _precomp_ranges = {id(b): self._precompiled_range(b, series, _group_titles) for b in books}
             _all_precompiled = all(hi > 0 for lo, hi in _precomp_ranges.values())
             if _all_precompiled and len(books) >= 2:
                 _sn_vals = [b.record.series_number or '' for b in books]
@@ -1003,7 +1008,7 @@ class FB2CompilerService:
                 if set(range(1, n_vols + 1)).issubset(_known_positions):
                     book.record.series_number = f'1-{n_vols}'
                     # Пересчитываем через _precompiled_range
-                    lo, hi = self._precompiled_range(book, series)
+                    lo, hi = self._precompiled_range(book, series, _group_titles)
                     if hi > lo:
                         book.sort_key = (0, lo, 0, 0)
                         book.volume_label = f'{lo}-{hi}'
@@ -1153,7 +1158,7 @@ class FB2CompilerService:
                     if set(matched) != set(range(lo_m, hi_m + 1)):
                         continue
                     book.record.series_number = f'{lo_m}-{hi_m}'
-                    lo2, hi2 = self._precompiled_range(book, series)
+                    lo2, hi2 = self._precompiled_range(book, series, _group_titles)
                     if hi2 > lo2:
                         book.sort_key = (0, lo2, 0, 0)
                         book.volume_label = f'{lo2}-{hi2}'
@@ -1188,7 +1193,7 @@ class FB2CompilerService:
                         book.order_ambiguous = False
                         precompiled.append((book, lo, hi))
                         continue
-                lo, hi = self._precompiled_range(book, series)
+                lo, hi = self._precompiled_range(book, series, _group_titles)
                 if hi > lo:
                     # Обновляем sort_key и volume_label по реальному диапазону файла.
                     # Без этого "1-2. Название.fb2" получает sk=(0,2,0) vl='2' вместо
@@ -1968,7 +1973,36 @@ class FB2CompilerService:
                     return n
         return None
 
-    def _precompiled_range(self, book: CompilationBook, series: str) -> Tuple[int, int]:
+    @staticmethod
+    def _sibling_title_bases(sibling_titles) -> list:
+        """"Базовые" названия соседних книг группы - часть title ДО подзаголовка
+        (первого разделителя ':'/'.'/'-'), нормализованная для сравнения.
+
+        Используется как запасная привязка диапазона к серии в
+        `_precompiled_range()` - для серий-франшиз, где имя ЗОНТИЧНОЙ серии
+        ("Пришествие Ночи") никогда не встречается в именах отдельных томов:
+        каждый том называется по своему роману ("Дисфункция реальности",
+        "Нейтронный Алхимик", "Обнажённый Бог"). Короткие базы (< 8 символов)
+        отбрасываются - риск случайного совпадения с посторонним текстом
+        слишком высок.
+        """
+        if not sibling_titles:
+            return []
+        base_re = re.compile(r'^(.+?)\s*[:.–—-]\s')
+        bases = []
+        for t in sibling_titles:
+            if not t:
+                continue
+            m = base_re.match(t)
+            base = (m.group(1) if m else t).strip()
+            base_norm = unicodedata.normalize('NFC', base).lower().replace('ё', 'е')
+            if len(base_norm) >= 8:
+                bases.append(base_norm)
+        return bases
+
+    def _precompiled_range(
+        self, book: CompilationBook, series: str, sibling_titles=None,
+    ) -> Tuple[int, int]:
         """Определить диапазон томов, охватываемых предкомпилированным файлом.
 
         Возвращает (lo, hi) где lo и hi — первый и последний тома включительно.
@@ -1978,15 +2012,27 @@ class FB2CompilerService:
         1. series_number — диапазон вида "1-3": возвращает (1, 3).
         2. Диапазон "N-M" в stem/title с привязкой к серии.
         3. stem/title содержит сервисное слово (Трилогия → 3 тома) — lo=1, hi=count.
+
+        `sibling_titles` — file_title остальных книг группы (опционально):
+        реальный случай (Гамильтон Питер / "Пришествие Ночи") — "Дисфункция
+        реальности 1-2 (альт. издание).fb2" покрывает тома "Дисфункция
+        реальности: Увертюра"(2) и "...Угроза"(3), но имя серии-франшизы
+        "Пришествие Ночи" не встречается в имени файла вовсе — только имя
+        РОМАНА, совпадающее с базовым названием этих двух соседних томов.
+        Без этого файл не проходил проверку "привязки к серии", и диапазон
+        "1-2" в его имени игнорировался целиком.
         """
         series_lower = series.lower()
         series_words = [w for w in re.split(r'[\s\\]+', series_lower) if len(w) >= 4]
         is_subseries = '\\' in series
+        _sibling_bases = self._sibling_title_bases(sibling_titles)
 
         def _has_series_link(txt: str) -> bool:
             import unicodedata as _ud2
-            tl = _ud2.normalize('NFC', txt).lower().replace('\u0451', '\u0435')
-            return not series_words or any(w in tl for w in series_words)
+            tl = _ud2.normalize('NFC', txt).lower().replace('ё', 'е')
+            if not series_words or any(w in tl for w in series_words):
+                return True
+            return any(base in tl for base in _sibling_bases)
 
         # \u0411\u044b\u0441\u0442\u0440\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430: \u0435\u0441\u043b\u0438 \u0432 \u0441\u0442\u0435\u043c\u0435 \u0441\u0435\u0440\u0432\u0438\u0441\u043d\u043e\u0435 \u0441\u043b\u043e\u0432\u043e \u0441\u0442\u043e\u0438\u0442 \u043d\u0435\u043f\u043e\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0435\u043d\u043d\u043e
         # \u043f\u0435\u0440\u0435\u0434 \u043d\u043e\u043c\u0435\u0440\u043e\u043c \u0442\u043e\u043c\u0430 (\u00ab\u0418\u0431\u0438\u0441\u043e\u0432\u0430\u044f \u0442\u0440\u0438\u043b\u043e\u0433\u0438\u044f 2. \u0414\u044b\u043c\u043d\u0430\u044f \u0440\u0435\u043a\u0430\u00bb), \u0444\u0430\u0439\u043b \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f
@@ -3526,12 +3572,13 @@ class FB2CompilerService:
         # Пример: Сафари 1 (Дилогия) + Сафари 2 (Трилогия) + Сафари 3 (Трилогия)
         # → arc_count=3, total_books=8 → «Трилогия в 8 книгах».
         _arc_part_count = 0
+        _group_titles_gs = [b.record.file_title or b.abs_path.stem for b in group.books]
         # Arc-unit: книга либо является arc-point предкомпиляцией (lo==hi>0),
         # либо занимает ровно одну плоскую arc-позицию (sk=(0,N,0,0)).
         # Второй случай позволяет считать «в N книгах» даже когда одна дуга
         # представлена одиночным файлом без сервисного слова в имени.
         def _is_arc_unit(b: 'CompilationBook') -> bool:
-            lo, hi = self._precompiled_range(b, group.series)
+            lo, hi = self._precompiled_range(b, group.series, _group_titles_gs)
             if lo == hi > 0:
                 return True
             return (b.sort_key[0] == 0 and b.sort_key[1] > 0
@@ -3546,7 +3593,7 @@ class FB2CompilerService:
                 re.IGNORECASE | re.UNICODE,
             )
             for b in group.books:
-                lo, hi = self._precompiled_range(b, group.series)
+                lo, hi = self._precompiled_range(b, group.series, _group_titles_gs)
                 if lo == hi > 0:
                     # Arc-point предкомпиляция: считаем по сервисному слову/диапазону
                     _st = (b.abs_path.stem + ' ' + (b.record.file_title or '')).lower()
