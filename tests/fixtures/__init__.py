@@ -8,8 +8,10 @@
 - fixture_django
 - fixture_opds_feeds
 - fixture_book_tools
+- fixture_config
 """
 
+from .fixture_config import _apply_override_config_marker, override_config
 from .fixture_book_tools import (
     epub_parser,
     fb2_params,

@@ -28,7 +28,7 @@ class TestReadFromRegularFile:
     """Тесты read_from_regular_file."""
 
     def test_read_book_from_regular_file(self, regular_book) -> None:
-        from constance import config
+        from opds_catalog.sopds_config import sopds_cfg as config
 
         expected = read_file_as_iobytes(
             os.path.join(config.SOPDS_ROOT_LIB, regular_book.filename)
@@ -63,7 +63,7 @@ class TestReadFromZippedFile:
     """Тесты read_from_zipped_file."""
 
     def test_read_book_from_zip_file(self, zipped_book) -> None:
-        from constance import config
+        from opds_catalog.sopds_config import sopds_cfg as config
 
         expected = read_book_from_zip_file(
             os.path.join(config.SOPDS_ROOT_LIB, zipped_book.path),
@@ -79,7 +79,7 @@ class TestReadFromZippedFile:
         assert actual.getvalue() == expected.getvalue()
 
     def test_no_book_in_zip_file(self, book_factory) -> None:
-        from constance import config
+        from opds_catalog.sopds_config import sopds_cfg as config
 
         book = book_factory(filename="559273.fb2", cat_type=1, path="books.zip")
 
@@ -89,7 +89,7 @@ class TestReadFromZippedFile:
         assert actual is None
 
     def test_read_book_from_non_existent_zip_file(self, book_factory) -> None:
-        from constance import config
+        from opds_catalog.sopds_config import sopds_cfg as config
 
         book = book_factory(filename="559273.fb2", cat_type=1, path="books1.zip")
 

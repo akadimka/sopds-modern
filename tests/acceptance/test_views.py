@@ -3,7 +3,6 @@
 from datetime import datetime
 
 import pytest
-from constance.test import override_config
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
 from django.utils import timezone
@@ -283,7 +282,7 @@ class TestSopdsProcessor:
         assert "app_title" in result
         assert "stats" in result
 
-    def test_alphabet_menu(self, rf, counter_with_books) -> None:
+    def test_alphabet_menu(self, rf, counter_with_books, override_config) -> None:
         from sopds_web_backend.processors import sopds_processor
 
         with override_config(SOPDS_ALPHABET_MENU=True):

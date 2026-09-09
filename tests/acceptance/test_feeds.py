@@ -1,7 +1,7 @@
 from io import BytesIO
 
 import pytest
-from constance import config
+from opds_catalog.sopds_config import sopds_cfg as config
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from lxml import etree

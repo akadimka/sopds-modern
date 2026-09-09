@@ -52,6 +52,7 @@ markers = [
     "unit: unit test (no dependencies)",
     "integration: integration test (DB, FS, network)",
     "acceptance: acceptance test (HTTP client, full stack)",
+    "override_config: temporarily override SOPDS_* config for this test (see tests/fixtures/fixture_config.py)",
 ]
 
 [tool.coverage.run]

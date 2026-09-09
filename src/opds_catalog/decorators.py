@@ -13,6 +13,9 @@ def sopds_auth_validate(view_function):
 
     @wraps(view_function)
     def wrap(*args, **kwargs):
+        if not config.SOPDS_AUTH:
+            return view_function(*args, **kwargs)
+
         def _unauthed():
             response = HttpResponse(
                 """<html><title>Auth required</title><body>

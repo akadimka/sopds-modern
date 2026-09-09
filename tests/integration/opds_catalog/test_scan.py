@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from constance import config
 
 from opds_catalog import opdsdb
 from opds_catalog.dl import getFileData
@@ -24,19 +23,19 @@ class TestBookScaner(object):
     test_zip = "books.zip"
 
     @pytest.mark.parametrize("fb2sax", [True, False])
-    def test_processfile_fb2(self, fb2sax):
+    def test_processfile_fb2(self, fb2sax, override_config):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
-        config.SOPDS_FB2SAX = fb2sax
         opdsdb.clear_all()
         scanner = opdsScanner()
-        scanner.processfile(
-            self.test_fb2,
-            self.test_ROOTLIB,
-            os.path.join(self.test_ROOTLIB, self.test_fb2),
-            None,
-            0,
-            495373,
-        )
+        with override_config(SOPDS_FB2SAX=fb2sax):
+            scanner.processfile(
+                self.test_fb2,
+                self.test_ROOTLIB,
+                os.path.join(self.test_ROOTLIB, self.test_fb2),
+                None,
+                0,
+                495373,
+            )
         book = Book.objects.get(filename=self.test_fb2)
         assert book is not None
         assert scanner.books_added == 1
@@ -68,19 +67,19 @@ class TestBookScaner(object):
         assert getFileData(book) is not None
 
     @pytest.mark.parametrize("fb2sax", [True, False])
-    def test_processfile_fb2zip(self, fb2sax):
+    def test_processfile_fb2zip(self, fb2sax, override_config):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
-        config.SOPDS_FB2SAX = fb2sax
         opdsdb.clear_all()
         scanner = opdsScanner()
-        scanner.processzip(
-            self.test_fb2zip,
-            self.test_ROOTLIB,
-            os.path.join(self.test_ROOTLIB, self.test_fb2zip),
-            # None,
-            # 0,
-            # 495373,
-        )
+        with override_config(SOPDS_FB2SAX=fb2sax):
+            scanner.processzip(
+                self.test_fb2zip,
+                self.test_ROOTLIB,
+                os.path.join(self.test_ROOTLIB, self.test_fb2zip),
+                # None,
+                # 0,
+                # 495373,
+            )
         book: Book = Book.objects.all()[0]
         assert book is not None
         assert scanner.books_added == 1
@@ -253,11 +252,10 @@ class TestBookScaner(object):
 
 
 @pytest.mark.django_db
-def test_inpx_scanner(fake_sopds_root_lib) -> None:
-    config.SOPDS_INPX_ENABLE = True
-    config.SOPDS_INPX_TEST_FILES = False
-    scanner = opdsScanner()
-    scanner.scan_all()
+def test_inpx_scanner(fake_sopds_root_lib, override_config) -> None:
+    with override_config(SOPDS_INPX_ENABLE=True, SOPDS_INPX_TEST_FILES=False):
+        scanner = opdsScanner()
+        scanner.scan_all()
     assert scanner.books_added == 3
     assert scanner.bad_books == 0
     assert Book.objects.count() == scanner.books_added
