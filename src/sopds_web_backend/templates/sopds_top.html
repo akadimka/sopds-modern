@@ -32,8 +32,8 @@
             {% endif %}{% endif %}
             {% if user.is_authenticated %}
                 <li>
-                    <a href="{% url "web:profile" %}">{{ user.username }}</a>
-                    (<a href="{% url "web:logout" %}">{% trans "Logout" %}</a>)
+                    <a href="{% url "web:profile" %}" style="display:inline">{{ user.username }}</a>
+                    (<a href="{% url "web:logout" %}" style="display:inline">{% trans "Logout" %}</a>)
                 </li>
             {% else %}
                 <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>
