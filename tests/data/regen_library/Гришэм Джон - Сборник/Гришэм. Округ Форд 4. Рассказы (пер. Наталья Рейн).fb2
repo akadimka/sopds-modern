@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Округ Форд</book-title>
+    <annotation>
+      <p>«Округ Форд» — триумфальное возвращение Гришэма на американский Юг, где разворачивалось действие легендарного романа «Пора убивать», с которого началось победное шествие книг Джона Гришэма по всему миру. Семь рассказов. Семь потрясающих историй о людях, в той или иной степени оказавшихся не в ладу с законом. Семь завораживающих сюжетов — и неожиданных финалов. Обитатели округа Форд — далеко не ангелы, и писатель отнюдь не льстит им. Но возможно, именно поэтому читателю еще интереснее следить за поворотами их судеб — резкими, неожиданными, а порой и по-настоящему опасными…</p>
+    </annotation>
+    <keywords>расследование преступлений,психологические детективы,юридические детективы</keywords>
+    <date value="2009-01-01">2009</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Наталья</first-name>
+      <middle-name>Вениаминовна</middle-name>
+      <last-name>Рейн</last-name>
+    </translator>
+    <sequence name="Округ Форд" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Roland</first-name>
+      <last-name/>
+    </author>
+    <program-used>OOoFBTools-2.53 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2018-05-01">01.05.2018</date>
+    <id>2FFC16FE-0D64-4A89-9C5A-A05AA79F0C97</id>
+    <version>1.1</version>
+    <history>
+      <p>v1.0 Roland — indd</p>
+      <p>v 1.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Округ Форд</book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>Москва</city>
+    <year>2019</year>
+    <isbn>978-5-17-118911-2</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Время прощать</book-title>
+    <annotation>
+      <p>Джон Гришэм возвращается в округ Форд!</p>
+      <p>Именно здесь развернулось действие романа «Пора убивать», принесшего автору мировую славу, ставшего классикой жанра и основой потрясающего фильма с Мэттью Макконахи, Сэмюэлом Л. Джексоном и Сандрой Баллок в главных ролях. Именно в этом романе впервые появился молодой адвокат Джейк Брайгенс, бросивший вызов неумолимой судебной системе, чтобы защитить отчаявшегося отца, который застрелил двух подонков, надругавшихся над его маленькой дочерью.</p>
+      <p>И вот — новое дело Джейка Брайгенса. Дело о загадочном завещании очень богатого южанина Сета Хаббарда, который распорядился своим состоянием так, что это шокировало не только его близких, но и всех, кто его знал. Сын и дочь богача готовы горы свернуть, чтобы доказать: их отец был не в своем уме, когда составлял этот документ.</p>
+      <p>Но Джейк Брайгенс намерен убедить присяжных в противоположном — у Сета Хаббарда имелись веские причины поступить именно так, а не иначе. И чтобы сделать это, Брайгенсу придется раскрыть опасную тайну, многие годы скрывавшуюся за вычурными фасадами особняков уютного южного городка…</p>
+    </annotation>
+    <keywords>психологическая проза,остросюжетная проза</keywords>
+    <date>2013</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <middle-name>Яковлевна</middle-name>
+      <last-name>Доронина</last-name>
+    </translator>
+    <sequence name="Джейк Брайгенс" number="2"/>
+  </title-info>
+  <src-title-info>
+    <genre>thriller_legal</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>Sycamore row</book-title>
+    <date>2013</date>
+    <lang>en</lang>
+    <sequence name="Jake Brigance" number="2"/>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2015-03-23">2015-03-23</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=9316457</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>1c597865-d193-11e4-8ca3-002590591ed2</id>
+    <version>2.0</version>
+    <history>
+      <p>v 1.0 — создание fb2 — (On84ly)</p>
+      <p>v 2.0 — вычитка</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Время прощать : [роман] / Джон Гришэм</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2015</year>
+    <isbn>978-5-17-084057-1</isbn>
+  </publish-info>
+  <custom-info info-type="info">John Grisham
+Sycamore row
+Печатается с разрешения автора и литературных агентств The Gernet Company, Inc. и Andrew Nurnberg.
+© Belfry Holdings, Inc., 2013
+© Перевод. И.Я. Доронина, 2014
+© Издание на русском языке AST Publishers, 2015
+</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

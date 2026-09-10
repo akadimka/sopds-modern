@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>detective</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+    <id>4343</id>
+   </author>
+   <book-title>Информатор</book-title>
+   <annotation>
+    <p>Что ждет судью, нарушившего закон и справедливость ради больших денег? За расследование его деятельности возьмутся специалисты из КПДС — Комиссии по проверке действий судей. Такие, как Лейси Штольц и ее напарник Хьюго Хэтч. И однажды на связь с ними выходит таинственный информатор — чтобы предоставить доказательства преступлений судьи Клаудии Макдоувер. Судьи, которая уже два десятка лет связана с могущественной мафиозной группировкой… Кто же этот загадочный информатор? Откуда ему столько известно? И понимает ли он, какой опасности подвергает не только себя, но и Лейси с Хьюго, бросая вызов продажным «блюстителям закона» и их безжалостным криминальным покровителям?..</p>
+   </annotation>
+   <keywords>расследование преступлений,мистические детективы,юридические детективы</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Аркадий</first-name>
+    <middle-name>Юрьевич</middle-name>
+    <last-name>Кабалкин</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>detective</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+    <id>4343</id>
+   </author>
+   <book-title></book-title>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>deann</nickname>
+   </author>
+   <program-used>OOoFBTools-2.48 (ExportToFB21), FictionBook Editor Release 2.6.7</program-used>
+   <date value="2017-06-16">16.06.2017</date>
+   <id>ff608ddb-5139-11e7-b2fb-0cc47a52085c</id>
+   <version>2.0</version>
+   <history>
+    <p>v 1.0 — создание fb2 — deann</p>
+    <p>v 2.0 — вычитка, мелкие исправления</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Информатор</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2017</year>
+   <isbn>978-5-17-102877-0</isbn>
+   <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+  <custom-info info-type="librusec-id">636134</custom-info>
+  <custom-info info-type="info">© Belfry Holdings, Inc., 2016
+© Перевод. А. Ю. Кабалкин, 2017
+© Издание на русском языке AST Publishers, 2017
+</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

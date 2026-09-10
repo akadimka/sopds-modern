@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Король сделки</book-title>
+    <annotation>
+      <p>Государственный защитник…</p>
+      <p>Скучная, плохо оплачиваемая работа, через которую должен пройти едва ли не каждый начинающий юрист. Работа, которая не сулит Клею Картеру ничего интересного.</p>
+      <p>Пока он не возьмется за дело парня, совершившего убийство, казалось бы, без всякой причины. Пока не поймет, что за банальным делом стоит дело настоящее. Дело трудное, опасное, сулящее не просто большие — огромные деньги.</p>
+      <p>Дело, которое может стать началом блестящей карьеры — если рискнуть и пойти ва-банк…</p>
+    </annotation>
+    <date>2004</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <middle-name>Яковлевна</middle-name>
+      <last-name>Доронина</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller_legal</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>The King of torts</book-title>
+    <date>2003</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>NickNem</nickname>
+    </author>
+    <program-used>Book Designer 4.0, FictionBook Editor Release 2.6.6</program-used>
+    <date>15.06.2005</date>
+    <src-url>http://www.aldebaran.ru/</src-url>
+    <src-ocr>OCR Tymond http://tymlib.narod.ru</src-ocr>
+    <id>E2910BE4-D1E6-46FD-B8A0-1114AD648730</id>
+    <version>2.0</version>
+    <history>
+      <p>v 2.0 — окончательная вычитка</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гришэм, Д. «Король сделки»</book-name>
+    <publisher>Издательство ACT</publisher>
+    <city>Москва</city>
+    <year>2004</year>
+    <isbn>5-17-024049-Х, 5-17-037991-9</isbn>
+    <sequence name="Bestseller (АСТ)"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

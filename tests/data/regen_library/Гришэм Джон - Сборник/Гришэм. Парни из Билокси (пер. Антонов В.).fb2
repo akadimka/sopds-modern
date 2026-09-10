@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Парни из Билокси</book-title>
+    <annotation>
+      <p>Когда-то в очаровательный курортный городок Билокси приехали двое молодых иммигрантов из Европы — нищих, но полных надежд на счастливую жизнь. И они добились успеха, пусть каждый по-своему: одному суждено было возглавить преступный мир Билокси, другому — стать окружным прокурором, полным решимости очистить Побережье от криминала.</p>
+      <p>Так было положено начало войне между двумя семьями, продолжить которую предстоит их сыновьям. Хью Малко и Кит Руди, некогда лучшие школьные друзья, так же оказываются по разные стороны закона, что неизбежно приведет к столкновению в зале суда.</p>
+      <p>Однако победителем оттуда выйдет лишь один из них…</p>
+    </annotation>
+    <date>2022</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Виктор</first-name>
+      <middle-name>Вячеславович</middle-name>
+      <last-name>Антонов</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>The boys from Biloxi</book-title>
+    <date>2022</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name/>
+    </author>
+    <program-used>ABBYY FineReader PDF 15, FictionBook Editor Release 2.7.0</program-used>
+    <date>2023</date>
+    <id>A454AC2C-866C-481B-829C-0ACB78C64ABC</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гришэм, Дж. «Парни из Билокси»</book-name>
+    <publisher>Аст</publisher>
+    <city>М.</city>
+    <year>2023</year>
+    <isbn>978-5-17-155274-9</isbn>
+    <sequence name="Гришэм: лучшее"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

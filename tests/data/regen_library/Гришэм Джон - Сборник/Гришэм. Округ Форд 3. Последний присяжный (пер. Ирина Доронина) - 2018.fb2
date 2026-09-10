@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Последний присяжный</book-title>
+    <annotation>
+      <p>Девять лет назад тихий южный городок был потрясен сенсационным процессом! Наследник одной из могущественнейших семей штата получил пожизненный срок за жестокое убийство молодой красивой вдовы… Все помнят, как он угрожал присяжным местью во время суда. И теперь, девять лет спустя, он досрочно освобожден — и вернулся, чтобы выполнить обещанное!</p>
+    </annotation>
+    <keywords>юридический триллер</keywords>
+    <date>2004</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <middle-name>Яковлевна</middle-name>
+      <last-name>Доронина</last-name>
+    </translator>
+    <sequence name="Округ Форд" number="3"/>
+  </title-info>
+  <src-title-info>
+    <genre>thriller_legal</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>The Last Juror</book-title>
+    <date>2004</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <first-name>Денис</first-name>
+      <last-name>        </last-name>
+    </author>
+    <program-used>FB Tools, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2006-05-03">2006-05-03</date>
+    <src-ocr>OCR Денис</src-ocr>
+    <id>CD52F33F-8C68-4567-B4E4-37616BDF6977</id>
+    <version>2.1</version>
+    <history>
+      <p>v 1.0 — создание fb2 OCR Денис</p>
+      <p>v 1.1 — исправление ошибок (63) by Ustas</p>
+      <p>v 2.0 — окончательная вычитка, мелкие исправления</p>
+      <p>v 2.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Последний присяжный</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2018</year>
+    <isbn>978-5-17-112557-8</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

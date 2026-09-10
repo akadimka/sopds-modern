@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>det_classic</genre>
+      <author>
+        <first-name>Джон</first-name>
+        <last-name>Гришэм</last-name>
+        <home-page>https://coollib.net/a/2579</home-page>
+      </author>
+      <book-title>Шантаж</book-title>
+      <annotation>
+        <p>Бывшие судьи, отбывающие срок в довольно уютной тюрьме во Флориде. Прежде уважаемые блюстители закона, грубо нарушившие его, уклоняясь от налогов, скатываясь до взяток и даже совершая бытовые преступления, они и «в местах не столь отдаленных» не утратили ни знаний, ни таланта, ни профессиональной хватки, ни желания разбогатеть. Разработав почти безупречную схему шантажа, они и в тюрьме нашли способ отлично заработать, но однажды совершенно случайно оказались в центре большой игры очень могущественных людей. Тех, которые с любыми проблемами разбираются быстро и предельно радикально. Теперь судьям-шантажистам остается лишь одно — сражаться за собственную жизнь в войне, где улики, мотивы и законы отходят на второй план, где не существует никаких правил…</p>
+      </annotation>
+      <date>      </date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <src-lang>en</src-lang>
+      <translator>
+        <first-name>В.</first-name>
+        <last-name>Заболотный</last-name>
+      </translator>
+      <sequence name="Гришэм: лучшие детективы"/>
+    </title-info>
+    <src-title-info>
+      <genre>det_classic</genre>
+      <author>
+        <first-name>John</first-name>
+        <last-name>Grisham</last-name>
+      </author>
+      <book-title>The Brethren</book-title>
+      <date>      </date>
+      <lang>en</lang>
+    </src-title-info>
+    <document-info>
+      <author>
+        <nickname>Faiber</nickname>
+      </author>
+      <program-used>FB Editor v2.0, FictionBook Editor Release 2.5</program-used>
+      <date value="2008-09-03">03.09.2008</date>
+      <id>06F2ABEB-7F48-48A5-B746-73CE09C6294D</id>
+      <version>1.2</version>
+      <history>
+        <p>v1.0 — создание fb2 (Faiber)</p>
+        <p>v1.1 — доп. форматирование (kejten)</p>
+        <p>v 1.2 — чистка скриптами, обложка, теги — sergey-astral</p>
+      </history>
+    </document-info>
+    <publish-info>
+      <book-name>Шантаж</book-name>
+      <publisher>АСТ</publisher>
+      <city>Москва</city>
+      <year>2016</year>
+      <isbn>978-5-17-099489-2</isbn>
+    </publish-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Противники</book-title>
+    <annotation>
+      <p>В суде нет ни правых, ни виноватых — есть лишь хорошие юристы, способные выиграть процесс, и плохие, обреченные на неудачу. И тем, и другим порой выпадает шанс, который нельзя упустить.</p>
+      <p>Маленькая фирма «Финли энд Фигг», кажется, такой шанс получила.</p>
+      <p>Лекарство, снижающее уровень холестерина в крови, похоже, убило нескольких человек и превратило в инвалидов очень многих.</p>
+      <p>Если фирма выиграет дело против фармацевтической компании, то деньги к пострадавшим и юристам потекут рекой.</p>
+      <p>Но если произойдет иначе…</p>
+      <p>В бой рвется новый партнер фирмы — Дэвид Зинк. Он молод, амбициозен и готов рискнуть…</p>
+    </annotation>
+    <date>2012</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Елена</first-name>
+      <middle-name>Игоревна</middle-name>
+      <last-name>Филиппова</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>The Litigators</book-title>
+    <date>2011</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>BookMustBeFree</nickname>
+    </author>
+    <program-used>ABBYY FineReader 11, FictionBook Editor Release 2.6, AlReader2</program-used>
+    <date value="2013-03-19">2013</date>
+    <src-url>lib.rus.ec</src-url>
+    <src-ocr>Scan: UTC</src-ocr>
+    <id>EE309286-BF55-48F1-8236-40C1EFCE4969</id>
+    <version>2.0</version>
+    <history>
+      <p>Scan: UTC</p>
+      <p>1.0 — создание файла fb2</p>
+      <p>2.0 — окончательная вычитка</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гришэм, Д. «Противники»</book-name>
+    <publisher>Астрель</publisher>
+    <city>М.</city>
+    <year>2013</year>
+    <isbn>978-5-271-46031-9</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

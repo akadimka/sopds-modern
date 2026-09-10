@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Обмен</book-title>
+    <annotation>
+      <p>Пятнадцать лет назад Митч Макдир и его жена Эбби сбежали от гангстеров, заправлявших коррумпированной фирмой «Бендини, Ламберт энд Лок». Скрываясь, пара несколько лет прожила за границей, а затем Митч получил престижную должность партнера в крупной нью-йоркской фирме, ведущей дела по всему миру, и поселился с женой на Манхэттене.</p>
+      <p>Однажды по просьбе коллеги Макдир берется за дело турецкой компании «Ланнак». Она судится с ливийским правительством, отказывающимся оплатить работу по строительству моста. Но, собираясь в Ливию, Митч даже не подозревает, что эта поездка бросит его в эпицентр опасного заговора… А жизни его коллег, родных и друзей окажутся под угрозой.</p>
+    </annotation>
+    <keywords>смертельная опасность,расследование преступлений,психологические детективы,бестселлеры The New York Times,юридические детективы</keywords>
+    <date value="2023-01-01">2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Дарья</first-name>
+      <middle-name>Николаевна</middle-name>
+      <last-name>Целовальникова</last-name>
+    </translator>
+    <sequence name="Митч Макдир" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>depdolg</nickname>
+    </author>
+    <program-used>OOoFBTools-2.56 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2025-12-09">09.12.2025</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=72850622</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>e9fca37d-d1a8-11f0-8820-ac1f6b0b2fee</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – depdolg</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Обмен : [роман] / Джон Гришэм </book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>М</city>
+    <year>2023</year>
+    <isbn>978-5-17-178364-8</isbn>
+    <sequence name="Гришэм: лучшее"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

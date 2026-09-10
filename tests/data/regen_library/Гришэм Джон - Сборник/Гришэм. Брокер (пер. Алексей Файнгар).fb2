@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>det_espionage</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+   </author>
+   <book-title>Брокер</book-title>
+   <annotation>
+    <p>Почему ЦРУ давлением и угрозами вынудило президента США помиловать крупного юриста-мошенника Джоэла Бэкмана, шесть лет просидевшего в тюрьме строгого режима?</p>
+    <p>Возможно, подтвердились слухи, что Бэкман владеет информацией, способной разрушить всю систему спутникового шпионажа, и спецслужбы предпочли пойти на сделку с этим опасным человеком? Теперь у Бэкмана – новое имя, новые документы, солидный счет в банке и дом в новой стране… но нет ни секунды покоя.</p>
+    <p>Он понимает: людей, которые знают слишком много, убирают.</p>
+    <p>Рано или поздно ему придется сражаться за свою жизнь... но когда и с кем?</p>
+   </annotation>
+   <date>2005</date>
+   <coverpage>
+    <image l:href="#_153545authorgrishyem_djonkniga_broker.jpg"/></coverpage>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Алексей</first-name>
+    <middle-name>Александрович</middle-name>
+    <last-name>Файнгар</last-name>
+   </translator>
+   <sequence name="The International Bestseller"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Денис</first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FB Tools, FB Writer v1.1, Fiction Book Investigator, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2007-05-26">2007-05-26</date>
+   <src-ocr>LITRU.RU</src-ocr>
+   <id>11122</id>
+   <version>1.1</version>
+   <history>
+    <p>v 1.0 – создание fb2 OCR Денис</p>
+    <p>v 1.1 – исправление мелких ошибок, доп.форматирование NickNem</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Джон Гришэм. Брокер</book-name>
+   <publisher>АСТ, АСТ Москва, Хранитель, Харвест</publisher>
+   <city>Москва</city>
+   <year>2006</year>
+   <isbn>5-17-037882-3, 5-9713-3406-9, 5-9762-0922, 985-13-8754-1</isbn>
+  </publish-info>
+  <custom-info info-type="src-author-first-name">John</custom-info>
+  <custom-info info-type="src-author-last-name">Grisham</custom-info>
+  <custom-info info-type="src-book-title">The Broker</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

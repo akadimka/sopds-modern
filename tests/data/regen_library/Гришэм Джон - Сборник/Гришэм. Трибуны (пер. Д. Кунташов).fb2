@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Трибуны</book-title>
+    <annotation>
+      <p>Встреча старых школьных друзей, игравших в одной футбольной команде, пробуждает давние воспоминания.</p>
+      <p>Былая трагедия — и юношеская любовь.</p>
+      <p>Мальчишеская жажда приключений — и сложные отношения со взрослыми, дерзкие мечты — и крах больших надежд..</p>
+      <p>Прошлое давно умерло?</p>
+      <p>Нет. Иногда его можно изменить и взять реванш за давний проигрыш.</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Д.</first-name>
+      <last-name>Кунташов</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>John </first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>Bleachers</book-title>
+    <date/>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>golma1</nickname>
+    </author>
+    <program-used>doc2fb, FB Editor v2.3</program-used>
+    <date value="2010-04-18">2010-04-18</date>
+    <src-url>http://lib.rus.ec</src-url>
+    <src-ocr>Scan: niksi; OCR&amp;SpellCheck: golma1</src-ocr>
+    <id>8D4A097B-13DD-4F74-83C6-F2CA32344491</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <book-name>Трибуны</book-name>
+    <publisher>АСТ, АСТ Москва</publisher>
+    <city>Москва</city>
+    <year>2008</year>
+    <isbn>978-5-17-052862-2, 978-5-9713-9664-2</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

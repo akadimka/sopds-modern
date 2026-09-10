@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Повестка</book-title>
+    <annotation>
+      <p>Когда-то судья Этли был одним из самых влиятельных людей в своем округе. Теперь он — лишь тень самого себя, больной и одинокий старик, доживающий последние дни. Так зачем ему понадобилось вызывать к себе своих сыновей, Рэя и Форреста, официальной повесткой? Неужели, чтобы обсудить с ними свое завещание? Отложив дела, братья отправляются к отцу. И тут выясняется, что отец внезапно скончался, а в доме спрятаны… миллионы долларов. Какие опасные тайны скрывал старый судья? На этот вопрос пытается найти ответ Рэй, нашедший клад и решивший сохранить это в секрете. Но очень скоро выясняется, что он принял совсем не лучшее решение…</p>
+    </annotation>
+    <keywords>расследование преступлений,психологические детективы,адвокатские истории,юридические детективы</keywords>
+    <date value="2002-01-01">2002</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Юрий</first-name>
+      <middle-name>Г.</middle-name>
+      <last-name>Кирьяк</last-name>
+    </translator>
+    <sequence name="Округ Форд" number="2"/>
+  </title-info>
+  <src-title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>The Summons</book-title>
+    <date/>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <first-name>Руслан</first-name>
+      <last-name>Волченко</last-name>
+      <nickname>Ruslan</nickname>
+    </author>
+    <program-used>OOoFBTools-2.47 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-11-03">03 November 2016</date>
+    <id>DA7A0FE6-728A-421E-9618-EA2386694C8D</id>
+    <version>1.1</version>
+    <history>
+      <p>v 1.0 — Создание fb2 из издательского текста (Ruslan)</p>
+      <p>v 1.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Повестка</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2018</year>
+    <isbn>978-5-17-110123-7</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

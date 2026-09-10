@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>thriller</genre>
+   <genre>thriller_legal</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+    <id>4343</id>
+   </author>
+   <book-title>Афера</book-title>
+   <annotation>
+    <p>Студенты частной юридической школы «Фогги-Боттом» Марк, Тодд и Зола мечтали изменить мир к лучшему… а стали жертвами аферы владеющего этой школой фонда. Оказалось, фонд заинтересован лишь в том, чтобы опутать будущих адвокатов сетью огромных долгов по кредитам за обучение. Однако Марк, Тодд и Зола не намерены опускать руки. Они собираются использовать все полученные в школе знания и любые юридические лазейки, чтобы противостоять фонду. А если закон окажется на стороне могущественных мошенников — что ж, значит, придется действовать не вполне законными методами…</p>
+   </annotation>
+   <keywords>аферисты,аферы,расследование преступлений,психологические детективы,мошенничество</keywords>
+   <date value="2017-01-01">2017</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Ирина</first-name>
+    <middle-name>Яковлевна</middle-name>
+    <last-name>Доронина</last-name>
+   </translator>
+   <sequence name="Гришэм: лучшие детективы"/>
+  </title-info>
+  <src-title-info>
+   <genre>thriller_legal</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+    <id>4343</id>
+   </author>
+   <book-title></book-title>
+   <date value="2017-01-01">2017</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>On84ly</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2018-08-28">2018-08-28</date>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>b8e00e36-aab3-11e8-ae59-0cc47a5f3f85</id>
+   <version>2.2</version>
+  </document-info>
+  <publish-info>
+   <book-name>Афера : [роман] / Джон Гришэм</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2018</year>
+   <isbn>978-5-17-109308-2</isbn>
+  </publish-info>
+  <custom-info info-type="librusec-id">657618</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

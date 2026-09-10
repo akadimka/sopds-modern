@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"
+  xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Уличный адвокат</book-title>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>rusec</nickname>
+      <email>lib_at_rus.ec</email>
+    </author>
+    <program-used>LibRusEc kit</program-used>
+    <date value="2013-06-11">2013-06-11</date>
+    <id>Tue Jun 11 15:48:41 2013</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>detective</genre>
+      <genre>thriller</genre>
+      <author>
+        <first-name>Джон</first-name>
+        <last-name>Гришэм</last-name>
+        <home-page>https://coollib.net/a/2579</home-page>
+      </author>
+      <book-title>Ветра Камино</book-title>
+      <annotation>
+        <p>Брюс Кэйбл, знаменитый антиквар и владелец книжного магазина на острове Камино, вновь оказывается в центре опасного расследования.</p>
+        <p>Отказавшись покидать остров на время разрушительного урагана, Брюс одним из первых узнает о гибели своего друга — автора триллеров Нельсона Керра. Что это: несчастный случай или тонко спланированное убийство?</p>
+        <p>Пока полиция вынуждена разбираться с последствиями стихии, Брюс задается вопросом, могут ли подозрительные персонажи романов Нельсона быть скорее реальными, нежели вымышленными. А где-то на компьютере погибшего хранится рукопись его последнего романа. Быть может, ключ к тайне прячется именно здесь — между строк? Брюс начинает расследование, и то, что он обнаруживает, шокирует куда больше, чем самый остросюжетный триллер.</p>
+      </annotation>
+      <keywords>расследование преступлений,психологические детективы,место преступления,загадочная смерть,частное расследование,темные тайны</keywords>
+      <date value="2020-01-01">2020</date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <src-lang>en</src-lang>
+      <translator>
+        <first-name>Алина</first-name>
+        <middle-name>Александровна</middle-name>
+        <last-name>Курышева</last-name>
+      </translator>
+      <sequence name="Остров Камино" number="2"/>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name/>
+        <last-name/>
+      </author>
+      <program-used> Presto, FictionBook Editor Release 2.6.6</program-used>
+      <date value="2022-05-21">21.05.2022</date>
+      <src-url>http://www. /pages/biblio_book/?art=67688327</src-url>
+      <id>d105de8c-d686-11ec-876c-0cc47af30fe4</id>
+      <version>1</version>
+      <history>
+        <p>v1.0 Roland — indd</p>
+      </history>
+    </document-info>
+    <publish-info>
+      <book-name>Ветра Камино</book-name>
+      <publisher>AST Publishers</publisher>
+      <year>2022</year>
+      <isbn>978-5-17-148384-5</isbn>
+      <sequence name="Гришэм: лучшее"/>
+    </publish-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

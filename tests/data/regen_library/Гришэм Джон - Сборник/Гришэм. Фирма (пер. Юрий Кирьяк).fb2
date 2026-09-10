@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>thriller</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришем</last-name>
+    <home-page>http://www.jgrisham.com/</home-page>
+   </author>
+   <book-title>Фирма</book-title>
+   <annotation>
+    <p>Молодой, подающий надежды адвокат получает престижную должность в богатой и солидной ФИРМЕ — и очень скоро понимает, что за ее респектабельным фасадом скрывается нечто очень и очень странное, причем подозрительная гибель трех сотрудников фирмы — лишь верхушка айсберга неразгаданных, таинственных преступлений…</p>
+   </annotation>
+   <date>1991</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Юрий</first-name>
+    <last-name>Кирьяк</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>thriller</genre>
+   <author>
+    <first-name>John</first-name>
+    <last-name>Grisham</last-name>
+    <home-page>http://www.jgrisham.com/</home-page>
+   </author>
+   <book-title>The Firm</book-title>
+   <date>1991</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name>Nike</first-name>
+    <last-name></last-name>
+    <nickname>Nike</nickname>
+    <email>nike@sendmail.ru</email>
+   </author>
+   <program-used>Far manager, Colorer plugin for Far, perl, hands, FictionBook Editor Release 2.6.6</program-used>
+   <date>2003</date>
+   <src-url>http://mysuli.aldebaran.ru</src-url>
+   <src-ocr>Библиотека Дениса</src-ocr>
+   <id>3EE9124C-C4B2-45C5-9EB1-96EA00A1CA89</id>
+   <version>2.0</version>
+   <history>
+    <p>v 1.0 — создание fb2 Nike</p>
+    <p>v 1.1 — дополнительное форматирование OCR Альдебаран</p>
+    <p>v 2.0 — вычитка</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Гришем, Дж. «Фирма. Клиент»</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2002</year>
+   <isbn>5-17-014451-2</isbn>
+  </publish-info>
+  <custom-info info-type="src-author-first-name">John</custom-info>
+  <custom-info info-type="src-author-last-name">Grisham</custom-info>
+  <custom-info info-type="src-book-title">The Firm</custom-info>
+  <custom-info info-type="src-year">1991</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

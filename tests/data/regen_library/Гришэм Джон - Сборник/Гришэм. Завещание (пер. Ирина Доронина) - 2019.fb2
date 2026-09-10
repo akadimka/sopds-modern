@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>thriller</genre>
+      <author>
+        <first-name>Джон</first-name>
+        <last-name>Гришэм</last-name>
+        <home-page>https://coollib.net/a/2579</home-page>
+      </author>
+      <book-title>Завещание</book-title>
+      <annotation>
+        <p>Трой Филан, богатейший магнат юга, знает: скоро он умрет. Но у него еще есть время изменить завещание. Это и будет его последним посланием многочисленным родственникам, только и жаждущим момента получить свою «часть пирога»… После оглашения последней воли Филана начинается настоящая битва за то, чтобы опротестовать ее. Потому что практически все деньги магната завещаны никому не известной Рейчел Лейн, живущей где-то в топях Бразилии. Как ее найти? И можно ли уговорить поступиться своими интересами ради других членов семьи? Адвокат Нейт О'Рейли отправляется на поиски Рейчел Лейн и очень скоро понимает, что ввязался в опасное предприятие. Ведь там, где скрывается богатая наследница, его ждут настоящие испытания и смертельная опасность…</p>
+      </annotation>
+      <date>      </date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <src-lang>en</src-lang>
+      <translator>
+        <first-name>Ирина</first-name>
+        <middle-name>Яковлевна</middle-name>
+        <last-name>Доронина</last-name>
+      </translator>
+      <sequence name="Гришэм: лучшие детективы"/>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Джон</first-name>
+        <last-name>Гришем</last-name>
+      </author>
+      <program-used>FictionBook Editor Release 2.6.6</program-used>
+      <date value="2015-05-12">12 May 2015</date>
+      <id>C9FBDC8F-7E7B-4DF2-8AEA-CFE53B092937</id>
+      <version>1.1</version>
+      <history>
+        <p>v 1.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+      </history>
+    </document-info>
+    <publish-info>
+      <book-name>Завещание</book-name>
+      <publisher>АСТ</publisher>
+      <city>Москва</city>
+      <year>2019</year>
+      <isbn>978-5-17-115679-4</isbn>
+    </publish-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

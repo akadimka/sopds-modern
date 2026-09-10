@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Рэкетир</book-title>
+    <annotation>
+      <p>За всю историю США были убиты только четыре федеральных судьи. Недавно в этот список внесли и пятого — Раймонда Фосетта.</p>
+      <p>Тело судьи и труп его секретарши обнаружили в домике у озера, причем следы взлома и борьбы отсутствовали. А еще в хижине обнаружили настежь распахнутый, пустой сейф…</p>
+      <p>Кто убил Фосетта и почему? И что хранилось в сейфе?</p>
+      <p>Ответы на эти вопросы, похоже, знает лишь один человек — заключенный лагеря в штате Мэриленд Малкольм Баннистер, бывший адвокат, осужденный за то, чего не совершал.</p>
+      <p>Баннистер готов помочь агентам ФБР, предоставив им информацию. Но за помощь он требует слишком много. И к тому же не понятно, можно ли вообще ему доверять…</p>
+    </annotation>
+    <date>2013</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Аркадий</first-name>
+      <middle-name>Юрьевич</middle-name>
+      <last-name>Кабалкин</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>The Racketeer</book-title>
+    <date>2012</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>stranger</nickname>
+    </author>
+    <program-used>ABBYY FineReader 11, FictionBook Editor Release 2.6, AlReader2, AlReader.Droid</program-used>
+    <program-id>7ba9f9814b71251de63c083324ef94bb</program-id>
+    <date value="2014-04-19">19 April 2014</date>
+    <id>C2129984-5634-4253-B699-9120E44F3A2F</id>
+    <version>1.1</version>
+    <history>
+      <p>1.0 — создание файла fb2;</p>
+      <p>1.1 — мелочевка (shtuks);</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Джон Гришэм  «Рэкетир»</book-name>
+    <publisher>АСТ</publisher>
+    <city>М.</city>
+    <year>2013</year>
+    <isbn>978-5-17-080277-7</isbn>
+    <sequence name="Бестселлеры Джона Гришэма"/>
+  </publish-info>
+  <custom-info info-type="general">Компьютерный  дизайн А. А. Кудрявцева. 
+Студия «FOLD &amp; SPINE». 
+Печатается с  разрешения  автора и  литературных агентств  The  Gemert  Company,  Inc.  и  Andrew  Numberg. 
+Ответственный  редактор Л. А. Кузнецова. 
+Компьютерная  верстка  Р. В. Рыдалин. 
+Технический  редактор  О. В. Панкрашина. 
+Подписано  в  печать  25.07.13. 
+Тираж  7000  экз. 
+Заказ №  6211. 
+381 стр.</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

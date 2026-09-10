@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>thriller</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+   </author>
+   <book-title>Адвокат</book-title>
+   <annotation>
+    <p>ПОЧЕМУ блистательный молодой юрист, которому уготовано великолепное будущее, внезапно становится защитником самых беззащитных?</p>
+    <p>Неожиданный приступ альтруизма?</p>
+    <p>Или — просто нормальное желание НАСТОЯЩЕГО АДВОКАТА разгадывать и распутывать действительно ИНТЕРЕСНЫЕ дела? Дела, от которых порой зависит не только благополучие, но и сама жизнь его клиентов...</p>
+   </annotation>
+   <date value="1998-01-01">1998</date>
+   <coverpage>
+    <image l:href="#BC4_1490515389.jpg"/></coverpage>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Юрий</first-name>
+    <last-name>Кирьяк</last-name>
+   </translator>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Денис</first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FB Tools, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2005-02-15">2005-02-15</date>
+   <src-url>http://www.litru.ru/bd/?b=11121</src-url>
+   <src-ocr>LITRU.RU</src-ocr>
+   <id>11121</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 — создание fb2 OCR Денис</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Джон Гришэм. Адвокат</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2003</year>
+   <isbn>5-17-015621-9</isbn>
+   <sequence name="Bestseller"/>
+  </publish-info>
+  <custom-info info-type="src-author-first-name">John</custom-info>
+  <custom-info info-type="src-author-last-name">Grisham</custom-info>
+  <custom-info info-type="src-book-title">The Street Lawyerv</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

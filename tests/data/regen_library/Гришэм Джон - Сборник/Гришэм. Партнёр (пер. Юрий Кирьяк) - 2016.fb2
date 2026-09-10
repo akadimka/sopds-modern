@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>thriller</genre>
+      <author>
+        <first-name>Джон</first-name>
+        <last-name>Гришэм</last-name>
+        <home-page>https://coollib.net/a/2579</home-page>
+      </author>
+      <book-title>Партнер</book-title>
+      <annotation>
+        <p>Его долгое время искали по всему миру и наконец схватили в маленьком бразильском городке. Его не спасла ни смена имени, ни отказ от привычного образа жизни, ни упорное желание «отсидеться в тени». Даже идеальные преступления имеют изъяны. И даже идеальные преступники, которые, как утверждают, могут получиться только из юристов, порой попадаются. Решив обокрасть своих партнеров по фирме, опытный юрист Патрик Лэниган даже не представлял, какими неприятностями грозит ему эта авантюра. Но если на кону миллионы, почему бы не рискнуть?..</p>
+      </annotation>
+      <keywords>юридический триллер</keywords>
+      <date>1997</date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <src-lang>en</src-lang>
+      <translator>
+        <first-name>Юрий</first-name>
+        <middle-name>Г.</middle-name>
+        <last-name>Кирьяк</last-name>
+      </translator>
+      <sequence name="Гришэм: лучшие детективы"/>
+    </title-info>
+    <src-title-info>
+      <genre>thriller_legal</genre>
+      <author>
+        <first-name>John</first-name>
+        <last-name>Grisham</last-name>
+        <home-page>http://www.jgrisham.com/</home-page>
+      </author>
+      <book-title>The Partner</book-title>
+      <date>1997</date>
+      <lang>en</lang>
+    </src-title-info>
+    <document-info>
+      <author>
+        <first-name>Nike</first-name>
+        <last-name>        </last-name>
+        <nickname>Nike</nickname>
+        <email>nike@sendmail.ru</email>
+      </author>
+      <program-used>Far manager, Colorer plugin for Far, perl, hands, FictionBook Editor Release 2.6.6</program-used>
+      <date value="2003-07-08">08 March 2016</date>
+      <src-ocr>OCR&amp;Spellcheck tymond</src-ocr>
+      <id>4AB181FC-F5C9-4A44-AEA4-A057BF18C090</id>
+      <version>2.1</version>
+      <history>
+        <p>v 1.0 — создание fb2 Nike</p>
+        <p>v 1.1 — дополнительное форматирование OCR Альдебаран</p>
+        <p>v 2.0 — окончательная вычитка</p>
+        <p>v 2.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+      </history>
+    </document-info>
+    <publish-info>
+      <book-name>Партнер</book-name>
+      <publisher>АСТ</publisher>
+      <city>Москва</city>
+      <year>2016</year>
+      <isbn>978-5-17-094078-3</isbn>
+    </publish-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

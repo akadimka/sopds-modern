@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Апелляция</book-title>
+    <annotation>
+      <p>Миллиардер Карл Трюдо не раз успешно проворачивал крупные аферы на Уолл-стрит. Но сейчас ему предстоит почти невозможное — переиграть Верховный суд штата Миссисипи.</p>
+      <p>Против него — едва ли не все жители маленького городка, которых буквально травит принадлежащая ему химическая фабрика. Уже вынесен вердикт присяжных, заключивших, что именно Трюдо повинен в болезнях сотен горожан и гибели нескольких из них.</p>
+      <p>Однако любой вердикт может быть оспорен, и любое, даже самое, казалось бы, безнадежное дело может быть выиграно, считает Трюдо, Деньги и связи решают все. Ради спасения своей империи он готов пойти ва-банк — подать апелляцию. И на сей раз магнат уверен: присяжные будут играть по его правилам.</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Елена</first-name>
+      <middle-name>Игоревна</middle-name>
+      <last-name>Филиппова</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>golma1</nickname>
+    </author>
+    <program-used>doc2fb, FB Editor v2.0</program-used>
+    <date value="2010-02-24">2010-02-24</date>
+    <src-ocr>Scan&amp;OCR: niksi (09.02.2010) Корректура: Влад (14.02.2010)</src-ocr>
+    <id>E02877CA-E5B5-487A-9C9C-F0B0D29BC2AC</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <book-name>Апелляция</book-name>
+    <publisher>АСТ, АСТ Москва</publisher>
+    <city>Москва</city>
+    <year>2010</year>
+    <isbn> 978-5-17-060574-3, 978-5-403-02155-5</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

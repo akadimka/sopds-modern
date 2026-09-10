@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>thriller</genre>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Гришэм</last-name>
+   </author>
+   <book-title>Избранные детективные романы.</book-title>
+   <annotation>
+    <p>Джон Гришэм родился 8 февраля 1955 года в Джонсборо, штат Арканзас. Окончил Университет штата Миссисипи (University of Mississippi). После окончания университета открыл адвокатскую контору. В 1984 году начал работу над романом «Время убивать», который был опубликован в 1988 году небольшим тиражом. Второй роман «Фирма» (1991) стал бестселлером, права на экранизацию были куплены за 600 тысяч $. Тираж третьего романа «Дело о пеликанах» превысил 11 миллионов экземпляров. По данным издательства «АСТ» объём продаж книг Гришэма (на 2010 год) — более 225 миллионов экземпляров.</p>
+    <p>Содержание:</p>
+    <p>1. Гришэм Д. Адвокат.</p>
+    <p>2. Гришэм Д. Апелляция.</p>
+    <p>3. Гришэм Д. Афёра.</p>
+    <p>4. Гришэм Д. Брокер.</p>
+    <p>5. Гришэм Д. Вердикт.</p>
+    <p>6. Гришэм Д. Вне правил.</p>
+    <p>7. Гришэм Д. Время прощать.</p>
+    <p>8. Гришэм Д. Дело о пеликанах.</p>
+    <p>9. Гришэм Д. Завещание.</p>
+    <p>10. Гришэм Д. Золотой дождь.</p>
+    <p>11. Гришэм Д. Информатор.</p>
+    <p>12. Гришэм Д. Камера.</p>
+    <p>13. Гришэм Д. Клиент.</p>
+    <p>14. Гришэм Д. Остров Камино.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2019-03-26">26 March 2019</date>
+   <id>9AD0102A-6967-4985-B098-9451D9A989BB</id>
+   <version>2.2</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

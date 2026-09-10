@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Вне правил</book-title>
+    <annotation>
+      <p>Себастиан Радд — необычный адвокат. Его офис — пуленепробиваемый фургон с бесперебойным доступом к Интернету, шикарным баром, дорогими кожаными креслами и тайником, где хранится оружие. Его единственный помощник и единственный друг — вооруженный до зубов водитель, которому часто приходится перевоплощаться в телохранителя. Его номера вы не найдете в телефонном справочнике. Но именно Себастиан Радд берется за дела, от которых отказываются все. Он не доверяет власти, страховым компаниям, крупным корпорациям и не питает уважения к судебным этическим нормам. Однако если надо вытащить из тюрьмы невиновного, будь то нищий неудачник, которого обвиняют в убийстве, попавший в беду старик, выстреливший в ворвавшихся к нему в дом полицейских, или даже криминальный авторитет, он всегда готов кинуться в бой. Потому что каждый имеет право на справедливый вердикт, считает он. И ради этого он готов идти до конца, даже если придется играть вне правил!..</p>
+    </annotation>
+    <date>2015</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Виктор</first-name>
+      <middle-name>Вячеславович</middle-name>
+      <last-name>Антонов</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller_legal</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>Rogue Lawyer</book-title>
+    <date>2015</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>Alesh</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-09-15">2016-09-15</date>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>6915979e-7b5d-11e6-a56b-0cc47a520474</id>
+    <version>2.0</version>
+    <history>
+      <p>v 1.0 — создание fb2 — (Alesh)</p>
+      <p>v 2.0 — окончательная вычитка, мелкие исправления</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гриишэм, Дж. «Вне правил»</book-name>
+    <publisher>Аст</publisher>
+    <city>Москва</city>
+    <year>2016</year>
+    <isbn>978-5-17-097170-1</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+  <custom-info info-type="info">© Belfry Holdings, Inc., 2015
+© Перевод. В. В. Антонов, 2016
+© Издание на русском языке AST Publishers, 2016
+</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

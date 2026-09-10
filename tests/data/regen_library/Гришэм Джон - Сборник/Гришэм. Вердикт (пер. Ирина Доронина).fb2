@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Вердикт</book-title>
+    <annotation>
+      <p>Обычный, казалось бы, процесс по иску вдовы американца, умершего от рака легких, против табачной корпорации… Ничто не предвещает неожиданностей. Но могущественные «теневые команды» стремятся навязать суду нужный им вердикт, и жюри присяжных вдруг становится совершенно неуправляемым…</p>
+    </annotation>
+    <keywords>судебный процесс,политические интриги,расследование убийств</keywords>
+    <date value="1996-01-01">1996</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <middle-name>Яковлевна</middle-name>
+      <last-name>Доронина</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Roland</first-name>
+      <last-name/>
+      <nickname>Roland</nickname>
+    </author>
+    <program-used>OOoFBTools-2.50 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2017-09-12">12.09.2017</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=25665558</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>a3d46455-9719-11e7-87a0-00259059d1c2</id>
+    <version>1.0</version>
+    <history>
+      <p>v1.0 Roland – indd</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Вердикт : [роман] / Джон Гришэм ; [пер. с англ. И. Я. Дорониной]</book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>Москва</city>
+    <year>2017</year>
+    <isbn>978-5-17-103722-2</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

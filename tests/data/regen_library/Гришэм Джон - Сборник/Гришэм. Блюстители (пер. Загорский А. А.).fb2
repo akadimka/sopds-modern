@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Блюстители</book-title>
+    <annotation>
+      <p>22 года назад Куинси Миллер был приговорен к пожизненному заключению без права досрочного освобождения. Его обвинили в жестоком убийстве Кита Руссо, адвоката из небольшого города во Флориде. В этом деле не было ни надежных свидетелей, ни внятного мотива, а единственная улика сгорела в пожаре незадолго до суда. Теперь у Куинси появляется шанс выйти на свободу. За дело берется Каллен Пост — адвокат из фонда «Блюститель». За двенадцать лет работы организация реабилитировала восемь человек, отправленных в тюрьму в результате судебной ошибки, и Пост верит, что Миллер станет девятым.</p>
+      <p>Однако за убийством Руссо стоят могущественные и безжалостные люди, которые предпочитают, чтобы в тюрьме умер невиновный человек, а не один из них.</p>
+      <p>22 года назад они спустили курок — и не задумываясь сделают это снова…</p>
+    </annotation>
+    <keywords>смертельная опасность,адвокатские истории,в поисках истины,юридические детективы</keywords>
+    <date value="2019-01-01">2019</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Андрей</first-name>
+      <middle-name>Анатольевич</middle-name>
+      <last-name>Загорский</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>The Guardians</book-title>
+    <date/>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <first-name>Руслан</first-name>
+      <last-name>Волченко</last-name>
+      <nickname>Ruslan</nickname>
+    </author>
+    <program-used>OOoFBTools-3.2 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2021-09-04">04 September 2021</date>
+    <src-url>http://www. /pages/biblio_book/?art=149087</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>70d2ee6f-0b2f-11ec-b099-441ea1508245</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 — Создание fb2 из издательского текста (Ruslan)</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Д. Гришэм. Блюстители</book-name>
+    <publisher>ООО «Издательство АСТ»</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-17-134533-4</isbn>
+    <sequence name="Гришэм: лучшее"/>
+  </publish-info>
+  <custom-info info-type="">© Belfry Holdings, Inc., 2019 © Перевод. А. Загорский, 2021 © Издание на русском языке AST Publishers, 2021</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

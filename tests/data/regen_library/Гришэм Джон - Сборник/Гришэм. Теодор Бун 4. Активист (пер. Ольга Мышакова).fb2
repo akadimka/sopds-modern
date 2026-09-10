@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>child_det</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Активист. Теодор Бун расследует</book-title>
+    <annotation>
+      <p>Тео Бун, сын известных в городе юристов, не раз помогал друзьям улаживать проблемы с законом и даже доказывал невиновность тех, кого несправедливо обвиняли в преступлениях. Но на этот раз ему придется вступить в схватку с очень опасными противниками, а правила и ставки в этой игре будут совсем не детские.</p>
+      <p>Тео и его друзья отважились бросить вызов очень влиятельным людям, от которых зависит, каким быть городу и окружающим его землям, где все они живут. На кону у местных богатеев и коррумпированных политиков очень большие деньги, и эти люди не намерены делать скидку на возраст юного юриста и его друзей, срывающих их планы…</p>
+    </annotation>
+    <date>2015</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ольга</first-name>
+      <middle-name>А.</middle-name>
+      <last-name>Мышакова</last-name>
+    </translator>
+    <sequence name="Теодор Бун" number="4"/>
+  </title-info>
+  <src-title-info>
+    <genre>detective</genre>
+    <genre>child_det</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>Theodore Boone: The Activist</book-title>
+    <date>2013</date>
+    <lang>en</lang>
+    <sequence name="Theodore Boone" number="03"/>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>BookMustBeFree</nickname>
+    </author>
+    <program-used>ABBYY FineReader 12, FictionBook Editor Release 2.6</program-used>
+    <date>2016</date>
+    <id>DA7D689E-C459-4986-8052-6FC4709DEE6C</id>
+    <version>2.0</version>
+    <history>
+      <p>1.0 — создание файла fb2</p>
+      <p>2.0 — окончательная вычитка</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гришэм Дж. «Активист. Теодор Бун расследует»</book-name>
+    <publisher>АСТ, Neoclassic</publisher>
+    <city>М.</city>
+    <year>2015</year>
+    <isbn>978-5-17-089373-7</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

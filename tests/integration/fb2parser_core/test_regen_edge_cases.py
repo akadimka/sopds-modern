@@ -201,3 +201,30 @@ class TestAlphabetIndexFolderMisreadAsAuthor:
         rec = _by_suffix(records, *self.FOLDER_YURIEV, "Юрьев Зиновий Юрьевич - Человек под копирку.fb2")
         assert rec.proposed_series == ""
         assert rec.proposed_author != "Ю."
+
+
+class TestLateSeriesResolutionStillGetsFilenameNumberCorrection:
+    """Баг №54: "Гришэм. Округ Форд 4. Рассказы (пер. Наталья Рейн).fb2" —
+    `<sequence name="Округ Форд" number="1"/>` в самих метаданных файла
+    ОШИБОЧНО даёт "1" (реальная позиция — 4, как видно из имени файла).
+    `proposed_series` для этого файла разрешается в "Округ Форд" только
+    очень поздно, через `_postcheck_metadata_rescue()` — к этому моменту
+    первый (и на тот момент единственный) вызов коррекции
+    `series_number` из имени файла (Правило 2, "SeriesRoot N. Title")
+    внутри `Pass2SeriesFilename.execute()` уже отработал и ничего не
+    смог поправить, т.к. серия тогда была ещё не определена.
+    """
+
+    FOLDER = ("Гришэм Джон - Сборник",)
+
+    def test_metadata_sequence_number_corrected_from_filename(self, records):
+        rec = _by_suffix(records, *self.FOLDER, "Гришэм. Округ Форд 4. Рассказы (пер. Наталья Рейн).fb2")
+        assert rec.proposed_series == "Округ Форд"
+        assert rec.series_number == "4"
+
+    def test_other_volumes_in_the_series_unaffected(self, records):
+        rec2 = _by_suffix(records, *self.FOLDER, "Гришэм. Округ Форд 2. Повестка (пер. Юрий Кирьяк) - 2008.fb2")
+        rec3 = _by_suffix(records, *self.FOLDER,
+                           "Гришэм. Округ Форд 3. Последний присяжный (пер. Ирина Доронина) - 2018.fb2")
+        assert rec2.series_number == "2"
+        assert rec3.series_number == "3"

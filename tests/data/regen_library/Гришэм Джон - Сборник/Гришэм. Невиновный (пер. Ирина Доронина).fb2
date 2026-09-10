@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Невиновный</book-title>
+    <annotation>
+      <p>Трагическая история Рона Уильямсона — молодого человека, осужденного за убийство, которого он не совершал. Как невиновный оказался в камере смертников? Почему процесс по делу велся с грубейшими нарушениями? Пресловутая презумпция невиновности — неужели это лишь миф и красивые слова? Можно ли переиграть равнодушную машину правосудия, если в цепи доказательств защиты не все звенья надежны, а обвинение готово на все, даже на подлог, лишь бы отправить обвиняемого в камеру смертников?.. На эти вопросы в своей поразительной книге и отвечает Джон Гришэм.</p>
+    </annotation>
+    <date>2006</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <middle-name>Яковлевна</middle-name>
+      <last-name>Доронина</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>The Innocent Man</book-title>
+    <date>2006</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>BookMustBeFree</nickname>
+    </author>
+    <program-used>FB Editor v2.0, AlReader2, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2010-01-06">06 January 2010</date>
+    <id>5EB351BD-EA4E-480A-99C4-93D9EDA45549</id>
+    <version>2.1</version>
+    <history>
+      <p>v 1.0 — создание файла fb2</p>
+      <p>v 2.0 — окончательная вычитка</p>
+      <p>v 2.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Невиновный</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2016</year>
+    <isbn>978-5-17-096907-4</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

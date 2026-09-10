@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Похищение. Теодор Бун - маленький юрист</book-title>
+    <annotation>
+      <p>Загадочное исчезновение школьницы Эйприл Финнимор потрясло город.</p>
+      <p>Органы охраны правопорядка полагают, что девочку похитил сбежавший из тюрьмы преступник Джек Липер, да и сам он, согласившись на переговоры с полицией, не отрицает этой версии.</p>
+      <p>Но друг Эйприл — Тео Бун — уверен: все не так.</p>
+      <p>С ней произошло что-то другое.</p>
+      <p>Но где ее искать? И как спасти?</p>
+      <p>Полиция явно идет по ложному следу. Времени же остается все меньше. Тео начинает собственное расследование…</p>
+    </annotation>
+    <date>2012</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Елена</first-name>
+      <middle-name>Игоревна</middle-name>
+      <last-name>Филиппова</last-name>
+    </translator>
+    <sequence name="Теодор Бун" number="2"/>
+  </title-info>
+  <src-title-info>
+    <genre>thriller</genre>
+    <genre>child_det</genre>
+    <author>
+      <first-name>John </first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>Theodore Boone: The Abduction</book-title>
+    <date>2011</date>
+    <lang>en</lang>
+    <sequence name="Theodore Boone" number="2"/>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>golma1</nickname>
+    </author>
+    <program-used>ABBYY FineReader 11, FictionBook Editor Release 2.6.4</program-used>
+    <date value="2012-08-30">2012-08-30</date>
+    <src-url>http://lib.rus.ec/</src-url>
+    <src-ocr>Scan: UTC; OCR&amp;SpellCheck: golma1</src-ocr>
+    <id>{99252F2A-A689-44B3-8D6B-121B518BF68E}</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <book-name>Похищение. Теодор Бун - маленький юрист</book-name>
+    <publisher>Астрель, Полиграфиздат</publisher>
+    <city>Москва</city>
+    <year>2012</year>
+    <isbn>978-5-271-38965-8, 978-5-4215-3330-6</isbn>
+  </publish-info>
+  <custom-info info-type="">УДК 821.111(73) ББК 84 (7Сое) Г85
+Компьютерный дизайн A.A. Борковской
+В оформлении обложки использованы работы, предоставленные фирмой Fotobank
+Компьютерная верстка: Р.В. Рыдалин
+Технический редактор О.В. Панкрашина
+Общероссийский классификатор продукции ОК-005-93, том 2; 953000 — книги, брошюры
+Подписано в печать 20.01.12. Формат 84x108/32. Усл. печ. л. 15,12. Тираж 8 ООО экз. Заказ № CK 4029М.
+ООО «Издательство «Астрель» 129085, г. Москва, пр-д Ольминского, д. За
+Издание осуществлено при техническом участии ООО «Издательство АСТ»
+Типография ООО «Полиграфиздат» 144003, г Электросталь, Московская область, ул. Тевосяна, д. 25</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

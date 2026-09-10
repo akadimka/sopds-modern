@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Клиент</book-title>
+    <annotation>
+      <p>Прокуратура и ФБР, наемные убийцы мафии и «орлы» полиции — весь мир, похоже, охотится за одним-единственным человеком… одиннадцатилетним «трудным подростком» Марком Свеем. Мальчик случайно стал свидетелем самоубийства скандально знаменитого адвоката одной из самых могущественных преступных «семей» США, и перед смертью несчастный рассказал ребенку слишком многое. Если Марк не заговорит — попадет за решетку, если заговорит — погибнет. За совершенно, казалось бы, безнадежное дело его защиты берется адвокат-неудачница Реджи Лав…</p>
+    </annotation>
+    <date>1994</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Тамара</first-name>
+      <middle-name>П.</middle-name>
+      <last-name>Матц</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller_legal</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>The Client</book-title>
+    <date>1989</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>Nike</nickname>
+      <email>nike@sedndmail.ru</email>
+    </author>
+    <program-used>Far manager, Colorer plugin for Far, perl, hands, FictionBook Editor Release 2.6.6</program-used>
+    <date>2003</date>
+    <src-url>http://www.aldebaran.ru/</src-url>
+    <src-ocr>Aldebaran Library</src-ocr>
+    <id>5B1780FB-AE60-40B1-A4F7-DA9B95DB234A</id>
+    <version>2.0</version>
+    <history>
+      <p>v 1.1 — дополнительное форматирование OCR Альдебаран</p>
+      <p>v 1.2 — доп. вычитка</p>
+      <p>v 2.0 — окончательная вычитка</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гришэм, Дж. «Клиент»</book-name>
+    <publisher>АСТ, Новости</publisher>
+    <city>Москва</city>
+    <year>1994</year>
+    <isbn>5-7020-0839-1</isbn>
+    <sequence name="Бестселлер"/>
+  </publish-info>
+  <custom-info info-type="src-author-first-name">John</custom-info>
+  <custom-info info-type="src-author-last-name">Grisham</custom-info>
+  <custom-info info-type="src-book-title">The Client</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

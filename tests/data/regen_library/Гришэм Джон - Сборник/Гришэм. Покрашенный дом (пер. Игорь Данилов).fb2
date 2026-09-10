@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>prose_contemporary</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Покрашенный дом</book-title>
+    <annotation>
+      <p>Люк Чандлер никогда не лгал.</p>
+      <p>Ему нечего было скрывать.</p>
+      <p>Но однажды все изменилось…</p>
+      <p>Дом его детства превратился в место преступления.</p>
+      <p>Его жизнь обратилась в ад!</p>
+      <p>Это новый Джон Гришэм.</p>
+      <p>Гришэм, отступивший от канонов судебного триллера.</p>
+      <p>Этот новый Гришэм пришелся по душе всему миру.</p>
+      <p>Каким будет ваш вердикт?</p>
+    </annotation>
+    <date>2001</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Игорь</first-name>
+      <last-name>Данилов</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>prose_contemporary</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>A Painted House</book-title>
+    <date>2001</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <first-name>Денис</first-name>
+      <last-name/>
+    </author>
+    <program-used>FB Tools, FictionBook Editor Release 2.6.6</program-used>
+    <date>2007</date>
+    <src-url>http://mysuli.aldebaran.ru</src-url>
+    <src-ocr>OCR Денис</src-ocr>
+    <id>0F46D9B8-32CF-4C4F-807F-2B0E18EC755A</id>
+    <version>2.0</version>
+    <history>
+      <p>v 1.0 — создание fb2 OCR Денис</p>
+      <p>v 1.1 — вычитка</p>
+      <p>v 2.0 — окончательная вычитка, мелкие исправления</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Джон Гришэм. Покрашенный дом</book-name>
+    <publisher>АСТ, АСТ Москва, Хранитель</publisher>
+    <city>Москва</city>
+    <year>2007</year>
+    <isbn>5-17-037680-4, 5-9713-2900-6, 5-9762-0295-0, 985-13-8014-8</isbn>
+    <sequence name="The International Bestseller"/>
+  </publish-info>
+  <custom-info info-type="src-author-first-name">John</custom-info>
+  <custom-info info-type="src-author-last-name">Grisham</custom-info>
+  <custom-info info-type="src-book-title">A Painted House</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

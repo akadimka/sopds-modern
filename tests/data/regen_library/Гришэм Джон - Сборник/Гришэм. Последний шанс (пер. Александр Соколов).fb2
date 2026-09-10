@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Последний шанс</book-title>
+    <annotation>
+      <p>«Последний шанс» — необычайно увлекательная, честная, великолепно рассказанная история о настоящих мужчинах.</p>
+    </annotation>
+    <date>2010</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Александр</first-name>
+      <middle-name>Алексеевич</middle-name>
+      <last-name>Соколов</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>John </first-name>
+      <last-name>Grisham</last-name>
+    </author>
+    <book-title>Playing for Pizza</book-title>
+    <date>2007</date>
+    <lang>ru</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>golma1</nickname>
+    </author>
+    <program-used>doc2fb, FictionBook Editor Release 2.6</program-used>
+    <date value="2011-06-27">2011-06-27</date>
+    <src-url>http://lib.rus.ec</src-url>
+    <src-ocr>Scan: niksi; OCR&amp;SpellCheck: golma1</src-ocr>
+    <id>1C444EF2-C7B6-4074-9F4A-A0ABAA65CC44</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <book-name>Последний шанс</book-name>
+    <publisher>АСТ, Астрель, Полиграфиздат</publisher>
+    <city>Москва</city>
+    <year>2010</year>
+    <isbn>978-5-17-063119-3, 978-5-271-31294-6, 978-5-4215-1450-3</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

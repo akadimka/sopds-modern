@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джон</first-name>
+      <last-name>Гришэм</last-name>
+    </author>
+    <book-title>Серая гора</book-title>
+    <annotation>
+      <p>Саманте Кофер казалось, что ей обеспечена блестящая карьера в солидной юридической фирме на Уолл-стрит. Однако когда разразился кризис, ее мгновенно выкинули на улицу. И теперь единственная предложенная ей вакансия — это место юриста в затерянном в горах шахтерском городке Брэйди… Саманта, решив сменить обстановку и «отсидеться» в провинции в нелегкие времена, думала, что на новом месте ее ждет смертельная скука, но все оказалось иначе. Брэйди, как и любой маленький городок, скрывает немало опасных тайн; многие здесь готовы пойти на все, чтобы сохранить их. И первое же серьезное дело Саманты ставит под угрозу ее жизнь…</p>
+    </annotation>
+    <date>2016</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Наталья</first-name>
+      <middle-name>Вениаминовна</middle-name>
+      <last-name>Рейн</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>thriller</genre>
+    <author>
+      <first-name>John</first-name>
+      <last-name>Grisham</last-name>
+      <home-page>http://www.jgrisham.com/</home-page>
+    </author>
+    <book-title>Gray mountain</book-title>
+    <date>2014</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <first-name>        </first-name>
+      <last-name>        </last-name>
+    </author>
+    <program-used>ABBYY FineReader 12, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2020-02-08">2016</date>
+    <id>180937CC-BE71-403B-B12B-C272C8723B7D</id>
+    <version>2.1</version>
+    <history>
+      <p>v 1.0 — конвертация из pdf</p>
+      <p>v 2.0 — окончательная вычитка</p>
+      <p>v 2.1 — чистка скриптами, обложка, теги — sergey-astral</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Серая гора</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2017</year>
+    <isbn>978-5-17-105640-7</isbn>
+    <sequence name="Гришэм: лучшие детективы"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>
