@@ -228,3 +228,30 @@ class TestLateSeriesResolutionStillGetsFilenameNumberCorrection:
                            "Гришэм. Округ Форд 3. Последний присяжный (пер. Ирина Доронина) - 2018.fb2")
         assert rec2.series_number == "2"
         assert rec3.series_number == "3"
+
+
+class TestTranslatorCreditParenthesisNotTreatedAsSeries:
+    """Баг №55: "Гришэм. Остров Камино 1. Остров Камино (пер. Виктор
+    Антонов).fb2" — трейлинг-скобка "(пер. Имя Фамилия)" (указание
+    переводчика) распознавалась Правилом 2 ("серия в скобках в конце")
+    как имя серии — точка после "пер" даже давала ложное совпадение с
+    паттерном "Серия. service_words". Метаданные книги дополнительно
+    сбивали с толку: `<sequence name="Гришэм: лучшие детективы">` —
+    издательский ярлык-подборка, а не настоящая серия, поэтому
+    восстановление через metadata тоже не спасало.
+    """
+
+    FOLDER = ("Гришэм Джон - Сборник",)
+
+    def test_translator_credit_stripped_before_series_extraction(self, records):
+        rec = _by_suffix(records, *self.FOLDER, "Гришэм. Остров Камино 1. Остров Камино (пер. Виктор Антонов).fb2")
+        assert rec.proposed_series == "Остров Камино"
+        assert rec.series_number == "1"
+
+    def test_translator_credit_with_year_suffix_also_stripped(self, records):
+        # Sanity: тот же паттерн, но с ГОДОМ после переводческой скобки —
+        # трейлинг-скобка перестаёт быть последним элементом строки, пока
+        # год не вырезан первым (см. Баг №54 — Округ Форд 2/3 идут с
+        # "- 2008"/"- 2018" после скобки переводчика).
+        rec = _by_suffix(records, *self.FOLDER, "Гришэм. Округ Форд 2. Повестка (пер. Юрий Кирьяк) - 2008.fb2")
+        assert rec.proposed_series == "Округ Форд"
