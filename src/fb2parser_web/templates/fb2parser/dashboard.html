@@ -25,7 +25,7 @@ var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
     <div class="fp-toolbar">
         <span class="fp-toolbar-label">{% trans "Folder to process:" %}</span>
         <div style="flex:1; position:relative; display:flex; gap:0.4rem; min-width:0;">
-            <input id="main-folder" type="text" name="root" value="{{ root }}"
+            <input id="main-folder" type="text" name="root" value="{{ root }}" autocomplete="off"
                    style="margin:0; flex:1; font-family:var(--font-mono); font-size:0.83rem; min-width:0;"
                    placeholder="/path/to/library">
             <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap; padding:0.5rem 0.8rem;"

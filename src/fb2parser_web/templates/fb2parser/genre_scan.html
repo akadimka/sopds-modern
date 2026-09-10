@@ -15,7 +15,7 @@
                 {% csrf_token %}
                 <label>{% trans "Books folder" %}</label>
                 <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
-                    <input id="genre-scan-root" type="text" name="root" value="{{ root }}"
+                    <input id="genre-scan-root" type="text" name="root" value="{{ root }}" autocomplete="off"
                            placeholder="/path/to/library"
                            style="font-family:monospace; font-size:0.85rem; margin:0; flex:1;">
                     <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;"

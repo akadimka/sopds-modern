@@ -21,7 +21,7 @@
 <div class="s-field">
     <label>{% trans "Library path" %}</label>
     <div class="s-row">
-        <input type="text" name="library_path" id="library_path" value="{{ library_path }}" placeholder="{% trans 'Root path to FB2 files' %}">
+        <input type="text" name="library_path" id="library_path" value="{{ library_path }}" autocomplete="off" placeholder="{% trans 'Root path to FB2 files' %}">
         <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap;" onclick="openBrowser('library_path')">{% trans "📁 Browse" %}</button>
     </div>
     <div class="fb-browser-wrap" id="fb-browser-library_path" style="display:none; margin-top:0.3rem; max-width:600px;"></div>

@@ -151,6 +151,24 @@ function openBrowser(targetId) {
     var isOpen = wrap.style.display !== 'none';
     document.querySelectorAll('.fb-browser-wrap').forEach(function(el) { el.style.display = 'none'; });
     if (isOpen) return;
+
+    // Переносим popup в <body>: Foundation's .card задаёт overflow:hidden
+    // (для скруглённых углов), а popup обычно лежит ВНУТРИ такой карточки
+    // (напр. "Scan parameters") — как position:absolute он обрезался бы
+    // нижней границей самой карточки вместо того, чтобы перекрыть контент
+    // под ней. position:fixed + перенос в body полностью выводит его из-под
+    // любого overflow:hidden предка.
+    if (wrap.parentElement !== document.body) {
+        document.body.appendChild(wrap);
+    }
+    var anchorEl = document.getElementById(targetId);
+    var rect = (anchorEl || wrap).getBoundingClientRect();
+    wrap.style.position = 'fixed';
+    wrap.style.top = (rect.bottom + 2) + 'px';
+    wrap.style.left = rect.left + 'px';
+    wrap.style.zIndex = 2000;
+    wrap.style.margin = '0';
+
     wrap.style.display = 'block';
     if (!wrap.querySelector('div')) {
         var inputEl = document.getElementById(targetId);

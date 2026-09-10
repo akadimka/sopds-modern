@@ -15,7 +15,7 @@
     <!-- Manual path input -->
     <div style="display:flex; gap:0.4rem; padding:0.4rem 0.7rem; border-bottom:1px solid var(--border); background:var(--bg-muted);">
         <input type="text" id="fb-path-input-{{ target }}"
-               value="{{ path|default:'' }}"
+               value="{{ path|default:'' }}" autocomplete="off"
                placeholder="\\server\share or C:\path\to\folder"
                style="margin:0; flex:1; font-family:monospace; font-size:0.78rem; padding:0.25rem 0.4rem;"
                onkeydown="if(event.key==='Enter'){ fbNavigateTo('{{ target }}', this.value{% if show_files %}, '1', '{{ ext_filter|escapejs }}'{% endif %}); }">

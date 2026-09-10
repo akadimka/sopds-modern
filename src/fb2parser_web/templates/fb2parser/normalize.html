@@ -7,7 +7,7 @@
     <div style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0.7rem; background:var(--bg-muted); border-bottom:2px solid var(--border); flex-shrink:0;">
         <span style="font-size:0.88rem; color:var(--text-muted); white-space:nowrap; font-weight:500;">{% trans "Input folder:" %}</span>
         <div style="flex:1; position:relative; display:flex; gap:0.4rem; min-width:0;">
-            <input id="norm-folder" type="text" name="folder" value="{{ root }}"
+            <input id="norm-folder" type="text" name="folder" value="{{ root }}" autocomplete="off"
                    style="margin:0; flex:1; font-family:monospace; font-size:0.83rem; min-width:0;"
                    placeholder="/path/to/library">
             <button type="button" class="button secondary fb-browse-btn" style="margin:0; white-space:nowrap; padding:0.5rem 0.8rem;"
@@ -173,7 +173,7 @@
         <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.8rem; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--bg-muted);">
             <span style="font-size:0.83rem; white-space:nowrap; color:var(--text-muted);">{% trans "CSV path:" %}</span>
             <div style="flex:1; position:relative; display:flex; gap:0.4rem;">
-                <input id="names-csv-path" type="text" placeholder="C:\path\to\regen.csv"
+                <input id="names-csv-path" type="text" placeholder="C:\path\to\regen.csv" autocomplete="off"
                        style="margin:0; flex:1; font-family:monospace; font-size:0.82rem;"
                        onkeydown="if(event.key==='Enter') namesCsvLoad()">
                 <button type="button" class="button secondary fb-browse-btn" style="margin:0; padding:0.4rem 0.7rem; font-size:0.82rem; white-space:nowrap;"
