@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Джеймс</first-name>
+      <last-name>Макбрайд</last-name>
+    </author>
+    <book-title>Дьякон Кинг-Конг</book-title>
+    <annotation>
+      <p>В жилых проектах Нью-Йорка произошло нечто необыкновенные: безвредный старый пьяница по прозвищу Спортивный Пиджак, дьякон местной церкви, выстрелил в самого опасного наркоторговца проектов. Загадочная история взбудоражила жителей проектов, и в водоворот событий попали гангстеры и полицейские, чернокожие и латиноамериканцы, прихожане церкви, обитатели дома престарелых и даже местные муравьи. Клубок из старых тайн и новой путаницы разматывается на страницах этой живой и искренней книги, похожей на джазовую импровизацию.</p>
+      <p>Автор, Джеймс Макбрайд, известный американский писатель и музыкант, вместе со своими героями верит и доказывает, что даже на обочине жизни есть место надежде и любви.</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>убийства,наркоторговля,расследование убийств</keywords>
+    <date value="2020-01-01">2020</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Сергей</first-name>
+      <middle-name>Андреевич</middle-name>
+      <last-name>Карпов</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2021-05-31">2021-05-31</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=65383732</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>6b2a1ef4-206e-4a73-a185-5cf8e08cd5f5</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без БК</last-name>
+      <id>afcf7f36-d209-11e4-a494-0025905a0812</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Дьякон Кинг-Конг / Джеймс Макбрайд</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2020</year>
+    <isbn>9785001696667</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">© 2020 by James McBride</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2021</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

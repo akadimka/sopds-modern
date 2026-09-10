@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_police</genre>
+    <genre>detective</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Томас</middle-name>
+      <last-name>Осман</last-name>
+    </author>
+    <book-title>Выстрел мимо цели</book-title>
+    <annotation>
+      <p>
+        <strong>Нераскрытое дело десятилетней давности – звучит как вызов для Клуба убийств по четвергам! А если добавить, что исчезнувшую Бетани Уэйтс, восходящую звезду местного телевидения, так и не обнаружили, то получится загадка, мимо которой Элизабет, Джойс, Ибрагим и Рон просто не могут пройти.</strong>
+      </p>
+      <p>Успешно начавшиеся поиски омрачает внезапное появление врага Элизабет, который ставит ей весьма строгий ультиматум: убить или быть убитой. Пока Элизабет борется со своей совестью (и пистолетом), остальные участники Клуба и их новые знакомые (включая телезвезду, специалиста по отмыванию денег и бывшего полковника КГБ) разгадывают новую тайну. Но успеет ли компания найти ответы и спасти Элизабет, до того как убийца нанесет роковой удар?</p>
+      <empty-line/>
+      <p>
+        <strong>Интересные факты</strong>
+      </p>
+      <p>Самая быстро продаваемая книга Британии, которая побила рекорд «Случайной вакансии» Джоан Роулинг!</p>
+      <p>Всего за 3 дня после начала продаж в Британии было куплено 216 662 копии книги.</p>
+      <p>Осман готовит к публикации четвертую книгу серии.</p>
+      <p>Права на книгу куплены в 38 странах.</p>
+      <p>Всего в Великобритании и Ирландии продано более 5 миллионов книг серии.</p>
+      <p>По книгам готовятся снимать фильм.</p>
+      <p>Номинация «Лучший детектив 2022 года» на Гудридс и более 500 тысяч оценок у серии.</p>
+      <empty-line/>
+      <p>
+        <strong>Для кого эта книга</strong>
+      </p>
+      <p>Для любителей британского юмора и остросюжетных детективов.</p>
+      <p>Для поклонников «Клуба убийств по четвергам» и «Человека, который умер дважды».</p>
+      <p>Для всех, кто скучал по обаятельным сыщикам – Элизабет, Джойс, Ибрагиму и Рону.</p>
+      <p>Для тех, кто хочет узнать, куда может завести необычное расследование.</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>загадочные убийства,расследование преступлений,мировой бестселлер,жестокие убийства,расследование убийств</keywords>
+    <date value="2022-01-01">2022</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Максим</first-name>
+      <middle-name>Константинович</middle-name>
+      <last-name>Сороченко</last-name>
+    </translator>
+    <sequence name="Клуб убийств по четвергам" number="3"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-09-12">2023-09-12</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=69644281</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>b7178410-513e-11ee-8496-0cc47af30fe4</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без подписки</last-name>
+      <id>e3df1ac6-7920-11e8-afe9-0cc47a5453d6</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Выстрел мимо цели / Ричард Осман</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2023</year>
+    <isbn>9785001959458</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2022 by Richard Osman</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

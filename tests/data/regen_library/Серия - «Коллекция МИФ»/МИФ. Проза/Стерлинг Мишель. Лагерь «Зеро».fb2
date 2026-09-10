@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_social</genre>
+    <author>
+      <first-name>Мишель Мин</first-name>
+      <last-name>Стерлинг</last-name>
+    </author>
+    <book-title>Лагерь «Зеро»</book-title>
+    <annotation>
+      <p>В недалеком будущем, когда глобальное потепление превратилось в реальную угрозу, люди начали перебираться все дальше на север в поисках места, где еще можно дышать полной грудью. На самом севере Канады команда во главе с амбициозным американским архитектором начинает строительство проекта «Лагерь „Зеро“» – поселения нового времени, которое поможет спасти множество людей от невыносимой жары.</p>
+      <p>Розе выпадает шанс присоединиться к Цветам – группе молодых женщин, нанятых развлекать мужчин в лагере. Но ее настоящая миссия – тайно следить за эксцентричным архитектором. Взамен она получит пригодный для жизни дом для себя и своей матери.</p>
+      <p>Роза быстро завоевывает доверие архитектора, но обнаруживает, что у всех в лагере есть скрытые мотивы и секреты. Ей приходится балансировать между личными моральными ориентирами и миссией, которая может изменить ее будущее…</p>
+      <p>
+        <strong>Для кого эта книга</strong>
+      </p>
+      <p>Для читателей остросюжетной прозы и дистопий.</p>
+      <p>Для поклонников «Рассказа служанки» Маргарет Этвуд и «Станции Одиннадцать» Эмили Сент-Джон Мандел.</p>
+      <p>Для тех, кому понравились сериалы «Сквозь снег» и «Игра в кальмара».</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>антиутопия,близкое будущее,психологическая фантастика,глобальное потепление,выживание человечества,остросюжетная фантастика</keywords>
+    <date value="2023-01-01">2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ксения</first-name>
+      <middle-name>Глебовна</middle-name>
+      <last-name>Гусакова</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-08-30">2023-08-30</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=69584038</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>823d804d-a05c-4c3e-a0c0-f2309fb0bb2b</id>
+    <version>1.1</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без подписки</last-name>
+      <id>e3df1ac6-7920-11e8-afe9-0cc47a5453d6</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Мишель Мин Стерлинг. Лагерь «Зеро»</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2023</year>
+    <isbn>9785002141883</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2023 by Michelle Min Sterling This edition is published by arrangement with Conville &amp; Walsh UK and Synopsis Literary Agency</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

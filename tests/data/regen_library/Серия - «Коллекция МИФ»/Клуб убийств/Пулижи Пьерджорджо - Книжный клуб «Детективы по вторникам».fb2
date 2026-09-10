@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Пьерджорджо</first-name>
+      <last-name>Пуликси</last-name>
+    </author>
+    <book-title>Книжный клуб «Детективы по вторникам»</book-title>
+    <annotation>
+      <p>Идиллическую жизнь острова Сардиния нарушает череда жестоких преступлений. Единственная улика – песочные часы, отсчитывающие ровно минуту до страшного выбора, который должна сделать жертва. Когда полиция заходит в тупик, за расследование берутся настоящие профессионалы – клуб «Детективы по вторникам» во главе со сварливым, но харизматичным хозяином книжной лавки Марцио Монтекристо и двумя черными котами – Мисс Марпл и Эркюлем Пуаро.</p>
+      <empty-line/>
+      <p>
+        <strong>Для кого эта книга</strong>
+      </p>
+      <p>Для читателей остроумных cozy-детективов с обаятельными героями и загадочными расследованиями.</p>
+      <p>Для тех, кто хочет отвлечься и на время стать сыщиком.</p>
+      <p>Для поклонников серии «Клуб убийств по четвергам».</p>
+    </annotation>
+    <keywords>расследование преступлений,расследование убийств,частное расследование</keywords>
+    <date value="2023-01-01">2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>it</src-lang>
+    <translator>
+      <first-name>Юлия</first-name>
+      <middle-name>Мансуровна</middle-name>
+      <last-name>Гиматова</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.7.6</program-used>
+    <date value="2024-11-15">2024-11-15</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=71315020</src-url>
+    <id>b258d71d-a343-11ef-8ce3-0cc47af30fe4</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без БК</last-name>
+      <id>afcf7f36-d209-11e4-a494-0025905a0812</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Книжный клуб «Детективы по вторникам» / Пьерджорджо Пулижи</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2024</year>
+    <isbn>978-5-00214-574-4</isbn>
+    <sequence name="Клуб убийств"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2023 Piergiorgio Pulixi</custom-info>
+  <custom-info info-type="copyright">First published in Italy in 2023 by Marsilio Editori.</custom-info>
+  <custom-info info-type="copyright">This edition published in agreement with the Author represented by United Stories Agency – Roma, in conjunction with Piergiorgio Nicolazzini Literary Agency (PNLA)</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2025</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

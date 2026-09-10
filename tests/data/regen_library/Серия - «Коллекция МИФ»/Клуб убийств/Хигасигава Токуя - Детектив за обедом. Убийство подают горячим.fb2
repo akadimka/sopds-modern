@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_irony</genre>
+    <author>
+      <first-name>Токуя</first-name>
+      <last-name>Хигасигава</last-name>
+    </author>
+    <book-title>Детектив за обедом. Убийство подают горячим</book-title>
+    <annotation>
+      <p>Феноменально популярный японский уютный детектив.</p>
+      <p>Рэйко Хосё, богатая наследница благородного семейства, ведет двойную жизнь. Днем она тайно работает детективом в полицейском управлении Токио, а вечером надевает элегантное платье и с личным дворецким отправляется в лимузине на роскошный ужин. Когда дело об убийстве молодой женщины заходит в тупик, Рэйко обращается за советом к своему дворецкому Кагаяме, и тот, поставив под сомнение ее способность решать загадки, берет расследование в свои руки.</p>
+      <p>Для кого эта книга</p>
+      <p>Для тех, кто ищет детектив без мрачности и жестокости — с загадками, эксцентричными персонажами и легкой, почти театральной атмосферой.</p>
+      <p>Для читателей, которые обожают гениев-сыщиков и их «недовольных, но преданных» помощников.</p>
+      <p>Для любителей камерных историй с блестящими диалогами, неожиданными поворотами и тайнами, которые можно обсудить за ужином.</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#img83F1.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <translator>
+      <first-name>Юлия</first-name>
+      <last-name>Танкович</last-name>
+    </translator>
+    <sequence name="Разгадывание тайн после ужина" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Your</first-name>
+      <last-name>Name</last-name>
+    </author>
+    <program-used>FictionBook Editor Release 2.7.6</program-used>
+    <date value="2014-11-10">10 November 2014</date>
+    <id>43C05C67-41B1-4072-B570-7F6C490E8AC0</id>
+    <version>1.0</version>
+    <history>
+      <p>1.0 — создание файла</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <year>2025</year>
+    <sequence name="Клуб убийств"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

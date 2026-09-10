@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>prose</genre>
+    <author>
+      <first-name>Питер</first-name>
+      <last-name>Тейлор</last-name>
+    </author>
+    <book-title>Вызов в Мемфис</book-title>
+    <annotation>
+      <p>Нью-йоркский редактор Филипп Карвер едет домой в провинциальный Мемфис. Вдовый отец хочет жениться повторно, и сестры Филиппа просят о помощи, чтобы помешать этому браку. Возвращение в Мемфис заставляет героя погрузиться в воспоминания: переезд, который тяжко отразился на членах семьи, главенство отца и взаимное непонимание. Семейная история разворачивается перед глазами Филиппа, обрастает драматическими подробностями и открывается с новой стороны. Действие происходит на фоне американского Юга, нравы которого переданы со знанием, иронией и любовью. Питер Тейлор — классик американской литературы. За свое творчество получил премию ПЕН/Фолкнер, медаль Американской академии и премию О. Генри. <emphasis>На русском языке публикуется впервые.</emphasis></p>
+    </annotation>
+    <keywords>американская литература,семейные истории,интеллектуальная проза</keywords>
+    <date value="1986-01-01">1986</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Сергей</first-name>
+      <middle-name>Андреевич</middle-name>
+      <last-name>Карпов</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Кто-то там</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-09-23">2020-09-23</date>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>4D7BCD40-AB9A-23FE-FE8B-1AB53B7E248E</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 — создание fb2</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без БК</last-name>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Вызов в Мемфис / Питер Тейлор</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2020</year>
+    <isbn>978-5-00169-183-9</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">© 1986 by Peter Taylor. This translation published by arrangement with Alfred A. Knopf, an imprint of The Knopf Doubleday Group, a division of Penguin Random House, LLC.</custom-info>
+  <custom-info info-type="copyright">© Перевод на русский язык, издание на русском языке, оформление ООО «Манн, Иванов и Фербер», 2020</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

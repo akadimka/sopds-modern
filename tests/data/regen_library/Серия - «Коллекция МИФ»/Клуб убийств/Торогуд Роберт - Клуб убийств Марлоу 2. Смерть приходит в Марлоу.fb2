@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Роберт</first-name>
+      <last-name>Торогуд</last-name>
+    </author>
+    <book-title>Смерть приходит в Марлоу</book-title>
+    <annotation>
+      <p>Знаменитый в Марлоу сэр Питер Бейли приглашает гостей на грандиозную предсвадебную вечеринку в свое поместье. Джудит, Бекс и Сьюзи отправляются туда, чтобы непринужденно провести время за бокалом бесплатного шампанского. Но в самый разгар праздника в особняке раздается грохот: старинный шкаф упал на хозяина дома, придавив того насмерть.</p>
+      <p>Дверь в кабинет, где произошла трагедия, была заперта, а единственный ключ от нее лежал в кармане самого сэра Питера. Полицейские уверены: это несчастный случай. Но интуиция Джудит Поттс подсказывает ей, что все не так просто. И Клуб убийств Марлоу непременно должен разобраться в произошедшем, чтобы найти убийцу.</p>
+      <empty-line/>
+      <p>
+        <strong>Для кого эта книга</strong>
+      </p>
+      <p>Для любителей английского юмора и детективов.</p>
+      <p>Для тех, кто соскучился по приключениям знаменитого Клуба убийств Марлоу.</p>
+      <p>Для всех, кто хочет весело провести время за чтением и помочь английским леди раскрыть преступления.</p>
+      <p>Для читателей, которым интересно узнать, как бы писала Агата Кристи, если бы жила в XXI веке.</p>
+      <p>Для читателей «Клуба убийств по четвергам».</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>загадочное исчезновение,расследование преступлений,мировой бестселлер</keywords>
+    <date value="2023-01-01">2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Кира</first-name>
+      <middle-name>Владимировна</middle-name>
+      <last-name>Бугаева</last-name>
+    </translator>
+    <sequence name="Клуб убийств Марлоу" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-07-05">2023-07-05</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=69414187</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>7c38eb0a-e307-4449-b7e4-b3c424a14663</id>
+    <version>1.1</version>
+    <history>
+      <p>v 1.1 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без подписки</last-name>
+      <id>e3df1ac6-7920-11e8-afe9-0cc47a5453d6</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Роберт Торогуд. Смерть приходит в Марлоу</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2023</year>
+    <isbn>9785002141210</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">DEATH COMES TO MARLOW © Robert Thorogood 2023 This edition is published by arrangement Johnson &amp; Alcock Ltd. and The Van Lear Agency</custom-info>
+  <custom-info info-type="copyright">© Cover design and illustration: Charlotte Phillips at HQ</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

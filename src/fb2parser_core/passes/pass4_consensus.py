@@ -33,18 +33,27 @@ class Pass4Consensus:
     - empty string: Only undetermined files get new consensus
     """
     
-    def __init__(self, logger, settings=None):
+    def __init__(self, logger, settings=None, series_filename_extractor=None):
         """Initialize PASS 4.
-        
+
         Args:
             logger: Logger instance
             settings: Optional shared SettingsManager
+            series_filename_extractor: Опционально — экземпляр
+                `Pass2SeriesFilename` (тот же, что уже отработал раньше в
+                конвейере). Используется в "METADATA RESCUE" ниже, чтобы
+                перед откатом на `metadata_series` сначала попробовать
+                заново извлечь серию из имени файла (баг №56) — без него
+                восстановление после очистки издательского импринта
+                молча пропускает шаг "имя файла", хотя по приоритету
+                конвейера он должен идти ПЕРЕД metadata.
         """
         self.logger = logger
         try:
             self.settings = settings or SettingsManager('config.json')
         except:
             self.settings = None
+        self.series_filename_extractor = series_filename_extractor
         self.normalizer = AuthorNormalizer(self.settings)
         self.series_processor = SeriesProcessor(self.settings.config_path if self.settings else 'config.json')
         # Cache for _normalize_series_for_consensus results
@@ -1060,14 +1069,84 @@ class Pass4Consensus:
         )
         print(f"[PASS 4] Cleared {multiauthor_series_cleared} publisher-imprint series from multi-author folders")
 
+        # FILENAME RESCUE (баг №56): перед откатом на metadata_series сначала
+        # пробуем заново извлечь серию из имени файла — в рамках ОДНОГО автора
+        # внутри папки (папка сама уже дисквалифицирована как многоавторская
+        # коллекция, но это не значит, что у каждого отдельного автора внутри
+        # неё нет своей настоящей серии). Реальный случай: "Серия -
+        # «Коллекция МИФ»\Клуб убийств\" — Мур Йен и Осман Ричард, разные
+        # авторы, папка корректно не считается серией. Но ВСЕ файлы Мур Йена
+        # согласованно дают "Тайны Валь-де-Фолла" из имени файла — надёжнее,
+        # чем разошедшийся с ним перевод в metadata_series ("Тайны долины
+        # Фоллет"). Подтверждаем ТОЛЬКО когда ≥2 файлов ОДНОГО автора
+        # согласны — одиночное совпадение не считается (могло быть шумом).
+        _fn_candidates: Dict[tuple, dict] = {}
+        _own_candidate: dict = {}  # id(record) -> (candidate_base, cand_norm)
+        if self.series_filename_extractor is not None:
+            for record in records:
+                if record.proposed_series or not record.metadata_series:
+                    continue
+                author_norm = _nfc_lower_yo((record.proposed_author or '').strip())
+                if not author_norm:
+                    continue
+                try:
+                    # ВАЖНО: metadata_series сюда НЕ передаём. У функции есть
+                    # ветка-фолбэк ("Author - Title" без серии в имени файла) —
+                    # она просто ВОЗВРАЩАЕТ metadata_series как есть, если он
+                    # передан. Если бы мы его передали, любая пара файлов с
+                    # ОДИНАКОВЫМ (пусть даже ложным, издательским) metadata_series
+                    # тривиально проходила бы наш же порог консенсуса "≥2 файла
+                    # согласны" — потому что мы сами и подсунули им одинаковый
+                    # "кандидат". Итог был бы просто повторным подтверждением
+                    # metadata под видом series_source='filename', а не
+                    # независимым сигналом из имени файла (реальный случай:
+                    # "«Коллекция МИФ»\МИФ. Проза" — оба файла Мачадо получали
+                    # metadata_series="МИФ Проза", издательский ярлык-подборка,
+                    # и это эхо трактовалось как «явное совпадение» из имени).
+                    candidate = self.series_filename_extractor._extract_series_from_filename(
+                        record.file_path, validate=True,
+                        proposed_author=record.proposed_author or '',
+                    )
+                except Exception:
+                    candidate = ''
+                if not candidate:
+                    continue
+                # Отделяем возможный хвостовой номер тома: "Серия N" → "Серия".
+                candidate_base = re.sub(r'\s+\d{1,4}\s*$', '', candidate).strip()
+                if not candidate_base:
+                    continue
+                key = (str(Path(record.file_path).parent), author_norm)
+                cand_norm = _nfc_lower_yo(candidate_base)
+                _own_candidate[id(record)] = (candidate_base, cand_norm, key)
+                bucket = _fn_candidates.setdefault(key, {})
+                _disp, _cnt = bucket.get(cand_norm, (candidate_base, 0))
+                bucket[cand_norm] = (_disp, _cnt + 1)
+
         # METADATA RESCUE: после очистки издательских серий восстанавливаем metadata_series
         # если запись осталась без серии, а метаданные содержат корректное название.
         # Типичный случай: "Fanzon. Век магии..." → folder_dataset-серия очищена,
         # но metadata_series = "Изгой" (авторская серия) — используем её.
         meta_rescue_count = 0
+        filename_rescue_count = 0
         for record in records:
             if record.proposed_series or not record.metadata_series:
                 continue
+
+            # Используем именно СОБСТВЕННЫЙ кандидат этой записи — не самый
+            # частый кандидат автора вообще. Иначе спин-офф той же серии
+            # ("Осман Ричард - Мы раскрываем убийства") получил бы имя
+            # ДРУГОЙ, более многочисленной серии того же автора ("Клуб
+            # убийств по четвергам") просто по большинству голосов.
+            _own = _own_candidate.get(id(record))
+            if _own:
+                _cand_disp, _cand_norm, _key = _own
+                _cnt = _fn_candidates.get(_key, {}).get(_cand_norm, (_cand_disp, 0))[1]
+                if _cnt >= 2:
+                    record.proposed_series = _cand_disp
+                    record.series_source = 'filename'
+                    filename_rescue_count += 1
+                    continue
+
             meta = record.metadata_series.strip()
             if not meta or meta == record.proposed_author:
                 continue
@@ -1086,6 +1165,9 @@ class Pass4Consensus:
             record.proposed_series = meta
             record.series_source = 'metadata'
             meta_rescue_count += 1
+        if filename_rescue_count:
+            self.logger.log(f"[PASS 4] Rescued {filename_rescue_count} series from filename (per-author) after publisher-imprint cleanup")
+            print(f"[PASS 4] Rescued {filename_rescue_count} series from filename after publisher-imprint cleanup")
         if meta_rescue_count:
             self.logger.log(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")
             print(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")

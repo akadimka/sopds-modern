@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Роберт</first-name>
+      <last-name>Торогуд</last-name>
+    </author>
+    <book-title>Смерть на Темзе</book-title>
+    <annotation>
+      <p>Джудит Поттс 77 лет, она живет на берегу Темзы, составляет головоломки для газет и наслаждается свободой и одиночеством. Но Джудит определенно не из тех, кто держится подальше от чужих дел. Когда ее сосед загадочным образом пропадает, а полиция не принимает дело всерьез, миссис Поттс решает разобраться в этой истории. К ее команде присоединяются местная собачница Сьюзи и жена священника Бекс. Новоиспеченный Клуб убийств Марлоу решительно берется за расследование.</p>
+      <p>На русском языке публикуется впервые.</p>
+    </annotation>
+    <keywords>загадочное исчезновение,расследование преступлений,мировой бестселлер</keywords>
+    <date>2021</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Кира</first-name>
+      <middle-name>Владимировна</middle-name>
+      <last-name>Бугаева</last-name>
+    </translator>
+    <sequence name="Клуб убийств Марлоу" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2022-04-24">24 April 2022</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=67136991</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>3e6142c4-ea79-47c4-887e-1f6e886f5d76</id>
+    <version>1.2</version>
+    <history>
+      <p>v 1.1 — создание fb2 — (On84ly)</p>
+      <p>v 1.2 — чистка, правка, валидация, обложка — (Starkosta)</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Смерть на Темзе / Роберт Торогуд</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2022</year>
+    <isbn>9785001951582</isbn>
+    <sequence name="МИФ Проза"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">© Robert Thorogood, 2021.
+© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2022</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+</FictionBook>

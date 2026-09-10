@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>det_police</genre>
+    <genre>detective</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Томас</middle-name>
+      <last-name>Осман</last-name>
+    </author>
+    <book-title>Человек, который умер дважды</book-title>
+    <annotation>
+      <p>Элизабет, Джойс, Рон и Ибрагим недолго наслаждаются покоем в идиллической обстановке Куперсчейза. Не успевают утихнуть страсти после раскрытого ими убийства, как Элизабет получает письмо из прошлого. Ее приглашает в гости человек, который умер давным-давно – у нее на глазах.</p>
+      <p>Элизабет не может отказаться от приглашения – и вот уже Клуб убийств по четвергам оказывается втянут в новое дело, в котором замешаны колумбийские наркоторговцы, британская контрразведка и похищенные алмазы стоимостью в двадцать миллионов фунтов. Теперь четверке пенсионеров нужно не только распутать загадку, но и выжить, потому что они перешли дорогу человеку, который не остановится ни перед чем. А если у них все получится, то можно поискать и алмазы…</p>
+      <p>На русском языке публикуется впервые.</p>
+    </annotation>
+    <keywords>загадочные убийства,расследование преступлений,мировой бестселлер,жестокие убийства,расследование убийств</keywords>
+    <date value="2021-01-01">2021</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Галина</first-name>
+      <middle-name>Викторовна</middle-name>
+      <last-name>Соловьева</last-name>
+    </translator>
+    <sequence name="Клуб убийств по четвергам" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2022-03-19">19 March 2022</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=67261641</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>d0d88e1e-ca33-4414-9f7d-b6c352fa5936</id>
+    <version>1.1</version>
+    <history>
+      <p>v 1.1 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без БК</last-name>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Человек, который умер дважды / Ричард Осман</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2022</year>
+    <isbn>9785001951759</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2021 by Richard Osman</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2022</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  
+  
+</FictionBook>

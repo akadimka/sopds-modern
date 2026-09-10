@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <genre>thriller</genre>
+    <author>
+      <first-name>Джулия</first-name>
+      <last-name>Филлипс</last-name>
+    </author>
+    <book-title>Исчезающая земля</book-title>
+    <annotation>
+      <p>Однажды августовским днем на Камчатке без вести пропадают две сестры, восьми и одиннадцати лет. Полицейское расследование заходит в тупик. Каждая из героинь этого романа, знакомая с трагедией семьи Голосовских, переживает собственную драму. Сестра Наташи пропала несколько лет назад, и никто не стал ее искать. Ксюша влюблена в своего парня, но иногда он не дает ей свободно дышать. Зоя, жена следователя, мучается от тоски и одиночества в декрете. Сотрудница полиции Анфиса страдает от пренебрежительного отношения со стороны коллег мужского пола… На протяжении романа мы услышим дюжину женских историй о несвободе и узах, силе предубеждений и патриархальных традиций. События разворачиваются на фоне природы Дальнего Востока: героев окружают вулканы, тундра и дикий океан.</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>психологические триллеры,Дальний Восток,интеллектуальная проза,взросление</keywords>
+    <date value="2019-01-01">2019</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Полина</first-name>
+      <last-name>Кузнецова</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-11-08">2020-11-08</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=63089527</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>bdfb59b9-2d35-4f30-87ce-a88b53165224</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без БК</last-name>
+      <id>afcf7f36-d209-11e4-a494-0025905a0812</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Джулия Филлипс. Исчезающая земля</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>9785001692003</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">© 2019 by Julia K. B. Phillips, Inc.</custom-info>
+  <custom-info info-type="copyright">© Перевод на русский язык, издание на русском языке ООО «Манн, Иванов и Фербер», 2021</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

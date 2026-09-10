@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Йен</first-name>
+      <last-name>Мур</last-name>
+    </author>
+    <book-title>Смерть в шато</book-title>
+    <annotation>
+      <p>Совсем недавно Ричард был простым хозяином уютного отеля во французской долине Фолле, но, познакомившись с Валери д’Орсе, сам не заметил, как стал партнером в компании, предоставляющей услуги частных детективов и личной безопасности.</p>
+      <p>Теперь они помогают с охраной на съемочной площадке исторического фильма, который снимается неподалеку от отеля в замке Валансе.</p>
+      <p>В самом начале съемок при странных обстоятельствах погибает актер, и Валери с присущим ей энтузиазмом решает разгадать эту загадку. Но чем дольше Ричард и Валери наблюдают за обратной стороной съемочного процесса, тем больше убеждаются: убийцей может оказаться чуть ли не каждый участник…</p>
+    </annotation>
+    <keywords>загадочные убийства,расследование преступлений,расследование убийств</keywords>
+    <date value="2023-01-01">2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ксения</first-name>
+      <middle-name>Глебовна</middle-name>
+      <last-name>Гусакова</last-name>
+    </translator>
+    <sequence name="Тайны долины Фоллет" number="3"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.7.6</program-used>
+    <date value="2024-08-17">2024-08-17</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=70983133</src-url>
+    <id>aac404e1-5caf-11ef-8ce3-0cc47af30fe4</id>
+    <version>1.0</version>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без подписки</last-name>
+      <id>e3df1ac6-7920-11e8-afe9-0cc47a5453d6</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Смерть в шато / Йен Мур</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2024</year>
+    <isbn>9785002148394</isbn>
+    <sequence name="Клуб убийств"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2023 Ian Moore This edition is published by arrangement with Greyhound Literary Agents and The Van Lear Agency LLC</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2024</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

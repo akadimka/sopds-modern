@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>prose_contemporary</genre>
+    <genre>prose_history</genre>
+    <genre>prose_military</genre>
+    <author>
+      <first-name>Фред</first-name>
+      <last-name>Ульман</last-name>
+    </author>
+    <book-title>Воссоединение</book-title>
+    <annotation>
+      <p>За семь лет до Второй мировой войны в штутгартской гимназии судьба сводит сына еврейского доктора Ганса Шварца и молодого аристократа Конрадина фон Хоэнфельса. Школьники видят друг в друге единомышленников. Но действующий нацистский режим раскалывает мир на два лагеря.</p>
+      <p>На фоне трагических событий истории герои вынуждены забыть о дружбе. Лишний человек на немецкой земле, Ганс бежит из Германии.</p>
+      <p>Тридцать лет спустя выпускник Гарварда и уважаемый юрист, он вспомнит страну, которую вынужден был покинуть, и боль, которую пришлось пережить, чтобы заново поверить в красоту и справедливость мира, в разум и силу духа.</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>Вторая мировая война,Германия,нацизм</keywords>
+    <date value="1960-01-01">1960</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Татьяна</first-name>
+      <middle-name>Юрьевна</middle-name>
+      <last-name>Покидаева</last-name>
+    </translator>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2021-04-21">2021-04-21</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=64893531</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>7e012b33-c5d2-4633-8267-8faa88a2f8cd</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без подписки</last-name>
+      <id>e3df1ac6-7920-11e8-afe9-0cc47a5453d6</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Воссоединение. Повесть / Ульман Фред</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>9785001696414</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">© Fred Uhlman, 1997 First published as Reunion by Vintage. Vintage is part of the Penguin Random House group of companies</custom-info>
+  <custom-info info-type="copyright">© Перевод на русский язык, издание на русском языке, оформление. ООО «Манн, Иванов и Фербер», 2021</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

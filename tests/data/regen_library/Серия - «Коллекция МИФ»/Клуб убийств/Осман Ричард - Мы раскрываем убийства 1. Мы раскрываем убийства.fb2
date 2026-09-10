@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>det_crime</genre>
+   <genre>det_irony</genre>
+   <genre>detective</genre>
+   <author>
+    <first-name>Ричард</first-name>
+    <middle-name>Томас</middle-name>
+    <last-name>Осман</last-name>
+   </author>
+   <book-title>Мы раскрываем убийства</book-title>
+   <annotation>
+    <p>Бывший полицейский Стив Уилер наслаждается жизнью на пенсии. Викторины в пабе, любимая скамейка у пруда и верный кот по кличке Бандит — вот его простые радости. Лихие деньки остались в прошлом: теперь приключения — удел его невестки Эми.</p>
+    <p>Эми Уилер не привыкла подолгу сидеть дома. Вот и сейчас она охраняет известную писательницу Рози Д’Антонио на частном острове в Атлантическом океане. Не работа, а мечта… Так думает Эми, пока поблизости не находят тело звездного фитнес-блогера, брошенного на съедение акулам, и сумку, набитую деньгами.</p>
+    <p>Это не первая жертва, и связывает убийства только одно: всякий раз Эми была рядом с местом преступления. Кто-то открыл на нее охоту, и Эми обращается за помощью к единственному человеку, которому доверяет. Начинается стремительная гонка по всему миру, но смогут ли Эми, Стив и Рози опередить опасного врага?</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <translator>
+    <first-name>Юлия</first-name>
+    <middle-name>Юрьевна</middle-name>
+    <last-name>Змеева</last-name>
+   </translator>
+   <sequence name="Мы раскрываем убийства" number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2025-07-17">16.7.2025</date>
+   <id>591c9862-2480-4e66-8a2e-77353f44d5fc</id>
+   <version>2.2</version>
+  </document-info>
+  <publish-info>
+   <book-name>Осман Ричард - Мы раскрываем убийства</book-name>
+   <publisher>МИФ</publisher>
+   <year>2025</year>
+   <isbn>978-5-00250-184-7</isbn>
+   <sequence name="Клуб убийств"/>
+   <sequence name="МИФ. Проза"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+</FictionBook>

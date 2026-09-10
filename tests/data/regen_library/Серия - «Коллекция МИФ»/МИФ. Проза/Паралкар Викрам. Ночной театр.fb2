@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Викрам</first-name>
+    <last-name>Паралкар</last-name>
+   </author>
+   <book-title>Ночной театр</book-title>
+   <annotation>
+    <p>Новинка в жанре магического реализма о жизни и смерти, правде и лжи, загробном мире и Боге, семье и личной ответственности каждого. Для читателей хорроров, мистических триллеров и современной интеллектуальной прозы.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Юлия</first-name>
+    <last-name>Полещук</last-name>
+   </translator>
+   <sequence name="МИФ Проза"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>webkniga.ru</nickname>
+   </author>
+   <program-used>calibre 4.6.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2021-02-09">9.2.2021</date>
+   <src-ocr>текст предоставлен издаетльством</src-ocr>
+   <id>60fddc35-f4df-45c1-88f2-ce1aa9d5bd00</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Ночной театр / Викрам Паралкар</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2021</year>
+   <isbn>9785001694441</isbn>
+  </publish-info>
+  <custom-info info-type="copyright">© Vikram Paralkar, 2019. First published in India in 2017 as The Wounds of the Dead by Fourth Estate, an imprint of HarperCollins Publishers</custom-info>
+  <custom-info info-type="copyright">© Перевод на русский язык, издание на русском языке, оформление. ООО «Манн, Иванов и Фербер», 2021</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

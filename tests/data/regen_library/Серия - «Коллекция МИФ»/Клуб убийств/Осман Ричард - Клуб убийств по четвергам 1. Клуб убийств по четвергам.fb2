@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_police</genre>
+    <genre>detective</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Томас</middle-name>
+      <last-name>Осман</last-name>
+    </author>
+    <book-title>Клуб убийств по четвергам</book-title>
+    <annotation>
+      <p>
+        <strong>Первое серьезное дело для женщины-полицейского…</strong>
+      </p>
+      <p>
+        <strong>Жестокое убийство…</strong>
+      </p>
+      <p>
+        <strong>Добро пожаловать в Клуб убийств по четвергам!</strong>
+      </p>
+      <p>В доме престарелых, расположенном среди мирных сельских пейзажей, четверо друзей еженедельно встречаются в комнате для отдыха, чтобы обсудить нераскрытые преступления. Они называют себя Клубом убийств по четвергам. Элизабет, Джойс, Ибрагим и Рон уже разменяли восьмой десяток, но у них все еще есть кое-какие трюки в запасе. Когда местного строителя находят мертвым, а рядом с телом обнаруживается таинственная фотография, Клуб убийств по четвергам внезапно получает первое настоящее дело. Вскоре количество трупов начинает расти. Сможет ли наша необычная команда поймать убийцу, пока не стало слишком поздно?</p>
+      <p>
+        <strong>Интересные факты</strong>
+      </p>
+      <p>• Самый продаваемый дебютный роман со времен Дж. К. Роулинг.</p>
+      <p>• Самый продаваемый криминальный дебют всех времен.</p>
+      <p>• Самый продаваемый роман 2020 года (среди книг в мягком и твердом переплетах).</p>
+      <p>• Ричард Осман получил премию British Book Awards в номинации «Автор года».</p>
+      <p>• В первые три месяца после выхода книги роман взлетел на седьмую строчку по продажам книг в твердом переплете (за все время в Великобритании).</p>
+      <p>• Роман продержался в бестселлерах Sunday Times 13 недель подряд.</p>
+      <p>• Права на книгу куплены в 38 странах.</p>
+      <p>• По книге готовятся снимать фильм.</p>
+      <p>• Ричард Осман готовит к выходу в свет вторую и третью книги серии.</p>
+      <p>Больше интересных фактов об этой книге читайте в ЛитРес:Журнале: <a l:href="https://journal.litres.ru/klub-ubijstv-po-chetvergam-samyj-prodavaemyj-debyutnyj-roman-so-vremen-garri-pottera/">https://journal.litres.ru/klub-ubijstv-po-chetvergam-samyj-prodavaemyj-debyutnyj-roman-so-vremen-garri-pottera/</a></p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>загадочные убийства,расследование преступлений,мировой бестселлер,жестокое убийство,расследование убийств</keywords>
+    <date value="2020-01-01">2020</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Галина</first-name>
+      <middle-name>Викторовна</middle-name>
+      <last-name>Соловьева</last-name>
+    </translator>
+    <sequence name="Клуб убийств по четвергам" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2021-07-27">2021-07-27</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=65950129</src-url>
+    <id>60fcad69-eeae-11eb-bbe4-0cc47a5f137d</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без БК</last-name>
+      <id>afcf7f36-d209-11e4-a494-0025905a0812</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>луб убийств по четвергам / Ричард Осман</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>9785001699033</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2020 by Richard Osman</custom-info>
+  <custom-info info-type="copyright">© Перевод, издание на русском языке, оформление. ООО «Манн, Иванов и Фербер», 2021</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

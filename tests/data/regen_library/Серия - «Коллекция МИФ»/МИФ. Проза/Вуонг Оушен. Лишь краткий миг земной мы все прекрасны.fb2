@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Оушен</first-name>
+    <last-name>Вуонг</last-name>
+   </author>
+   <book-title>Лишь краткий миг земной мы все прекрасны</book-title>
+   <annotation>
+    <p>Лиричный, нежный и полный сострадания роман молодого американо-вьетнамского поэта Оушена Вуонга вошел в шорт-листы нескольких литературных премий и получил New England Book Award и National Book Award.</p>
+    <p>Герой романа, молодой американский писатель, пишет письмо своей матери — неграмотной иммигрантке из послевоенного Вьетнама. В этом письме трудная семейная история, боль и утраты взросления, глубокое исследование силы слов. Среди непонимания, немоты, попыток выжить и поисков себя герои сохраняют жажду жизни, способность любить и видеть красоту в кратких мгновениях.</p>
+    <p><emphasis>На русском языке публикуется впервые.</emphasis></p>
+   </annotation>
+   <keywords>семейная история, социальная проза, интеллектуальная проза</keywords>
+   <date>2019</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Полина</first-name>
+    <last-name>Кузнецова</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Ocean</first-name>
+    <last-name>Vuong</last-name>
+   </author>
+   <book-title>On Earth We’re Briefly Gorgeous</book-title>
+   <date>2019</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Sergius</nickname>
+   </author>
+   <program-used>MS Word, OpenOffice+LoPyExportToFB2, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-01-07">07.01.2021</date>
+   <src-url>https://www.litres.ru/ocean-vuong/lish-kratkiy-mig-zemnoy-my-vse-prekrasny/</src-url>
+   <id>LOPyFB2Tools-2021-01-07-17-17-17-----1234</id>
+   <version>1.1</version>
+   <history>
+    <p>ver 1.1 — создание fb2 из epub, скрипты (Sergius).</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Вуонг, Оушен. Лишь краткий миг земной мы все прекрасны</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2020</year>
+   <isbn>978-5-00169-112-9</isbn>
+   <sequence name="МИФ Проза"/>
+  </publish-info>
+  <custom-info info-type="udc">82-311.1</custom-info>
+  <custom-info info-type="bbk">84(7Сое)1-446</custom-info>
+  <custom-info info-type="target-audience age-min">18</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

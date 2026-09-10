@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>prose_contemporary</genre>
+   <genre>ya</genre>
+   <author>
+    <first-name>Бонни-Сью</first-name>
+    <last-name>Хичкок</last-name>
+   </author>
+   <book-title>Запахи чужих домов</book-title>
+   <annotation>
+    <p>Аляска, 1970 год. Морозные полярные ночи и бесконечные полярные дни; охота на оленя, рыболовецкие лодки и скользкие носы косаток — на этом фоне взрослеют четыре героя. У Руфи есть секрет, но она не сможет скрывать его вечно. Дора надеется найти надежный дом после пережитой травмы. Элис мечтает танцевать на сцене. Хэнк и его братья планируют побег. Четыре истории, которые в один момент тесно сплетутся.</p>
+    <p>Трогательный и поэтичный роман взросления о влиянии семьи на становление личности, стремлении к свободе, о людях, которые в суровых условиях пытаются спасти друг друга и себя.</p>
+    <p>Книга вошла в список 50 лучших книг для подростков по версии Нью-Йоркской публичной библиотеки.</p>
+    <p>Бонни-Сью Хичкок — американская писательница, родилась и выросла на Аляске, работала на радио и занималась рыбной ловлей. Ее творчество вдохновлено историями четырех поколений ее семьи.</p>
+    <p><emphasis>На русском языке публикуется впервые.</emphasis></p>
+   </annotation>
+   <keywords>Аляска, книги для подростков, становление героя, взросление, семейные истории</keywords>
+   <date>2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Юлия</first-name>
+    <last-name>Пугаченкова</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Bonnie-Sue</first-name>
+    <last-name>Hitchcock</last-name>
+   </author>
+   <book-title>The Smell of Other People’s Houses</book-title>
+   <date>2016</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Sergius</nickname>
+   </author>
+   <program-used>MS Word, OpenOffice+LoPyExportToFB2, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2020-09-05">05.09.2020</date>
+   <src-url>https://www.litres.ru/bonnie-sue-hitchcock/zapahi-chuzhih-domov/</src-url>
+   <id>LOPyFB2Tools-2020-09-05-16-23-16-----1322</id>
+   <version>1.1</version>
+   <history>
+    <p>ver 1.1 — создание fb2 из epub, скрипты (Sergius).</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Хичкок, Бонни-Сью. Запахи чужих домов / пер. с англ. Ю. Пугаченковой</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2020</year>
+   <isbn>978-5-00169-014-6</isbn>
+   <sequence name="МИФ Проза"/>
+  </publish-info>
+  <custom-info info-type="udc">821.111</custom-info>
+  <custom-info info-type="bbk">84(7Сое)6-44</custom-info>
+  <custom-info info-type="Illustrator">Тимофей Яржомбек</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Марион</first-name>
+    <last-name>Пошманн</last-name>
+   </author>
+   <book-title>Сосновые острова</book-title>
+   <annotation>
+    <p>Главный герой этого романа увидел во сне, что ему изменяет жена. В гневе он сбегает в Японию, не столько от жены, сколько от личных проблем, скучной жизни и, кажется, даже самого себя. В Японии он случайно знакомится со студентом, который намерен покончить с собой и ищет для этого подходящее место с помощью путеводителя по самоубийствам. Европейский интеллектуал и японский юноша, оба одинаково подавленные требованиями родных культур, отправляются в путешествие, в котором каждый так или иначе надеется найти успокоение.</p>
+    <p><emphasis>На русском языке публикуется впервые.</emphasis></p>
+   </annotation>
+   <keywords>немецкая литература, интеллектуальная проза, поиск себя, Япония</keywords>
+   <date>2017</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>de</src-lang>
+   <translator>
+    <first-name>Анна</first-name>
+    <middle-name>Александровна</middle-name>
+    <last-name>Кукес</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Marion</first-name>
+    <last-name>Poschmann</last-name>
+   </author>
+   <book-title>Die Kieferninseln</book-title>
+   <date>2017</date>
+   <lang>de</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Sergius</nickname>
+   </author>
+   <program-used>MS Word, OpenOffice+LoPyExportToFB2, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-03-08">08.03.2021</date>
+   <src-url>https://www.litres.ru/marion-poschmann/sosnovye-ostrova/</src-url>
+   <id>LOPyFB2Tools-2021-03-08-13-55-45-----818</id>
+   <version>1.1</version>
+   <history>
+    <p>ver 1.1 — создание fb2 из epub, скрипты (Sergius).</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Пошманн, Марион. Сосновые острова / пер. с нем. Анны Кукес</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2021</year>
+   <isbn>978-5-00169-393-2</isbn>
+   <sequence name="МИФ Проза"/>
+  </publish-info>
+  <custom-info info-type="udc">821.112.2</custom-info>
+  <custom-info info-type="bbk">84(4Гем)</custom-info>
+  <custom-info info-type="target-audience age-min">16</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

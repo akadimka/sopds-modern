@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Салли</first-name>
+    <last-name>Николс</last-name>
+   </author>
+   <book-title>На что способна умница</book-title>
+   <annotation>
+    <p>Три смелые девушки из разных слоев общества мечтают найти свой путь в жизни. И этот поиск приводит каждую к борьбе за женские права. Ивлин семнадцать, она мечтает об Оксфорде. Отец может оплатить ее обучение, но уже уготовил другое будущее для дочери: она должна учиться не латыни, а домашнему хозяйству и выйти замуж. Мэй пятнадцать, она поддерживает суфражисток, но не их методы борьбы. И не понимает, почему другие не принимают ее точку зрения, ведь насилие — это ужасно. А когда она встречает Нелл, то видит в ней родственную душу. Теперь они вместе могут мечтать о справедливом мире. Или нет? Борьба за личную свободу бросает вызов героиням, втягивает в водоворот событий: выступления суфражисток, митинги, стычки с полицией, аресты, непонимание близких и Первая мировая война.</p>
+    <p>Роман британской писательницы Салли Николс вошел в шорт-лист National Book Award и премии Медали Карнеги.</p>
+    <p><emphasis>На русском языке публикуется впервые.</emphasis></p>
+   </annotation>
+   <keywords>взросление, женские судьбы, социальная проза, феминизм</keywords>
+   <date>2017</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Ульяна</first-name>
+    <middle-name>Валерьевна</middle-name>
+    <last-name>Сапцина</last-name>
+   </translator>
+  </title-info>
+  <src-title-info>
+   <genre>prose_contemporary</genre>
+   <author>
+    <first-name>Sally</first-name>
+    <last-name>Nicholls</last-name>
+   </author>
+   <book-title>Things a Bright Girl Can Do</book-title>
+   <date>2017</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Sergius</nickname>
+   </author>
+   <program-used>MS Word, OpenOffice+LoPyExportToFB2, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-03-04">04.03.2021</date>
+   <src-url>https://www.litres.ru/salli-nikols/na-chto-sposobna-umnica/</src-url>
+   <id>LOPyFB2Tools-2021-03-04-13-38-14-969</id>
+   <version>1.1</version>
+   <history>
+    <p>ver 1.1 — создание fb2 из epub, скрипты (Sergius).</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Николс, Салли. На что способна умница / пер. с англ. У. Сапциной</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2020</year>
+   <isbn>978-5-00146-742-7</isbn>
+   <sequence name="МИФ Проза"/>
+  </publish-info>
+  <custom-info info-type="udc">821.111-055.2</custom-info>
+  <custom-info info-type="bbk">84(4Вел)6-44:66.74</custom-info>
+  <custom-info info-type="target-audience age-min">18</custom-info>
+  <custom-info info-type="Illustrator">Тимофей Яржомбек</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="comments"><title><p>Fixture stub 3</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

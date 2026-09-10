@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Йен</first-name>
+      <last-name>Мур</last-name>
+    </author>
+    <book-title>Смерть и козий сыр</book-title>
+    <annotation>
+      <p>Англичанин средних лет и владелец небольшой гостиницы в тихой французской долине Ричард Эйнсворт ведет спокойную жизнь, и ему это нравится. Самое яркое событие в его городке за долгое время – это открытие ресторана звезды кулинарии и обладателя всех звезд Мишлен. Весь город в сборе, вечер сверкает изысканностью, звенят бокалы с игристым вином… И казалось бы, что тут может пойти не так?</p>
+      <p>Но вдруг скандал! Гвоздь программы – блюдо, которое принесло мировую известность шеф-повару – подают с измененным рецептом! Ресторан опозорен, город в шоке, а ведущий поставщик сыра топит себя в чане с козьим молоком. Ресторанный критик, остановившийся у Ричарда, считает, что сыровара убили, и, конечно, Валери д’Орсе не может не начать собственное расследование этой интригующей истории.</p>
+      <p>Ричард снова вынужден втянуться и с удивлением обнаружить, что играет важную роль в новом деле своей подруги-авантюристки.</p>
+      <p>
+        <strong>Для кого эта книга</strong>
+      </p>
+      <p>Для тех, кому понравилась первая часть «Смерть и круассаны».</p>
+      <p>Для читателей остроумных cozy детективов с обаятельными героями и загадочными расследованиями.</p>
+      <p>Для тех, кто хочет отвлечься и на время стать сыщиком.</p>
+      <p>Для поклонников серии «Клуб убийств по четвергам».</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>загадочные убийства,расследование преступлений,расследование убийств</keywords>
+    <date value="2021-01-01">2021</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ольга</first-name>
+      <middle-name>Сергеевна</middle-name>
+      <last-name>Бурдова</last-name>
+    </translator>
+    <sequence name="Тайны долины Фоллет" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-08-25">2023-08-25</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=69574699</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>f50d5619-14df-40d0-b82a-8ff9b6005fed</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>МИФ без подписки</last-name>
+      <id>e3df1ac6-7920-11e8-afe9-0cc47a5453d6</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Йен Мур. Смерть и козий сыр</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2023</year>
+    <isbn>9785002142361</isbn>
+    <sequence name="Клуб убийств"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">DEATH &amp; FROMAGE: Copyright © 2021 Ian Moore This edition is published by arrangement with Greyhound Literary Agents and The Van Lear Agency LLC</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

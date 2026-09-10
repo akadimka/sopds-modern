@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>prose_contemporary</genre>
+    <author>
+      <first-name>Джеймс</first-name>
+      <last-name>Гулд-Борн</last-name>
+    </author>
+    <book-title>Что мы знаем друг о друге</book-title>
+    <annotation>
+      <p>Ироничная нежная история о любви и воссоединении отца и сына в самых невероятных обстоятельствах. Жизнь Дэнни катится под гору: он потерял работу, залез в долги, а его 11-летний сын не произносит ни слова после смерти матери. Отчаявшись, Дэнни тратит последние деньги на поношенный костюм панды, чтобы работать ростовой куклой в парке. И вот однажды сын Дэнни Уилл заговорил с ним. Вернее, с пандой, и мальчик не подозревает, что под мохнатой маской прячется его отец. Потеряет ли Дэнни доверие Уилла, когда сын узнает, кто он такой, и сможет ли танцующий панда выбраться из долгов и начать новую жизнь?</p>
+      <p>
+        <emphasis>На русском языке публикуется впервые.</emphasis>
+      </p>
+    </annotation>
+    <keywords>психологическая проза, проблемы отцов и детей, связь поколений, семейные истории</keywords>
+    <date>2020</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Екатерина</first-name>
+      <last-name>Ковтарева</last-name>
+    </translator>
+  </title-info>
+  <src-title-info>
+    <genre>prose_contemporary</genre>
+    <author>
+      <first-name>James</first-name>
+      <last-name>Gould-Bourn</last-name>
+    </author>
+    <book-title>Keeping Mum</book-title>
+    <date>2020</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>Sergius</nickname>
+    </author>
+    <program-used>MS Word, OpenOffice+LoPyExportToFB2, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2021-10-08">08.10.2021</date>
+    <src-url>https://www.litres.ru/james-gould-bourn/chto-my-znaem-drug-o-druge/</src-url>
+    <id>LOPyFB2Tools-2021-10-08-17-16-31-682</id>
+    <version>1.1</version>
+    <history>
+      <p>ver 1.1 — создание fb2 из epub, скрипты (Sergius).</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Гулд-Борн, Джеймс. Что мы знаем друг о друге</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-00169-551-6</isbn>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="udc">82-311.1</custom-info>
+  <custom-info info-type="bbk">84 (4Вел)-44</custom-info>
+  <custom-info info-type="target-audience age-min">18</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

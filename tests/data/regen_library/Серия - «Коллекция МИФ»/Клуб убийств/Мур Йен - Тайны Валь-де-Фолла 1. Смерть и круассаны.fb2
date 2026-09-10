@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_classic</genre>
+    <genre>detective</genre>
+    <author>
+      <first-name>Йен</first-name>
+      <last-name>Мур</last-name>
+    </author>
+    <book-title>Смерть и круассаны</book-title>
+    <annotation>
+      <p>Ричард Эйнсворт — хозяин небольшой гостиницы, некогда перебравшийся во Францию из Англии. Он немного стесняется своего французского (почти идеального, но вы же знаете этих французов), приходит в уныние от вида мюсли и обожает, когда с ним ничего не происходит.</p>
+      <p>Однажды из его отеля пропадает гость, оставив кровавый след на обоях и разбитые очки в мусорном ведре. Когда стена отмыта, Ричард мечтает об одном: поскорее забыть о странном инциденте, но тут, на его беду, новая симпатичная постоялица Валери д’Орсе вдруг проявляет жгучий интерес к таинственному исчезновению.</p>
+      <p>Вопреки самому себе Ричард оказывается втянутым в самое настоящее расследование, и оно переходит в разряд личного дела, когда кто-то убивает Аву Гарднер — одну из его любимых куриц… а такое Ричард простить не готов!</p>
+    </annotation>
+    <keywords>Клуб убийств, детектив</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <middle-name>Николаевна</middle-name>
+      <last-name>Меньшакова</last-name>
+    </translator>
+    <sequence name="Тайны долины Фоллет" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>webkniga.ru</nickname>
+    </author>
+    <program-used>calibre 6.14.0, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2023-04-07">7.4.2023</date>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>60e0b527-f44d-4d0a-a817-4f2069cce84e</id>
+    <version>1.0</version>
+    <history>
+      <p>1.0</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Смерть и круассаны / Йен Мур</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2023</year>
+    <isbn>9785002140299</isbn>
+    <sequence name="Клуб убийств"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2021 Ian Moore
+This edition is published by arrangement with Greyhound Literary Agents and The Van Lear Agency LLC</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+</FictionBook>

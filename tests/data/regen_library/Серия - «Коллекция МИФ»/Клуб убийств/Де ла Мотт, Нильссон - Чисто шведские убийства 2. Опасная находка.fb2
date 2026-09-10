@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_police</genre>
+    <author>
+      <first-name>Андерс</first-name>
+      <last-name>де ла Мотт</last-name>
+    </author>
+    <author>
+      <first-name>Монс</first-name>
+      <last-name>Нильссон</last-name>
+    </author>
+    <book-title>Чисто шведские убийства. Опасная находка</book-title>
+    <annotation>
+      <p>Комиссар полиции Петер Винстон приезжает в живописный уголок Швеции, чтобы отдохнуть у моря. Отпуск недолго остается безоблачным — в роскошной недостроенной вилле на берегу находят тело знаменитого риелтора Джесси Андерсон. Надо бы помочь местным коллегам во всем разобраться, вот только временная напарница Винстона не выносит городских белоручек, а начальник полиции предпочитает считать происшествие несчастным случаем. Дело только поначалу кажется простым — вскоре обнаруживается, что Джесси Андерсон сумела досадить почти всем в этом райском уголке, а убийца может скрываться за каждой садовой изгородью.</p>
+      <p>Для кого эта книга</p>
+      <p>Для любителей классических уютных детективов.</p>
+      <p>Для читателей «Клуба убийств по четвергам» и «Человека, который умер дважды» Ричарда Османа.</p>
+      <p>Для тех, кто хочет прочитать детектив со скандинавской атмосферой и неповторимым юмором.</p>
+      <p>На русском языке публикуется впервые.</p>
+    </annotation>
+    <keywords>убийства,загадочные убийства,расследование убийств</keywords>
+    <date value="2022-01-01">2022</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>sv</src-lang>
+    <translator>
+      <first-name>Юлия</first-name>
+      <middle-name>Валерьевна</middle-name>
+      <last-name>Колесова</last-name>
+    </translator>
+    <sequence name="Убийства в Остерлене" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-03-26">2023-03-26</date>
+    <src-url>http://www. /pages/biblio_book/?art=69008602</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>867e19c2-cfd0-4215-95f4-f2ce027590be</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 — создание fb2 — (On84ly)</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Чисто шведские убийства. Опасная находка / Андерс де ла Мотт, Монс Нильссон</book-name>
+    <publisher>Манн, Иванов и Фербер</publisher>
+    <city>Москва</city>
+    <year>2023</year>
+    <isbn>9785001959632</isbn>
+    <sequence name="Клуб убийств"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="librusec-id">751585</custom-info>
+  <custom-info info-type="copyright">Copyright © Anders de la Motte &amp; Måns Nilsson 2022 Published by agreement with Salomonsson Agency</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  
+  
+</FictionBook>

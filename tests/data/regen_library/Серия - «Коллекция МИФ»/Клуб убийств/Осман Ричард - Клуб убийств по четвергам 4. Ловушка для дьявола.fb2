@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <stylesheet type="text/css">
+      Все права защищены. Никакая часть данной книги не может быть воспроизведена в какой бы то ни было форме без письменного разрешения владельцев авторских прав.
+
+Книга не пропагандирует употребление алкоголя, наркотиков или любых других запрещенных веществ.
+
+По закону РФ приобретение, хранение, перевозка, изготовление, переработка наркотических средств, а также культивирование психотропных растений является уголовным преступлением, кроме того, наркотики опасны для вашего здоровья.
+
+</stylesheet>
+ <description>
+  <title-info>
+   <genre>det_police</genre>
+   <author>
+    <first-name>Ричард</first-name>
+    <middle-name>Томас</middle-name>
+    <last-name>Осман</last-name>
+   </author>
+   <book-title>Ловушка для дьявола</book-title>
+   <annotation>
+    <p>Четвертый детектив серии «Клуб убийств по четвергам» Ричарда Османа. Новое расследование, опасные авантюры, антикварный бизнес, любимые герои и много английского юмора.</p>
+    <p>Старый знакомый Клуба убийств по четвергам, Калдеш Шарма, убит в собственном магазине, а терракотовая шкатулка с нелегальным содержимым пропала. Ее поиски приводят участников Клуба в антикварный бизнес, методы которого так же стары, как и сами предметы. Элизабет, Джойс, Рону и Ибрагиму предстоит столкнуться с торговцами сомнительным товаром, фальсификаторами произведений искусства, онлайн-мошенниками и — рецептами торта «Баттенберг» с марципановой глазурью. Могут ли они доверять кому-либо? Ведь число жертв неуклонно растет, а проблемы преследуют Клуб по пятам. Неужели запас их удачи все же закончился? И кто из дьяволов умрет последним?</p>
+   </annotation>
+   <keywords>Клуб убийств, МИФ Проза, Детектив, английский детектив</keywords>
+   <date>2023</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <translator>
+    <first-name>Максим</first-name>
+    <middle-name>Константинович</middle-name>
+    <last-name>Сороченко</last-name>
+   </translator>
+   <sequence name="Клуб убийств по четвергам" number="4"/>
+  </title-info>
+  <src-title-info>
+   <genre>det_police</genre>
+   <author>
+    <first-name>Richard</first-name>
+    <last-name>Osman</last-name>
+   </author>
+   <book-title>The Last Devil to Die</book-title>
+   <date>2023</date>
+   <lang>en</lang>
+   <sequence name="Thursday Murder Club" number="4"/>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name>Ричард</first-name>
+    <last-name>Осман</last-name>
+   </author>
+   <program-used>calibre 7.15.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2024-07-23">23.7.2024</date>
+   <id>1148055c-2c43-427f-a2bd-9c025020832e</id>
+   <version>1.1</version>
+  </document-info>
+  <publish-info>
+   <book-name>Ловушка для дьявола / Ричард Осман ; пер. с англ. М. Сороченко. — Москва : МИФ, 2024. — (Клуб убийств).</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <year>2024</year>
+   <isbn>978-5-00214-431-0</isbn>
+   <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="general">ИНФОРМАЦИЯ
+
+ОТ ИЗДАТЕЛЬСТВА
+
+Original title: 
+
+The Last Devil to Die
+
+by Richard Osman 
+
+
+
+На русском языке публикуется впервые
+
+
+
+The Last Devil to Die
+© 2023 by Richard Osman
+All rights reserved
+Cover Design © Penguin Random House UK
+© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2024</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+</FictionBook>

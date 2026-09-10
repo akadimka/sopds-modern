@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>detective</genre>
+   <author>
+    <first-name>Андерс</first-name>
+    <last-name>де ла Мотт</last-name>
+   </author>
+   <author>
+    <first-name>Монс</first-name>
+    <last-name>Нильссон</last-name>
+   </author>
+   <book-title>Чисто шведские убийства. Отпуск в раю</book-title>
+   <annotation>
+    <p>Комиссар полиции Петер Винстон приезжает в живописный уголок Швеции, чтобы отдохнуть у моря. Отпуск недолго остается безоблачным — в роскошной недостроенной вилле на берегу находят тело известного риелтора Джесси Андерсон. Дело только поначалу кажется простым — вскоре обнаруживается, что Джесси сумела досадить почти всем в этом райском краю и убийца может скрываться за каждой садовой изгородью.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>sv</src-lang>
+   <translator>
+    <first-name>Елена</first-name>
+    <last-name>Тепляшина</last-name>
+   </translator>
+   <sequence name="МИФ Проза"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>webkniga.ru</nickname>
+   </author>
+   <program-used>calibre 6.8.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2022-11-15">15.11.2022</date>
+   <src-ocr>Текст предоставлен издательством</src-ocr>
+   <id>8c571e10-85d5-465d-94e1-99bc73ecd99a</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Чисто шведские убийства. Отпуск в раю / Андерс де ла Мотт, Монс Нильссон</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2022</year>
+   <isbn>9785001958215</isbn>
+   <sequence name="Клуб убийств"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © Anders de la Motte &amp; Måns Nilsson 2021
+Published by agreement with Salomonsson Agency</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «Манн, Иванов и Фербер», 2023</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+</FictionBook>

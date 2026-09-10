@@ -917,7 +917,8 @@ class RegenCSVService:
             if progress_callback:
                 progress_callback(65, 100, "Pass 4: Консенсус")
             _t = time.perf_counter()
-            pass4 = Pass4Consensus(self.logger, settings=self.settings)
+            pass4 = Pass4Consensus(self.logger, settings=self.settings,
+                                   series_filename_extractor=pass2_series)
             pass4.execute(self.records)
             print(f"[PASS 4] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 4: Consensus applied")
@@ -2826,6 +2827,16 @@ class RegenCSVService:
                     continue
                 # Записи, расширенные через метаданные — надёжны, не сбрасываем
                 if 'meta_expanded' in record.series_source:
+                    continue
+                # Баг №56: FILENAME RESCUE в Pass4Consensus уже требует консенсус
+                # (>=2 файла ОДНОГО автора) прежде чем поставить series_source=
+                # 'filename' здесь — это ровно та же проверка "многоавторская
+                # папка", просто ПОЗЖЕ в конвейере, и без этого исключения она
+                # немедленно стирала бы результат FILENAME RESCUE, если имя
+                # папки-импринта оказывалось префиксом настоящего имени серии
+                # (напр. папка "Клуб убийств" при серии "Клуб убийств по
+                # четвергам").
+                if record.series_source == 'filename':
                     continue
                 ps_norm = record.proposed_series.lower().replace('ё', 'е').strip()
                 if ps_norm == folder_name_norm or folder_name_norm.startswith(ps_norm) or ps_norm.startswith(folder_name_norm) or (len(ps_norm) >= 5 and ps_norm in folder_name_norm):

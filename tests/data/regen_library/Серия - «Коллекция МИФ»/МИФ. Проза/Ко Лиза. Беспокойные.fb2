@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>foreign_contemporary</genre>
+   <author>
+    <first-name>Лиза</first-name>
+    <last-name>Ко</last-name>
+    <id>42d266c8-19f3-11e7-aa0e-0cc47a5454c6</id>
+   </author>
+   <book-title>Беспокойные</book-title>
+   <annotation>
+    <p>Однажды утром мать Деминя Гуо, нелегальная китайская иммигрантка, идет на работу в маникюрный салон и не возвращается. Деминь потерян и зол, и не понимает, как мама могла бросить его. Даже спустя много лет, когда он вырастет и станет Дэниэлом Уилкинсоном, он не сможет перестать думать о матери. И продолжит задаваться вопросом, кто он на самом деле и как ему жить.</p>
+    <p>Роман о взрослении, зове крови, блуждании по миру, где каждый предоставлен сам себе, о дружбе, доверии и потребности быть любимым. Лиза Ко рассуждает о вечных беглецах, которые переходят с места на место в поисках дома, где захочется остаться.</p>
+    <p>Рассказанная с двух точек зрения – сына и матери – история неидеального детства, которое играет определяющую роль в судьбе человека.</p>
+    <p>Роман – финалист Национальной книжной премии, победитель PEN/Bellwether Prize и обладатель премии Барбары Кингсолвер.</p>
+    <p><emphasis>На русском языке публикуется впервые.</emphasis></p>
+   </annotation>
+   <keywords>проблемы взросления,философская проза,взросление</keywords>
+   <date value="2017-01-01">2017</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Сергей</first-name>
+    <middle-name>Андреевич</middle-name>
+    <last-name>Карпов</last-name>
+   </translator>
+   <sequence name="МИФ Проза"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>On84ly</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2019-12-11">2019-12-11</date>
+   <src-url>http://www.litres.ru/pages/biblio_book/?art=48782704</src-url>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>8047d0fe-a504-48ac-a687-04b5c51fd4f3</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 – (On84ly)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Лиза Ко. Беспокойные</book-name>
+   <publisher>Манн, Иванов и Фербер</publisher>
+   <city>Москва</city>
+   <year>2020</year>
+   <isbn>978-5-00146-498-3</isbn>
+   <sequence name="МИФ Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2017 by Lisa Ko</custom-info>
+  <custom-info info-type="copyright">Copyright © 1990 by Li-Young Lee</custom-info>
+  <custom-info info-type="copyright">© Перевод на русский язык, издание на русском языке ООО «Манн, Иванов и Фербер», 2020</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

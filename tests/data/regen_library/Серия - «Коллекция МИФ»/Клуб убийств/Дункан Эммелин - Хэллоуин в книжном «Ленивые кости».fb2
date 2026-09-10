@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>detective</genre>
+    <author>
+      <first-name>Эммелин</first-name>
+      <last-name>Дункан</last-name>
+    </author>
+    <book-title>Хэллоуин в книжном «Ленивые кости»</book-title>
+    <annotation>
+      <p>Городок Элиан-Холлоу прославился после съемок культового фильма ужасов и с тех пор живет в режиме вечного Хэллоуина, принимая туристов круглый год. В преддверии очередного праздника сюда приезжает съемочная группа популярного реалити-шоу об охоте на привидений — и первой локацией нового сезона становится книжный магазин «Ленивые кости».</p>
+      <p>Его хозяйка, Бэйли Бриггс, занята подготовкой к тематическому литературному фестивалю. Но праздник омрачается загадочным убийством, и все улики неожиданно указывают на саму Бэйли. Чтобы вернуть себе доброе имя, она вынуждена начать собственное расследование — и очень скоро город Хэллоуина откроет ей свои самые мрачные тайны…</p>
+    </annotation>
+    <keywords>детектив, Клуб убийств, МИФ Проза</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ирина</first-name>
+      <last-name>Ягодкина</last-name>
+    </translator>
+    <translator>
+      <first-name>Михаил</first-name>
+      <last-name>Ягодкин</last-name>
+    </translator>
+    <sequence name="Тайна книжного магазина на Хэллоуин" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>webkniga.ru</nickname>
+    </author>
+    <program-used>calibre 8.4.0, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2025-10-02">2.10.2025</date>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>59e52b26-c690-4e4d-a8f8-b049d9ef2fa6</id>
+    <version>1.0</version>
+    <history>
+      <p>1.0</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Хэллоуин в книжном «Ленивые кости» / Эммелин Дункан</book-name>
+    <publisher>ООО «МИФ»</publisher>
+    <city>Москва</city>
+    <year>2025</year>
+    <isbn>978-5-00250-533-3</isbn>
+    <sequence name="Клуб убийств"/>
+    <sequence name="МИФ. Проза"/>
+  </publish-info>
+  <custom-info info-type="copyright">Copyright © 2024 by Kelly Garrett</custom-info>
+  <custom-info info-type="copyright">Published by permission of the Author and her literary agents JABberwocky Literary Agency, Inc. (USA) via Igor Korzhenevskiy of Alexander Korzhenevski Agency (Russia)</custom-info>
+  <custom-info info-type="copyright">© Издание на русском языке, перевод, оформление. ООО «МИФ», 2025</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>
