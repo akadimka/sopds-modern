@@ -97,3 +97,47 @@ class TestRecoverArcByTitleMatchAgainstConfirmedSiblingArc:
 
         assert recs[1].proposed_series == "И пришёл Лесник!"
         assert recs[1].series_number == "3"
+
+
+class TestRecoverArcWhenMetadataSeriesHasNoFranchisePrefix:
+    """Баг №53: "Гришанин Дмитрий - S-T-I-K-S. Рихтовщик\\7. Дорога без
+    начала.fb2" … "…8. Пепел дорог.fb2" — папка даёт плоское
+    "S-T-I-K-S. Рихтовщик" в proposed_series, но `metadata_series`
+    (тег <sequence> в самих файлах) содержит просто "Рихтовщик" — БЕЗ
+    префикса-франшизы "S-T-I-K-S." вообще. Старый код искал арку только
+    в metadata_series, начинающейся с ключевого слова франшизы — для
+    голого "Рихтовщик" такого совпадения нет, восстановление не
+    срабатывало, и серия у ОБОИХ файлов стиралась целиком — вместе с
+    ПРАВИЛЬНО извлечённым из имени файла номером тома (7/8), который к
+    вопросу "это голая франшиза" не имеет отношения.
+    """
+
+    def test_bare_metadata_series_without_franchise_prefix_recovered(self):
+        recs = [
+            BookRecord(
+                file_path="Гришанин Дмитрий\\S-T-I-K-S. Рихтовщик\\7. Дорога без начала.fb2",
+                file_title="Дорога без начала", metadata_authors="Дмитрий Гришанин",
+                proposed_author="Гришанин Дмитрий", author_source="folder_dataset",
+                metadata_series="Рихтовщик", proposed_series="S-T-I-K-S. Рихтовщик",
+                series_source="folder_dataset", series_number="7",
+                series_number_source="filename_prefix",
+            ),
+            BookRecord(
+                file_path="Гришанин Дмитрий\\S-T-I-K-S. Рихтовщик\\8. Пепел дорог.fb2",
+                file_title="Пепел дорог", metadata_authors="Дмитрий Гришанин",
+                proposed_author="Гришанин Дмитрий", author_source="folder_dataset",
+                metadata_series="Рихтовщик", proposed_series="S-T-I-K-S. Рихтовщик",
+                series_source="folder_dataset", series_number="8",
+                series_number_source="filename_prefix",
+            ),
+        ]
+        service = _service(recs)
+        service._postcheck_clear_universe_keyword_series()
+
+        for rec, expected_num in zip(recs, ("7", "8")):
+            assert rec.proposed_series == "Рихтовщик"
+            assert rec.series_source == "metadata_arc_consensus"
+            # Номер тома, уже верно извлечённый из имени файла, не должен
+            # затираться при восстановлении серии из метаданных.
+            assert rec.series_number == expected_num
+            assert rec.series_number_source == "filename_prefix"

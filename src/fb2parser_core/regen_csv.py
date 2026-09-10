@@ -1333,14 +1333,29 @@ class RegenCSVService:
             _ms_norm = self._norm_for_series_cmp(_ms)
             _kw_hit = next((kw for kw in keywords_norm
                             if _ms_norm == kw or re.match(r'^' + re.escape(kw) + r'\b', _ms_norm)), None)
-            if not _kw_hit:
-                continue
-            _m = _meta_arc_re.match(_ms.strip())
-            if not _m:
-                continue
-            _arc_from_meta = _m.group(2).strip()
+            if _kw_hit:
+                _m = _meta_arc_re.match(_ms.strip())
+                if not _m:
+                    continue
+                _arc_from_meta = _m.group(2).strip()
+            else:
+                # metadata_series САМА ПО СЕБЕ уже голое имя арки/подсерии,
+                # без префикса-франшизы (реальный случай, docs/quality-
+                # roadmap.md, баг №53): "Гришанин Дмитрий - S-T-I-K-S.
+                # Рихтовщик\7. Дорога без начала.fb2" — папка даёт плоское
+                # "S-T-I-K-S. Рихтовщик", а metadata_series — просто
+                # "Рихтовщик" (без "S-T-I-K-S." префикса вовсе, тег
+                # <sequence> в файле не содержит франшизу). Прежний код
+                # требовал совпадения с ключевым словом-франшизой ПЕРЕД
+                # разбором "префикс.арка" — и для такой метадаты никогда не
+                # находил кандидата на восстановление, поэтому серия у
+                # обоих файлов подряд стиралась целиком (вместе с
+                # ПРАВИЛЬНО извлечённым из имени файла номером тома,
+                # который к вопросу "это голая франшиза" не имеет
+                # отношения вовсе).
+                _arc_from_meta = _ms
             _arc_norm = self._norm_for_series_cmp(_arc_from_meta)
-            if not _arc_norm or _arc_norm == _kw_hit:
+            if not _arc_norm or (_kw_hit and _arc_norm == _kw_hit):
                 continue
             _author_norm = self._norm_for_series_cmp(_r.proposed_author or '')
             _key = (_author_norm, _arc_norm)
