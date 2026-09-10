@@ -203,6 +203,69 @@ class TestSubfolderHierarchySkipsDecorativeContainerFolder:
             assert "\\" not in r.proposed_series
 
 
+class TestSubfolderHierarchySkipsBlacklistedGrandparentFolder:
+    """`_postcheck_build_subfolder_hierarchy()` (regen_csv.py) подмешивало
+    дедушкину папку в proposed_series, даже если она указана в
+    `series_folder_blacklist` — организационный ярлык вроде "Законченные
+    циклы"/"Незаконченные циклы", а не настоящий уровень иерархии серии.
+
+    Реальный случай (замечен пользователем в CSV): "Евгений Щепетнов\\
+    Компиляции циклов\\Законченные циклы\\Цикл «Слава». Книги 1-5\\файл.fb2"
+    — пользователь добавил "Законченные циклы"/"Незаконченные циклы" в
+    series_folder_blacklist, ожидая что эти папки будут исключены из серии
+    целиком. `_compute_folder_series()` в generate_csv() действительно не
+    берёт их при построении иерархии (см. `_drop_blacklisted` там), давая
+    чистое proposed_series="Цикл «Слава». Книги 1-5". Но этот ОТДЕЛЬНЫЙ
+    постчек не знал о blacklist вовсе: видел, что прямая родительская папка
+    файла ("Цикл «Слава». Книги 1-5") совпадает с текущей серией, и
+    добавлял дедушку ("Законченные циклы") обратно как префикс иерархии.
+    """
+
+    def _service(self, records, blacklist):
+        from pathlib import Path
+        service = RegenCSVService(_config_path())
+        service.work_dir = Path(r"C:\Library")
+        service.author_folder_cache = {}
+        service.settings.get_series_folder_blacklist = lambda: blacklist
+        service.records = records
+        return service
+
+    def test_blacklisted_grandparent_not_mixed_into_series(self):
+        records = [
+            _rec(
+                "Законченные циклы\\Цикл «Слава». Книги 1-5\\Цикл «Слава». Книги 1-5.fb2",
+                "Евгений Владимирович Щепетнов", "Щепетнов Евгений", "folder_dataset",
+                proposed_series="Цикл «Слава». Книги 1-5", series_source="folder_dataset",
+            ),
+            _rec(
+                "Незаконченные циклы\\Цикл «Грифон». Книги 1-2\\Цикл «Грифон». Книги 1-2.fb2",
+                "Евгений Владимирович Щепетнов", "Щепетнов Евгений", "folder_dataset",
+                proposed_series="Цикл «Грифон». Книги 1-2", series_source="folder_dataset",
+            ),
+        ]
+        service = self._service(records, ["Законченные циклы", "Незаконченные циклы"])
+        service._postcheck_build_subfolder_hierarchy()
+        assert records[0].proposed_series == "Цикл «Слава». Книги 1-5"
+        assert records[1].proposed_series == "Цикл «Грифон». Книги 1-2"
+        for r in records:
+            assert "\\" not in r.proposed_series
+            assert r.series_source == "folder_dataset"
+
+    def test_non_blacklisted_grandparent_still_builds_hierarchy(self):
+        # Sanity: без записи в blacklist поведение не сломано целиком —
+        # настоящая серия верхнего уровня по-прежнему подхватывается.
+        records = [
+            _rec(
+                "Девятимечье\\Е. Фиолетовый Мир\\1.fb2",
+                "Автор Тест", "Автор Тест", "folder_dataset",
+                proposed_series="Е. Фиолетовый Мир", series_source="folder_dataset",
+            ),
+        ]
+        service = self._service(records, ["Законченные циклы"])
+        service._postcheck_build_subfolder_hierarchy()
+        assert records[0].proposed_series == "Девятимечье\\Е. Фиолетовый Мир"
+
+
 class TestLinkBaseArcBookIntoNamedSeries:
     """`_postcheck_link_base_arc_book_into_named_series()` (regen_csv.py) —
     реальный случай (замечен пользователем в CSV): "hawk1. Фарт.fb2" (arc 1,
