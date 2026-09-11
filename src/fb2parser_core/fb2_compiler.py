@@ -2664,6 +2664,25 @@ class FB2CompilerService:
         """Убрать хвостовые пометки источника перед сравнением названий."""
         return cls._TITLE_NOISE_RE.sub('', title).strip()
 
+    # Хвостовой маркер "Часть N"/"Part N"/"Том N"/"Книга N" (римские и арабские
+    # цифры) — когда одна и та же книга переиздана разбитой на части, каждая
+    # часть в имени/title получает этот суффикс, а цельное издание — нет.
+    # Баг №60: "Шапка Мономаха" (цельная книга, том 4) и "Шапка Мономаха.
+    # Часть I" (тот же том 4, но только первая половина переиздания) —
+    # без снятия суффикса их title считались РАЗНЫМИ книгами с совпавшим
+    # номером тома (см. _dedup_by_position), и обе попадали в компиляцию.
+    _TITLE_PART_SUFFIX_RE = re.compile(
+        r'[.\s]+(?:Часть|Part|Том|Vol\.?|Книга|Book)\s+(?:[IVXLCDM]+|\d+)\s*$',
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _strip_title_part_suffix(cls, title: str) -> str:
+        """Убрать хвостовой маркер "Часть N" и т.п. перед сравнением названий
+        книг, делящих одну позицию в серии (см. _dedup_by_position)."""
+        stripped = cls._TITLE_PART_SUFFIX_RE.sub('', title).strip()
+        return stripped or title
+
     def _dedup_by_position(
         self,
         books: List[CompilationBook],
@@ -2810,10 +2829,10 @@ class FB2CompilerService:
                     # лихорадка" т.3 и "Золотая лихорадка [СИ]" т.3 обе
                     # попадали в компиляцию как разные тома).
                     existing = seen_positions[pos_key]
-                    existing_title = _norm_key(self._strip_title_noise(
-                        existing.record.file_title or existing.abs_path.stem))
-                    this_title = _norm_key(self._strip_title_noise(
-                        book.record.file_title or book.abs_path.stem))
+                    existing_title = _norm_key(self._strip_title_part_suffix(self._strip_title_noise(
+                        existing.record.file_title or existing.abs_path.stem)))
+                    this_title = _norm_key(self._strip_title_part_suffix(self._strip_title_noise(
+                        book.record.file_title or book.abs_path.stem)))
                     if existing_title != this_title:
                         result.append(book)  # разные книги с одним номером — берём обе
                     else:

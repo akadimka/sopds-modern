@@ -118,3 +118,48 @@ class TestNewerReprintPreferredOverLessPreciseOlderDate:
         assert len(result) == 1
         assert result[0].abs_path == newer
         assert duplicate_paths == [older]
+
+
+class TestPartSuffixStrippedBeforeDuplicateCheck:
+    """Баг №60: "Шапка Мономаха" (цельная книга, том 4) и "Шапка Мономаха.
+    Часть I" (тот же том 4, но только первая половина более позднего
+    переиздания, разбитого на 2 файла) — без снятия суффикса "Часть N"
+    title'ы не совпадали буквально, поэтому обе версии считались "разными
+    книгами с одним номером тома" и обе попадали в компиляцию (реальный
+    случай: Вязовский Алексей, "Русский бунт" — том 4 занимали ОБА файла
+    сразу, а не более информативная версия).
+    """
+
+    def test_whole_book_vs_its_own_part_i_recognized_as_same_position_duplicate(self, tmp_path):
+        whole = tmp_path / "4. Шапка Мономаха.fb2"
+        part1 = tmp_path / "4. Шапка Мономаха. Часть I.fb2"
+        _write_fb2(whole, '<date></date>')
+        _write_fb2(part1, '<date value="2025-05-12">2025-05-12</date>')
+
+        svc = FB2CompilerService()
+        books = [
+            _book(str(whole), (0, 4, 0, 0), title="Шапка Мономаха"),
+            _book(str(part1), (0, 4, 0, 0), title="Шапка Мономаха. Часть I"),
+        ]
+        duplicate_paths: list = []
+        result = svc._dedup_by_position(books, duplicate_paths)
+
+        assert len(result) == 1
+        assert result[0].abs_path == part1
+        assert duplicate_paths == [whole]
+
+    def test_different_part_numbers_at_different_positions_both_kept(self):
+        # "Часть I" (том 4) и "Часть II" (том 5) занимают РАЗНЫЕ позиции —
+        # не должны схлопываться друг с другом, это не дубликат позиции.
+        svc = FB2CompilerService()
+        books = [
+            _book("4. Шапка Мономаха. Часть I.fb2", (0, 4, 0, 0),
+                  title="Шапка Мономаха. Часть I"),
+            _book("5. Шапка Мономаха. Часть II.fb2", (0, 5, 0, 0),
+                  title="Шапка Мономаха. Часть II"),
+        ]
+        duplicate_paths: list = []
+        result = svc._dedup_by_position(books, duplicate_paths)
+
+        assert len(result) == 2
+        assert duplicate_paths == []
