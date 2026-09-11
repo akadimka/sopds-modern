@@ -1652,16 +1652,54 @@ class RegenCSVService:
             # виду (см. _postcheck_clear_universe_keyword_series выше).
             flat_recs = by_root.get(None)
             if flat_recs:
-                display_arc = flat_recs[0].proposed_series.strip()
+                display_series = flat_recs[0].proposed_series.strip()
             else:
-                _any_recs = next(iter(by_root.values()))
-                display_arc = _any_recs[0].proposed_series.split('\\', 1)[1].strip()
+                # Реальный случай (Калинин Даниил / "Игра не для всех"):
+                # арка "Варяжское море" встречается под корнем "Игра не для
+                # всех" у 2 записей и под "Приключения Романа Самсонова" —
+                # у 1 (эта запись просто указывает другую вселенную-зонтик
+                # в своих метаданных). Раньше здесь брался ПЕРВЫЙ попавшийся
+                # (в порядке итерации dict) корень и вся группа схлопывалась
+                # в голую арку — теряя настоящую, подтверждённую большинством
+                # иерархию "Игра не для всех\Варяжское море". Явное
+                # большинство (root с бОльшим числом записей, чем у любого
+                # другого) — сильный сигнал, что это настоящий корень, а
+                # расходящиеся варианты — шум одиночных записей; сохраняем
+                # иерархическую форму большинства вместо схлопывания.
+                # При отсутствии явного большинства (ничья) — прежнее
+                # поведение: голая арка (расхождение неоднозначно, не
+                # рискуем угадывать корень).
+                _roots_by_count = sorted(
+                    by_root.items(), key=lambda kv: len(kv[1]), reverse=True
+                )
+                _top_root, _top_recs = _roots_by_count[0]
+                _has_majority = (
+                    len(_roots_by_count) == 1
+                    or len(_top_recs) > len(_roots_by_count[1][1])
+                )
+                if _has_majority:
+                    _root_display = _top_recs[0].proposed_series.split('\\', 1)[0].strip()
+                    _arc_display = _top_recs[0].proposed_series.split('\\', 1)[1].strip()
+                    display_series = f'{_root_display}\\{_arc_display}'
+                else:
+                    # Настоящая ничья без плоской формы: реальный случай
+                    # (Калинин Даниил) — арка "Варяжское море" физически
+                    # задублирована под ДВУМЯ разными корнями ("Игра не для
+                    # всех" и "Роман Самсонов"), каждый — настоящее название
+                    # своей родительской серии/франшизы, а не шум одного
+                    # файла. Схлопывание в голую арку в такой ситуации
+                    # ТЕРЯЕТ обе родительские серии вместо того, чтобы
+                    # сохранить каждую запись при своём корне. Ничего не
+                    # трогаем — при истинной ничьей нет сигнала, что корень
+                    # не несёт смысла (в отличие от случая с плоской формой
+                    # среди вариантов, см. флаг flat_recs выше).
+                    continue
 
             for recs in by_root.values():
                 for rec in recs:
-                    if rec.proposed_series.strip() == display_arc:
+                    if rec.proposed_series.strip() == display_series:
                         continue
-                    rec.proposed_series = display_arc
+                    rec.proposed_series = display_series
                     rec.series_source = 'arc_root_reconciled'
                     reconciled += 1
 
