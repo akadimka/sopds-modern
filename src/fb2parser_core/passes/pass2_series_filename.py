@@ -4842,6 +4842,17 @@ class Pass2SeriesFilename:
                 if author.is_valid:
                     # Это похоже на валийного автора... но есть ли контекст?
                     if extracted_author:
+                        # Баг №61: "Ильф, Петров" (фамилии обоих авторов через
+                        # запятую, БЕЗ имён) против "Ильф Илья, Петров Евгений" —
+                        # AuthorName-нормализация ниже даёт РАЗНЫЕ строки для
+                        # сокращённой и полной формы одних и тех же двух людей,
+                        # из-за чего text ошибочно принимался за название серии.
+                        # _is_author_surname() уже умеет узнавать такую
+                        # сокращённую (по фамилиям) форму нескольких авторов —
+                        # проверяем её ПЕРВОЙ, до менее надёжного сравнения по
+                        # строке ниже.
+                        if self._is_author_surname(text, extracted_author):
+                            return False
                         # У нас есть информация об извлечённом авторе
                         # Пропускаем проверку на автора если text отличается от автора
                         # "Охотник" != "Янковский Дмитрий" → это не автор, это серия
@@ -5095,18 +5106,39 @@ class Pass2SeriesFilename:
         """
         if not series_candidate or not author:
             return False
-        
+
         author_parts = author.strip().split()
         if not author_parts:
             return False
-        
+
         series_lower = series_candidate.lower()
         series_normalized = re.sub(r'[^\w]', '', series_lower)
-        
+
         # Проверяем полное совпадение: серия == полное имя автора
         # Пример: "Александрова Наталья" == "Александрова Наталья" → True
         if series_lower.strip() == author.lower().strip():
             return True
+
+        # Несколько авторов через запятую: "Ильф, Петров" против
+        # "Ильф Илья, Петров Евгений" — ни одно ОТДЕЛЬНОЕ слово автора не
+        # совпадает с candidate целиком ("ильфпетров"), поэтому обычная
+        # проверка ниже (по одному слову) не срабатывает. Реальный случай
+        # (docs/quality-roadmap.md, баг №61): "Ильф, Петров. Том 1.fb2" —
+        # имя файла повторяет ФАМИЛИИ обоих авторов через запятую (без имён),
+        # это не название серии. Сравниваем список фамилий кандидата
+        # (по одной на сегмент через запятую) со списком фамилий автора
+        # (первое слово каждого сегмента через запятую/точку с запятой).
+        if ',' in series_candidate and (',' in author or ';' in author):
+            _cand_surnames = [
+                re.sub(r'[^\w]', '', p.strip().lower())
+                for p in series_candidate.split(',') if p.strip()
+            ]
+            _author_surnames = [
+                re.sub(r'[^\w]', '', a.strip().split()[0].lower())
+                for a in re.split(r'[;,]', author) if a.strip() and a.strip().split()
+            ]
+            if _cand_surnames and _author_surnames and set(_cand_surnames) == set(_author_surnames):
+                return True
         
         # Проверяем КАЖДУЮ часть автора (может быть "Фамилия Имя" или "Имя Фамилия")
         for part in author_parts:

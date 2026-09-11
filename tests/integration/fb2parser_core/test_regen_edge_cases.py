@@ -460,3 +460,45 @@ class TestPseudonymCollectionFolderSeriesNotSwallowedWhole:
         assert rec.proposed_series == "Режим бога"
         assert rec.proposed_author == "Вязовский Алексей"
         assert rec.series_number == expected_number
+
+
+class TestTwoAuthorSurnamesInFilenameNotMistakenForSeries:
+    """Баг №61: "Ильф, Петров. Том N.fb2" — имя файла повторяет ФАМИЛИИ ОБОИХ
+    авторов через запятую (без имён), а не название серии. proposed_series
+    получал "Ильф, Петров" — буквально список фамилий авторов.
+
+    Причина: `_is_valid_series()` (Правило 3, ветка "_rest_is_collection_marker"
+    — "Том N"/"Книги N-M" после первой точки распознаётся как служебная
+    обёртка, не заголовок) проверяет, не является ли кандидат именем автора,
+    сравнивая НОРМАЛИЗОВАННЫЕ строки через `AuthorName` — "Ильф, Петров"
+    (только фамилии) и "Ильф Илья, Петров Евгений" (полные имена) дают
+    РАЗНЫЕ нормализованные строки, поэтому проверка ошибочно решала, что
+    это два РАЗНЫХ имени → "значит кандидат — не автор, а серия".
+
+    Фикс: перед этим сравнением добавлен вызов `_is_author_surname()` —
+    он уже умел (после отдельного расширения в этом же баге) распознавать
+    несколько фамилий через запятую как сокращённую форму
+    multi-author `extracted_author` — если совпадает, кандидат
+    отклоняется как автор, не доходя до менее надёжного строкового
+    сравнения.
+
+    metadata_series ("Собрание сочинений в пяти томах") тоже корректно НЕ
+    становится серией — это обёрточное название пятитомника, оно в
+    filename_blacklist (`collection_keywords`/`series_folder_blacklist`),
+    так что итоговая proposed_series должна остаться пустой — серии в
+    привычном смысле здесь просто нет.
+    """
+
+    FOLDER = ("Илья Ильф, Евгений Петров",)
+
+    @pytest.mark.parametrize("filename", [
+        "Ильф, Петров. Том 1.fb2",
+        "Ильф, Петров. Том 2.fb2",
+        "Ильф, Петров. Том 3.fb2",
+        "Ильф, Петров. Том 4.fb2",
+        "Ильф, Петров. Том 5.fb2",
+    ])
+    def test_author_surnames_pair_not_treated_as_series(self, records, filename):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == ""
+        assert rec.proposed_author == "Ильф Илья, Петров Евгений"
