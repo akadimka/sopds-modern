@@ -1681,10 +1681,35 @@ class FB2CompilerService:
                     # получили sort_source='dot_part', то volume_range = диапазон томов,
                     # а part_count = общее число частей (файлов).
                     all_dot_part = run and all(b.sort_source == 'dot_part' for b in run)
+                    # Именованная дуга-подсерия, компилируемая в СВОЮ ОТДЕЛЬНУЮ
+                    # группу (series содержит '\'): sort_key[1] — позиция в
+                    # РОДИТЕЛЬСКОЙ серии (нужна только для решения, куда
+                    # отнести книгу), а не внутри самой дуги — её честная
+                    # позиция лежит в sort_key[2]. Реальный случай (Калинин
+                    # Даниил / "Злая Русь. Князь Фёдор"): дуга занимает
+                    # позиции 6-8 родительской серии, но сама состоит ровно
+                    # из 3 книг — итоговое имя "(т. 6-8)" выглядит так, будто
+                    # пропущены тома 1-5 ЭТОЙ дуги, хотя их никогда не было.
+                    # По решению пользователя: раз компиляция выносит
+                    # подсерию в отдельную группу — диапазон должен отражать
+                    # позицию ВНУТРИ неё. Строим диапазон из sort_key[2],
+                    # НЕ трогая сам sort_key (он остаётся глобальным для
+                    # межгруппового учёта позиций/дедупа в find_groups()).
+                    _all_named_arc_own = ('\\' in series) and run and all(
+                        getattr(b.record, 'series_source', '') == 'filename_named_arc'
+                        and b.sort_key[2] != 0
+                        for b in run
+                    )
                     if all_dot_part:
                         toms = sorted({b.sort_key[1] for b in run})
                         run_range = f'{toms[0]}-{toms[-1]}' if len(toms) > 1 else str(toms[0])
                         run_part_count = len(run)
+                    elif _all_named_arc_own:
+                        _locals = sorted({b.sort_key[2] for b in run})
+                        run_range = (
+                            f'{_locals[0]}-{_locals[-1]}' if len(_locals) > 1 else str(_locals[0])
+                        ) if _locals == list(range(_locals[0], _locals[-1] + 1)) else ''
+                        run_part_count = 0
                     else:
                         run_range = self._compute_volume_range(run, covered=_covered_here)
                         run_part_count = 0
@@ -2967,8 +2992,15 @@ class FB2CompilerService:
                     _sub_name = (rec.proposed_series or '').split('\\', 1)[1].strip()
                     _inner_n = 0
                     if _sub_name:
+                        # ё/е может расходиться между канонической подсерией
+                        # (proposed_series, обычно уже нормализованная) и
+                        # исходным именем файла ("Князь Федор" vs "Князь
+                        # Фёдор" в стеме) — сравниваем без учёта этой буквы,
+                        # иначе поиск номера дуги внутри подсерии молча не
+                        # находит совпадение и _inner_n остаётся 0.
                         _inner_m = re.search(
-                            re.escape(_sub_name) + r'\s+(\d{1,3})\b', stem,
+                            re.escape(_sub_name.replace('ё', 'е')) + r'\s+(\d{1,3})\b',
+                            stem.replace('ё', 'е'),
                         )
                         if _inner_m:
                             _inner_n = int(_inner_m.group(1))
@@ -3718,6 +3750,28 @@ class FB2CompilerService:
                 series_complete=getattr(group, 'series_complete', True),
             )
             return suffix, lo, hi
+
+        # Именованная дуга-подсерия, скомпилированная в СВОЮ ОТДЕЛЬНУЮ
+        # группу — та же логика, что и для volume_range в find_groups()
+        # (см. комментарий там): позиция внутри самой дуги лежит в
+        # sort_key[2], а не в sort_key[1] (позиция в родительской серии).
+        # Строим суффикс из локальных номеров, не трогая _run_stats()
+        # (она читает sort_key[1] — верно для любого другого случая).
+        _all_named_arc_own = ('\\' in group.series) and group.books and all(
+            getattr(b.record, 'series_source', '') == 'filename_named_arc'
+            and b.sort_key[2] != 0
+            for b in group.books
+        )
+        if _all_named_arc_own:
+            _locals = sorted({b.sort_key[2] for b in group.books})
+            _lo, _hi = _locals[0], _locals[-1]
+            _complete = _locals == list(range(_lo, _hi + 1))
+            _n_volumes = len(_locals)
+            suffix = self._series_suffix(
+                _n_volumes, _lo, _hi, 0,
+                series_complete=_complete and getattr(group, 'series_complete', True),
+            )
+            return suffix, _lo, _hi
 
         part_count = getattr(group, 'part_count', 0)
         top_lo, top_hi, n_volumes, has_subseries, n_top_arcs = self._run_stats(group.books)
