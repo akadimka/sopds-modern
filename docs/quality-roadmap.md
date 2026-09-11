@@ -3097,3 +3097,52 @@ xfail — оба ранее описаны выше, не связаны с эт
 `TestIncompleteBoundaryTomsGetFractionalRange` +
 `TestCompleteAdjacentDuologyStaysPlain` в
 `tests/integration/fb2parser_core/test_cartesian_inner_tom_position.py`.
+
+## Баг №63 — OPDS-сканер падал на файлах с `encoding="latin-1"` в XML-прологе — ✅ Починено
+
+Реальный случай: в домашней библиотеке пользователя (`TriblerDownloads\EBook
+Library`) нашлось 7 `.fb2`-файлов, чей XML-пролог объявляет
+`<?xml version="1.0" encoding="latin-1"?>`. `book_tools.format.parsers.FB2`
+(парсер, используемый OPDS-сканером `opds_catalog/sopdscan.py` — отдельный
+от `fb2parser_core` конвейер) падал с `FB2StructureException: The file is
+not a valid XML: Unsupported encoding latin-1` на каждом из них — при этом
+их содержимое ФАКТИЧЕСКИ в UTF-8 (проверено побайтово — `<book-title>`
+содержит корректные UTF-8-последовательности кириллицы), декларация просто
+неверна/устарела (похоже, от старого стороннего инструмента, который писал
+"latin-1" вместо реальной кодировки не глядя).
+
+Корень: `libxml2` не распознаёт алиас "latin-1" как имя кодировки (нужно
+"latin1" без дефиса, либо "ISO-8859-1") — падает уже на первом
+`etree.parse()`. Существующий fallback-путь в `FB2.parse()` (перекодирует
+сырые байты в UTF-8 с `errors="replace"`, чтобы починить NUL-байты/битые
+UTF-8-последовательности) НЕ помогал: он передаёт `etree.fromstring(...,
+encoding="utf-8")`, но сам текст XML-пролога внутри перекодированных байтов
+всё ещё дословно содержит `encoding="latin-1"` — и `libxml2` спотыкается о
+ту же самую нераспознанную декларацию по новой, даже если переданные байты
+уже валидный UTF-8.
+
+Фикс (`src/book_tools/format/parsers.py`, `FB2.parse()`): в fallback-ветке
+после перекодировки в UTF-8 регэкспом переписываем значение атрибута
+`encoding=` в самом XML-прологе на `"utf-8"` (`re.sub` по `<?xml ...
+encoding="..."?>`, только первое вхождение — что бы файл ни объявлял,
+дальше мы гарантированно отдаём parser'у настоящий UTF-8), после чего
+`etree.fromstring` парсит без конфликта декларации с реальной кодировкой
+байтов.
+
+Проверено на реальных файлах: все 7 объявленных `encoding="latin-1"`
+файлов из `TriblerDownloads` теперь парсятся без исключения. У 2 из 7
+(«Большая охота», «Ограниченный конфликт») заголовок и авторы корректно
+восстановились кириллицей — подтверждает, что фикс действительно чинит
+декодирование, а не просто подавляет ошибку. У остальных 5
+`<book-title>` в исходном файле содержит буквально ASCII-символы `?`
+(побайтово проверено — это испорченные данные самого файла, а не дефект
+парсинга/декодирования: соседний `<annotation>` в том же файле — корректный
+UTF-8). Подтверждённо падает без фикса (тот же `Unsupported encoding
+latin-1` даже после перекодировки в utf-8). Полный regression-suite
+`tests/integration/{book_tools,fb2parser_core}/` +
+`tests/unit/{book_tools,fb2parser_core}/` не затронут (единственный
+провал — `test_epub_parser.py::test_cover`, воспроизводится и без этого
+фикса, путь с `\\` в EPUB-архиве на Windows, не связан). Закреплено тестом
+`test_fb2_parses_unrecognised_declared_encoding_with_utf8_body` в
+`tests/integration/book_tools/test_fb2_parsers.py` (синтетический FB2 с
+`encoding="latin-1"` и настоящим UTF-8-телом).

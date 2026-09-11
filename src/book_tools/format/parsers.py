@@ -2,6 +2,7 @@
 import base64
 import logging
 import os
+import re
 import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -152,16 +153,27 @@ class FB2(EbookMetaParser):
             try:
                 self._etree = etree.parse(self._file, parser)
             except etree.XMLSyntaxError:
-                # Encoding-level failure: invalid UTF-8 sequences or NUL bytes
-                # embedded in the file. Decode with replacement chars (converts
-                # broken sequences to U+FFFD) and strip NUL chars (forbidden in
-                # XML 1.0), then re-parse from the sanitised UTF-8 bytes.
+                # Encoding-level failure: either invalid UTF-8 sequences/NUL
+                # bytes embedded in the file, or an XML declaration naming an
+                # encoding libxml2 doesn't recognise by that alias (e.g.
+                # "latin-1" — libxml2 wants "latin1"/"ISO-8859-1" — seen on
+                # files whose body is plain UTF-8 despite the stale/wrong
+                # declaration). Decode with replacement chars (converts
+                # broken sequences to U+FFFD) and strip NUL chars (forbidden
+                # in XML 1.0), rewrite the declared encoding to match the
+                # bytes we're actually handing lxml, then re-parse.
                 self._file.seek(0, 0)
                 raw = self._file.read()
                 sanitised = (
                     raw.decode("utf-8", errors="replace")
                     .replace("\x00", "")
                     .encode("utf-8")
+                )
+                sanitised = re.sub(
+                    rb'(<\?xml[^>]*\bencoding\s*=\s*["\'])[^"\']+(["\'])',
+                    rb"\1utf-8\2",
+                    sanitised,
+                    count=1,
                 )
                 parser2 = etree.XMLParser(recover=True, encoding="utf-8")
                 self._etree = etree.fromstring(sanitised, parser2).getroottree()

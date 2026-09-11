@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pytest
 
 from book_tools.format.fb2 import (
@@ -91,3 +93,24 @@ def test_fb2sax_cover_extraction(fb2_book_from_fs) -> None:
     cover_expected = FB2sax_new(fb2_book_from_fs, "Test book").extract_cover()
     assert cover_expected is not None
     assert cover_actual == cover_expected
+
+
+def test_fb2_parses_unrecognised_declared_encoding_with_utf8_body() -> None:
+    """Реальный случай (docs/quality-roadmap.md, баг №63): несколько файлов в
+    библиотеке пользователя объявляют `encoding="latin-1"` в XML-прологе, но
+    их тело на самом деле в UTF-8 (стороннее старое ПО ошибочно проставило
+    неверную декларацию). libxml2 не распознаёт алиас "latin-1" (нужен
+    "latin1"/"ISO-8859-1") и падает с `XMLSyntaxError: Unsupported encoding
+    latin-1` даже на нашем UTF-8-recovery фолбэке, т.к. переписанные в UTF-8
+    байты по-прежнему несут в прологе старую декларацию encoding="latin-1"."""
+    raw = (
+        b'<?xml version="1.0" encoding="latin-1"?>\r\n'
+        b'<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">\r\n'
+        b"  <description><title-info>"
+        b"<book-title>\xd0\x9e\xd0\xb3\xd1\x80\xd0\xb0\xd0\xbd\xd0\xb8\xd1\x87\xd0\xb5\xd0\xbd\xd0\xbd\xd1\x8b\xd0\xb9</book-title>"
+        b"</title-info></description>"
+        b"<body><section><p>text</p></section></body>"
+        b"</FictionBook>"
+    )
+    book = FB2_new(BytesIO(raw))
+    assert book.title == "Ограниченный"
