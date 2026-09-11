@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Витальевич</middle-name>
+    <last-name>Карелин</last-name>
+   </author>
+   <author>
+    <first-name>Кай</first-name>
+    <last-name>Ханси</last-name>
+   </author>
+   <book-title>Эволюция</book-title>
+   <annotation>
+    <p>Цивилизация в целом никогда не стоит на месте. Если ее в какой-то момент не уничтожит внешний враг, и у нее достаточно маневров для развития, цивилизация продолжит жить и развиваться. Даже если все плохо, и кажется, что по всем фронтам идет деградация, найдутся индивидуумы, способные изменить ситуацию. Когда недостаточно личной силы и харизмы, в ход могут пойти новые прорывные технологии. И цивилизация тогда может кардинально улучшиться, эволюционировать. Вот только…</p>
+    <p>Что, если эволюционные ресурсы цивилизации вдруг окажутся в плохих руках? В руках тирана и угнетателя. Да, цивилизация стремительно разовьется, однако бенефициаром прогресса будут не все граждане в целом, а только узкая прослойка элиты.</p>
+    <p>Тот же, кто определенно не войдет в эту прослойку, и даже может стать ее врагом в будущем, ни в коем случае не должен допускать наличие передовых технологий у противника. Даже если это вызовет ненависть всех элит мира, Арес должен сделать свой ход…</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Вечная Война [Карелин]" number="8"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Telegram Bot</first-name>
+    <last-name>@grabber</last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-05-08">2022</date>
+   <src-url>https://author.today/work/187244</src-url>
+   <id>author-today-187244</id>
+   <version>1651989880563</version>
+  </document-info>
+  <custom-info info-type="purchased">true</custom-info>
+  <custom-info info-type="status">3</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора fb2_compiler. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

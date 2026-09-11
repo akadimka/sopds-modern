@@ -233,8 +233,15 @@ class FB2CompilerService:
         _pos_subkeys: dict = {}
         for b in level0:
             _pos_subkeys.setdefault(b.sort_key[1], set()).add((b.sort_key[2], b.sort_key[3]))
+        # Баг №62: sort_key[2] != 0 у sort_source='series_number_inner_tom' не
+        # означает настоящую подсерию/дугу — это разметка "у этой позиции
+        # найден только ЧАСТИЧНЫЙ внутренний том" (см. _determine_sort_key,
+        # _normalize_complete_inner_tom_runs). Не должно включать
+        # "Дилогия"/"Трилогия"-словесную форму суффикса вместо обычного
+        # плоского "т. N-M" — граница диапазона и так честно показывает
+        # дробную позицию через volume_range/_compute_volume_range.
         has_subseries = (
-            any(b.sort_key[2] != 0 for b in level0)
+            any(b.sort_key[2] != 0 and b.sort_source != 'series_number_inner_tom' for b in level0)
             or any(len(v) > 1 for v in _pos_subkeys.values())
         )
 
@@ -284,7 +291,8 @@ class FB2CompilerService:
 
     @classmethod
     def _series_suffix(cls, n_volumes: int, lo: int, hi: int = None, part_count: int = 0,
-                       series_complete: bool = True, use_parts: bool = False) -> str:
+                       series_complete: bool = True, use_parts: bool = False,
+                       lo_label: str = None, hi_label: str = None) -> str:
         """Вернуть суффикс для имени файла компиляции.
 
         n_volumes       — число логических томов в run'е
@@ -292,6 +300,11 @@ class FB2CompilerService:
         hi              — последняя позиция run'а (если None — вычисляется как lo+n_volumes-1)
         part_count      — для dot_part: число физических частей; если > n_volumes,
                           добавляем «в N книгах» к служебному слову
+        lo_label/hi_label — необязательные строковые метки границ вместо
+                          голых lo/hi (баг №62: "12.1" вместо "12" для
+                          незавершённого внутреннего тома на границе
+                          диапазона) — используются ТОЛЬКО в отображении
+                          "т. N-M", не влияют на n_volumes/арифметику.
         series_complete — True если серия считается завершённой на этом run'е
                           (нет других томов/блоков за его пределами). Если False —
                           используем «т. N-M» вместо «Дилогия/Трилогия/…», т.к.
@@ -337,10 +350,12 @@ class FB2CompilerService:
             return f'в {n_books} книгах'
         # Частичный run ИЛИ незавершённая серия — указываем диапазон томов/частей
         _lbl = 'ч.' if use_parts else 'т.'
+        _lo_disp = lo_label or str(lo)
+        _hi_disp = hi_label or str(hi)
         if lo == hi:
-            _base = f'{_lbl} {lo}'
+            _base = f'{_lbl} {_lo_disp}'
         else:
-            _base = f'{_lbl} {lo}-{hi}'
+            _base = f'{_lbl} {_lo_disp}-{_hi_disp}'
         # Если известно суммарное число книг (arc-point предкомпиляции) — добавляем счёт
         n_books_total = part_count if part_count > 0 else n_volumes
         if n_books_total > n_volumes:
@@ -1579,6 +1594,7 @@ class FB2CompilerService:
                     ))
                 continue
             books_sorted, order_determined, alphabetical_order = self._sort_books(books)
+            self._normalize_complete_inner_tom_runs(books_sorted)
 
             if alphabetical_order:
                 # ВСЕ книги бакета имеют полностью неопределённый порядок
@@ -1833,6 +1849,57 @@ class FB2CompilerService:
         groups.sort(key=lambda g: (g.author.lower(), g.series.lower()))
         self._log(f"Найдено групп для компиляции: {len(groups)}")
         return groups
+
+    def _normalize_complete_inner_tom_runs(self, books: List[CompilationBook]) -> None:
+        """Убрать дробную метку тома («10.2», «12.1» — см. `_determine_sort_key`,
+        source='series_number_inner_tom`) там, где найденные внутренние тома
+        на самом деле образуют ПОЛНЫЙ, ничем не разорванный набор.
+
+        Баг №62: "5. Бойня. том 1.fb2" + "6. Бойня. том 2.fb2" — оба тома
+        физически лежат на СОСЕДНИХ внешних позициях (не делят одну и ту же
+        позицию, в отличие от "12. Сфера Богов том 1.fb2" без пары) — это
+        ПОЛНАЯ дилогия, её позиции должны остаться простыми "5"/"6", а не
+        "5.1"/"6.2". Дробная метка — сигнал именно НЕПОЛНОТЫ (внутренний том
+        найден, а его соседей с продолжающимся номером тома нет); как только
+        находится непрерывный ряд 1..K на подряд идущих внешних позициях —
+        это доказывает полноту, дробь снимается.
+        """
+        tagged = [b for b in books if b.sort_source == 'series_number_inner_tom']
+        if not tagged:
+            return
+
+        def _base_title(b: CompilationBook) -> str:
+            raw = b.record.file_title or b.abs_path.stem
+            return _norm_key(self._strip_title_part_suffix(self._strip_title_noise(raw)))
+
+        clusters: Dict[str, List[CompilationBook]] = {}
+        for b in tagged:
+            clusters.setdefault(_base_title(b), []).append(b)
+
+        for members in clusters.values():
+            members_sorted = sorted(members, key=lambda b: b.sort_key)
+            inners = [b.sort_key[2] for b in members_sorted]
+            outers = [b.sort_key[1] for b in members_sorted]
+            # len==1 «завершённый ряд 1..1» тривиально истинен, но одинокий
+            # том без единого найденного соседа ничего не доказывает — то
+            # самое "Сфера Богов. Том 1" без пары должно остаться дробным.
+            _inner_complete = (
+                len(inners) >= 2
+                and inners == list(range(1, len(inners) + 1))
+            )
+            _outer_consecutive = outers == list(range(outers[0], outers[0] + len(outers)))
+            if _inner_complete and _outer_consecutive:
+                for b in members_sorted:
+                    # Полностью сбрасываем sort_key[2] обратно в 0 (не только
+                    # отображаемую метку) — иначе has_subseries/_run_stats
+                    # (которые опираются ровно на sort_key[2] != 0 как признак
+                    # "это подсерия/дуга") ошибочно посчитали бы честную,
+                    # завершённую дилогию "подсерией" и испортили бы словесную
+                    # форму суффикса ("ч. N-M в K книгах" вместо обычного
+                    # "т. N-M в K книгах").
+                    b.sort_key = (b.sort_key[0], b.sort_key[1], 0, b.sort_key[3])
+                    b.volume_label = str(b.sort_key[1])
+                    b.sort_source = 'series_number'
 
     def _make_book(self, rec, work_dir: Path) -> CompilationBook:
         """Создать CompilationBook из BookRecord."""
@@ -3031,6 +3098,28 @@ class FB2CompilerService:
                         )
                         if not _meta_in_stem:
                             return (0, roman_inline, 0, 0), 'inline_title', False, str(roman_inline)
+                        else:
+                            # Баг №62: meta_num (внешняя позиция серии) подтверждена в
+                            # стеме — обычно ведущий числовой префикс файла ("12. Сфера
+                            # Богов том 1.fb2") — а roman_inline это ОТДЕЛЬНОЕ число из
+                            # "Том N"/"Часть N" в заголовке, не совпадающее с внешней
+                            # позицией. Раз внешняя позиция уже подтверждена в самом
+                            # имени файла, roman_inline не альтернативная внешняя
+                            # позиция (та ветка уже отработала бы выше) — это номер
+                            # ВНУТРЕННЕГО тома этой же внешней позиции: сама часть
+                            # серии физически разбита на несколько файлов ("12. Сфера
+                            # Богов том 1" — без парного "том 2" рядом, но при его
+                            # появлении он получит ТУ ЖЕ внешнюю позицию как отдельный
+                            # источник, не meta_num+1 — см. реальный случай "Бойня",
+                            # где оба тома НЕ делят одну позицию, а получают разные
+                            # sn — там эта ветка не сработает, т.к. meta_num там прямо
+                            # совпадает с roman_inline).
+                            return (
+                                (0, meta_num, roman_inline, 0),
+                                'series_number_inner_tom',
+                                False,
+                                f'{meta_num}.{roman_inline}',
+                            )
                     # «Серия N. Подзаголовок. Том M» — meta_num = позиция в серии,
                     # «Том/Книга M» стоит ПОСЛЕ серийного суффикса «N.» → M как secondary.
                     # Пример: «Война великого бога 2. Внутренняя война. Том 1» → (0,2,1,0),
@@ -3075,6 +3164,25 @@ class FB2CompilerService:
         if not _series_ok_val and sn and re.match(r'^\d+$', sn):
             fn_num_from_sn = int(sn)
             if fn_num_from_sn < 1900:
+                # Баг №62: та же проверка на внутренний том, что и в ветке выше
+                # (_series_ok=True) — здесь просто ДРУГАЯ причина, по которой мы
+                # доверяем sn напрямую (metadata_series отличается от
+                # proposed_series значимым словом — напр. "Вечная Война
+                # [Карелин]" против "Вечная Война" — из-за чего _series_ok=False
+                # и код никогда не доходил до общей проверки выше). Реальный
+                # случай: "12. Сфера Богов том 1.fb2" — fn_num_from_sn=12
+                # подтверждён в стеме (ведущий префикс), а "Том 1" в заголовке —
+                # отдельное число, номер ВНУТРЕННЕГО тома этой же позиции.
+                _inline_tom = self._extract_inline_volume_number(
+                    rec.file_title or stem, stem
+                )
+                if _inline_tom is not None and _inline_tom != fn_num_from_sn:
+                    return (
+                        (0, fn_num_from_sn, _inline_tom, 0),
+                        'series_number_inner_tom',
+                        False,
+                        f'{fn_num_from_sn}.{_inline_tom}',
+                    )
                 return (0, fn_num_from_sn, 0, 0), 'series_number', False, sn
 
         if is_subseries:
@@ -3541,14 +3649,35 @@ class FB2CompilerService:
         if not nums:
             return ''
         lo, hi = min(nums), max(nums)
+
+        # Баг №62: если крайняя (lo/hi) позиция диапазона — незавершённый
+        # внутренний том ("12. Сфера Богов том 1.fb2" без пары, sort_source=
+        # 'series_number_inner_tom', volume_label="12.1"), честно отражаем
+        # это в самой границе диапазона ("10.2-12.1"), а не "10-12", что
+        # выглядело бы как будто обе крайние позиции покрыты целиком.
         if lo == hi:
-            return str(lo)
+            return self._inner_tom_boundary_label(books, lo, str(lo))
         # Проверяем: все тома от lo до hi реально присутствуют (нет пробелов)?
         present = set(nums) | (covered or set())
         if all(v in present for v in range(lo, hi + 1)):
-            return f'{lo}-{hi}'
+            return (
+                f'{self._inner_tom_boundary_label(books, lo, str(lo))}'
+                f'-{self._inner_tom_boundary_label(books, hi, str(hi))}'
+            )
         # Есть пробелы — не создаём ложный диапазон, возвращаем пустую строку
         return ''
+
+    @staticmethod
+    def _inner_tom_boundary_label(books: List[CompilationBook], pos: int, default: str) -> str:
+        """Метка граничной позиции диапазона — дробная ("12.1"), если на этой
+        позиции лежит незавершённый внутренний том (баг №62,
+        sort_source='series_number_inner_tom'), иначе обычная целая.
+        """
+        for b in books:
+            if (b.sort_key[0] == 0 and b.sort_key[1] == pos
+                    and b.sort_source == 'series_number_inner_tom'):
+                return (b.volume_label or default).strip() or default
+        return default
 
     def compute_group_suffix(self, group: 'CompilationGroup') -> Tuple[str, int, int]:
         """Вычислить суффикс имени файла компиляции ("Дилогия в 8 книгах" и
@@ -3734,9 +3863,13 @@ class FB2CompilerService:
             _n_books = _arc_part_count or part_count or n_volumes
             suffix = 'в 1 книге' if _n_books == 1 else f'в {_n_books} книгах'
         else:
-            suffix = self._series_suffix(n_volumes, top_lo, top_hi,
-                                         _arc_part_count or part_count,
-                                         series_complete=_sc_compile)
+            suffix = self._series_suffix(
+                n_volumes, top_lo, top_hi,
+                _arc_part_count or part_count,
+                series_complete=_sc_compile,
+                lo_label=self._inner_tom_boundary_label(group.books, top_lo, str(top_lo)),
+                hi_label=self._inner_tom_boundary_label(group.books, top_hi, str(top_hi)),
+            )
         return suffix, top_lo, top_hi
 
     # ------------------------------------------------------------------

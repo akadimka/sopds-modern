@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Витальевич</middle-name>
+    <last-name>Карелин</last-name>
+   </author>
+   <book-title>Академия</book-title>
+   <annotation>
+    <p>О сколько нам открытий чудных готовит… хотя нет! Не особо чудных! Новый мир и новые проблемы…</p>
+    <p>Мне придется учиться. Скоро уж тридцатник, и садиться за школьную скамью? И ладно бы, если бы однокашниками моими были бы нормальные земные подростки! Но нет же, учиться я буду вместе с какими-то монстрами и в прямом и в переносном смысле. Один чих шестнадцатилетнего соседа по парте, и я — труп.</p>
+    <p>И отказаться от обучения нельзя. Что за жизнь?…</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#_177176.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Вечная Война [Карелин]" number="7"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Telegram Bot</first-name>
+    <last-name>@grabber</last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-04-15">2022</date>
+   <src-url>https://author.today/work/177176</src-url>
+   <id>author-today-177176</id>
+   <version>1650056778357</version>
+  </document-info>
+  <custom-info info-type="purchased">true</custom-info>
+  <custom-info info-type="status">3</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора fb2_compiler. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

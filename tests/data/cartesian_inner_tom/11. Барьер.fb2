@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Витальевич</middle-name>
+    <last-name>Карелин</last-name>
+   </author>
+   <book-title>Барьер</book-title>
+   <annotation>
+    <p>К этой войне мы готовились несколько лет. Мы знали, что враг будет безжалостным и чрезвычайно опасным. Наивное представление о том, что внеземная цивилизация захочет строить с нами взаимовыгодное и мирное общение, разбилось вдребезги, встретив стальную стену суровой реальности.</p>
+    <p>Единственное, что мы могли, - собраться вместе в один большой железный кулак. Все внутренние разногласия, недовольства и амбиции частного характера должны были быть забыты перед проблемой планетарного или даже галактического масштаба. Однако, крысы существовали всегда и везде. В угоду личным интересам иные люди готовы загнать в рабство свой собственный народ.</p>
+    <p>Свобода или рабство, справедливость или предательство, храбрость или трусость. В новом мире, в новую эпоху каждый предстанет перед собственным выбором.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#_12345.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Вечная Война [Карелин]" number="11"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Сергей</first-name>
+    <last-name>Карелин</last-name>
+    <home-page>https://author.today/u/sergewiz/works</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-09-27">2022-09-27</date>
+   <src-url>https://author.today/work/208962</src-url>
+   <id>CF568FC9-3349-4BA6-9A34-B0634C0D613A</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора fb2_compiler. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

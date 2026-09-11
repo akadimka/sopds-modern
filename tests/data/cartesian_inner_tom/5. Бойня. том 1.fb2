@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Витальевич</middle-name>
+    <last-name>Карелин</last-name>
+   </author>
+   <author>
+    <first-name>Кай</first-name>
+    <last-name>Ханси</last-name>
+   </author>
+   <book-title>Бойня. Том 1</book-title>
+   <annotation>
+    <p>Когда появляется новый генеральный тренд в политике или экономике, от которого зависит будущее страны или целой планеты, ни одна транснациональная корпорация и ни одно правительство не будет игнорировать изменения. И в такой ситуации возможны два сценария. Первый — предотвратить, уничтожить, задушить в зародыше то, что мешает текущему укладу, при котором нужные люди в примерно нужном количестве пилят бюджеты или гребут бабки. Однако, если остановить изменения невозможно, второе, что могут предпринять руководители — возглавить движение, а затем постепенно подгрести под себя все поспевшие плоды нового генерального тренда.</p>
+    <p>Недолго Арес был единственным счастливчиком обладания знаний о грядущей катастрофе на планете Земля и будущем переселении землян в новый мир. В конце концов, правительства стран и директора мега-корпораций узнают об этом. Конкуренция в мире Вечной Войны возрастет многократно, а на поиски Ареса в реальном мире будут брошены значительные силы. И как он с этим справится?</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Вечная Война [Карелин]" number="5"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Telegram Bot</first-name>
+    <last-name>@grabber</last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-01-29">2022</date>
+   <src-url>https://author.today/work/164545</src-url>
+   <id>author-today-164545</id>
+   <version>1643482567867</version>
+  </document-info>
+  <custom-info info-type="purchased">true</custom-info>
+  <custom-info info-type="status">$status</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора fb2_compiler. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

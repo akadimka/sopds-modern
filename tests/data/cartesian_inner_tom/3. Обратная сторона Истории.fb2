@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Витальевич</middle-name>
+    <last-name>Карелин</last-name>
+   </author>
+   <author>
+    <first-name>Кай</first-name>
+    <last-name>Ханси</last-name>
+   </author>
+   <book-title>Обратная сторона Истории</book-title>
+   <annotation>
+    <p>История не терпит сослагательного наклонения. Обычно. Но что, если в какой-то день все изменится? Если диктаторы и тираны прошлого получат второй шанс, изменят ли они свой подход? А справедливые и почитаемые правители, останутся ли они такими же, какими их помнит человечество, если вернутся к жизни?</p>
+    <p>Многие из лидеров стали таковыми в результате государственного переворота, что представляет их, как амбициозных гениев своего поколения. Некоторые наследные правители также были преисполнены амбициями и обладали выдающимся умом. Если все эти люди соберутся вместе в мире, где законы физики и общественное устройство чудны и непонятны, будут ли они сотрудничать? Откажутся ли от своих амбиций и передадут ли добровольно свою власть предкам или потомкам? Или же быть войне?</p>
+    <p>Пока государи, лидеры и чиновники прошлого собирали советы, выстраивали планы, заключали союзы или объявляли войны, тьма приблизилась к миру. На их земле тихо и незаметно появилось опаснейшее бедствие — современный игрок.</p>
+   </annotation>
+   <date value="2021-09-12">2021-09-12 07:17:55</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Вечная Война [Карелин]" number="3"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Сергей</first-name>
+    <last-name>Карелин</last-name>
+    <home-page>https://author.today/u/sergewiz</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-09-12">2021-09-12 07:17:55</date>
+   <id>076A29B1-A33C-4761-A002-B3C541905668</id>
+   <version>1.00</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора fb2_compiler. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
