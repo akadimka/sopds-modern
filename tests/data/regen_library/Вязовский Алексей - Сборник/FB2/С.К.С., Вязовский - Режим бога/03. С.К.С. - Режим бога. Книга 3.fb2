@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author>
+    <first-name></first-name>
+    <last-name>Скс</last-name>
+   </author>
+   <book-title>Режим бога. Книга 3</book-title>
+   <annotation>
+    <p>Завышенные ожидания, как правило не оправдываются! р.s. помни всяк, кто это читает…</p>
+   </annotation>
+   <date value="2015-04-20">2015</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>samlib.ru</nickname>
+    <home-page>http://samlib.ru</home-page>
+   </author>
+   <program-used>samlib.ru, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2017-08-30">2017-08-30 11:16:47</date>
+   <src-url>http://samlib.ru/s/sks/222-1.shtml</src-url>
+   <id>samlib59a71d34d68407.50528255</id>
+   <version>1.1</version>
+   <history>
+    <p>1.1</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

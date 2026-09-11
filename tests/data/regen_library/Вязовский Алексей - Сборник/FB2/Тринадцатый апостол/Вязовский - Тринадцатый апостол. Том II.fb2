@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>novel</genre><genre>popadantsy-vo-vremeni</genre><genre>sf-history</genre><genre>historical-fiction</genre>
+      <author><first-name>Алексей</first-name><last-name>Вязовский</last-name></author>
+
+      <book-title>Тринадцатый апостол. Том II</book-title>
+      <annotation>
+        <p>Первый век нашей эры. Раннее христианство. Рим, Тиберий и наш современник в прошлом. Который не просто старается выжить, но еще и принести Свет истины всем народам Земли.</p>
+      </annotation>
+      <coverpage>
+        <image l:href="#_146168cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Тринадцатый апостол" number="2" />
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Telegram Bot</first-name>
+        <last-name>@attofb2_bot</last-name>
+      </author>
+      <date value='2021-12-29'>2021</date>
+      <src-url>https://author.today/work/146168</src-url>
+      <id>author-today-146168</id>
+      <version>1640783931857</version>
+    </document-info>
+    <publish-info />
+    <custom-info>
+       <purchased value="true"/>
+       <status value="3"/>
+    </custom-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+
+</FictionBook>

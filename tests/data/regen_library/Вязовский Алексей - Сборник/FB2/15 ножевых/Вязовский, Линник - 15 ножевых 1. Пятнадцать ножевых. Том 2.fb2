@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <author>
+      <first-name>Сергей</first-name>
+      <last-name>Линник</last-name>
+    </author>
+    <book-title>Пятнадцать ножевых. Том 2</book-title>
+    <annotation>
+      <p>Ты попал в прошлое и работаешь в скорой. Приезжаешь на помощь людям, спасаешь жизни. Но кто придет на помощь тебе, когда ты попал в беду?</p>
+      <p>От автора:</p>
+      <p>1. Первый том тут https://author.today/work/217025.</p>
+      <p>2. Обложка — Дмитрий DM.</p>
+      <p>Это — художественное произведение. Фантастика! Учитывайте это, когда читаете про методы диагностики и лечения, описанные в романе. Ни в коем случае нельзя рассматривать книгу в качестве учебника или руководства. Главный герой не идеален. Он может (и будет) допускать ошибки в лечении и диагностике. Ни в коем случае не надо пытаться повторять его действия на практике!</p>
+      <p>Саундтрек к книге https://music.yandex.ru/users/docck/playlists/1022.</p>
+    </annotation>
+    <date>2022</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="15 ножевых" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name/>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2022-12-07">07 December 2022</date>
+    <src-url>https://author.today/work/224111</src-url>
+    <id>B36BD377-6A7A-43E9-932D-D668ED07B905</id>
+    <version>1.1</version>
+    <history>
+      <p>v 1.1 — чистка, правка — (Starkosta)</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <publisher>АТ</publisher>
+    <year>2022</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

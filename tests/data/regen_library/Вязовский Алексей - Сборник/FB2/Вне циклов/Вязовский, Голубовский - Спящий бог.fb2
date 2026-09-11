@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <author>
+      <first-name>Дмитрий</first-name>
+      <middle-name>Олегович</middle-name>
+      <last-name>Голубовский</last-name>
+    </author>
+    <book-title>Спящий бог</book-title>
+    <annotation>
+      <p>Добротный экземпляр прозы в жанре «наши там»: логичный, последовательный, поучительный. Главный герой — российский мажор, сын богачей, обучался в Лондоне экономике. Он с товарищами отправляется в день летнего солнцестояния в Стоунхендж, чтобы приобщиться к мистике и встретить рассвет под камнями древнего артефакта. Везет подвыпившую компанию российских богачей японец Масумото.</p>
+      <p>Никто не мог предположить, что главного героя и японца перебросит в другой мир. Да не в пустынную местность и не в амбар доброй хозяйки, а в качестве жертв Спящему богу, которые некий маг собирался принести в ночь летнего солнцестояния…</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#nocover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Flint</first-name>
+      <last-name/>
+    </author>
+    <date value="2008-12-05">2008-12-05</date>
+    <src-url>http://zhurnal.lib.ru/i/isaew_a_w/final-1.shtml</src-url>
+    <id>81795AF7-3BBC-453F-9967-6323A24C4495</id>
+    <version>1.1</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

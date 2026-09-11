@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Группа крови на рукаве</book-title>
+    <annotation>
+      <p>Я ехал в Московском метро когда все случилось. Завыли сирены и поезд встал, будто наступил апокалипсис. Поток людей унес меня в черный тоннель. Но выбрался я один и очутился… </p>
+      <p>Это что за тропическая многоножка?! И какого хрена меня долбанули прикладом и связали? Кто они мать такие? Вооруженные головорезы в допотопной зеленой форме пехоты США.</p>
+      <p> А это что? Джунгли?..</p>
+    </annotation>
+    <coverpage>
+      <image xlink:href="#b93de8e3-2eff-41b9-a086-791287027788.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="ГК" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+</author>
+    <src-url>https://author.today/work/210575</src-url>
+    <date value="2022-10-17">2022-10-17</date>
+  </document-info>
+  <publish-info/>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+</FictionBook>

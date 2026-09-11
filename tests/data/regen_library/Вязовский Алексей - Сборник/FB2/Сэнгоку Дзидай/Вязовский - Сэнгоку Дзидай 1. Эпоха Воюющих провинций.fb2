@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Эпоха Воюющих провинций</book-title>
+    <annotation>
+      <p>Сильнейшее землетрясение в Токио оказалось роковым для российского студента, работавшего по контракту в японском банке. После удара по голове его сознание перемещается в 1538 год, в тело сына японского дайме (князя). Главный герой с самого начала угодил в безвыходную ситуацию: отец убит самураями конкурирующего клана, дядя собирается захватить власть в провинциях, принадлежащих дому Сатоми, на границах домена стоят вражеские войска, иезуиты плетут интриги, в свите наследника действует знаменитый шпион-синоби по имени Хандзо… Что будет с простым русским парнем в Стране восходящего солнца, цветущей сакуры и коварных ниндзя? Выживет ли изнеженный и избалованный «белый воротничок» в жестокую эпоху Воюющих провинций?</p>
+    </annotation>
+    <date>2012</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Сэнгоку Дзидай" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>shtuks</nickname>
+    </author>
+    <program-used>ExportToFB21, FictionBook Editor Release 2.6</program-used>
+    <date value="2013-12-12">12 December 2013</date>
+    <id>OOoFBTools-2013-12-12-23-26-13-1044</id>
+    <version>1.0</version>
+    <history>
+      <p>1.0 — создание fb2 (shtuks);</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Алексей Вязовский  «Эпоха Воюющих провинций»</book-name>
+    <publisher>Альфа-книга</publisher>
+    <city>М.</city>
+    <year>2012</year>
+    <isbn>978-5-9922-1314-0</isbn>
+    <sequence name="Фантастическая История" number="61"/>
+  </publish-info>
+  <custom-info info-type="general">Заведующий редакцией B. Н. Маршавин. 
+Ответственный редактор Т. А. Стельмах. 
+Художественный редактор И. Г. Безбородов. 
+Художник C. А. Григорьев. 
+Технический редактор А. А. Ершова. 
+Корректор Н. А. Карелина. 
+Компьютерная верстка П. Э. Кутепова. 
+Подписано в печать 24.09.12. 
+Тираж 5000 экз. 
+Изд. № 6576. 
+Заказ №4205098. 
+313 стр.</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+</FictionBook>

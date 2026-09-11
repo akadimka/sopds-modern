@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>popadanec</genre>
+   <genre>sf_history</genre>
+   <genre>network_literature</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <middle-name>Викторович</middle-name>
+    <last-name>Вязовский</last-name>
+   </author>
+   <book-title>Я Распутин. Книга третья</book-title>
+   <annotation>
+    <poem>
+     <stanza>
+      <v>…Век буржуазного богатства</v>
+      <v>(Растущего незримо зла!).</v>
+      <v>Под знаком равенства и братства</v>
+      <v>Здесь зрели темные дела…</v>
+      <v>А человек? — Он жил безвольно:</v>
+      <v>Не он — машины, города,</v>
+      <v>«Жизнь» так бескровно и безбольно</v>
+      <v>Пытала дух, как никогда…</v>
+     </stanza>
+     <text-author>А. Блок.</text-author>
+    </poem>
+    <p>Испытания духа «нового» Григория Распутина. Том третий.</p>
+   </annotation>
+   <date>2022</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Распутин" number="3"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-10-16">16 October 2022</date>
+   <src-url>https://author.today/work/196564</src-url>
+   <id>A5229CF2-A2DF-4B06-8EFB-D068CC897E78</id>
+   <version>1.1</version>
+   <history>
+    <p>v 1..1 — чистка, правка, обложка — (Starkosta)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <publisher>АТ</publisher>
+   <year>2022</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

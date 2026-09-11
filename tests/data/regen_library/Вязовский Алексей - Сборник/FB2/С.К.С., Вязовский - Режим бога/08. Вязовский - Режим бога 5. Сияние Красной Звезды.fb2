@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>sf_history</genre>
+      <genre>sf_history</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <last-name>Вязовский</last-name>
+        <home-page>https://www.litmir.me/a/?id=13884</home-page>
+      </author>
+      <book-title>Сияние Красной Звезды (СИ)</book-title>
+      <annotation>
+        <p>		5-й роман серии.		ВНИМАНИЕ! Если вы не знакомы с «Режимом бога» СКС, то читать мой фанфик смысла нет, т. к. ничего не поймете.  Расхождение сюжета оригинала и фанфика начинаются с последних сцен третьей книги СКС (до отлета в Италию). Рекомендую сначала ознакомиться с первоисточником, потом с моими продолжениями и только после этого приступать к данному произведению.		Закончил первую часть.		 	 </p>
+      </annotation>
+      <date>2019</date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Режим бога" number="5"/>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name/>
+        <last-name>Starkosta</last-name>
+      </author>
+      <program-used>FictionBook Editor Release 2.6</program-used>
+      <date value="2019-06-02">02 June 2019</date>
+      <src-url>https://www.litmir.me</src-url>
+      <id>917AF44E-7A42-4511-9458-B1D9C7A68D79</id>
+      <version>1.0</version>
+    </document-info>
+    <publish-info/>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

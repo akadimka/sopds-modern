@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>popadantsy-vo-vremeni</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <last-name>Вязовский</last-name>
+        <home-page>https://author.today/u/id32837226</home-page>
+        <id>15847</id>
+      </author>
+      <book-title>Режим бога.  Восход Красной Звезды (#1)</book-title>
+      <annotation>
+        <p>Устал ждать продолжения Режима бога от СКС. Написал свой фанфик. ВНИМАНИЕ! Если вы не читали РБ, то читать мой фанфик смысла нет, т.к. ничего не поймете. Оригинал тут http://samlib.ru/s/sks/ Дорогие хейтеры! Если вы считаете мой фанфик графоманью (картоном etc.), то у меня для вас есть отличный совет. Не читайте его. Берегите нервы.</p>
+      </annotation>
+      <date value="2018-07-02">2018-07-02 07:31:24</date>
+      <coverpage>
+        <image l:href="#cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Режим бога" number="0" />
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Алексей</first-name>
+        <last-name>Вязовский</last-name>
+        <home-page>https://author.today/u/id32837226</home-page>
+        <id>15847</id>
+      </author>
+      <date value="2018-07-02">2018-07-02 07:31:24</date>
+      <id>17502</id>
+      <version>1.00</version>
+    </document-info>
+    <publish-info />
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

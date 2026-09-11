@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>Дмитрий</first-name>
+      <middle-name>Дмитриевич</middle-name>
+      <last-name>Исаев</last-name>
+    </author>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Хроники Дангора. Книга 1</book-title>
+    <date/>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Roland</first-name>
+      <last-name/>
+    </author>
+    <program-used>ExportToFB21, FictionBook Editor Release 2.6</program-used>
+    <date value="2011-04-27">27.04.2011</date>
+    <id>OOoFBTools-2011-4-27-18-46-2-743</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

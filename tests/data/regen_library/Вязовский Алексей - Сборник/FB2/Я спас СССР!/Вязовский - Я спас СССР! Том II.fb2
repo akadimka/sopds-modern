@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_history</genre>
+   <author>
+    <first-name>Вязовский</first-name>
+    <last-name>Алексей</last-name>
+   </author>
+   <book-title>Я спас СССР! (том 2)</book-title>
+   <annotation>
+    <p>Пленка с планами заговора, попавшая в руки комсомольца Русина, заставляет его вступить на тропу войны. Вопрос «на чьей он стороне» не актуален - ему точно не по пути с людьми, готовыми убить Хрущева ради собственных амбиций. Но готов ли сам Русин пролить кровь заговорщиков ради спасения Страны?</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#imgDC94.jpg"/></coverpage>
+   <lang>en</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Вязовский</first-name>
+    <last-name>Алексей</last-name>
+   </author>
+   <program-used>calibre 4.3.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2019-12-16">11.12.2019</date>
+   <id>c6437b55-2b34-4d8d-b5ea-a446c90f3c38</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

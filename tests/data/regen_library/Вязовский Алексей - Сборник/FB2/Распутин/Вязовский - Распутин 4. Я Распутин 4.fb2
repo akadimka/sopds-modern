@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Я Распутин. Книга четвертая</book-title>
+    <annotation>
+      <p>Трехсотлетие дома Романовых, позади — труды по созданию Ростеха, Стрелкового союза, детских колоний и работоспособной Думы, впереди — гроза Первой Мировой войны и призрак революции. Хватит ли запаса прочности у России Распутина, чтобы выстоять и выйти из потрясений сильной и свободной?</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Распутин" number="4"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Алексей</first-name>
+      <last-name>Вязовский</last-name>
+      <home-page>https://author.today/u/id32837226/works</home-page>
+    </author>
+    <program-used>CopyText ADI, FictionBook Editor Release 2.6</program-used>
+    <date value="2023-03-01">2023-03-01</date>
+    <id>RPF-AT-243921</id>
+    <version>1.00</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

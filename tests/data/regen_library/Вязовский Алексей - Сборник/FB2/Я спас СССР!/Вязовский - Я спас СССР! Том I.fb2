@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+  <title-info>
+   <genre>sf_history</genre>
+   <genre>popadanec</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <middle-name>Викторович</middle-name>
+    <last-name>Вязовский</last-name>
+    <id>222066</id>
+   </author>
+   <book-title>Я спас СССР. Том I [litres]</book-title>
+   <annotation><p>Второй шанс пожилого учителя истории. Его Родину уничтожили, его народ вымирает. Пути назад нет, надо спасать страну.<br/>
+Волей случая герой оказывается в 1964 году. Самый конец хрущёвской эпохи. Это именно та точка, где были сделаны первые шаги к развалу Союза. Но хватит ли герою сил и находчивости, чтобы это изменить?</p>
+   </annotation>
+   <keywords>прогрессорство,советская эпоха,развал СССР</keywords>
+   <date value="2020-01-01">2020</date>
+   <coverpage><image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Я спас СССР!" number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Наталия</first-name>
+    <last-name>Цветкова</last-name>
+    <nickname>nvcvet</nickname>
+   </author>
+   <program-used>OOoFBTools-2.27 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2020-03-06">06.03.2020</date>
+   <src-url>http://www.litres.ru/pages/biblio_book/?art=51400869</src-url>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>a26179f1-5fab-11ea-aa86-0cc47a5453d6</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание FB2 – (nvcvet)</p>
+   </history>
+   <publisher>
+    <first-name>Литагент</first-name>
+    <last-name>1 редакция (12)</last-name>
+   <id>b7a1736a-1afb-11e9-b9d6-0cc47a520474</id>
+   </publisher>
+  </document-info>
+  <publish-info>
+   <book-name>Я спас СССР. Том I / Алексей Вязовский</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2020</year>
+   <isbn>978-5-04-109951-0</isbn>
+   <sequence name="Новый фантастический боевик" number="0"/>
+  </publish-info>
+  <custom-info info-type="librusec-id">692900</custom-info>
+  <custom-info info-type="">© Вязовский А., 2020 © Оформление. ООО «Издательство «Эксмо», 2020 Разработка серийного оформления В. Матвеевой В оформлении переплета использована работа художника И. Горбачика</custom-info>
+ </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  
+</FictionBook>

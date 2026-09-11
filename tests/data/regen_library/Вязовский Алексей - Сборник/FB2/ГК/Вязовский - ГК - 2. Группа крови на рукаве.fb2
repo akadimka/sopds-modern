@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>popadancy</genre>
+   <genre>sf_history</genre>
+   <genre>det_action</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Вязовский</last-name>
+   </author>
+   <book-title>Группа крови на рукаве. Том II</book-title>
+   <annotation>
+    <p>И неустроенность, и риск без всякой меры.. .</p>
+    <p>Ты выбрал путь и верен будь теперь,</p>
+    <p>Ведь жить нельзя без нашей крепкой веры.</p>
+    <p>Засада, концентрация, бросок,</p>
+    <p>Артподготовка, марш, атака с ходу,</p>
+    <p>Захват и штурм, простреленный висок,</p>
+    <p>Страданье, кровь и множество народу.</p>
+    <p>И только черных масок резкий ряд,</p>
+    <p>И головы, склоненные упрямо.</p>
+    <p>Нам в спину очень много говорят,</p>
+    <p>А мы всегда идем по жизни прямо.</p>
+    <p>И. Линдер</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#63f6a31d-c272-433c-8425-0090eedf1b2d.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="ГК" number="02"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Вязовский</last-name>
+    <home-page>https://author.today/u/id32837226/works</home-page>
+   </author>
+   <program-used>Elib2Ebook, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-01-10">2023-01-10</date>
+   <src-url>https://author.today/work/227294</src-url>
+   <id>4FEF4053-9BD3-45E4-B1FC-6EE529B3C615</id>
+   <version>1.0</version>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

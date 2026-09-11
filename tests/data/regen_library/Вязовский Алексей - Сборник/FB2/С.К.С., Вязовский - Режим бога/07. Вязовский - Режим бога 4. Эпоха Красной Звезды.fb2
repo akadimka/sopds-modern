@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_history</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Вязовский</last-name>
+    <home-page> </home-page>
+   </author>
+   <book-title> Эпоха Красной Звезды </book-title>
+   <annotation>
+    <p>4-й роман серии. ВНИМАНИЕ! Если вы не знакомы с "Режимом бога" СКС, то читать мой фанфик смысла нет, т.к. ничего не поймете. Оригинал находится тут http://samlib.ru/s/sks/ Расхождение сюжета оригинала и фанфика начинаются с последних сцен третьей книги СКС (до отлета в Италию). Рекомендую сначала ознакомиться с первоисточником, потом с моими продолжениями и только после этого приступать к данному произведению.</p>
+   </annotation>
+   <date value="2019-02-01">2019-02-01 08:50:37</date>
+   <coverpage>
+    <image l:href="#_4.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Режим бога (фанфик)" number="4"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name> </first-name>
+    <last-name> </last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2019-02-01">2019-02-01 08:50:37</date>
+   <src-url> </src-url>
+   <id>14937FE5-90AA-4951-8F57-5C3C515B43AE</id>
+   <version>1.1</version>
+   <history>
+    <p>1.1 подзаголовки, жанр, обложка</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

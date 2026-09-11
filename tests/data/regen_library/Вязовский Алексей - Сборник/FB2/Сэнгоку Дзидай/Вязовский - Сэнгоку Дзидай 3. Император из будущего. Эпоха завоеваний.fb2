@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Император из будущего: эпоха завоеваний</book-title>
+    <annotation>
+      <p>Вязовский Алексей. Император из будущего: эпоха завоеваний.</p>
+      <p>Предисловие автора</p>
+      <p>Уважаемые читатели! Вы открыли третью книгу серии "Сэнгоку Дзидай. Эпоха Воюющих провинций". Все три романа написаны в жанре альтернативной истории. И посвящены они Японии, а точнее что бы было с этим островным государством, попади туда в 1538 год наш современник. Не ждите от моих трудов стопроцентной аутентичности. Некоторые события я сознательно сдвинул во времени (например, год "открытия" Японии португальцами, завоевание Китая маньчжурами и испанцами инков и ацтеков), какие-то локации переместил в пространстве, с какими-то названиями и преданиями немного наврал, исторических персонажей слегка перетасовал, но в остальном обещаю — будет интересно. Гейши, самураи, суши, сумо, в общем, полный японский набор.</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Сэнгоку Дзидай" number="3"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Алексей</first-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <program-used>calibre 2.43.0, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2015-12-22">22.12.2015</date>
+    <id>60c91a5b-be00-4160-ab1c-de57d88c8493</id>
+    <version>2.0</version>
+    <history>
+      <p>2.0 — форматирование</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <publisher>Microsoft</publisher>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

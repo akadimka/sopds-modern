@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>science</genre>
+   <author>
+    <first-name>Анатолий</first-name>
+    <middle-name>Ильич</middle-name>
+    <last-name>Протопопов</last-name>
+    <home-page>http://protopop.hotbox.ru</home-page>
+   </author>
+   <author>
+    <first-name>Алексей</first-name>
+    <middle-name>Викторович</middle-name>
+    <last-name>Вязовский</last-name>
+   </author>
+   <book-title>Инстинкты человека. Попытка описания и классификации</book-title>
+   <keywords>Инстинкт</keywords>
+   <date></date>
+   <lang>ru</lang>
+   <src-lang>ru</src-lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2013-10-14">2013-10-14</date>
+   <src-url>http://protopop.hotbox.ru/B/EB.htm</src-url>
+   <id>web2fb2_201310142033_7747889444</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Инстинкты человека. Попытка описания и классификации</book-name>
+   <publisher>Дани Алмас</publisher>
+   <city>Якутск</city>
+   <year>2011</year>
+   <isbn>978-5-91441-033-6</isbn>
+  </publish-info>
+  <custom-info info-type="">Отражает вторую редакцию текста, вышедшую в 2012-м году. Вторая редакция на бумаге не публиковалась</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

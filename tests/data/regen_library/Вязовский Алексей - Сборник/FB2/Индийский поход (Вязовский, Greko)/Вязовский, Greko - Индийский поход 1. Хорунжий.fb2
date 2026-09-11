@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>adv_history</genre>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <author>
+      <first-name></first-name>
+      <last-name>Greko</last-name>
+    </author>
+    <book-title>Хорунжий</book-title>
+    <annotation>
+      <p>Весна 1801 года. 22 тысячи казаков бредут сквозь степи к неведомой Индии по приказу шального императора, их вот-вот развернут назад. Но появился Он, и все пошло не так. Омоют ли донцы свои сапоги в Индийском океане?</p>
+    </annotation>
+    <keywords> бухара, индийский поход, платов, альтернативная история, попаданцы во времени</keywords>
+    <date>21 07 2025</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>ru</src-lang>
+    <sequence name="Индийский поход" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Алексей</first-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <author>
+      <nickname> pva2408</nickname>
+    </author>
+    <program-used>calibre 5.12.0, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2025-07-21">21.7.2025</date>
+    <src-url>https://author.today/work/463976</src-url>
+    <id>d6bf2eb6-d915-47c5-b057-beb2833caf2c</id>
+    <version>1.1</version>
+    <history>
+      <p>1.0 — создание файла</p>
+      <p>1.1 — pva2408 Доп. форматирование, скрипты. Без вычитки</p>
+    </history>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

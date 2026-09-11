@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>novel</genre><genre>sf-history</genre><genre>popadantsy-vo-vremeni</genre>
+      <author><first-name>Алексей</first-name><last-name>Вязовский</last-name></author>
+
+      <book-title>Тринадцатый апостол. Том I</book-title>
+      <annotation>
+        <p>Две реальности и две смерти. Третья попытка Алексея Русина. Древний Иерусалим, день распятия Христа. Герой прежний — эпоха совсем другая. Очень непростая эпоха.</p>
+      </annotation>
+      <coverpage>
+        <image l:href="#_cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>Telegram Bot</first-name>
+        <last-name>@attofb2_bot</last-name>
+      </author>
+      <date value='2021-07-01'>2021</date>
+      <src-url>https://author.today/work/105471</src-url>
+      <id>author-today-105471</id>
+      <version>1625111423010</version>
+    </document-info>
+    <publish-info />
+    <custom-info>
+       <purchased value="true"/>
+       <status value="3"/>
+    </custom-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+
+</FictionBook>

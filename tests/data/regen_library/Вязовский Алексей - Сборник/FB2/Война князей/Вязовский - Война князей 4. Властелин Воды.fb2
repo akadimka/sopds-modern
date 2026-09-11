@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Властелин воды</book-title>
+    <annotation>
+      <p>Быть князем — тяжелая работа. Не успеешь с одними врагами разделаться, как уже другие на пороге. А тут еще соседи со своими хитроумными интригами и темные орды демона Аша. Сможет ли новый князь Западного Эскела выжить и стать настоящим властелином своего домена?</p>
+    </annotation>
+    <keywords>магия, четыре стихии</keywords>
+    <date>2023</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Война князей" number="4"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name/>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2023-07-26">26 July 2023</date>
+    <src-url>https://author.today/work/221640</src-url>
+    <id>3E641AB2-4349-4D6F-BF22-C6116CBACE8F</id>
+    <version>1.2</version>
+  </document-info>
+  <publish-info>
+    <publisher>АТ</publisher>
+    <year>2023</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

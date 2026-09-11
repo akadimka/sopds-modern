@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>novel</genre>
+   <genre>popadantsy-vo-vremeni</genre>
+   <genre>spy-mystery</genre>
+   <genre>sf-history</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Вязовский</last-name>
+    <home-page>https://author.today/u/id32837226/works</home-page>
+   </author>
+   <author>
+    <first-name>Сергей</first-name>
+    <last-name>Линник</last-name>
+    <home-page>https://author.today/u/docck/works</home-page>
+   </author>
+   <book-title>Сапер. Том III</book-title>
+   <annotation>
+    <p>Казалось бы, задача выполнена, можно и возвращаться. Но дорога домой может оказаться очень долгой.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Сапер" number="3"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Вязовский</last-name>
+    <home-page>https://author.today/u/id32837226/works</home-page>
+   </author>
+   <author>
+    <first-name>Сергей</first-name>
+    <last-name>Линник</last-name>
+    <home-page>https://author.today/u/docck/works</home-page>
+   </author>
+   <program-used>CopyText ADI, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-04-25">2022-04-25</date>
+   <id>RPF-AT-185948</id>
+   <version>1.00</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

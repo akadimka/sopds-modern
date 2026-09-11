@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_history</genre>
+   <genre>popadanec</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <middle-name>Викторович</middle-name>
+    <last-name>Вязовский</last-name>
+    <id>222066</id>
+   </author>
+   <book-title>Вспышка Красной Звезды</book-title>
+   <annotation>
+    <p>6-я часть саги про Витю Селезнева и группу Красные Звезды. Приключения героев продолжаются. Красных Звезд ждет Япония! ВНИМАНИЕ! Если вы не знакомы с «Режимом бога» СКС, то читать мой фанфик смысла нет, т.к. ничего не поймете. Оригинал находится тут &lt;a href='http://samlib.ru/s/sks/' target="_blank" rel="nofollow"&gt;http://samlib.ru/s/sks/&lt;/a&gt; Расхождение сюжета оригинала и фанфика начинаются с последних сцен третьей книги СКС (до отлета в Италию). Рекомендую сначала ознакомиться с первоисточником, потом с моими продолжениями и только после этого приступать к данному произведению.</p>
+   </annotation>
+   <date value="2020-08-09">2020-08-09 06:22:44</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Режим бога" number="6"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Вязовский</last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2020-08-09">2020-08-09 06:22:44</date>
+   <id>60379</id>
+   <version>1.00</version>
+  </document-info>
+  <publish-info>
+   <year>2020</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

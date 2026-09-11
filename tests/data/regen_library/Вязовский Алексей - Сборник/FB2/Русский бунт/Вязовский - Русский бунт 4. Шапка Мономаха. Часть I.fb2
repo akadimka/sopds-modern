@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <genre>sf_history</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Шапка Мономаха. Часть I</book-title>
+    <annotation>
+      <p>Далекий потомок Емельяна Пугачева попадает в тело своего знаменитого предка накануне штурма Оренбурга. История меняет свое течение. Взяты Оренбург, Казань, Нижний Новгород. Подчинены Урал и Сибирь. Разбита гвардия возглавляемая фаворитом Екатерины Григорием Орловым.  Москва в руках самозванца. Но до окончательной победы ещё далеко.  На юге разворачивается против внутренней угрозы армия победившая турок. В Европе с тревогой смотрят на происходящее и начинают опасаться проникновения идей "Свободы. Равенства. Братства" в их уютные сословные мирки. И на востоке тоже сгущаются тучи.</p>
+    </annotation>
+    <date value="2025-05-12 06:49">2025-05-12 06:49</date>
+    <coverpage>
+      <image l:href="#3995e632-8144-4d7e-8f9c-e4ad1b9c5d18.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Русский бунт [Вязовский]" number="4"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Цокольный этаж</first-name>
+      <home-page>https://searchfloor.org/</home-page>
+    </author>
+    <date value="2025-05-12 07:25">2025-05-12 07:25</date>
+    <src-url>https://author.today/work/89178</src-url>
+    <program-used>Elib2Ebook, PureFB2 4.12</program-used>
+  </document-info>
+  <publish-info>
+    <year>2025</year>
+  </publish-info>
+  <custom-info info-type="donated">false</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

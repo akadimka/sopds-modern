@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>ref_ref</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <book-title>Полная энциклопедия попаданцев в прошлое</book-title>
+    <annotation>
+      <p>Полная энциклопедия попаданцев в прошлое (21-я редакция). Всего в библиографию включены 1554 ссылки на законченные и пишущиеся (по состоянию на апрель 2019 года) книги и серии. В энциклопедию не вошли альтернативки без попаданцев, попаданцы в неземные миры и в прошлое с большими элементами фэнтези и мистики, попаданцы в будущее, малая проза (рассказы, миниатюры), "дамские" любовно-фантастические романы...</p>
+    </annotation>
+    <date value="2019-04-23">23/04/2019</date>
+    <coverpage>
+      <image l:href="#cover.png"/>
+    </coverpage>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>samlib.ru</nickname>
+      <home-page>http://samlib.ru</home-page>
+    </author>
+    <program-used>samlib.ru, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2019-04-24">2019-04-24 06:50:04</date>
+    <src-url>http://samlib.ru/i/isaew_a_w/popdanec21.shtml</src-url>
+    <id>17E2D36C-D7BD-4A26-9151-C12C62EF42A0</id>
+    <version>1.1</version>
+    <history>
+      <p>1.1 - форматирование</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <publisher>СИ</publisher>
+    <year>2019</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

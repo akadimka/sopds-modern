@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_action</genre>
+    <genre>network_literature</genre>
+    <genre>popadancy</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Викторович</middle-name>
+      <last-name>Вязовский</last-name>
+    </author>
+    <author>
+      <first-name>Дмитрий</first-name>
+      <last-name>Чайка</last-name>
+    </author>
+    <book-title>Бригадир</book-title>
+    <annotation>
+      <p>Ты прожил не слишком длинную, но насыщенную бурными событиями жизнь. И уже перед самой смертью жалеешь, что в тот момент, когда распалась великая страна, не решился сделать нужный выбор. Ведь то, во что ты всегда верил, оказалось миражом, который привел к одиночеству и бессмысленному существованию.</p>
+      <p>Что будет, если в лихие 90-е попадет тот, кто уже один раз их прожил, и прожил неудачно? Он захочет все исправить...</p>
+    </annotation>
+    <date value="2024-09-27">2024-09-27 07:40</date>
+    <coverpage>
+      <image l:href="#e6f24a24-2d01-40c7-bdfd-16a8fe2f1f94.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Лихие" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Цокольный этаж</first-name>
+      <last-name/>
+      <home-page>https://searchfloor.org/</home-page>
+    </author>
+    <program-used>Elib2Ebook, PureFB2 4.12, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2024-09-27">2024-09-27 07:53</date>
+    <src-url>https://author.today/work/370489</src-url>
+    <id>432B1782-CF3E-4A08-A00D-1E2B689F29A4</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <year>2024</year>
+  </publish-info>
+  <custom-info info-type="donated">false</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
