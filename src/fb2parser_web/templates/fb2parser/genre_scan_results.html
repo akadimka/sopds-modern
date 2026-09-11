@@ -1,22 +1,32 @@
 {% load i18n %}
-<div id="genre-scan-results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border);">
+<div id="genre-scan-results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border); position:relative;">
 
     <!-- Панель 1: Наборы жанров -->
     <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
-        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
-            {% trans "Genre combinations" %} <span style="font-weight:normal; color:#bdc3c7;">({{ combos|length }})</span>
+        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0; display:flex; justify-content:space-between; align-items:center;">
+            <span>{% trans "Genre combinations" %} <span style="font-weight:normal; color:#bdc3c7;">({{ combos|length }})</span></span>
+            <button id="gs-apply-btn" type="button" class="button success" style="display:none; margin:0; padding:0.15rem 0.6rem; font-size:0.76rem;" onclick="gsApply()">
+                {% trans "✅ Apply" %} (<span id="gs-apply-count">0</span>)
+            </button>
+        </div>
+        <div style="padding:0.3rem 0.6rem; font-size:0.74rem; color:var(--text-muted); border-bottom:1px solid var(--border);">
+            {% trans "Right-click a combination to map it to a genre from the reference list." %}
         </div>
         <div id="genre-combos-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;">
             {% if combos %}
             <ul class="no-bullet" style="margin:0;">
                 {% for c in combos %}
-                <li style="border-bottom:1px solid var(--border); cursor:pointer;"
+                <li data-combo="{{ c.combo }}" style="border-bottom:1px solid var(--border); cursor:pointer;"
                     onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''"
+                    oncontextmenu="event.preventDefault(); gsOpenPicker('{{ c.combo|escapejs }}');"
                     hx-get="{% url 'fb2parser:genre_scan_files' %}?combo={{ c.combo|urlencode }}"
                     hx-target="#genre-scan-details-panel"
                     hx-swap="innerHTML">
                     <span style="display:flex; justify-content:space-between; padding:0.25rem 0.6rem; gap:0.5rem;">
-                        <span style="{% if c.combo == 'Не определено' %}color:#c0392b;{% endif %} overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.combo }}</span>
+                        <span style="{% if c.combo == 'Не определено' %}color:#c0392b;{% endif %} overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            {{ c.combo }}
+                            <span class="gs-mapped-badge" style="display:none; margin-left:0.4rem; font-size:0.74rem; color:var(--fp-accent); font-weight:600;"></span>
+                        </span>
                         <span style="color:var(--text-muted); font-size:0.78rem; flex-shrink:0;">{{ c.cnt }}</span>
                     </span>
                 </li>
@@ -28,21 +38,19 @@
         </div>
     </div>
 
+    {% if state.errors %}
     <!-- Панель 2: Ошибки -->
     <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
         <div style="background:#c0392b; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
             {% trans "Errors" %} <span style="font-weight:normal; color:#f1948a;">({{ state.errors|length }})</span>
         </div>
         <div id="genre-scan-errors-panel" style="flex:1; overflow-y:auto; font-size:0.78rem; font-family:monospace; padding:0.3rem;">
-            {% if state.errors %}
-                {% for err in state.errors %}
-                <div style="border-bottom:1px solid var(--border); padding:0.2rem 0.3rem; word-break:break-all; color:#c0392b;">{{ err }}</div>
-                {% endfor %}
-            {% else %}
-            <div style="padding:0.5rem; color:var(--text-muted); font-family:sans-serif;">{% trans "No errors" %}</div>
-            {% endif %}
+            {% for err in state.errors %}
+            <div style="border-bottom:1px solid var(--border); padding:0.2rem 0.3rem; word-break:break-all; color:#c0392b;">{{ err }}</div>
+            {% endfor %}
         </div>
     </div>
+    {% endif %}
 
     <!-- Панель 3: Детали -->
     <div style="flex:1.5; display:flex; flex-direction:column; min-width:0;">
@@ -53,4 +61,136 @@
             <div style="padding:0.5rem; color:var(--text-muted);">{% trans "Select a genre combination on the left" %}</div>
         </div>
     </div>
+
+    <!-- Genre picker panel (overlay) -->
+    <div id="gs-genre-picker-panel" class="fp-gp-panel">
+        <div class="fp-gp-header">
+            <strong>{% trans "Genre Selection" %}</strong>
+            <button onclick="gsClosePicker()">✕</button>
+        </div>
+        <div class="fp-gp-filter">
+            <input id="gs-gp-filter" type="text" placeholder="{% trans 'Filter genres...' %}"
+                   style="margin:0; font-size:0.82rem;"
+                   oninput="gsFilterPicker(this.value)">
+        </div>
+        <div id="gs-gp-list" class="fp-gp-list">
+            <div style="padding:0.5rem; color:var(--text-muted); font-size:0.82rem;">{% trans "Loading..." %}</div>
+        </div>
+    </div>
 </div>
+
+<script>
+(function () {
+    var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
+    var ASSIGN_URL = "{% url 'fb2parser:genre_scan_assign' %}";
+    var _gsMappings = new Map();   // combo -> genre name
+    var _gsCurrentCombo = null;
+    var _gsLoaded = false;
+
+    function _gsGetCsrf() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    window.gsOpenPicker = function (combo) {
+        _gsCurrentCombo = combo;
+        var panel = document.getElementById('gs-genre-picker-panel');
+        panel.classList.add('open');
+        document.getElementById('gs-gp-filter').value = '';
+        if (!_gsLoaded) {
+            _gsLoaded = true;
+            htmx.ajax('GET', GENRE_NAMES_URL, {target: '#gs-gp-list', swap: 'innerHTML'});
+        }
+        gsFilterPicker('');
+    };
+
+    window.gsClosePicker = function () {
+        document.getElementById('gs-genre-picker-panel').classList.remove('open');
+        _gsCurrentCombo = null;
+    };
+
+    window.gsFilterPicker = function (q) {
+        q = q.toLowerCase();
+        document.querySelectorAll('#gs-gp-list .gp-item').forEach(function (el) {
+            el.style.display = (!q || el.dataset.name.includes(q)) ? '' : 'none';
+        });
+    };
+
+    // genre_picker_list.html calls gpSelectGenre(name, el) on click — reused
+    // as-is (this page defines its own copy, no collision with dashboard.html:
+    // separate page load, separate global scope).
+    function _gsFindComboRow(combo) {
+        // Combo text is arbitrary raw <genre> tag content (may contain quotes,
+        // backslashes, etc.) — comparing dataset values in JS avoids any
+        // CSS-selector escaping pitfalls that a querySelector(`[data-combo="…"]`)
+        // built from that text would run into.
+        var rows = document.querySelectorAll('#genre-combos-panel li[data-combo]');
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].dataset.combo === combo) return rows[i];
+        }
+        return null;
+    }
+
+    window.gpSelectGenre = function (name) {
+        if (!_gsCurrentCombo) return;
+        var combo = _gsCurrentCombo;
+        _gsMappings.set(combo, name);
+        var li = _gsFindComboRow(combo);
+        if (li) {
+            var badge = li.querySelector('.gs-mapped-badge');
+            badge.textContent = '→ ' + name + ' ✕';
+            badge.style.display = 'inline';
+            badge.onclick = function (e) {
+                e.stopPropagation();
+                _gsMappings.delete(combo);
+                badge.style.display = 'none';
+                gsUpdateApplyBar();
+            };
+        }
+        gsClosePicker();
+        gsUpdateApplyBar();
+    };
+
+    function gsUpdateApplyBar() {
+        var btn = document.getElementById('gs-apply-btn');
+        var count = document.getElementById('gs-apply-count');
+        count.textContent = _gsMappings.size;
+        btn.style.display = _gsMappings.size > 0 ? 'inline-block' : 'none';
+    }
+
+    window.gsApply = async function () {
+        if (_gsMappings.size === 0) return;
+        var btn = document.getElementById('gs-apply-btn');
+        btn.disabled = true;
+        btn.textContent = "{% trans 'Applying…' %}";
+        try {
+            var r = await fetch(ASSIGN_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _gsGetCsrf()},
+                body: JSON.stringify({mappings: Object.fromEntries(_gsMappings)})
+            });
+            var data = await r.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                var okCombos = 0, failCombos = 0;
+                Object.keys(data.results || {}).forEach(function (combo) {
+                    var res = data.results[combo];
+                    if (res.success > 0) okCombos++;
+                    if (res.failed > 0) failCombos++;
+                });
+                _gsMappings.clear();
+                htmx.ajax('GET', "{% url 'fb2parser:genre_scan_results' %}", {target: '#genre-scan-results-wrap', swap: 'innerHTML'});
+                if (failCombos) {
+                    alert("{% trans 'Some files could not be updated — see the log.' %}");
+                }
+            }
+        } catch (e) {
+            alert(String(e));
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = "{% trans '✅ Apply' %} (<span id=\"gs-apply-count\">0</span>)";
+        }
+    };
+})();
+</script>

@@ -380,6 +380,87 @@ def genre_scan_files(request):
     return HttpResponse(html)
 
 
+@staff_member_required(login_url="/web/login/")
+def genre_scan_assign(request):
+    """Присвоить целевой жанр файлам одного или нескольких найденных наборов
+    (combo → genre). POST JSON: {mappings: {combo: genre, ...}}.
+
+    В отличие от assign_genre_multi (папка целиком → один жанр) — здесь
+    жанр применяется только к файлам конкретного набора (combo), так что
+    один и тот же разножанровый сборник может получить разные целевые жанры
+    для разных своих файлов за один вызов (несколько ключей mappings).
+    """
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    mappings = data.get("mappings") or {}
+    if not mappings:
+        return JsonResponse({"error": "mappings required"}, status=400)
+
+    state = genre_scan_job.get()
+    folder = state.get("folder") or ""
+    if not folder:
+        return JsonResponse({"error": "Папка сканирования не задана"}, status=400)
+
+    from .fb2parser_bridge import get_genre_assignment_service
+    from pathlib import Path
+    try:
+        service = get_genre_assignment_service()
+    except Exception as e:
+        return JsonResponse({"error": f"Не удалось загрузить fb2parser: {e}"}, status=500)
+
+    assignments = genre_assignments.get()
+    times = genre_assignment_times.get()
+    now = time.time()
+    results = {}
+    applied_combos = []
+
+    for combo, genre in mappings.items():
+        genre = (genre or "").strip()
+        rel_paths = state["results"].get(combo, [])
+        if not genre or not rel_paths:
+            results[combo] = {"success": 0, "failed": len(rel_paths)}
+            continue
+        abs_paths = [str(Path(folder, rel)) for rel in rel_paths]
+        per_file = service.assign_genre_to_files(abs_paths, genre)
+        success_count = sum(1 for ok in per_file.values() if ok)
+        failed_count = len(per_file) - success_count
+        results[combo] = {"success": success_count, "failed": failed_count}
+        if success_count:
+            applied_combos.append(combo)
+        for abs_path, ok in per_file.items():
+            if not ok:
+                continue
+            folder_key = str(Path(abs_path).parent)
+            prev_genre = assignments.get(folder_key)
+            if prev_genre is not None and prev_genre != genre and prev_genre != "(разные)":
+                assignments[folder_key] = "(разные)"
+            elif prev_genre is None:
+                assignments[folder_key] = genre
+            times[folder_key] = now
+
+    genre_assignments.set(assignments)
+    genre_assignment_times.set(times)
+
+    # Раз файлы уже переписаны — старая группировка "combo → файлы" для них
+    # больше не соответствует содержимому файлов на диске. Не пытаемся
+    # пересчитать новую группу вживую (не знаем итоговый набор жанров без
+    # повторного чтения файла) — просто убираем удовлетворённые combo и даём
+    # пользователю понять, что для полной картины нужен повторный скан.
+    if applied_combos:
+        new_results = dict(state["results"])
+        for combo in applied_combos:
+            new_results.pop(combo, None)
+        genre_scan_job.update(results=new_results)
+
+    return JsonResponse({"results": results})
+
+
 # ── Сжатие FB2 в библиотеке (только library_path, только голые .fb2) ─────────
 
 compress_job = JobState("fb2parser:compress", {

@@ -24,6 +24,7 @@ urlpatterns = [
     path("genre-scan/status/",    views.genre_scan_status,  name="genre_scan_status"),
     path("genre-scan/results/",   views.genre_scan_results, name="genre_scan_results"),
     path("genre-scan/files/",     views.genre_scan_files,   name="genre_scan_files"),
+    path("genre-scan/assign/",    views.genre_scan_assign,  name="genre_scan_assign"),
     path("compress/",           views.compress,        name="compress"),
     path("compress/start/",     views.compress_start,  name="compress_start"),
     path("compress/stop/",      views.compress_stop,   name="compress_stop"),

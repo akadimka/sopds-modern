@@ -12,7 +12,7 @@ import re
 import html
 import ctypes
 from pathlib import Path
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import xml.etree.ElementTree as ET
 
@@ -216,9 +216,61 @@ class GenreAssignmentService:
         
         if completion_callback:
             completion_callback(self.processed_count)
-        
+
         return self.processed_count
-    
+
+    def assign_genre_to_files(
+        self,
+        file_paths: List[str],
+        genre_name: str,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> Dict[str, bool]:
+        """Присвоить жанр явному списку файлов (не рекурсивный обход папки).
+
+        В отличие от ``assign_genre_to_folder`` — для точечного присвоения
+        разным файлам ОДНОЙ папки (напр. разножанрового сборника) разных
+        целевых жанров: каждый вызов затрагивает только переданные файлы.
+
+        Args:
+            file_paths: Абсолютные пути к FB2/FBZ файлам.
+            genre_name: Название жанра для присвоения.
+            progress_callback: Вызывается как progress_callback(current, total, filename).
+
+        Returns:
+            {абсолютный_путь: успех} — по одной записи на каждый переданный файл.
+        """
+        if not genre_name or not str(genre_name).strip():
+            self.logger.log("ОШИБКА: genre_name не задан или пуст!")
+            return {str(p): False for p in file_paths}
+
+        paths = [Path(p) for p in file_paths]
+        total = len(paths)
+        results: Dict[str, bool] = {}
+        completed = [0]
+        lock = threading.Lock()
+
+        def _process(fb2_path: Path):
+            ok = self._assign_genre_to_file(fb2_path, genre_name)
+            with lock:
+                completed[0] += 1
+                idx = completed[0]
+                if progress_callback:
+                    progress_callback(idx, total, fb2_path.name)
+            return ok
+
+        max_workers = min(8, max(1, total))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            future_to_path = {pool.submit(_process, p): p for p in paths}
+            for fut in as_completed(future_to_path):
+                p = future_to_path[fut]
+                try:
+                    results[str(p)] = fut.result()
+                except Exception as e:
+                    self.logger.log(f"  ОШИБКА потока: {e}")
+                    results[str(p)] = False
+
+        return results
+
     def _assign_genre_to_file(self, fb2_path: Path, genre_name: str) -> bool:
         """
         Присвоить жанр одному FB2 файлу.
