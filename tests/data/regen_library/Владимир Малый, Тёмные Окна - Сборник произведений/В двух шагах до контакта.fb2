@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <author>
+        <first-name>Окна</first-name>
+        <last-name>Темные</last-name>
+        <nickname>
+        </nickname>
+      </author>
+      <book-title>В двух шагах до контакта</book-title>
+      <annotation>
+        <p>Обычное будущее. Несколько человек в непростых условиях. Влияние жизненных перепетий на взгляды героев. Намечающийся контакт с иной цивилизацией. примечание: в тексте идет несколько линий повествования: повествование от лица героя, линия с событиями второстепенных героев и школьное сочинение главного героя. на котором я и хочу отразить изменяющуюся глубину взгляда героя. так что если первые строки вас оттолкнули — промотайте до главы. там текст меняется.  </p>
+      </annotation>
+      <date>
+      </date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <genre>Фантастика</genre>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>
+        </first-name>
+        <last-name>
+        </last-name>
+      </author>
+      <program-used>FictionBook Editor Release 2.6.6</program-used>
+      <date value="2023-11-06">06 November 2023</date>
+      <id>6583B703-D536-42E6-937E-AB485A46F547</id>
+      <version>1.0</version>
+    </document-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  </FictionBook>

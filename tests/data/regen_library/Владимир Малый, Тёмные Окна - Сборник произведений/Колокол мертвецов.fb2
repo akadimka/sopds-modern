@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <author>
+        <nickname>Темные Окна</nickname>
+      </author>
+      <book-title>Колокол мертвецов</book-title>
+      <annotation>
+        <p>Аудиторская проверка одной из станций "Рудно-добывающей компании Аликантэ" в поясе астероидов пошла не по плану. Что делать если появился куш, больше, чем можно себе предствить?</p>
+        <p>Космос, немножко детектива, капелька триллера, смешать не взбалтывая, вылить в форму приключения. </p>
+      </annotation>
+      <date value="2022-10-26">2022</date>
+      <coverpage>
+        <image l:href="#_76bc0547ae204ab1aa25ad8b3b31df84.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <genre>Фантастика</genre>
+    </title-info>
+    <document-info>
+      <author>
+        <nickname>Ox90</nickname>
+      </author>
+      <program-used>ATExtractor v1.6.1, FictionBook Editor Release 2.6.6</program-used>
+      <date value="2025-02-02">Sun, 02 Feb 2025 14:42:24 GMT</date>
+      <id>atextr_1791879456</id>
+      <version>1.0</version>
+      <history>
+        <p>v1.0 - создание fb2 - (Ox90)</p>
+      </history>
+    </document-info>
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+  </FictionBook>

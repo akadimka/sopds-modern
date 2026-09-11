@@ -356,3 +356,33 @@ class TestPublisherImprintMetadataEchoNotTreatedAsFilenameConsensus:
     def test_no_fake_series_from_shared_publisher_metadata(self, records, filename):
         rec = _by_suffix(records, *self.FOLDER, filename)
         assert rec.proposed_series == ""
+
+
+class TestCommaSeparatedAuthorWithArcCollectionSuffix:
+    """Баг №58: "Владимир Малый, Тёмные Окна - Сборник произведений" —
+    запятая без скобок безусловно выбирала паттерн "Author, Author" (два
+    автора через запятую), хотя текст после запятой — "Тёмные Окна -
+    Сборник произведений" — это имя вселенной/цикла + служебное слово
+    коллекции, а не второй автор. Итог: proposed_author = "Малый
+    Владимир, Темные Окна Сборник Произведений" для всех файлов папки.
+
+    Фикс: перед правилом "Author, Author" (pass1_pattern_selection.py)
+    добавлена проверка — если текст после запятой содержит " - " с
+    коллекционным служебным словом после дефиса ("сборник",
+    "произведений" и т.п.), выбирается новый паттерн "Author, Arc -
+    Collection", извлекающий автора только до запятой.
+    """
+
+    FOLDER = ("Владимир Малый, Тёмные Окна - Сборник произведений",)
+
+    @pytest.mark.parametrize("filename", [
+        "А можно выйти 1-3.fb2",
+        "В двух шагах до контакта.fb2",
+        "Дозор свободного посещения.fb2",
+        "Колокол мертвецов.fb2",
+        "Мультимир (Великие Игры) 1-3.fb2",
+        "Почти во все тяжкие!.fb2",
+    ])
+    def test_author_is_just_the_name_not_arc_and_collection_word(self, records, filename):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_author == "Малый Владимир"

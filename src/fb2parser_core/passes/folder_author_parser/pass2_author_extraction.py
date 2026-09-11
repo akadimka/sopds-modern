@@ -89,6 +89,13 @@ def extract_author(struct_info: dict, pattern: Optional[str]) -> str:
                     # Construct with singular surname, separated by "; "
                     author = f"{singular_surname} {first_name}; {singular_surname} {second_name}"
     
+    elif pattern == "Author, Arc - Collection":
+        # "Владимир Малый, Тёмные Окна - Сборник произведений" → автор только
+        # до запятой; текст после — имя вселенной/цикла + служебное слово
+        # коллекции, не второй автор (баг №58).
+        if ',' in name:
+            author = name.split(',', 1)[0].strip()
+
     elif pattern == "Author, Author":
         # Both authors separated by comma, normalize to "; " separator
         # "Земляной Андрей, Орлов Борис" → "Земляной Андрей; Орлов Борис"

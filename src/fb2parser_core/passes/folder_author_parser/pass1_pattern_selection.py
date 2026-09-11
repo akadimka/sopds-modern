@@ -34,9 +34,9 @@ def select_pattern(struct_info: dict,
         female_names: Set of female names (lowercase) for co-author detection
 
     Returns:
-        One of: "Author, Author", "(Surname) (Name)", "Series (Author, Author)",
-                "Author (CoAuthor)", "Series (Author)", "(Series) Author",
-                "Author - Folder Name", "Series", or None
+        One of: "Author, Arc - Collection", "Author, Author", "(Surname) (Name)",
+                "Series (Author, Author)", "Author (CoAuthor)", "Series (Author)",
+                "(Series) Author", "Author - Folder Name", "Series", or None
     """
     
     paren_count = struct_info['paren_count']
@@ -47,9 +47,15 @@ def select_pattern(struct_info: dict,
     has_comma_in_parens = struct_info['has_comma_in_parens']
     has_dash_with_spaces = struct_info['has_dash_with_spaces']
     name = struct_info['name']
-    
+
     pattern = None
-    
+
+    _COLLECTION_WORDS = {
+        'сборник', 'коллекция', 'произведений', 'собрание', 'избранное',
+        'антология', 'компиляция', 'архив', 'полное',
+    }
+
+
     # 1. "SurnamePlural FirstName и SecondName" (105) - highest priority
     # Format: "Живовы Георгий и Геннадий" → 2 authors with shared surname
     if pattern is None:
@@ -70,11 +76,28 @@ def select_pattern(struct_info: dict,
                     # Construct as "Surname FirstName; Surname SecondName"
                     pattern = "SurnamePlural FirstName и SecondName"
     
+    # 1b. "Author, Arc - Сборник произведений" (99) — comma-separated text
+    # followed by an arc/universe name and a collection-keyword suffix after
+    # " - ". Must be checked BEFORE "Author, Author" below: a bare
+    # comma-without-parens check there can't tell "Земляной Андрей, Орлов
+    # Борис" (two real co-authors) apart from "Владимир Малый, Тёмные Окна -
+    # Сборник произведений" (one author + a non-author arc/collection
+    # descriptor) — real case: docs/quality-roadmap.md баг №58, was wrongly
+    # parsed as a second author "Темные Окна Сборник Произведений".
+    if pattern is None:
+        if not paren_count and has_comma and ' - ' in name:
+            _after_comma = name.split(',', 1)[1]
+            if ' - ' in _after_comma:
+                _after_dash_early = _after_comma.split(' - ', 1)[1].strip().lower()
+                _after_dash_early_first = _after_dash_early.split()[0] if _after_dash_early.split() else ''
+                if _after_dash_early_first in _COLLECTION_WORDS:
+                    pattern = "Author, Arc - Collection"
+
     # 2. "Author, Author" (100) - comma without brackets
     if pattern is None:
         if not paren_count and has_comma:
             pattern = "Author, Author"
-    
+
     # 3. "(Surname) (Name)" (100) - exactly 2 words, no brackets
     _COLLECTION_WORDS_SET = {
         'сборник', 'коллекция', 'произведений', 'собрание', 'избранное',
@@ -136,10 +159,6 @@ def select_pattern(struct_info: dict,
     
     # 6b. "Author-Collection" - bare hyphen (no spaces) separates 2-word author name
     # from a collection keyword. Example: "Алексей Вязовский-Сборник произведений"
-    _COLLECTION_WORDS = {
-        'сборник', 'коллекция', 'произведений', 'собрание', 'избранное',
-        'антология', 'компиляция', 'архив', 'полное',
-    }
     if pattern is None and '-' in name and ' - ' not in name:
         _hyphen_idx = name.index('-')
         _before = name[:_hyphen_idx].strip()

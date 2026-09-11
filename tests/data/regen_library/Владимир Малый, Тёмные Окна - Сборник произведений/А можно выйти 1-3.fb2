@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <author>
+        <first-name>Владимир</first-name>
+        <middle-name>Николаевич</middle-name>
+        <last-name>Малый</last-name>
+      </author>
+      <book-title>А можно выйти?!</book-title>
+      <annotation>
+        <p>При сбое копирования сознания нашего современника происходит техническая накладка, и неучтенная копия отправляется путешествовать по мирам в поисках подходящей оболочки - тела, в силу каких-то причин, способного ее принять.</p>
+        <p>Предполагается, что и тела, и причины будут разные.</p>
+        <p>Но!</p>
+        <p>Созданные моей фантазией герои периодически умудряются уходить от предписанной им автором судьбы и жить своей жизнью.</p>
+        <p>В общем, мне самому очень интересно, чем все это закончится)</p>
+        <p>P.S. Это моя первая серия. Иду наощупь. Не совсем понимаю, сколько по итогу будет книг, но мыслей и идей пока хватает на три-четыре.</p>
+        <p>
+          <strong>Содержание:</strong>
+        </p>
+        <p>
+          <emphasis>1. Плакса</emphasis>
+        </p>
+        <p>
+          <emphasis>2. Злюка</emphasis>
+        </p>
+        <p>
+          <emphasis>3. Задира</emphasis>
+        </p>
+      </annotation>
+      <date>
+      </date>
+      <coverpage>
+        <image l:href="#Dozor.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="А можно выйти?!"/>
+      <genre>Фантастика</genre>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>
+        </first-name>
+        <last-name>
+        </last-name>
+      </author>
+      <program-used>FictionBook Editor Release 2.6.7</program-used>
+      <date value="2026-06-06">06 June 2026</date>
+      <id>D0z0R</id>
+      <version>10.729</version>
+    </document-info>
+  </description>
+  <body name="А можно выйти?!"><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+    
+    </FictionBook>
