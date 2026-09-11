@@ -284,7 +284,26 @@ class RegenCSVService:
             cleaned = re.sub(r'^\d+[\.\)\-]\s+', '', folder_name).strip()
             if cleaned and cleaned != folder_name:
                 folder_name = cleaned
-        
+
+        # ШАГ 0.6: "Цикл «Название»"/"Серия «Название»"/"Сага «Название»" —
+        # служебное слово-маркер ("это серия") + название в кавычках, а не
+        # часть самого названия. "Цикл «Ботаник». Книги 1-3" означает
+        # "серия Ботаник", а не то, что серию зовут "Цикл «Ботаник»".
+        # Всё после закрывающей кавычки (обычно ". Книги N-M") — тоже
+        # служебное описание охвата, отбрасываем вместе с маркером.
+        #
+        # Требуем именно КАВЫЧКИ сразу после маркера — иначе задели бы
+        # случаи, где слово "цикл" не маркер, а часть настоящего имени:
+        # "Истринский цикл (Лекарь). Книги 1-4" не начинается с маркера и
+        # не матчит (слово идёт ПОСЛЕ имени, без кавычек) — остаётся
+        # нетронутым, ровно как и должно быть для таких имён папок.
+        _cycle_marker_m = re.match(
+            r'^(?:Цикл|Серия|Сага)\s+[«"“](.+?)[»"”]',
+            folder_name, re.IGNORECASE,
+        )
+        if _cycle_marker_m:
+            return _cycle_marker_m.group(1).strip()
+
         # ШАГ 0.5: Формат "Серия. Хвост" (например "За гранью. Мистические
         # триллеры Альбины Нури") — хвост после точки часто описание/жанр/имя
         # автора, а не часть названия серии. Берём часть до первой ". ", если
@@ -672,6 +691,25 @@ class RegenCSVService:
                     _series_folder_cache[key] = result
                     return result
 
+                # series_folder_blacklist: организационные ярлыки-папки
+                # ("Законченные циклы", "Компиляции циклов" и т.п.), которые
+                # нужно вычёркивать из ЛЮБОГО уровня иерархии пути, а не
+                # только когда весь итоговый (уже склеенный через '\') путь
+                # совпадает с ними целиком буквально — иначе такая папка
+                # ложно становится КОРНЕМ иерархической серии вместе с
+                # реальным именем цикла в подпапке. Реальный случай (Евгений
+                # Щепетнов): ".../Компиляции циклов/Законченные циклы/Цикл
+                # «Слава». Книги 1-5/..." — без пофрагментной фильтрации
+                # результат — "Законченные циклы\Цикл «Слава». Книги 1-5"
+                # вместо голого "Цикл «Слава». Книги 1-5".
+                _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
+                if _sfbl is None:
+                    _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
+                    self._series_folder_blacklist_cache = _sfbl
+
+                def _drop_blacklisted(folders: tuple) -> tuple:
+                    return tuple(f for f in folders if f.lower() not in _sfbl)
+
                 root_type = self.folder_classifier.classify(parent_parts[0])
 
                 if root_type in (FolderType.SKIP, FolderType.VARIANT, FolderType.NO_SERIES):
@@ -767,7 +805,7 @@ class RegenCSVService:
                         if any(_vk in _sf_lower for _vk in _vkw):
                             continue  # вариантная папка — пропускаем
                         series_folders_clean.append(_sf)
-                    series_folders = tuple(series_folders_clean)
+                    series_folders = _drop_blacklisted(tuple(series_folders_clean))
                     if series_folders:
                         if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
                             result = ('', 'no_series_folder')
@@ -789,7 +827,7 @@ class RegenCSVService:
 
                     if author_folder_index >= 0:
                         # Нашли папку автора → всё глубже = серия
-                        series_folders = parent_parts[author_folder_index + 1:]
+                        series_folders = _drop_blacklisted(parent_parts[author_folder_index + 1:])
                         if series_folders:
                             if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
                                 result = ('', 'no_series_folder')
@@ -804,9 +842,9 @@ class RegenCSVService:
                         # Автор не найден, но есть подпапки в UNKNOWN-папке.
                         # Берём все подпапки (начиная с index 1) как серию —
                         # кроме папок алфавитного указателя (см. баг №48 выше).
-                        series_folders = tuple(
+                        series_folders = _drop_blacklisted(tuple(
                             f for f in parent_parts[1:] if not self._is_alphabet_index_folder(f)
-                        )
+                        ))
                         if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
                             result = ('', 'no_series_folder')
                         else:
@@ -2020,6 +2058,17 @@ class RegenCSVService:
         _author_cache_lower = {str(k).lower() for k in self.author_folder_cache}
         _coll_kw = {w.lower() for w in (self.collection_keywords or [])}
         _work_lower = str(self.work_dir).lower().rstrip('/\\')
+        # series_folder_blacklist: организационные ярлыки-папки ("Законченные
+        # циклы", "Незаконченные циклы" и т.п.) — дедушка/родитель с таким
+        # именем НЕ должен становиться уровнем иерархии серии. Реальный
+        # случай (Евгений Щепетнов): ".../Компиляции циклов/Законченные
+        # циклы/Цикл «Слава». Книги 1-5/файл.fb2" — _compute_folder_series()
+        # уже правильно даёт голое proposed_series="Цикл «Слава». Книги 1-5"
+        # (см. _drop_blacklisted там), но этот постчек видит совпадение
+        # parent_name_norm == ps_norm (папка "Цикл «Слава»..." совпадает с
+        # уже определённой серией) и добавляет дедушку "Законченные циклы"
+        # обратно как префикс иерархии — блэклист здесь не проверялся вовсе.
+        _sfbl_names = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
 
         _count = 0
         for record in self.records:
@@ -2042,6 +2091,11 @@ class RegenCSVService:
 
             # Прозрачные папки расширений пропускаем
             if gp_name.lower() in FILE_EXTENSION_FOLDER_NAMES:
+                continue
+
+            # Дедушка — организационный ярлык из series_folder_blacklist
+            # ("Законченные циклы" и т.п.) — не настоящий уровень иерархии.
+            if gp_name.lower() in _sfbl_names:
                 continue
 
             # Дедушка — декоративный организационный контейнер вида "Серия -
