@@ -1055,6 +1055,11 @@ class RegenCSVService:
             # Идемпотентен: не трогает записи, где число уже совпадает.
             pass2_series._correct_series_number_from_filename(self.records)
 
+            # Идёт ПОСЛЕ второго вызова коррекции series_number выше (см.
+            # комментарий к нему) — иначе он тут же переигрывает Правило
+            # "filename_prefix" заново и стирает результат этого постчека.
+            self._postcheck_prefer_embedded_series_number_when_consistent()
+
             # ВАЖНО: очистка голой франшизы-вселенной идёт ПОСЛЕ отката к
             # метаданным, а не до — иначе _postcheck_metadata_rescue() тут же
             # восстанавливает только что очищенное значение ОБРАТНО из
@@ -1978,6 +1983,104 @@ class RegenCSVService:
         if _count:
             print(f"[POST-CHECK] Normalized series+arc-number → base series: {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Normalized series+arc-number in {_count} records")
+
+    def _postcheck_prefer_embedded_series_number_when_consistent(self) -> None:
+        """Заменяет series_number из folder-позиции файла на встроенный в
+        имя файла номер тома ("SeriesRoot N[-M]"), но ТОЛЬКО когда встроенные
+        номера у ВСЕХ файлов группы (автор, серия) вместе образуют чистую,
+        без пропусков и повторов, последовательность 1..N.
+
+        Реальный случай (Криптонов Василий / "Место силы"): 4 файла с
+        ведущей позицией в папке "1."/"2."/"3."/"4." (`filename_prefix`),
+        но настоящие номера томов встроены сразу после имени серии в самом
+        имени файла: "1. Место силы 1-2.fb2", "2. Место силы 3. Тьма
+        внутри.fb2", "3. Место силы 4. Андромеда.fb2", "4. Место силы 5.
+        ...fb2" — ведущий "N." тут просто порядковый номер ФАЙЛА в папке, а
+        реальные тома — 1-2, 3, 4, 5 (пять позиций, не четыре). Раньше
+        Правило "filename_prefix" в _correct_series_number_from_filename
+        забирало ведущее число первым и никогда не доходило до Правила 2
+        (встроенный номер), поэтому серия получала 1,2,3,4 вместо 1-2,3,4,5,
+        и компиляция вообще не находила её как единую серию.
+
+        Безопасность: срабатывает ТОЛЬКО если для КАЖДОЙ записи группы
+        находится встроенный номер (иначе часть файлов осталась бы без
+        номера вовсе) И итоговое покрытие позиций — 1..N без дыр и
+        задвоений. Реальный контрпример, где это условие корректно НЕ
+        выполняется (докс/quality-roadmap.md): Вязовский Алексей / "Режим
+        бога" — "04. Вязовский - Режим бога 1. ...fb2" даёт встроенный "1",
+        но папка содержит ЕЩЁ 3 файла того же автора и серии под другим
+        псевдонимом ("01-03. С.К.С. - Режим бога. Книга N.fb2"), у которых
+        встроенный матч "SeriesRoot N" вообще не находится (у них "Режим
+        бога. Книга N", без числа сразу после "Режим бога") — условие
+        "матч есть у ВСЕХ" не выполняется, группа не трогается, ведущая
+        позиция в папке (1..12) остаётся авторитетной, как и должно быть.
+        """
+        from collections import defaultdict
+
+        groups: dict = defaultdict(list)
+        for rec in self.records:
+            if (rec.series_number_source == 'filename_prefix'
+                    and rec.proposed_series and '\\' not in rec.proposed_series
+                    and rec.proposed_author):
+                key = (self._norm_for_series_cmp(rec.proposed_author),
+                       self._norm_for_series_cmp(rec.proposed_series))
+                groups[key].append(rec)
+
+        _count = 0
+        for group in groups.values():
+            if len(group) < 2:
+                continue
+
+            series_root = (group[0].proposed_series or '').strip()
+            if not series_root:
+                continue
+            _sr_n = series_root.replace('ё', 'е').replace('Ё', 'Е')
+
+            matches = []  # (record, lo, hi, raw_value)
+            ok = True
+            for rec in group:
+                stem = Path(rec.file_path).stem.replace('ё', 'е').replace('Ё', 'Е')
+                m = re.search(
+                    r'(?i)' + re.escape(_sr_n)
+                    + r'[\s\-]+(\d{1,3})(?:\s*[-–—]\s*(\d{1,3}))?\s*(?:[\.\s]|$)',
+                    stem,
+                )
+                if not m:
+                    ok = False
+                    break
+                lo = int(m.group(1))
+                hi = int(m.group(2)) if m.group(2) else lo
+                if lo > hi or lo < 1900 <= hi:
+                    ok = False
+                    break
+                matches.append((rec, lo, hi, m.group(0)))
+            if not ok:
+                continue
+
+            covered: set = set()
+            collision = False
+            for _rec, lo, hi, _raw in matches:
+                span = set(range(lo, hi + 1))
+                if span & covered:
+                    collision = True
+                    break
+                covered |= span
+            if collision:
+                continue
+            if not covered or sorted(covered) != list(range(1, len(covered) + 1)):
+                continue  # есть дыры или диапазон не начинается с 1 — не рискуем
+
+            for rec, lo, hi, _raw in matches:
+                new_val = f"{lo}-{hi}" if hi != lo else str(lo)
+                if rec.series_number == new_val:
+                    continue
+                rec.series_number = new_val
+                rec.series_number_source = 'filename_series_root_consistent'
+                _count += 1
+
+        if _count:
+            print(f"[POST-CHECK] Preferred embedded series number over folder position for {_count} records")
+            self.logger.log(f"[OK] POST-CHECK: Preferred embedded series number for {_count} records")
 
     def _postcheck_strip_author_prefix_from_series(self) -> None:
         """Стрипит авторский префикс из названия серии.
