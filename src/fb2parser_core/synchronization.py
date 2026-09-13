@@ -846,23 +846,49 @@ class SynchronizationService:
     # исходная, и целевая папки существовали.
     _MAX_PATH = 259
 
+    # NAME_MAX на стороне файловой системы Samba-шары (ext4 и большинство
+    # других POSIX-ФС) — лимит на ОДИН компонент пути в БАЙТАХ UTF-8, а не в
+    # символах Windows MAX_PATH выше (это разные, независимые ограничения).
+    # Реальный случай: "Демченко Антон - Хольмградские истории. Человек для
+    # особых поручений. Самозванец по особому поручению. Беглец от особых
+    # поручений (сборник).fb2" — всего 145 символов (комфортно меньше
+    # MAX_PATH), но кириллица кодируется по 2 байта на символ в UTF-8 →
+    # 261 байт имени файла — shutil.move падал с "[WinError 123]
+    # Синтаксическая ошибка в имени файла..." при итоговой длине пути всего
+    # 222 символа, т.е. проверка выше (по символам полного пути) в принципе
+    # не могла это поймать.
+    _MAX_NAME_BYTES = 255
+
     def _shorten_filename_for_path_limit(self, target_dir: Path, filename: str) -> str:
         """Укоротить `filename`, если итоговый путь в `target_dir` превышает
-        MAX_PATH — обрезаем "хвост" имени файла (не каталог: он определяется
+        MAX_PATH ИЛИ само имя файла превышает лимит байт файловой системы —
+        обрезаем "хвост" имени файла (не каталог: он определяется
         жанром/автором/серией и трогать его нельзя), сохраняя расширение.
         """
-        full_len = len(str(target_dir / filename))
-        overflow = full_len - self._MAX_PATH
-        if overflow <= 0:
+        def _over_limit(name: str) -> bool:
+            full_len = len(str(target_dir / name))
+            return full_len > self._MAX_PATH or len(name.encode('utf-8')) > self._MAX_NAME_BYTES
+
+        if not _over_limit(filename):
             return filename
         if '.' in filename:
             stem, ext = filename.rsplit('.', 1)
             ext = '.' + ext
         else:
             stem, ext = filename, ''
-        keep = len(stem) - overflow - 1  # -1 за добавляемый "…"
-        if keep < 1:
-            keep = 1
+
+        # Символьный лимит (MAX_PATH) даёт хорошую первую оценку "keep" —
+        # экономит итерации, но для байтового лимита (кириллица) точную
+        # длину заранее не посчитать без учёта конкретных символов, поэтому
+        # дожимаем посимвольно в цикле ниже до выполнения ОБОИХ условий.
+        full_len = len(str(target_dir / filename))
+        overflow = full_len - self._MAX_PATH
+        keep = len(stem) - max(overflow, 0) - 1  # -1 за добавляемый "…"
+        keep = max(1, min(keep, len(stem)))
+
+        while keep > 1 and _over_limit(stem[:keep].rstrip(' .') + '…' + ext):
+            keep -= 1
+
         return stem[:keep].rstrip(' .') + '…' + ext
 
     def _build_target_filename(self, record, kind: str, covered_volumes: set) -> str:

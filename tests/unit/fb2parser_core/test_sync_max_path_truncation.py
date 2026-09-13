@@ -56,5 +56,44 @@ class TestShortenFilenameForPathLimit:
         assert len(str(target_dir / result)) <= sync_max_path()
 
 
+class TestShortenFilenameForFilesystemByteLimit:
+    """Реальный случай (Демченко Антон / "Хольмградские истории"): имя
+    файла всего 145 СИМВОЛОВ (комфортно короче MAX_PATH), но кириллица
+    кодируется по 2 байта на символ в UTF-8 → 261 БАЙТ имени файла —
+    `shutil.move()` падал с `[WinError 123] Синтаксическая ошибка в имени
+    файла...` при итоговом пути всего 222 символа. Старая проверка (только
+    по символам полного пути) не могла это поймать — лимит NAME_MAX (255
+    байт на компонент пути) специфичен для файловой системы Samba-шары, не
+    для Windows MAX_PATH.
+    """
+
+    def test_byte_limit_exceeded_even_with_short_char_count(self, tmp_path):
+        # Короткая целевая папка — путь по символам далеко не подходит
+        # к MAX_PATH, проблема именно в самом имени файла.
+        name = (
+            "Демченко Антон - Хольмградские истории. Человек для особых "
+            "поручений. Самозванец по особому поручению. Беглец от особых "
+            "поручений (сборник).fb2"
+        )
+        assert len(str(tmp_path / name)) < sync_max_path()
+        assert len(name.encode('utf-8')) > SynchronizationService._MAX_NAME_BYTES
+
+        result = _sync()._shorten_filename_for_path_limit(tmp_path, name)
+
+        assert len(result.encode('utf-8')) <= SynchronizationService._MAX_NAME_BYTES
+        assert result.endswith(".fb2")
+        assert result != name
+
+    def test_ascii_name_never_touched_by_byte_limit(self):
+        # Чисто ASCII-имя такой же длины символов не превышает байтовый
+        # лимит (1 символ = 1 байт) — не должно обрезаться. Короткая
+        # искусственная папка (не реальный tmp_path — тот сам по себе может
+        # быть достаточно длинным, чтобы упереться в MAX_PATH по символам,
+        # что смешало бы два независимых лимита в одном тесте).
+        name = "A" * 200 + ".fb2"
+        result = _sync()._shorten_filename_for_path_limit(Path("C:/x"), name)
+        assert result == name
+
+
 def sync_max_path() -> int:
     return SynchronizationService._MAX_PATH
