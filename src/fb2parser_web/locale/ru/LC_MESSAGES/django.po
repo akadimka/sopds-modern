@@ -613,6 +613,21 @@ msgstr "⏹ Остановить"
 msgid "✅ Synchronization complete"
 msgstr "✅ Синхронизация завершена"
 
+msgid "Requires manual reconciliation"
+msgstr "Требует ручной сверки"
+
+msgid "These files were left untouched in the source folder — the library already has an entry for the same series/title under a different (but related) author."
+msgstr "Эти файлы оставлены нетронутыми в исходной папке — в библиотеке уже есть запись для той же серии/названия, но под другим (но связанным) автором."
+
+msgid "Incoming file"
+msgstr "Входящий файл"
+
+msgid "Computed author"
+msgstr "Вычисленный автор"
+
+msgid "Existing library entry"
+msgstr "Существующая запись в библиотеке"
+
 msgid "Synchronization not started."
 msgstr "Синхронизация не запущена."
 

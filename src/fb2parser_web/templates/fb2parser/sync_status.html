@@ -34,6 +34,32 @@
         {% endfor %}
     </table>
     {% endif %}
+    {% if state.reconciliation_notes %}
+    <div class="callout warning" style="font-size:0.85rem; margin-top:0.5rem;">
+        <strong>⚠ {% trans "Requires manual reconciliation" %} ({{ state.reconciliation_notes|length }})</strong>
+        <div style="font-size:0.78rem; margin-top:0.3rem;">
+            {% trans "These files were left untouched in the source folder — the library already has an entry for the same series/title under a different (but related) author." %}
+        </div>
+        <table class="unstriped" style="font-size:0.78rem; margin-top:0.4rem;">
+            <thead>
+                <tr>
+                    <th>{% trans "Incoming file" %}</th>
+                    <th>{% trans "Computed author" %}</th>
+                    <th>{% trans "Existing library entry" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in state.reconciliation_notes %}
+                <tr>
+                    <td>{{ note.incoming_file_path }}</td>
+                    <td>{{ note.incoming_author }}</td>
+                    <td>{{ note.existing_author }} — {{ note.existing_file_path }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
     <script>
     /* Синхронизация успешно завершилась (файлы перенесены/папки удалены) —
        запоминаем это, чтобы при закрытии модалки обновить дерево папок

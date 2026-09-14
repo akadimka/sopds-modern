@@ -2305,6 +2305,7 @@ sync_job = JobState("fb2parser:sync", {
     "running": False, "done": False, "error": None,
     "processed": 0, "total": 0, "current": "",
     "stats": {},
+    "reconciliation_notes": [],
     "log": [],
 })
 sync_stop_flag = JobFlag("fb2parser:sync:stop")
@@ -2494,6 +2495,12 @@ def _run_sync_thread():
         # в отчёте синхронизации (sync_status.html рендерит все ключи stats).
         stats.pop("touched_author_dirs", None)
 
+        # Список файлов, требующих ручной сверки автора (баг №72 доп.,
+        # docs/quality-roadmap.md) — список словарей, не годится для общей
+        # таблицы "ключ/значение" ниже. Выносим отдельным полем, которое
+        # sync_status.html рендерит отдельным блоком.
+        reconciliation_notes = stats.pop("reconciliation_notes", None) or []
+
         # duplicates_found и duplicates_deleted считают РАЗНОЕ (см.
         # SynchronizationService.stats): duplicates_found — только точные
         # совпадения (автор, серия, название) с БД или коллизии итогового
@@ -2511,7 +2518,8 @@ def _run_sync_thread():
         }
         stats = {_display_labels.get(k, k): v for k, v in stats.items()}
 
-        sync_job.update(done=True, running=False, stats=stats)
+        sync_job.update(done=True, running=False, stats=stats,
+                        reconciliation_notes=reconciliation_notes)
 
     except Exception as exc:
         sync_job.update(error=str(exc), running=False)
