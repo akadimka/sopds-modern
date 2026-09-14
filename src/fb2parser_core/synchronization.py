@@ -99,6 +99,11 @@ class SynchronizationService:
             # последующий проход авто-компиляции только затронутыми авторами,
             # а не сканировать всю библиотеку целиком.
             'touched_author_dirs': set(),
+            # Файлы, для которых найдено loose-совпадение с уже существующей
+            # записью библиотеки под другим (но пересекающимся) автором —
+            # баг №72 доп., docs/quality-roadmap.md. Не тронуты автоматически,
+            # ждут ручной сверки.
+            'reconciliation_notes': [],
         }
     
     def _log(self, msg: str):
@@ -305,13 +310,27 @@ class SynchronizationService:
             if progress_callback:
                 progress_callback(15, 100, "Анализ дубликатов")
             
-            folder_structure = self._build_folder_structure(records, progress_callback)
-            
+            folder_structure, reconciliation_notes = self._build_folder_structure(records, progress_callback)
+            self.stats['reconciliation_notes'] = reconciliation_notes
+            if reconciliation_notes:
+                self._log(
+                    f"⚠ {len(reconciliation_notes)} файлов требуют ручной сверки автора "
+                    f"(см. docs/quality-roadmap.md, баг №72 доп.) — оставлены нетронутыми "
+                    f"в исходной папке, не перемещены и не удалены."
+                )
+
             # Step 4: Move files and track successfully moved
             if progress_callback:
                 progress_callback(50, 100, "Перемещение файлов в библиотеку")
 
-            moved_records = self._move_files(records, folder_structure, progress_callback)
+            # Файлы, требующие ручной сверки, не должны попасть в _move_files —
+            # там любая запись без записи в folder_structure трактуется как
+            # "дубликат, уже в БД" и физически УДАЛЯЕТСЯ. Здесь это не так:
+            # мы намеренно не приняли решение, файл должен остаться на месте.
+            _needs_reconciliation = {n['incoming_file_path'] for n in reconciliation_notes}
+            _records_to_move = [r for r in records if r.file_path not in _needs_reconciliation]
+
+            moved_records = self._move_files(_records_to_move, folder_structure, progress_callback)
 
             self._log(f"Всего перемещено: {len(moved_records)} файлов")
             self._log(f"Готово к внесению в БД: {len(moved_records)} записей")
@@ -394,28 +413,90 @@ class SynchronizationService:
             self._log(f"Stacktrace: {traceback.format_exc()}")
             raise
     
+    @staticmethod
+    def _author_tokens(name: str) -> set:
+        """Токены имени автора для нестрогого (loose) сравнения — та же
+        логика, что и в `pass4_consensus.py` (баг №72): слова длиной >2,
+        в нижнем регистре, ё→е. Используется, чтобы отличить "тот же
+        автор, но с уточнённым списком соавторов" от буквально другого
+        человека, не сравнивая строки автора побуквенно.
+        """
+        return {
+            t.lower().replace('ё', 'е')
+            for t in re.split(r'[\s,;]+', name or '') if len(t) > 2
+        }
+
+    @staticmethod
+    def _norm_text(s: str) -> str:
+        return (s or '').strip().lower().replace('ё', 'е')
+
+    def _get_existing_entries_detailed(self) -> list:
+        """Детальные записи БД (id, author, series, subseries, title,
+        file_path) — для loose-сопоставления (баг №72 доп., docs/quality-
+        roadmap.md): точный дубль по (author, series, title) уже
+        обрабатывает `_get_existing_entries()`; этот метод даёт данные,
+        нужные, чтобы ЗАМЕТИТЬ случай "та же серия/книга, но автор
+        уточнён/расширен эвристикой после этого прогона" — и НЕ создать
+        по нему молчаливый дубликат в библиотеке.
+        """
+        rows = []
+        try:
+            if not self.db_path.exists():
+                return rows
+            conn = sqlite3.connect(str(self.db_path))
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, author, series, subseries, title, file_path FROM books")
+            for row in cursor.fetchall():
+                rows.append({
+                    'id': row[0], 'author': row[1] or '', 'series': row[2] or '',
+                    'subseries': row[3] or '', 'title': row[4] or '', 'file_path': row[5] or '',
+                })
+            conn.close()
+        except Exception as e:
+            self._log(f"Ошибка при чтении детальных записей БД: {str(e)}")
+        return rows
+
     def _build_folder_structure(
         self,
         records: List,
         progress_callback: Optional[Callable] = None
-    ) -> Dict:
+    ) -> Tuple[Dict, List]:
         """Build folder structure and detect duplicates.
-        
+
         Args:
             records: List of BookRecord objects
             progress_callback: Progress callback function
-            
+
         Returns:
-            Dictionary mapping file_path -> (genre, author, series, subseries)
+            Tuple (folder_structure, reconciliation_notes):
+            - folder_structure: file_path -> (genre, author, series, subseries)
+              для файлов, которые нужно переместить как обычно.
+            - reconciliation_notes: список записей (баг №72 доп.), для
+              которых найдено совпадение по (серия, title) с УЖЕ лежащей
+              в библиотеке книгой другого, но пересекающегося по токенам
+              автора — например, "Барчук Павел" в БД против только что
+              вычисленного "Барчук Павел, Ларин Павел". Автоматически
+              НЕ перемещаем и НЕ удаляем такой файл (это создало бы либо
+              дубликат в библиотеке, либо потерю данных, если совпадение
+              окажется ошибочным) — оставляем как есть в исходной папке
+              и сообщаем, что нужна ручная сверка/перенос старой записи.
         """
         self._log("Построение структуры папок")
-        
+
         folder_structure = {}
         duplicates = defaultdict(list)
-        
+        reconciliation_notes: List[Dict] = []
+
         # Check database for existing entries
         existing_entries = self._get_existing_entries()
         self._log(f"Существующих записей в БД: {len(existing_entries)}")
+
+        # Индекс для loose-сопоставления: (series_norm, title_norm) -> [записи БД]
+        _detailed_entries = self._get_existing_entries_detailed()
+        _loose_index: Dict[Tuple[str, str], list] = defaultdict(list)
+        for _entry in _detailed_entries:
+            _key = (self._norm_text(_entry['series']), self._norm_text(_entry['title']))
+            _loose_index[_key].append(_entry)
         
         # Debug: Log first few existing entries
         if existing_entries:
@@ -477,7 +558,62 @@ class SynchronizationService:
                     self._log(f"       ✗ Ошибка при удалении: {str(e)}")
                     self.stats['errors'] += 1
                 continue
-            
+
+            # Loose-совпадение (баг №72 доп.): та же (серия, title) уже
+            # лежит в библиотеке под ДРУГИМ, но пересекающимся по токенам
+            # автором — например, автор был исправлен/расширен эвристикой
+            # уже ПОСЛЕ того, как эта книга была синхронизирована ранее.
+            # Точный dup_key не совпал (иначе мы бы не дошли досюда), но
+            # создавать по этой книге ВТОРУЮ копию под новым именем автора
+            # тоже неверно — библиотека задвоится. Не решаем автоматически
+            # (см. docs/quality-roadmap.md) — оставляем файл нетронутым в
+            # исходной папке и сообщаем, что нужна ручная сверка.
+            _loose_key = (self._norm_text(series), self._norm_text(title))
+            _loose_candidates = _loose_index.get(_loose_key, [])
+            if _loose_candidates:
+                _new_tokens = self._author_tokens(author)
+                _matches = []
+                for _cand in _loose_candidates:
+                    _cand_tokens = self._author_tokens(_cand['author'])
+                    if not _new_tokens or not _cand_tokens:
+                        continue
+                    if _new_tokens == _cand_tokens:
+                        continue  # тот же автор — это уже точный dup_key выше, сюда не попал бы
+                    # Асимметричное включение (как в баге №72): один набор
+                    # токенов — строгое подмножество другого. Просто
+                    # "есть общий токен" слишком слабо — у разных людей
+                    # нередко совпадает, например, имя.
+                    if _new_tokens < _cand_tokens or _cand_tokens < _new_tokens:
+                        _matches.append(_cand)
+                if len(_matches) == 1:
+                    _old = _matches[0]
+                    self._log(
+                        f"  [{i+1}] ТРЕБУЕТ СВЕРКИ: {record.file_path} — "
+                        f"в библиотеке уже есть \"{_old['author']}\" / {_old['series']} / "
+                        f"{_old['title']} ({_old['file_path']}), а сейчас вычислен "
+                        f"другой автор \"{author}\". Не перемещаю и не удаляю — "
+                        f"нужна ручная сверка."
+                    )
+                    reconciliation_notes.append({
+                        'incoming_file_path': record.file_path,
+                        'incoming_author': author,
+                        'existing_author': _old['author'],
+                        'existing_file_path': _old['file_path'],
+                        'series': series,
+                        'title': title,
+                    })
+                    continue
+                elif len(_matches) > 1:
+                    # Несколько кандидатов — неоднозначно, не рискуем
+                    # автоматически выбирать; ведём себя как обычный новый
+                    # файл (текущее поведение до этого фикса), только
+                    # логируем предупреждение.
+                    self._log(
+                        f"  [{i+1}] ⚠ Несколько loose-кандидатов для "
+                        f"{record.file_path} ({series} / {title}) — пропускаю "
+                        f"эвристику сверки, обрабатываю как новый файл."
+                    )
+
             # New file - add to structure
             new_files_count += 1
 
@@ -488,17 +624,18 @@ class SynchronizationService:
                 series,
                 subseries
             )
-            
+
             # Record as existing for duplicate detection in this batch
             existing_entries.add(dup_key)
-        
+
         self._log(f"")
         self._log(f"РЕЗУЛЬТАТЫ АНАЛИЗА:")
         self._log(f"  Новые файлы: {new_files_count}")
         self._log(f"  Дубликаты: {duplicate_files_count}")
+        self._log(f"  Требуют ручной сверки: {len(reconciliation_notes)}")
         self._log(f"  Итого файлов в структуре: {len(folder_structure)}")
-        
-        return folder_structure
+
+        return folder_structure, reconciliation_notes
     
     @staticmethod
     def _split_series(series_raw: str) -> Tuple[str, str]:

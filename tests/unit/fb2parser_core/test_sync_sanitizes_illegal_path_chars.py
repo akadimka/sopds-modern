@@ -51,13 +51,13 @@ class TestBuildFolderStructureSanitizesGenre:
     def test_corrupted_genre_falls_back_to_bez_zhanra(self, tmp_path):
         svc = _make_service(tmp_path)
         records = [_rec("Автор Тест - Книга.fb2", "??????????")]
-        folder_structure = svc._build_folder_structure(records)
+        folder_structure, _ = svc._build_folder_structure(records)
         genre, author, series, subseries = folder_structure["Автор Тест - Книга.fb2"]
         assert genre == "Без жанра"
 
     def test_clean_genre_still_used_as_is(self, tmp_path):
         svc = _make_service(tmp_path)
         records = [_rec("Автор Тест - Книга.fb2", "sf_boevaya")]
-        folder_structure = svc._build_folder_structure(records)
+        folder_structure, _ = svc._build_folder_structure(records)
         genre, author, series, subseries = folder_structure["Автор Тест - Книга.fb2"]
         assert genre == "sf_boevaya"
