@@ -1684,13 +1684,49 @@ class Pass4Consensus:
                         continue  # есть авторы не входящие в наибольший набор → не трогаем
                     _majority_author = _largest
             else:
-                # Все одинаковое число авторов — берём по большинству записей
-                _majority_author = _author_counts.most_common(1)[0][0]
+                # Все варианты — одинаковое число токенов (не подмножество друг
+                # друга, а РАЗНЫЕ люди, разделяющие только общий токен — напр.
+                # одинаковое имя "Павел" у "Барчук Павел" и "Ларин Павел").
+                # Баг №72 (docs/quality-roadmap.md): по умолчанию берём просто
+                # большинство голосов — но если это реальные соавторы одной
+                # книги (папка серии физически задублирована — по одной копии
+                # на каждого соавтора отдельно), голое большинство подменит
+                # ОДНОГО автора ДРУГИМ, а не соединит их. Проверяем: если
+                # ОБЪЕДИНЕНИЕ токенов всех вариантов подтверждено метаданными
+                # ХОТЯ БЫ ОДНОЙ записи (её собственный <author> список — это
+                # надмножество) — предпочитаем объединённую форму
+                # "Вариант1, Вариант2" вместо замены одного другим.
+                _variant_list = sorted(_author_counts, key=lambda a: (-_author_counts[a], a))
+                _merged_tokens = set().union(*(_atokens(a) for a in _variant_list))
+                _merged_candidate = ', '.join(_variant_list)
+                _confirmed_by_own_meta = any(
+                    _merged_tokens <= _atokens(rec.metadata_authors or '')
+                    for rec in _recs
+                )
+                if _confirmed_by_own_meta:
+                    _majority_author = _merged_candidate
+                else:
+                    _majority_author = _author_counts.most_common(1)[0][0]
 
             for rec in _recs:
                 if rec.proposed_author.strip() != _majority_author:
                     if rec.author_source.startswith('folder_dataset'):
-                        continue  # folder_dataset — наивысший приоритет, не перебиваем
+                        # folder_dataset — наивысший приоритет, обычно не перебиваем.
+                        # Исключение (баг №72, docs/quality-roadmap.md): реальный
+                        # случай — трилогия "ОБХСС" (Барчук Павел, Ларин Павел)
+                        # физически задублирована в 4 папках, по одной на КАЖДОГО
+                        # соавтора отдельно ("Барчук Павел\..." и "Ларин Павел\...").
+                        # author_source=folder_dataset режет метаданные до ОДНОГО
+                        # имени — папки автора, хотя <author> в САМОМ ЭТОМ файле
+                        # (не в других записях группы!) уже согласованно
+                        # перечисляет ОБОИХ соавторов. Не доверяем слепо мнению
+                        # ДРУГИХ записей серии — разрешаем расширение, только
+                        # если majority_author подтверждён МЕТАДАННЫМИ ЭТОЙ ЖЕ
+                        # записи (её собственный <author> список — надмножество).
+                        _own_meta_tokens = _atokens(rec.metadata_authors or '')
+                        _majority_tokens = _atokens(_majority_author)
+                        if not (_majority_tokens and _majority_tokens <= _own_meta_tokens):
+                            continue
                     rec.proposed_author = _majority_author
                     rec.author_source = f"{rec.author_source}+series-consensus"
                     _author_unified += 1
