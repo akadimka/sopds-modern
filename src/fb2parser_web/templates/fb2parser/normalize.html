@@ -113,8 +113,9 @@
                 onclick="namesCsvOpen()">
             {% trans "Names from CSV" %}
         </button>
-        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled title="{% trans "Stage 2" %}">
-            {% trans "Broken files" %}
+        <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled
+                onclick="brokenFilesOpen()">
+            {% trans "Broken/incomplete files" %}
         </button>
         <button class="button secondary norm-cache-btn" style="margin:0; font-size:0.82rem; padding:0.45rem 0.9rem;" disabled
                 onclick="martyrsOpen()">
@@ -207,6 +208,19 @@
             <button onclick="martyrsClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
         </div>
         <div id="martyrs-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
+            <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Loading..." %}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Панель «Битые/неполные файлы» -->
+<div id="broken-files-panel" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+    <div style="background:var(--bg-card); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.28); width:min(860px,95vw); height:min(640px,92vh); display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.9rem; background:#c0392b; color:#fff; flex-shrink:0;">
+            <strong>{% trans "Broken/incomplete files" %}</strong>
+            <button onclick="brokenFilesClose()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+        </div>
+        <div id="broken-files-body" style="flex:1; overflow:hidden; padding:0.6rem 0.8rem; display:flex; flex-direction:column; min-height:0;">
             <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Loading..." %}</div>
         </div>
     </div>
@@ -494,6 +508,18 @@ function martyrsOpen() {
 }
 function martyrsClose() {
     document.getElementById('martyrs-panel').style.display = 'none';
+}
+var _brokenFilesUrl = "{% url 'fb2parser:broken_files_list' %}";
+function brokenFilesOpen() {
+    var panel = document.getElementById('broken-files-panel');
+    panel.style.display = 'flex';
+    document.getElementById('broken-files-body').innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;">' + MSG_LOADING + '</div>';
+    htmx.ajax('GET', _brokenFilesUrl, {target: '#broken-files-body', swap: 'innerHTML'}).then(function() {
+        htmx.process(document.getElementById('broken-files-body'));
+    });
+}
+function brokenFilesClose() {
+    document.getElementById('broken-files-panel').style.display = 'none';
 }
 var _duplicatesUrl = "{% url 'fb2parser:duplicates_find' %}";
 function duplicatesOpen() {

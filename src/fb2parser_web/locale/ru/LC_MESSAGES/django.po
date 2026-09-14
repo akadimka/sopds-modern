@@ -380,8 +380,8 @@ msgstr "Получить имена"
 msgid "Names from CSV"
 msgstr "Имена из CSV"
 
-msgid "Broken files"
-msgstr "Битые файлы"
+msgid "Broken/incomplete files"
+msgstr "Битые/неполные файлы"
 
 msgid "Martyrs"
 msgstr "Великомученницы"
@@ -749,6 +749,22 @@ msgstr "файлов."
 
 msgid "✓ No files with female-only authors found."
 msgstr "✓ Файлов с авторами-только-женщинами не найдено."
+
+# --- broken_files.html ---
+msgid "broken or incomplete files."
+msgstr "битых/неполных файлов."
+
+msgid "Reason"
+msgstr "Причина"
+
+msgid "Broken"
+msgstr "Битый"
+
+msgid "Incomplete (preview fragment)"
+msgstr "Неполный (ознакомительный фрагмент)"
+
+msgid "✓ No broken or incomplete files found."
+msgstr "✓ Битых или неполных файлов не найдено."
 
 # --- duplicates.html ---
 msgid "✓ No duplicates found"

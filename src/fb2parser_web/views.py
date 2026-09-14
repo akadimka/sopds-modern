@@ -1545,6 +1545,124 @@ def martyrs_delete(request):
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
+# ── Битые/неполные файлы ───────────────────────────────────────────────────────
+
+_FRAGMENT_MARKER = "Конец ознакомительного фрагмента"
+
+
+def _classify_broken_or_incomplete(path):
+    """Вернуть 'broken' (файл не парсится), 'incomplete' (ознакомительный
+    фрагмент вместо полного текста) или None (файл в порядке).
+
+    Реальный случай: несколько книг в библиотеке пользователя — это
+    ознакомительные фрагменты (например, "Шопперт Андрей - И опять
+    Пожарский (Гепталогия).fb2" — 6-й из 7 томов внутри обрезан на фразе
+    "Конец ознакомительного фрагмента"), а не полный текст. Ни один
+    существующий проход (regen_csv/fb2_compiler) не проверяет содержимое
+    файла на этот признак — такие файлы молча компилируются и
+    синхронизируются как полноценные тома.
+    """
+    from io import BytesIO
+
+    from book_tools.exceptions import FB2StructureException
+    from book_tools.format.parsers import FB2 as _FB2Parser
+    from fb2parser_core.fb2_utils import read_fb2_bytes
+
+    try:
+        raw = read_fb2_bytes(path)
+    except Exception:
+        return "broken"
+
+    if _FRAGMENT_MARKER in raw.decode("utf-8", errors="ignore"):
+        return "incomplete"
+
+    try:
+        _FB2Parser(BytesIO(raw))
+    except FB2StructureException:
+        return "broken"
+    except Exception:
+        return "broken"
+    return None
+
+
+@staff_member_required(login_url="/web/login/")
+def broken_files_list(request):
+    """Сканирует библиотеку и находит битые (не парсятся) и неполные
+    (ознакомительный фрагмент вместо полного текста) FB2-файлы."""
+    from pathlib import Path as _Path
+
+    from fb2parser_core.fb2_utils import fb2_rglob
+
+    _state = norm_job.get()
+    folder = _state.get("folder", "")
+    if not folder:
+        from opds_catalog.sopds_config import sopds_cfg as _cfg
+        folder = _cfg.SOPDS_ROOT_LIB or ""
+
+    if not folder or not os.path.isdir(folder):
+        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
+
+    folder_path = _Path(folder)
+    rows = []
+    for path in fb2_rglob(folder_path):
+        reason = _classify_broken_or_incomplete(path)
+        if not reason:
+            continue
+        try:
+            rel = str(path.relative_to(folder_path))
+        except ValueError:
+            rel = str(path)
+        rows.append({
+            "file_path": rel,
+            "full_path": str(path),
+            "reason": reason,
+        })
+
+    from django.template.loader import render_to_string
+    return HttpResponse(render_to_string("fb2parser/broken_files.html", {"rows": rows, "folder": folder}))
+
+
+@staff_member_required(login_url="/web/login/")
+def broken_files_delete(request):
+    """POST {paths: [...]} — удаляет файлы и пустые папки вверх до корня."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data  = json.loads(request.body)
+        paths = [p.strip() for p in data.get("paths", []) if p.strip()]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    folder = norm_job["folder"]
+
+    deleted, errors = 0, []
+    deleted_dirs = set()
+    for p in paths:
+        try:
+            if os.path.isfile(p):
+                parent = os.path.dirname(p)
+                os.remove(p)
+                deleted += 1
+                deleted_dirs.add(parent)
+        except Exception as e:
+            errors.append(f"{p}: {e}")
+
+    for d in sorted(deleted_dirs, key=len, reverse=True):
+        try:
+            cur = d
+            while cur and os.path.isdir(cur) and not os.listdir(cur):
+                if folder and os.path.normpath(cur) == os.path.normpath(folder):
+                    break
+                os.rmdir(cur)
+                cur = os.path.dirname(cur)
+        except Exception:
+            pass
+
+    return JsonResponse({"deleted": deleted, "errors": errors})
+
+
 # ── Дубликаты ─────────────────────────────────────────────────────────────────
 
 import unicodedata as _ud
