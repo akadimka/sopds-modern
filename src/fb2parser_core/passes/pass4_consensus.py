@@ -1664,6 +1664,21 @@ class Pass4Consensus:
 
         _folder_author_widened = 0
         for _series_key, _recs in _series_author_groups.items():
+            # Та же защита от "разных произведений под одним именем серии",
+            # что и в соседнем блоке ниже ("Унификация автора по серии с
+            # общим соавтором") — группировка идёт ТОЛЬКО по имени серии,
+            # без привязки к автору, а на полной библиотеке разные,
+            # никак не связанные авторы нередко делят одно и то же
+            # (особенно короткое/родовое) имя серии.
+            # Отбрасываем хвостовую пометку "(Автор)"/"[Автор]" перед
+            # сравнением — реальный случай "СМЕРШ" (Барчук, Ларин): одна
+            # запись несёт metadata_series="СМЕРШ [Барчук, Ларин]", другая
+            # — голое "СМЕРШ", хотя это то же самое произведение.
+            _strip_bracket_suffix = lambda s: re.sub(r'\s*[\(\[][^\)\]]*[\)\]]\s*$', '', s).strip()
+            _meta_series_vals_fw = {_nfc_lower_yo(_strip_bracket_suffix(r.metadata_series.strip()))
+                                     for r in _recs if r.metadata_series and r.metadata_series.strip()}
+            if len(_meta_series_vals_fw) > 1:
+                continue
             _fd_recs = [r for r in _recs if (r.author_source or '').startswith('folder_dataset')]
             if not _fd_recs:
                 continue
@@ -1671,6 +1686,17 @@ class Pass4Consensus:
                 t.lower().replace('ё', 'е')
                 for t in re.split(r'[\s,;]+', r.proposed_author or '') if len(t) > 2
             }
+            # Кандидат КАЖДОЙ записи считаем один раз и переиспользуем и для
+            # голосования, и для применения — иначе на шаге применения
+            # (баг, найденный на реальной полной библиотеке) кандидат
+            # ОДНОЙ пары авторов мог быть присвоен ЧУЖОЙ, никак не связанной
+            # записи — единственная проверка была "есть ли у записи вообще
+            # какой-то кандидат", а не "совпадает ли ЕЁ кандидат с
+            # победившим". На маленьких тестовых папках это не проявлялось
+            # (там всего одна реальная пара авторов на бакет), но на полной
+            # библиотеке с разными авторами, делящими имя серии, могло бы
+            # массово подменять имена совершенно посторонним людям.
+            _own_candidate: dict = {}
             _candidates: dict = {}  # merged author string → голоса
             _clean_votes = 0        # метаданные согласны с proposed_author как есть
             for r in _fd_recs:
@@ -1684,6 +1710,7 @@ class Pass4Consensus:
                 ))
                 if _own and _own < _cand_tokens:
                     _key = ', '.join(sorted(_cand))
+                    _own_candidate[id(r)] = _key
                     _candidates[_key] = _candidates.get(_key, 0) + 1
                 else:
                     _clean_votes += 1
@@ -1693,7 +1720,7 @@ class Pass4Consensus:
             if _best_votes <= _clean_votes:
                 continue  # не большинство — не доверяем шумной записи
             for r in _fd_recs:
-                if _plausible_meta_coauthors(r) and r.proposed_author.strip() != _best_cand:
+                if _own_candidate.get(id(r)) == _best_cand and r.proposed_author.strip() != _best_cand:
                     r.proposed_author = _best_cand
                     r.author_source = f'{r.author_source}+metadata-coauthors'
                     _folder_author_widened += 1
