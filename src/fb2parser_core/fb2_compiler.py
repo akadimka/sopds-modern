@@ -3242,12 +3242,16 @@ class FB2CompilerService:
                         # Если meta_num явно присутствует в стеме — доверяем метаданным.
                         # Иначе "Аватар Х. Часть 2" с meta_num=7 даёт roman_inline=2 →
                         # коллизия с книгой 2, хотя "7" есть прямо в имени файла.
-                        # Дополнительно проверяем ведущий zero-padded префикс:
-                        # \b6\b не находит "6" в "06_" (нет word boundary внутри "06"),
-                        # но "06_..." с meta_num=6 должен считаться подтверждённым.
+                        # Дополнительно проверяем zero-padded вхождение ГДЕ УГОДНО в
+                        # стеме, не только в начале: \b6\b не находит "6" в "06"
+                        # (нет word boundary внутри числа), а старый anchored-к-началу
+                        # regex не находил "04" в "Далин 04 Название" — ведущий номер
+                        # тут стоит ПОСЛЕ имени автора, не в самом начале строки (баг
+                        # №71, docs/quality-roadmap.md). Lookaround вместо \b работает
+                        # в любой позиции стема.
                         _meta_in_stem = bool(
                             re.search(r'\b' + str(meta_num) + r'\b', stem)
-                            or re.match(r'^0*' + str(meta_num) + r'(?:[^0-9]|$)', stem)
+                            or re.search(r'(?<!\d)0*' + str(meta_num) + r'(?!\d)', stem)
                         )
                         if not _meta_in_stem:
                             return (0, roman_inline, 0, 0), 'inline_title', False, str(roman_inline)
