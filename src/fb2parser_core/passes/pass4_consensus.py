@@ -1598,6 +1598,109 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Hierarchical series conversions (dot→backslash): {hier_count}")
 
+        from collections import defaultdict as _dd, Counter as _Cnt
+        _series_author_groups: dict = _dd(list)
+        for rec in records:
+            if rec.proposed_series and rec.proposed_author:
+                _series_author_groups[_nfc_lower_yo(rec.proposed_series.strip())].append(rec)
+
+        # Расширение author_source=folder_dataset до полного списка
+        # соавторов, если МЕТАДАННЫЕ БОЛЬШИНСТВА записей той же серии
+        # согласованно подтверждают более широкий список, чем осталось
+        # после папочной обрезки. Баг №72 доп. (docs/quality-roadmap.md):
+        # два реальных случая, требующие противоположных решений:
+        #   1. "СМЕРШ"/"ОБХСС" (Барчук, Ларин) — <author> КАЖДОГО файла
+        #      (100%) честно и согласованно перечисляет обоих соавторов;
+        #      "СМЕРШ" вдобавок существует только под ОДНОЙ папкой автора
+        #      (нет копии под именем второго) — блок ниже ("Унификация
+        #      автора по серии с общим соавтором") требует РАСХОЖДЕНИЯ
+        #      proposed_author внутри серии, чтобы сработать, а тут
+        #      расхождения нет вовсе: единственный proposed_author во всём
+        #      бакете — "Барчук Павел".
+        #   2. "Владимир Малый, Тёмные Окна - Сборник произведений" (баг
+        #      №58) — РЕАЛЬНАЯ дырявая метадата: 1 файл из 6 несёт
+        #      побочный, шумный <author> "Тёмные Окна" (имя вселенной,
+        #      ошибочно затянутое как соавтор издателем), остальные 5 —
+        #      честно только "Владимир Малый". Наивное доверие
+        #      СОБСТВЕННЫМ метаданным одной записи расширило бы автора и
+        #      здесь тоже — спасает именно большинство: 5 голосов "только
+        #      Малый" против 1 "Малый+Тёмные Окна" → расширение НЕ
+        #      применяется.
+        def _meta_name_to_ru_order(raw: str) -> str:
+            # Метаданные хранят «Имя [Отчество] Фамилия» (порядок из <first-name>
+            # [+ <middle-name>] + <last-name>). Конвертируем в «Фамилия Имя» —
+            # первое слово всегда имя, последнее всегда фамилия; отчество (если
+            # есть, третье слово у "Валерий Александрович Гуров") отбрасываем,
+            # как и everywhere в этом модуле (см. _normalize_single_author).
+            # Раньше здесь разворачивался только РОВНО двухсловный вариант —
+            # трёхсловный ("Имя Отчество Фамилия") возвращался БЕЗ изменений,
+            # давая "Валерий Александрович Гуров, Дамиров Рафаэль" — не тот
+            # порядок слов у первого автора при верном у второго.
+            parts = raw.strip().split()
+            return f'{parts[-1]} {parts[0]}' if len(parts) >= 2 else raw.strip()
+
+        def _plausible_meta_coauthors(rec):
+            """Список соавторов из <author> этой записи, если он expected
+            шире proposed_author и выглядит правдоподобно (личные имена,
+            не служебный текст/название вселенной). None иначе."""
+            if not rec.metadata_authors:
+                return None
+            _raw = [a.strip() for a in re.split(r'[;,]', rec.metadata_authors) if a.strip()]
+            if len(_raw) < 2:
+                return None
+            # Личное имя — 1-3 слова, без тире и цифр; что угодно другое
+            # (дефис-разделитель, лишние слова) — не похоже на автора.
+            if not all(1 <= len(a.split()) <= 3 and not re.search(r'[-–—\d]', a) for a in _raw):
+                return None
+            _conv = [_meta_name_to_ru_order(a) for a in _raw]
+            _seen: set = set()
+            _uniq = []
+            for a in _conv:
+                key = _nfc_lower_yo(a)
+                if key not in _seen:
+                    _seen.add(key)
+                    _uniq.append(a)
+            return _uniq if len(_uniq) >= 2 else None
+
+        _folder_author_widened = 0
+        for _series_key, _recs in _series_author_groups.items():
+            _fd_recs = [r for r in _recs if (r.author_source or '').startswith('folder_dataset')]
+            if not _fd_recs:
+                continue
+            _own_tokens_of = lambda r: {
+                t.lower().replace('ё', 'е')
+                for t in re.split(r'[\s,;]+', r.proposed_author or '') if len(t) > 2
+            }
+            _candidates: dict = {}  # merged author string → голоса
+            _clean_votes = 0        # метаданные согласны с proposed_author как есть
+            for r in _fd_recs:
+                _cand = _plausible_meta_coauthors(r)
+                if not _cand:
+                    _clean_votes += 1
+                    continue
+                _own = _own_tokens_of(r)
+                _cand_tokens = set().union(*(
+                    {t.lower().replace('ё', 'е') for t in a.split() if len(t) > 2} for a in _cand
+                ))
+                if _own and _own < _cand_tokens:
+                    _key = ', '.join(sorted(_cand))
+                    _candidates[_key] = _candidates.get(_key, 0) + 1
+                else:
+                    _clean_votes += 1
+            if not _candidates:
+                continue
+            _best_cand, _best_votes = max(_candidates.items(), key=lambda kv: kv[1])
+            if _best_votes <= _clean_votes:
+                continue  # не большинство — не доверяем шумной записи
+            for r in _fd_recs:
+                if _plausible_meta_coauthors(r) and r.proposed_author.strip() != _best_cand:
+                    r.proposed_author = _best_cand
+                    r.author_source = f'{r.author_source}+metadata-coauthors'
+                    _folder_author_widened += 1
+
+        if _folder_author_widened:
+            print(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")
+
         # Унификация автора по серии с общим соавтором.
         # Если у всех записей одной серии есть хотя бы один общий автор-токен,
         # но proposed_author различается → назначаем автора большинства.
@@ -1605,8 +1708,9 @@ class Pass4Consensus:
         #   17 записей → "Винтеркей Серж" (folder_dataset)
         #   52 записи  → "Винтеркей Серж, Шумилин Артем" (filename)
         #   Общий токен: "винтеркей" → большинство: "Винтеркей Серж, Шумилин Артем"
-        from collections import defaultdict as _dd, Counter as _Cnt
-        _series_author_groups: dict = _dd(list)
+        # (_series_author_groups уже построен выше, до расширения folder_dataset
+        # авторов метаданными — переиспользуем тот же группинг по серии.)
+        _series_author_groups = _dd(list)
         for rec in records:
             if rec.proposed_series and rec.proposed_author:
                 _series_author_groups[_nfc_lower_yo(rec.proposed_series.strip())].append(rec)
