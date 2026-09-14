@@ -1137,9 +1137,34 @@ class FB2CompilerService:
                               and b.sort_key[0] == 0 and b.record.series_number
                               and re.match(r'^\d+$', b.record.series_number.strip())]
             if len(_sn_meta_books) > len(_sn_file_books) and _sn_file_books:
+                # Правдоподобность (баг №68, docs/quality-roadmap.md): метадата
+                # большинства книг группы не гарантирует, что КОНКРЕТНОЕ значение
+                # meta_n правдоподобно — реальный случай (Клеванский Кирилл /
+                # "Сердце Дракона"): один файл несёт битую метадату стороннего
+                # инструмента (<sequence number="32">, автор метаданных —
+                # "Telegram Bot"), хотя правильный номер "18" уже верно
+                # извлечён из имени файла/заголовка. Большинство ОСТАЛЬНЫХ
+                # книг группы честно используют метаданные (позиции 1-15) —
+                # это удовлетворяло условию "большинство доверяет метадате" и
+                # безусловно затирало верный filename-номер битым "32". Не
+                # применяем коррекцию, если meta_n улетает далеко за пределы
+                # уже известных позиций группы — настоящая коррекция (файлы
+                # "1. Книга 1", "2. Книга 2", но book 3 — на самом деле том 4)
+                # всего лишь продолжает известную последовательность на
+                # небольшой шаг, а не перескакивает на позицию, вдесятеро
+                # большую всего остального.
+                _known_positions = [
+                    b.sort_key[1] for b in books
+                    if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0
+                ]
+                _plausible_ceiling = (
+                    max(_known_positions) + len(_sn_file_books) if _known_positions else None
+                )
                 for book in _sn_file_books:
                     meta_n = int(book.record.series_number.strip())
                     if meta_n < 1900 and meta_n > 0 and meta_n != book.sort_key[1]:
+                        if _plausible_ceiling is not None and meta_n > _plausible_ceiling:
+                            continue
                         book.sort_key = (0, meta_n, 0, book.sort_key[3])
                         book.sort_source = 'series_number'
                         book.volume_label = str(meta_n)
