@@ -1567,10 +1567,33 @@ class Pass4Consensus:
                 if base not in base_only:
                     continue
                 subseries = series[dot_pos + 2:].strip()
+                # Защита (баг №66, docs/quality-roadmap.md): "База. Хвост" не
+                # всегда настоящая подсерия — иногда это просто склеенные в
+                # одну строку метаданных заголовок и подзаголовок ОДНОЙ книги.
+                # Реальный случай: Клеванский Кирилл / "Сердце Дракона" — 11
+                # из 20 файлов несут <sequence name="Сердце Дракона.
+                # Нейросеть в мире боевых искусств">, где "Нейросеть..." —
+                # подзаголовок серии, а не отдельная арка; при этом слово
+                # "Нейросеть" НИГДЕ не встречается в именах самих файлов
+                # (только "Сердце Дракона. Том N") — метаданные автора здесь
+                # просто неаккуратны. Раньше здесь проверялся только
+                # subseries.isdigit() — любая словесная строка после точки
+                # безусловно становилась подсерией. Длина/число слов хвоста
+                # не помогает отличить настоящую подсерию от подзаголовка —
+                # "Нейросеть в мире боевых искусств" тоже длинная и
+                # многословная. Требуем вместо этого подтверждение из имени
+                # ФАЙЛА (приоритет имени файла над метаданными — общая
+                # конвенция этого модуля): хвост признаётся подсерией, только
+                # если он действительно встречается в стеме файла.
                 if subseries.isdigit():
                     record.proposed_series = base
                 else:
-                    record.proposed_series = f"{base}\\{subseries}"
+                    stem_norm = Path(record.file_path).stem.lower().replace('ё', 'е')
+                    subseries_norm = subseries.lower().replace('ё', 'е')
+                    if subseries_norm in stem_norm:
+                        record.proposed_series = f"{base}\\{subseries}"
+                    else:
+                        record.proposed_series = base
                 hier_count += 1
 
         self.logger.log(f"[PASS 4] Hierarchical series conversions (dot→backslash): {hier_count}")
