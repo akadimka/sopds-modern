@@ -535,7 +535,18 @@ class SynchronizationService:
             subseries = _sanitize_path_component(subseries, "") if subseries else ""
             
             # Detect duplicates
-            dup_key = (author, series, title)
+            #
+            # Баг №74: для многотомных изданий, где КАЖДЫЙ физический файл
+            # несёт одно и то же общее заглавие всей работы в <book-title>
+            # (например, все 12 файлов "Тысяча и одна ночь. В 12 томах"
+            # называются в title идентично, различаясь только series_number
+            # — самим номером тома), (author, series, title) без номера тома
+            # у ВСЕХ 12 файлов совпадал с уже лежащим в библиотеке первым
+            # томом — 11 остальных, различных по содержанию томов, считались
+            # "уже есть в БД" и физически удалялись из staging как дубликаты,
+            # даже не долетев до автокомпиляции, которая как раз должна была
+            # объединить все 12 томов в один файл. См. docs/quality-roadmap.md.
+            dup_key = (author, series, title, record.series_number or '')
             in_db = dup_key in existing_entries
             
             if in_db:
@@ -1471,30 +1482,30 @@ class SynchronizationService:
     
     def _get_existing_entries(self) -> set:
         """Get existing entries from database.
-        
+
         Returns:
-            Set of (author, series, title) tuples
+            Set of (author, series, title, series_number) tuples
         """
         existing = set()
-        
+
         try:
             if not self.db_path.exists():
                 self._log(f"БД не найдена: {self.db_path}")
                 return existing
-            
+
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
-            
+
             cursor.execute("""
-                SELECT author, series, title FROM books
+                SELECT author, series, title, series_number FROM books
             """)
             
             rows = cursor.fetchall()
             self._log(f"Прочитано из БД: {len(rows)} существующих записей")
             
             for row in rows:
-                existing.add(tuple(row))
-            
+                existing.add((row[0], row[1], row[2], row[3] or ''))
+
             conn.close()
         except Exception as e:
             self._log(f"Ошибка при чтении БД: {str(e)}")

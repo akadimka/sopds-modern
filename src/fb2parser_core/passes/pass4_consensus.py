@@ -1424,17 +1424,33 @@ class Pass4Consensus:
         # FOLDER SERIES PROPAGATION
         # Если хоть один файл в папке получил серию из папки (любой папочный источник),
         # все остальные файлы в той же папке без серии получают ту же серию автоматически.
+        #
+        # Баг №73: папка может быть общей "витриной" (скан-папка сборника
+        # издательства, "Библиотека мировой литературы" и т.п.), где РЯДОМ с
+        # настоящими томами одной серии лежат совершенно самостоятельные книги
+        # других, никак не связанных авторов. Раньше проверялось только "есть
+        # ли у записи УЖЕ проставленная серия" — если нет, серия донора
+        # присваивалась безусловно, даже когда автор записи уже достоверно
+        # определён (из filename/metadata) и не имеет ничего общего с автором
+        # донора. Теперь при непустых авторах у обеих записей требуется хотя
+        # бы один общий токен имени (тот же принцип нестрогого сравнения, что
+        # и в остальных местах этого модуля/бага №72) — иначе перенос серии
+        # пропускается.
         _FOLDER_SOURCES = {"folder_hierarchy", "folder_dataset", "folder_meta_consensus"}
         _folder_prop_count = 0
         for folder, grp in _folder_groups_meta.items():
             donor = next((r for r in grp if r.series_source in _FOLDER_SOURCES and r.proposed_series), None)
             if donor is None:
                 continue
+            donor_author_tokens = set((donor.proposed_author or '').lower().replace(',', '').split())
             for rec in grp:
                 if rec is donor:
                     continue
                 if rec.proposed_series:
                     continue  # уже есть серия
+                rec_author_tokens = set((rec.proposed_author or '').lower().replace(',', '').split())
+                if rec_author_tokens and donor_author_tokens and rec_author_tokens.isdisjoint(donor_author_tokens):
+                    continue  # совершенно другой, не связанный автор — не та же серия
                 rec.proposed_series = donor.proposed_series
                 rec.series_source = donor.series_source
                 _folder_prop_count += 1

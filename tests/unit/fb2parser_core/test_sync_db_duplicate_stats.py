@@ -42,7 +42,7 @@ class TestDbExactMatchDuplicateCountsInDeletedToo:
         )
 
         sync = _sync(tmp_path)
-        sync._get_existing_entries = lambda: {("Автор Тест", "Серия Тест", "Название")}
+        sync._get_existing_entries = lambda: {("Автор Тест", "Серия Тест", "Название", "")}
 
         sync._build_folder_structure([rec])
 
@@ -62,7 +62,7 @@ class TestDbExactMatchDuplicateCountsInDeletedToo:
         )
 
         sync = _sync(tmp_path)
-        sync._get_existing_entries = lambda: {("Автор Тест", "Серия Тест", "Название")}
+        sync._get_existing_entries = lambda: {("Автор Тест", "Серия Тест", "Название", "")}
 
         sync._build_folder_structure([rec])
 
