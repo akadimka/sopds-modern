@@ -981,6 +981,14 @@ class FB2CompilerService:
             # в _precompiled_range() для франшиз, где имя серии-зонтика не
             # встречается в именах отдельных томов (см. docstring метода).
             _group_titles = [b.record.file_title or b.abs_path.stem for b in books]
+            # Максимальная известная позиция в группе — единственный источник
+            # правды для диапазонов вида "N-финал" (баг №68 доп.), где верхняя
+            # граница не числовая. Считаем ОДИН раз на весь бакет.
+            _max_known_pos = max(
+                (b.sort_key[1] for b in books
+                 if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0),
+                default=0,
+            ) or None
 
             # --- Если все книги в группе — уже предкомпиляции с разными series_number,
             # это отдельные скомпилированные подсерии — не объединяем их дальше.
@@ -988,7 +996,10 @@ class FB2CompilerService:
             # Чёрный археолог (Трилогия)" → оба уже готовы, merge не нужен.
             # volume_label может быть ещё "2"/"3" (до контекстной коррекции),
             # поэтому проверяем через _precompiled_range напрямую.
-            _precomp_ranges = {id(b): self._precompiled_range(b, series, _group_titles) for b in books}
+            _precomp_ranges = {
+                id(b): self._precompiled_range(b, series, _group_titles, _max_known_pos)
+                for b in books
+            }
             _all_precompiled = all(hi > 0 for lo, hi in _precomp_ranges.values())
             if _all_precompiled and len(books) >= 2:
                 _sn_vals = [b.record.series_number or '' for b in books]
@@ -1036,7 +1047,7 @@ class FB2CompilerService:
                 if set(range(1, n_vols + 1)).issubset(_known_positions):
                     book.record.series_number = f'1-{n_vols}'
                     # Пересчитываем через _precompiled_range
-                    lo, hi = self._precompiled_range(book, series, _group_titles)
+                    lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
                     if hi > lo:
                         book.sort_key = (0, lo, 0, 0)
                         book.volume_label = f'{lo}-{hi}'
@@ -1211,7 +1222,7 @@ class FB2CompilerService:
                     if set(matched) != set(range(lo_m, hi_m + 1)):
                         continue
                     book.record.series_number = f'{lo_m}-{hi_m}'
-                    lo2, hi2 = self._precompiled_range(book, series, _group_titles)
+                    lo2, hi2 = self._precompiled_range(book, series, _group_titles, _max_known_pos)
                     if hi2 > lo2:
                         book.sort_key = (0, lo2, 0, 0)
                         book.volume_label = f'{lo2}-{hi2}'
@@ -1246,7 +1257,7 @@ class FB2CompilerService:
                         book.order_ambiguous = False
                         precompiled.append((book, lo, hi))
                         continue
-                lo, hi = self._precompiled_range(book, series, _group_titles)
+                lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
                 if hi > lo:
                     # Обновляем sort_key и volume_label по реальному диапазону файла.
                     # Без этого "1-2. Название.fb2" получает sk=(0,2,0) vl='2' вместо
@@ -2144,6 +2155,7 @@ class FB2CompilerService:
 
     def _precompiled_range(
         self, book: CompilationBook, series: str, sibling_titles=None,
+        max_known_position: Optional[int] = None,
     ) -> Tuple[int, int]:
         """Определить диапазон томов, охватываемых предкомпилированным файлом.
 
@@ -2303,6 +2315,34 @@ class FB2CompilerService:
                     lo, hi = int(bm.group(1)), int(bm.group(2))
                     if hi > lo:
                         return lo, hi
+
+        # Критерий 1.65: «книги/томов N-финал/конец» — верхняя граница словом,
+        # а не числом (баг №68 доп., docs/quality-roadmap.md). Реальный
+        # случай: Клеванский Кирилл / "Сердце Дракона" —
+        # "Часть III [Книги 16-финал].fb2" покрывает тома с 16 по
+        # последний реально существующий том серии, но само число "финал"
+        # не даёт этому файлу пройти обычный цифра-цифра диапазон выше —
+        # он падал в обычную книгу на позиции своего собственного
+        # `series_number` (порядковый номер "Части", не диапазон томов),
+        # сталкиваясь с настоящим томом на той же позиции. `max_known_position`
+        # (максимальная известная позиция среди книг ЭТОЙ ЖЕ группы,
+        # переданная вызывающим кодом) — единственный доступный источник
+        # правды о том, где заканчивается серия; без него диапазон
+        # намеренно не строим (лучше не считать файл предкомпиляцией
+        # вовсе, чем угадать неправильную верхнюю границу).
+        _BOOKS_OPEN_END_RE = re.compile(
+            r'(?:книги?|кн\.?|томов?|vols?\.?)\s+(\d{1,4})\s*[-–—]\s*'
+            r'(?:финал\w*|конец|последн\w*|last|end)\b',
+            re.IGNORECASE | re.UNICODE,
+        )
+        if max_known_position:
+            for candidate in (_stem_val, book.record.file_title or ''):
+                if _has_series_link(candidate):
+                    bm = _BOOKS_OPEN_END_RE.search(candidate)
+                    if bm:
+                        lo = int(bm.group(1))
+                        if max_known_position > lo:
+                            return lo, max_known_position
 
         # Критерий 2.5: сервисное слово в имени ФАЙЛА (stem) — filename авторитетнее метаданных.
         # Пример: «Орел (Тетралогия)» → Тетралогия=4, хотя series_number может быть "1-2".
@@ -3838,12 +3878,17 @@ class FB2CompilerService:
         # → arc_count=3, total_books=8 → «Трилогия в 8 книгах».
         _arc_part_count = 0
         _group_titles_gs = [b.record.file_title or b.abs_path.stem for b in group.books]
+        _max_known_pos_gs = max(
+            (b.sort_key[1] for b in group.books
+             if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0),
+            default=0,
+        ) or None
         # Arc-unit: книга либо является arc-point предкомпиляцией (lo==hi>0),
         # либо занимает ровно одну плоскую arc-позицию (sk=(0,N,0,0)).
         # Второй случай позволяет считать «в N книгах» даже когда одна дуга
         # представлена одиночным файлом без сервисного слова в имени.
         def _is_arc_unit(b: 'CompilationBook') -> bool:
-            lo, hi = self._precompiled_range(b, group.series, _group_titles_gs)
+            lo, hi = self._precompiled_range(b, group.series, _group_titles_gs, _max_known_pos_gs)
             if lo == hi > 0:
                 return True
             return (b.sort_key[0] == 0 and b.sort_key[1] > 0
@@ -3858,7 +3903,7 @@ class FB2CompilerService:
                 re.IGNORECASE | re.UNICODE,
             )
             for b in group.books:
-                lo, hi = self._precompiled_range(b, group.series, _group_titles_gs)
+                lo, hi = self._precompiled_range(b, group.series, _group_titles_gs, _max_known_pos_gs)
                 if lo == hi > 0:
                     # Arc-point предкомпиляция: считаем по сервисному слову/диапазону
                     _st = (b.abs_path.stem + ' ' + (b.record.file_title or '')).lower()
