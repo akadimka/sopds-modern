@@ -35,7 +35,7 @@ var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
         </div>
         <button id="scan-btn" class="button warning" style="margin:0; white-space:nowrap; flex-shrink:0;"
                 hx-post="{% url 'fb2parser:main_scan_start' %}"
-                hx-include="#main-folder"
+                hx-vals="js:{root: document.getElementById('main-folder').value, paths: JSON.stringify(Array.from(_selectedPaths.keys()))}"
                 hx-target="#main-statusbar"
                 hx-swap="innerHTML"
                 hx-indicator="#scan-spinner">
@@ -139,7 +139,7 @@ var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
         {% include "fb2parser/main_scan_statusbar.html" with state=state pct=0 %}
         {% elif state.done %}
         <span class="status-ok">{% trans "✓ Scan complete:" %}</span>
-        <span>{% blocktrans with added=state.books_added skipped=state.books_skipped errors=state.bad_books %}added {{ added }}, skipped {{ skipped }}, errors {{ errors }}{% endblocktrans %}</span>
+        <span>{% blocktrans with processed=state.processed combos=state.results|length errors=state.errors|length %}processed {{ processed }}, genre combinations {{ combos }}, errors {{ errors }}{% endblocktrans %}</span>
         {% else %}
         <span>{% trans "Ready" %}</span>
         {% endif %}

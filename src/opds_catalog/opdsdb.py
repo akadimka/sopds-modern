@@ -448,6 +448,24 @@ def addbauthor(book, author):
     ba.save()
 
 
+_CORRUPTED_GENRE_PLACEHOLDER_RE = re.compile(r'^\?+$')
+
+
+def _sanitize_genre_subsection(raw: str) -> str:
+    """Жанр в метаданных некоторых старых FB2-файлов испорчен на уровне
+    исходника — `<genre>??????????</genre>` (старый конвертер не смог
+    записать кириллицу и подставил литеральные '?'). Такой код не находится
+    в genres.xml и раньше попадал в "Unknown genre" КАК ЕСТЬ — панель
+    жанров в fb2parser показывала его отдельной, нечитаемой категорией
+    ("??????????": N) вместо "Unknown genre" (docs/quality-roadmap.md,
+    баг №76 — тот же артефакт, что и баг №44/75, здесь в реальном
+    OPDS-сканере, а не в fb2parser-инструментах).
+    """
+    if _CORRUPTED_GENRE_PLACEHOLDER_RE.match(raw.strip()):
+        return str(unknown_genre)
+    return raw
+
+
 def addgenre(genre):
     # TODO: функция addgenre используется только в sopdscan
     genre_code = genre[:SIZE_GENRE]
@@ -475,7 +493,7 @@ def addgenre(genre):
         genre=genre_code,
         defaults={
             "section": unknown_genre,
-            "subsection": genre[:SIZE_GENRE_SUBSECTION],
+            "subsection": _sanitize_genre_subsection(genre[:SIZE_GENRE_SUBSECTION]),
         },
     )
     return obj

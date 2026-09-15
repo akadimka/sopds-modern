@@ -12,7 +12,6 @@ urlpatterns = [
     path("main-scan/start/",    views.main_scan_start,    name="main_scan_start"),
     path("main-scan/status/",   views.main_scan_status,   name="main_scan_status"),
     path("scan-results/",       views.scan_results,       name="scan_results"),
-    path("genre-books/",        views.genre_books,        name="genre_books"),
     path("genre-names/",        views.genre_names,        name="genre_names"),
     path("assign-genre-multi/", views.assign_genre_multi, name="assign_genre_multi"),
     path("scan/",              views.scan,        name="scan"),

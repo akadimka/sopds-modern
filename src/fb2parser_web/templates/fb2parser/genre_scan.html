@@ -13,6 +13,28 @@
             <div class="card-divider"><strong>{% trans "Scan parameters" %}</strong></div>
             <div class="card-section">
                 {% csrf_token %}
+                {% if assignments %}
+                <div style="margin-bottom:0.8rem;">
+                    <div style="font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:0.4rem;">
+                        {% trans "Folders to scan" %} ({{ assignments|length }}):
+                    </div>
+                    <div style="max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; background:var(--bg-muted);">
+                        {% for path, genre in assignments.items %}
+                        <label style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem; cursor:pointer;">
+                            <span style="display:flex; align-items:center; overflow:hidden; flex:1; margin-right:0.5rem;">
+                                <input type="checkbox" class="genre-scan-folder-cb" value="{{ path }}" checked
+                                       style="margin-right:0.5rem; flex-shrink:0; accent-color:#8e44ad; cursor:pointer;">
+                                <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);">{{ path }}</span>
+                            </span>
+                            <span style="background:#8e44ad; color:#fff; border-radius:10px; padding:0.05rem 0.5rem; font-size:0.75rem; white-space:nowrap; flex-shrink:0;">{{ genre }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.6rem;">
+                    {% trans "If any folder above is checked, scanning uses those folders instead of the field below." %}
+                </div>
+                {% endif %}
                 <label>{% trans "Books folder" %}</label>
                 <div style="display:flex; gap:0.4rem; align-items:center; position:relative;">
                     <input id="genre-scan-root" type="text" name="root" value="{{ root }}" autocomplete="off"
@@ -29,7 +51,7 @@
                             hx-post="{% url 'fb2parser:genre_scan_start' %}"
                             hx-target="#genre-scan-status"
                             hx-swap="outerHTML"
-                            hx-include="#genre-scan-root"
+                            hx-vals="js:{root: document.getElementById('genre-scan-root').value, paths: JSON.stringify(Array.from(document.querySelectorAll('.genre-scan-folder-cb:checked')).map(function(cb) { return cb.value; }))}"
                             hx-indicator="#genre-scan-spinner">
                         {% trans "▶ Start scan" %}
                     </button>

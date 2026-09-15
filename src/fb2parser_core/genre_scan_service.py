@@ -13,6 +13,7 @@ from typing import Callable, Dict, List, Optional
 
 from .fb2_utils import fb2_rglob
 from .fb2_author_extractor import FB2AuthorExtractor
+from .synchronization import _sanitize_path_component
 
 
 def scan_fb2_genres(
@@ -53,7 +54,14 @@ def scan_fb2_genres(
 
         try:
             genre_str = extractor._extract_genres_from_fb2(fb2_file)
-            key = genre_str.strip() if genre_str and genre_str.strip() else 'Не определено'
+            # Баг №75 (docs/quality-roadmap.md): жанр в метаданных некоторых
+            # старых FB2-файлов испорчен на уровне исходника —
+            # `<genre>??????????</genre>` (старый конвертер не смог записать
+            # кириллицу). Без очистки такие значения попадали в список как
+            # отдельные, нечитаемые "жанры" ("???????": 1 и т.п.) — та же
+            # порча, что и баг №44 в synchronization.py, только в панели
+            # предварительного сканирования, не в самой синхронизации.
+            key = _sanitize_path_component(genre_str.strip(), 'Не определено') if genre_str else 'Не определено'
             try:
                 rel_path = str(fb2_file.relative_to(folder_path))
             except ValueError:

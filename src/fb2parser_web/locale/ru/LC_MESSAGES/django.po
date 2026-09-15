@@ -355,6 +355,12 @@ msgstr "пропущено"
 msgid "errors"
 msgstr "ошибок"
 
+msgid "processed"
+msgstr "обработано"
+
+msgid "genre combinations"
+msgstr "жанровых наборов"
+
 # --- normalize.html ---
 msgid "Input folder:"
 msgstr "Папка для Input:"
@@ -944,6 +950,12 @@ msgstr "Жанровые наборы"
 
 msgid "Scans FB2 files directly and groups them by their exact <genre> tag combination — useful for spotting files with no genre or an unusual genre set before assigning genres."
 msgstr "Сканирует FB2-файлы напрямую и группирует их по точному набору тегов <genre> — удобно для поиска файлов без жанра или с необычным набором жанров перед разметкой."
+
+msgid "Folders to scan"
+msgstr "Папки для сканирования"
+
+msgid "If any folder above is checked, scanning uses those folders instead of the field below."
+msgstr "Если выше отмечена хотя бы одна папка, сканирование использует их вместо поля ниже."
 
 msgid "Results"
 msgstr "Результаты"

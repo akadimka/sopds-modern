@@ -101,6 +101,22 @@ class TestOpdsDb:  # integration
         opdsdb.clear_genres()
         assert Genre.objects.count() == 0
 
+    def test_genre_corrupted_placeholder_grouped_as_unknown(self) -> None:
+        """Баг №76 (docs/quality-roadmap.md): жанр, испорченный на уровне
+        исходного FB2 (`<genre>??????????</genre>` — старый конвертер не
+        смог записать кириллицу), не должен попадать в БД как отдельная,
+        нечитаемая подкатегория "??????????"."""
+        genre = opdsdb.addgenre("??????????")
+        assert genre.section == opdsdb.unknown_genre
+        assert genre.subsection == str(opdsdb.unknown_genre)
+
+    def test_genre_unknown_code_still_used_as_subsection(self) -> None:
+        """Sanity: обычный, не испорченный код без записи в genres.xml
+        по-прежнему используется как есть (не затронуто фиксом бага №76)."""
+        genre = opdsdb.addgenre("some_custom_code")
+        assert genre.section == opdsdb.unknown_genre
+        assert genre.subsection == "some_custom_code"
+
     def test_findbook_with_setavail(self) -> None:
         """Тестирование findbook с параметром setavail"""
         book = opdsdb.findbook("testbook.fb2", "root/child", setavail=1)
