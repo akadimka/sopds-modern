@@ -28,21 +28,19 @@
         </div>
     </div>
 
+    {% if state.errors %}
     <!-- Панель 2: Ошибки -->
     <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
         <div style="background:#c0392b; color:#fff; padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
             {% trans "Errors" %} <span style="font-weight:normal; color:#f1948a;">({{ state.errors|length }})</span>
         </div>
         <div id="errors-panel" style="flex:1; overflow-y:auto; font-size:0.78rem; font-family:monospace; padding:0.3rem;">
-            {% if state.errors %}
-                {% for err in state.errors %}
-                <div style="border-bottom:1px solid var(--border); padding:0.2rem 0.3rem; word-break:break-all; color:#c0392b;">{{ err }}</div>
-                {% endfor %}
-            {% else %}
-            <div style="padding:0.5rem; color:var(--text-muted); font-family:sans-serif;">{% trans "No errors" %}</div>
-            {% endif %}
+            {% for err in state.errors %}
+            <div style="border-bottom:1px solid var(--border); padding:0.2rem 0.3rem; word-break:break-all; color:#c0392b;">{{ err }}</div>
+            {% endfor %}
         </div>
     </div>
+    {% endif %}
 
     <!-- Панель 3: Детали -->
     <div style="flex:1.5; display:flex; flex-direction:column; min-width:0;">
