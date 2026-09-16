@@ -321,8 +321,14 @@ def _run_genre_scan_thread(folder_paths):
                 on_progress=_on_progress,
                 stop_check=genre_scan_stop_flag.is_set,
             )
-            for combo, paths in data["results"].items():
-                merged_results.setdefault(combo, []).extend(paths)
+            # Абсолютные пути, а не относительно СВОЕЙ папки: при
+            # многопапочном скане (баг №78) `genre_scan_assign` не может
+            # знать, из какой именно папки набора пришёл каждый файл, чтобы
+            # восстановить путь — а `state["folder"]` при нескольких папках
+            # уже не единственный путь, а их объединённый ключ.
+            for combo, rel_paths in data["results"].items():
+                abs_paths = [str(Path(folder, rel)) for rel in rel_paths]
+                merged_results.setdefault(combo, []).extend(abs_paths)
             merged_errors.extend(data["errors"])
             total_processed += data["processed"]
             if data["stopped"]:
@@ -501,9 +507,6 @@ def genre_scan_assign(request):
         return JsonResponse({"error": "mappings required"}, status=400)
 
     state = genre_scan_job.get()
-    folder = state.get("folder") or ""
-    if not folder:
-        return JsonResponse({"error": "Папка сканирования не задана"}, status=400)
 
     from .fb2parser_bridge import get_genre_assignment_service
     from pathlib import Path
@@ -520,11 +523,13 @@ def genre_scan_assign(request):
 
     for combo, genre in mappings.items():
         genre = (genre or "").strip()
-        rel_paths = state["results"].get(combo, [])
-        if not genre or not rel_paths:
-            results[combo] = {"success": 0, "failed": len(rel_paths)}
+        # Уже абсолютные пути (баг №78/№80 — при скане нескольких папок
+        # сразу нет единственной "своей" папки, от которой можно было бы
+        # достроить путь по относительному, см. _run_genre_scan_thread).
+        abs_paths = state["results"].get(combo, [])
+        if not genre or not abs_paths:
+            results[combo] = {"success": 0, "failed": len(abs_paths)}
             continue
-        abs_paths = [str(Path(folder, rel)) for rel in rel_paths]
         per_file = service.assign_genre_to_files(abs_paths, genre)
         success_count = sum(1 for ok in per_file.values() if ok)
         failed_count = len(per_file) - success_count
@@ -804,9 +809,20 @@ def folder_count(request):
 
 @staff_member_required(login_url="/web/login/")
 def genre_names(request):
-    """Список всех имён жанров для picker-а (HTML-частичка)."""
+    """Список всех имён жанров для picker-а (HTML-частичка).
+
+    ?cb=<jsFuncName> — имя глобальной JS-функции, вызываемой при клике на
+    жанр (по умолчанию "gpSelectGenre", как раньше). Нужно, когда на одной
+    странице сразу несколько независимых picker'ов (баг №80 — свой picker
+    для множественного выбора наборов жанров на Home, сосуществующий с уже
+    имеющимся picker'ом дерева папок — оба на dashboard.html, общая JS-
+    область видимости, разные имена функций не пересекаются).
+    """
     from .fb2parser_bridge import get_genres_manager
     from django.template.loader import render_to_string
+    callback = request.GET.get("cb", "gpSelectGenre")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", callback):
+        callback = "gpSelectGenre"
     try:
         gm = get_genres_manager()
         names = []
@@ -820,7 +836,7 @@ def genre_names(request):
     except Exception as e:
         names = []
         error = str(e)
-    html = render_to_string("fb2parser/genre_picker_list.html", {"names": names, "error": error})
+    html = render_to_string("fb2parser/genre_picker_list.html", {"names": names, "error": error, "callback": callback})
     return HttpResponse(html)
 
 

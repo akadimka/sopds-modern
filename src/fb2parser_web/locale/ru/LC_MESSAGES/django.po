@@ -924,6 +924,15 @@ msgstr "Ошибки"
 msgid "No errors"
 msgstr "Ошибок нет"
 
+msgid "🏷️ Assign genre"
+msgstr "🏷️ Назначить жанр"
+
+msgid "Click to select, Ctrl/Cmd+click to toggle, Shift+click to select a range."
+msgstr "Клик — выбрать, Ctrl/Cmd+клик — добавить/убрать, Shift+клик — выбрать диапазон."
+
+msgid "Some files could not be updated — see the log."
+msgstr "Некоторые файлы не удалось обновить — см. лог."
+
 # --- Dashboard: selection bar новые кнопки ---
 msgid "📋 Normalize"
 msgstr "📋 Нормализация"

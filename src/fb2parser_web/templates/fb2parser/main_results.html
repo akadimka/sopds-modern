@@ -1,20 +1,24 @@
 {% load i18n %}
-<div id="results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border);">
+<div id="results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border); position:relative;">
 
     <!-- Панель 1: Жанры -->
     <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
-        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0;">
-            {% trans "Genres" %} <span style="font-weight:normal; color:#bdc3c7;">({{ genres_list|length }})</span>
+        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0; display:flex; justify-content:space-between; align-items:center;">
+            <span>{% trans "Genres" %} <span style="font-weight:normal; color:#bdc3c7;">({{ genres_list|length }})</span></span>
+            <button id="mr-assign-btn" type="button" class="button warning" style="display:none; margin:0; padding:0.15rem 0.6rem; font-size:0.76rem;" onclick="mrOpenPicker()">
+                {% trans "🏷️ Assign genre" %} (<span id="mr-assign-count">0</span>)
+            </button>
+        </div>
+        <div style="padding:0.25rem 0.6rem; font-size:0.72rem; color:var(--text-muted); border-bottom:1px solid var(--border);">
+            {% trans "Click to select, Ctrl/Cmd+click to toggle, Shift+click to select a range." %}
         </div>
         <div id="genres-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;">
             {% if genres_list %}
             <ul class="no-bullet" style="margin:0;">
                 {% for g in genres_list %}
-                <li style="border-bottom:1px solid var(--border); cursor:pointer;"
-                    onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''"
-                    hx-get="{% url 'fb2parser:genre_scan_files' %}?combo={{ g.subsection|urlencode }}"
-                    hx-target="#details-panel"
-                    hx-swap="innerHTML">
+                <li data-combo="{{ g.subsection }}" data-index="{{ forloop.counter0 }}"
+                    style="border-bottom:1px solid var(--border); cursor:pointer;"
+                    onclick="mrRowClick(event, '{{ g.subsection|escapejs }}', {{ forloop.counter0 }})">
                     <span style="display:flex; justify-content:space-between; padding:0.25rem 0.6rem;">
                         <span>{{ g.subsection }}</span>
                         <span style="color:var(--text-muted); font-size:0.78rem;">{{ g.cnt }}</span>
@@ -51,4 +55,138 @@
             <div style="padding:0.5rem; color:var(--text-muted);">{% trans "Select a genre on the left" %}</div>
         </div>
     </div>
+
+    <!-- Genre picker overlay (баг №80) — множественное назначение жанра
+         набранным genre-комбинациям слева. Отдельные id/callback от
+         picker'а дерева папок на dashboard.html (#genre-picker-panel/
+         gpSelectGenre) — main_results.html подгружается htmx-свапом В ТУ
+         ЖЕ страницу, общая JS-область видимости, имена не должны
+         пересекаться. -->
+    <div id="mr-genre-picker-panel" class="fp-gp-panel">
+        <div class="fp-gp-header">
+            <strong>{% trans "Genre Selection" %}</strong>
+            <button onclick="mrClosePicker()">✕</button>
+        </div>
+        <div class="fp-gp-filter">
+            <input id="mr-gp-filter" type="text" placeholder="{% trans 'Filter genres...' %}"
+                   style="margin:0; font-size:0.82rem;"
+                   oninput="mrFilterPicker(this.value)">
+        </div>
+        <div id="mr-gp-list" class="fp-gp-list">
+            <div style="padding:0.5rem; color:var(--text-muted); font-size:0.82rem;">{% trans "Loading..." %}</div>
+        </div>
+    </div>
 </div>
+
+<script>
+(function () {
+    var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
+    var ASSIGN_URL = "{% url 'fb2parser:genre_scan_assign' %}";
+    var FILES_URL = "{% url 'fb2parser:genre_scan_files' %}";
+
+    var _mrSelected = new Set();
+    var _mrLastIndex = null;
+    var _mrLoaded = false;
+
+    function _mrCsrf() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    function _mrRows() {
+        return Array.from(document.querySelectorAll('#genres-panel li[data-combo]'));
+    }
+
+    function _mrApplyRowStyle(li, selected) {
+        li.style.background = selected ? 'var(--fp-accent, #2980b9)' : '';
+        li.style.color = selected ? '#fff' : '';
+    }
+
+    function mrUpdateUI() {
+        var rows = _mrRows();
+        rows.forEach(function (li) {
+            _mrApplyRowStyle(li, _mrSelected.has(li.dataset.combo));
+        });
+        var btn = document.getElementById('mr-assign-btn');
+        var count = document.getElementById('mr-assign-count');
+        count.textContent = _mrSelected.size;
+        btn.style.display = _mrSelected.size > 0 ? 'inline-block' : 'none';
+    }
+
+    window.mrRowClick = function (event, combo, index) {
+        var rows = _mrRows();
+        if (event.shiftKey && _mrLastIndex !== null) {
+            var lo = Math.min(_mrLastIndex, index);
+            var hi = Math.max(_mrLastIndex, index);
+            for (var i = lo; i <= hi; i++) {
+                _mrSelected.add(rows[i].dataset.combo);
+            }
+        } else if (event.ctrlKey || event.metaKey) {
+            if (_mrSelected.has(combo)) {
+                _mrSelected.delete(combo);
+            } else {
+                _mrSelected.add(combo);
+            }
+        } else {
+            _mrSelected.clear();
+            _mrSelected.add(combo);
+        }
+        _mrLastIndex = index;
+        mrUpdateUI();
+        htmx.ajax('GET', FILES_URL + '?combo=' + encodeURIComponent(combo), {target: '#details-panel', swap: 'innerHTML'});
+    };
+
+    window.mrOpenPicker = function () {
+        if (_mrSelected.size === 0) return;
+        var panel = document.getElementById('mr-genre-picker-panel');
+        panel.classList.add('open');
+        document.getElementById('mr-gp-filter').value = '';
+        if (!_mrLoaded) {
+            _mrLoaded = true;
+            htmx.ajax('GET', GENRE_NAMES_URL + '?cb=mrSelectGenre', {target: '#mr-gp-list', swap: 'innerHTML'});
+        }
+        mrFilterPicker('');
+    };
+
+    window.mrClosePicker = function () {
+        document.getElementById('mr-genre-picker-panel').classList.remove('open');
+    };
+
+    window.mrFilterPicker = function (q) {
+        q = q.toLowerCase();
+        document.querySelectorAll('#mr-gp-list .gp-item').forEach(function (el) {
+            el.style.display = (!q || el.dataset.name.includes(q)) ? '' : 'none';
+        });
+    };
+
+    window.mrSelectGenre = async function (name) {
+        if (_mrSelected.size === 0) return;
+        var mappings = {};
+        _mrSelected.forEach(function (combo) { mappings[combo] = name; });
+        mrClosePicker();
+        try {
+            var r = await fetch(ASSIGN_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _mrCsrf()},
+                body: JSON.stringify({mappings: mappings})
+            });
+            var data = await r.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            var failCombos = 0;
+            Object.keys(data.results || {}).forEach(function (combo) {
+                if (data.results[combo].failed > 0) failCombos++;
+            });
+            _mrSelected.clear();
+            htmx.ajax('GET', "{% url 'fb2parser:scan_results' %}", {target: '#results-content', swap: 'outerHTML'});
+            if (failCombos) {
+                alert("{% trans 'Some files could not be updated — see the log.' %}");
+            }
+        } catch (e) {
+            alert(String(e));
+        }
+    };
+})();
+</script>
