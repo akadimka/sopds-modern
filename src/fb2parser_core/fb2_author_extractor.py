@@ -1538,18 +1538,23 @@ class FB2AuthorExtractor:
     
     def _extract_genres_from_fb2(self, fb2_path: Path) -> str:
         """Извлечь жанры из FB2 файла.
-        
+
         Ищет теги <genre> в <title-info> и объединяет их через запятую.
-        
+
         Args:
             fb2_path: Path к FB2 файлу
-            
+
         Returns:
             Жанры через запятую или пустая строка
         """
         try:
-            # Использовать функцию автоматического определения кодировки
-            content = self._detect_correct_encoding(fb2_path)
+            # 65 536 байт достаточно для любого <title-info> — он всегда в
+            # начале файла (см. _extract_all_metadata_at_once). Без этого
+            # лимита сканер жанров читал и декодировал файл целиком ради
+            # тега в первых байтах — на компиляциях (5-20+ МБ, встроенные
+            # обложки/иллюстрации) это и есть основная причина медленного
+            # сканирования жанров по всей библиотеке.
+            content = self._detect_correct_encoding(fb2_path, max_bytes=65536)
             
             if not content:
                 return ""

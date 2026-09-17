@@ -152,6 +152,7 @@ var _selectedPaths = new Map();
 var _gpSelectedGenre = null;
 var _gpLoaded = false;
 var ASSIGN_URL = "{% url 'fb2parser:assign_genre_multi' %}";
+var ASSIGN_STATUS_URL = "{% url 'fb2parser:assign_genre_multi_status' %}";
 var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
 
 function toggleMainView() {
@@ -340,7 +341,9 @@ function gpSelectGenre(name, el) {
 async function gpApply() {
     if (!_gpSelectedGenre || _selectedPaths.size === 0) return;
     var entries = Array.from(_selectedPaths.entries());
-    var total = entries.length;
+    var pathToNodeId = {};
+    entries.forEach(function(e) { pathToNodeId[e[0]] = e[1]; });
+
     var btn = document.getElementById('gp-apply-btn');
     var progressWrap = document.getElementById('gp-progress');
     var progressBar = document.getElementById('gp-progress-bar');
@@ -359,59 +362,77 @@ async function gpApply() {
     // всю сессию. Каждое новое применение жанра начинает список заново.
     await fetch("{% url 'fb2parser:sync_clear_assignments' %}", {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}});
 
-    var ok = 0, fail = 0, conflicted = 0;
-
-    for (var i = 0; i < entries.length; i++) {
-        var path = entries[i][0];
-        var nodeId = entries[i][1];
-        var folderName = path.replace(/\\/g, '/').split('/').pop();
-
-        var pct = Math.round(i / total * 100);
-        progressBar.style.width = pct + '%';
-        progressLabel.textContent = folderName;
-        btn.textContent = '⏳ ' + (i + 1) + ' / ' + total;
-
-        try {
-            var r = await fetch(ASSIGN_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf()},
-                body: JSON.stringify({genre: _gpSelectedGenre, paths: [path]})
-            });
-            var data = await r.json();
-            var res = data.results && data.results[0];
-            var badge = document.getElementById('badge-' + nodeId);
-            if (res && res.success) {
-                ok++;
-                if (badge) {
-                    if (res.conflicts && res.conflicts.length) {
-                        // Не блокируем — присвоение уже применено; это только сигнал
-                        // для ручной проверки (см. обсуждение конфликта жанров).
-                        conflicted++;
-                        badge.textContent = '⚠ ' + _gpSelectedGenre;
-                        badge.className = 'ftree-badge conflict';
-                        badge.title = res.conflicts.map(function(c) {
-                            return JS_STR_GENRE_CONFLICT + ' ' + c.author + ' — ' + c.file;
-                        }).join('\n');
-                    } else {
-                        badge.textContent = _gpSelectedGenre;
-                        badge.className = 'ftree-badge';
-                    }
-                    badge.style.display = 'inline-block';
-                }
-            } else {
-                fail++;
-                if (badge) { badge.textContent = JS_STR_ERROR; badge.className = 'ftree-badge error'; badge.style.display = 'inline-block'; badge.title = (res && res.error) || JS_STR_UNKNOWN_ERROR; }
-            }
-        } catch(e) {
-            fail++;
-            var badge2 = document.getElementById('badge-' + nodeId);
-            if (badge2) { badge2.textContent = JS_STR_ERROR; badge2.className = 'ftree-badge error'; badge2.style.display = 'inline-block'; badge2.title = String(e); }
+    // Присвоение теперь выполняется фоновым потоком на сервере (большие папки
+    // могли не укладываться в таймаут HTTP-запроса — см. assign_genre_multi) —
+    // здесь только запускаем задачу и опрашиваем прогресс до завершения.
+    var startData;
+    try {
+        var startResp = await fetch(ASSIGN_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': _getCsrf()},
+            body: JSON.stringify({genre: _gpSelectedGenre, paths: entries.map(function(e) { return e[0]; })})
+        });
+        startData = await startResp.json();
+        if (!startResp.ok || startData.error) {
+            progressLabel.textContent = startData.error || JS_STR_ERROR;
+            btn.textContent = JS_STR_APPLY_BTN;
+            btn.disabled = false;
+            return;
         }
+    } catch (e) {
+        progressLabel.textContent = JS_STR_ERROR;
+        btn.textContent = JS_STR_APPLY_BTN;
+        btn.disabled = false;
+        return;
     }
 
+    var data = null;
+    while (true) {
+        await new Promise(function(resolve) { setTimeout(resolve, 700); });
+        try {
+            var r = await fetch(ASSIGN_STATUS_URL);
+            data = await r.json();
+        } catch (e) {
+            continue; // временный сбой опроса — не прерываем задачу, пробуем снова
+        }
+        var pct = data.total > 0 ? Math.min(100, Math.round(data.processed / data.total * 100)) : 0;
+        progressBar.style.width = pct + '%';
+        progressLabel.textContent = data.current || JS_STR_PREPARING;
+        btn.textContent = '⏳ ' + pct + '%';
+        if (data.done || data.error) break;
+    }
+
+    var ok = 0, fail = 0, conflicted = 0;
+    (data.results || []).forEach(function(res) {
+        var nodeId = pathToNodeId[res.path];
+        var badge = nodeId ? document.getElementById('badge-' + nodeId) : null;
+        if (res.success) {
+            ok++;
+            if (badge) {
+                if (res.conflicts && res.conflicts.length) {
+                    // Не блокируем — присвоение уже применено; это только сигнал
+                    // для ручной проверки (см. обсуждение конфликта жанров).
+                    conflicted++;
+                    badge.textContent = '⚠ ' + _gpSelectedGenre;
+                    badge.className = 'ftree-badge conflict';
+                    badge.title = res.conflicts.map(function(c) {
+                        return JS_STR_GENRE_CONFLICT + ' ' + c.author + ' — ' + c.file;
+                    }).join('\n');
+                } else {
+                    badge.textContent = _gpSelectedGenre;
+                    badge.className = 'ftree-badge';
+                }
+                badge.style.display = 'inline-block';
+            }
+        } else {
+            fail++;
+            if (badge) { badge.textContent = JS_STR_ERROR; badge.className = 'ftree-badge error'; badge.style.display = 'inline-block'; badge.title = res.error || JS_STR_UNKNOWN_ERROR; }
+        }
+    });
+
     progressBar.style.width = '100%';
-    progressBar.style.background = fail ? 'var(--status-error)' : (conflicted ? '#f39c12' : 'var(--status-ok)');
-    progressLabel.textContent = JS_STR_DONE_PREFIX + ok + JS_STR_FOLDERS_SUFFIX + (fail ? JS_STR_ERRORS_SUFFIX + fail : '') + (conflicted ? JS_STR_CONFLICTS_SUFFIX + conflicted : '');
+    progressBar.style.background = (data.error || fail) ? 'var(--status-error)' : (conflicted ? '#f39c12' : 'var(--status-ok)');
+    progressLabel.textContent = data.error || (JS_STR_DONE_PREFIX + ok + JS_STR_FOLDERS_SUFFIX + (fail ? JS_STR_ERRORS_SUFFIX + fail : '') + (conflicted ? JS_STR_CONFLICTS_SUFFIX + conflicted : ''));
     btn.textContent = JS_STR_APPLY_BTN;
     btn.disabled = false;
 

@@ -878,9 +878,99 @@ def genre_names(request):
     return HttpResponse(html)
 
 
+# ── Присвоение жанра папке(ам) ───────────────────────────────────────────────
+# Раньше выполнялось СИНХРОННО внутри самого HTTP-запроса — на больших папках
+# (десятки файлов по несколько десятков МБ каждый, реальный случай —
+# "Книжная полка Дозора": 2458 файлов / 14.6 ГБ) операция не укладывалась в
+# таймаут воркера gunicorn (WEB_TIMEOUT, 120с — см. sopds/settings/gunicorn.py),
+# воркер убивался посреди работы, а с точки зрения браузера это выглядело как
+# зависание навечно без какой-либо обратной связи. Теперь — фоновый поток с
+# прогрессом на уровне файлов (не папок), тот же JobState-паттерн, что и у
+# genre_scan_job выше.
+genre_assign_job = JobState("fb2parser:genre_assign", {
+    "running": False,
+    "done": False,
+    "error": None,
+    "processed": 0,
+    "total": 0,
+    "current": "",
+    "results": [],   # [{path, success, count?, conflicts?, error?}, ...]
+})
+
+
+def _run_assign_genre_thread(genre, paths):
+    from django import db
+    db.connections.close_all()
+    try:
+        from pathlib import Path
+        from fb2parser_core.fb2_utils import fb2_rglob
+        from .fb2parser_bridge import get_genre_assignment_service, _config_path
+        from .genre_conflict_check import check_genre_conflicts
+
+        base_total = genre_assign_job.get()["total"]
+        service = get_genre_assignment_service()
+        results = []
+        base = 0
+
+        for path in paths:
+            if not os.path.isdir(path):
+                results.append({"path": path, "success": False, "error": "Папка не найдена"})
+                genre_assign_job.update(results=list(results))
+                continue
+
+            folder_total = len(fb2_rglob(Path(path)))
+            try:
+                # Сигнальная (не блокирующая) проверка ДО перезаписи: если у автора
+                # файла уже есть заметная история в каталоге SOPDS целиком в другом
+                # жанре — предупреждаем, но всё равно применяем присвоение, решение
+                # за пользователем (см. обсуждение — жёсткий блок даёт много ложных
+                # срабатываний для авторов, реально пишущих в нескольких жанрах).
+                conflicts = []
+                try:
+                    conflicts = check_genre_conflicts(path, genre, _config_path())
+                except Exception as e:
+                    logging.getLogger(__name__).warning("genre conflict check failed for %s: %s", path, e)
+
+                def _on_progress(idx, _total, filename, _base=base):
+                    genre_assign_job.update(processed=_base + idx, current=filename)
+
+                count = service.assign_genre_to_folder(path, genre, progress_callback=_on_progress)
+                if count > 0:
+                    result = {"path": path, "success": True, "count": count}
+                    if conflicts:
+                        result["conflicts"] = conflicts
+                    results.append(result)
+                    abs_path = os.path.abspath(path)
+                    assignments = genre_assignments.get()
+                    assignments[abs_path] = genre
+                    genre_assignments.set(assignments)
+                    times = genre_assignment_times.get()
+                    times[abs_path] = time.time()
+                    genre_assignment_times.set(times)
+                else:
+                    results.append({"path": path, "success": False, "count": 0,
+                                     "error": "FB2-файлы не найдены или не изменены"})
+            except Exception as e:
+                results.append({"path": path, "success": False, "error": str(e)})
+
+            base += folder_total
+            genre_assign_job.update(results=list(results), processed=base)
+
+        genre_assign_job.update(done=True, running=False, processed=base_total, current="")
+    except Exception as exc:
+        genre_assign_job.update(error=str(exc), running=False)
+    finally:
+        from django import db as _db
+        _db.connections.close_all()
+        genre_assign_job.finish()
+
+
 @staff_member_required(login_url="/web/login/")
 def assign_genre_multi(request):
-    """Присвоить жанр нескольким папкам сразу. POST JSON: {genre, paths:[...]}."""
+    """Запустить фоновое присвоение жанра нескольким папкам сразу.
+    POST JSON: {genre, paths:[...]} → {started: true}. Прогресс и итоговые
+    результаты — через assign_genre_multi_status (см. _run_assign_genre_thread).
+    """
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
@@ -894,49 +984,26 @@ def assign_genre_multi(request):
     paths = data.get("paths", [])
     if not genre or not paths:
         return JsonResponse({"error": "genre and paths required"}, status=400)
-    from .fb2parser_bridge import get_genre_assignment_service
-    results = []
-    try:
-        service = get_genre_assignment_service()
-    except Exception as e:
-        return JsonResponse({"error": f"Не удалось загрузить fb2parser: {e}"}, status=500)
-    for path in paths:
-        if not os.path.isdir(path):
-            results.append({"path": path, "success": False, "error": "Папка не найдена"})
-            continue
-        try:
-            # Сигнальная (не блокирующая) проверка ДО перезаписи: если у автора
-            # файла уже есть заметная история в каталоге SOPDS целиком в другом
-            # жанре — предупреждаем, но всё равно применяем присвоение, решение
-            # за пользователем (см. обсуждение — жёсткий блок даёт много ложных
-            # срабатываний для авторов, реально пишущих в нескольких жанрах).
-            conflicts = []
-            try:
-                from .genre_conflict_check import check_genre_conflicts
-                from .fb2parser_bridge import _config_path
-                conflicts = check_genre_conflicts(path, genre, _config_path())
-            except Exception as e:
-                logging.getLogger(__name__).warning("genre conflict check failed for %s: %s", path, e)
 
-            count = service.assign_genre_to_folder(path, genre)
-            if count > 0:
-                result = {"path": path, "success": True, "count": count}
-                if conflicts:
-                    result["conflicts"] = conflicts
-                results.append(result)
-                abs_path = os.path.abspath(path)
-                assignments = genre_assignments.get()
-                assignments[abs_path] = genre
-                genre_assignments.set(assignments)
-                times = genre_assignment_times.get()
-                times[abs_path] = time.time()
-                genre_assignment_times.set(times)
-            else:
-                results.append({"path": path, "success": False, "count": 0,
-                                 "error": "FB2-файлы не найдены или не изменены"})
-        except Exception as e:
-            results.append({"path": path, "success": False, "error": str(e)})
-    return JsonResponse({"results": results})
+    if genre_assign_job.get()["running"]:
+        return JsonResponse({"error": "Присвоение жанра уже выполняется"}, status=409)
+
+    from pathlib import Path
+    from fb2parser_core.fb2_utils import fb2_rglob
+    total = sum(len(fb2_rglob(Path(p))) for p in paths if os.path.isdir(p))
+
+    if not genre_assign_job.try_start(total=total, results=[]):
+        return JsonResponse({"error": "Присвоение жанра уже выполняется"}, status=409)
+
+    t = threading.Thread(target=_run_assign_genre_thread, args=(genre, paths), daemon=True)
+    t.start()
+    return JsonResponse({"started": True})
+
+
+@staff_member_required(login_url="/web/login/")
+def assign_genre_multi_status(request):
+    from django.http import JsonResponse
+    return JsonResponse(genre_assign_job.get())
 
 
 @staff_member_required(login_url="/web/login/")

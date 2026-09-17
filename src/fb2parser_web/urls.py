@@ -14,6 +14,7 @@ urlpatterns = [
     path("scan-results/",       views.scan_results,       name="scan_results"),
     path("genre-names/",        views.genre_names,        name="genre_names"),
     path("assign-genre-multi/", views.assign_genre_multi, name="assign_genre_multi"),
+    path("assign-genre-multi/status/", views.assign_genre_multi_status, name="assign_genre_multi_status"),
     path("scan/",              views.scan,        name="scan"),
     path("scan/start/",        views.scan_start,  name="scan_start"),
     path("scan/status/",       views.scan_status,  name="scan_status"),

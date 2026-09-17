@@ -11,6 +11,7 @@ import threading
 import re
 import html
 import ctypes
+import os
 from pathlib import Path
 from typing import Optional, Callable, List, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -41,72 +42,6 @@ try:
     from logger import Logger
 except ImportError:
     from .logger import Logger
-
-
-def pretty_print_xml(xml_text: str) -> str:
-    """
-    Форматировать XML текст с красивыми отступами и переносами строк.
-    Сохраняет исходную структуру, добавляя индентацию для улучшения читаемости.
-    
-    Args:
-        xml_text: Исходный XML текст
-    
-    Returns:
-        Отформатированный XML текст с красивыми отступами
-    """
-    # Используем регулярные выражения для форматирования без парсинга
-    # Это позволяет сохранить исходные namespace префиксы
-    
-    # Сохраняем XML declaration если есть
-    xml_declaration = None
-    working_text = xml_text
-    if working_text.strip().startswith('<?xml'):
-        decl_match = re.match(r'<\?xml[^?]*\?>', xml_text)
-        if decl_match:
-            xml_declaration = decl_match.group(0)
-            working_text = xml_text[decl_match.end():]
-    
-    # Добавляем переносы строк после > если их нет
-    # но только если это не последний символ текстового содержимого
-    working_text = re.sub(r'>\s*(?=<)', '>\n', working_text)
-    
-    # Удаляем лишние пробелы в начале строк и форматируем с отступами
-    lines = working_text.split('\n')
-    formatted_lines = []
-    indent_level = 0
-    
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-            
-        # Проверяем, закрывается ли тег на этой строке
-        # если строка начинается с </, то уменьшаем отступ перед добавлением
-        if stripped.startswith('</'):
-            indent_level = max(0, indent_level - 1)
-        
-        # Добавляем отступ (2 пробела на уровень)
-        formatted_lines.append('  ' * indent_level + stripped)
-        
-        # Увеличиваем отступ если открывается новый тег (и не закрывается на той же строке)
-        # но не для самозакрывающихся тегов
-        if stripped.startswith('<') and not stripped.startswith('</') and not stripped.endswith('/>'):
-            # Проверяем, закрывается ли тег на той же строке
-            tag_name = re.match(r'<([a-zA-Z:]+)', stripped)
-            if tag_name:
-                tag = tag_name.group(1)
-                # Если нет закрывающего тега на той же строке, увеличиваем отступ
-                if f'</{tag}' not in stripped and f'</{tag.split(":")[1] if ":" in tag else tag}' not in stripped:
-                    indent_level += 1
-    
-    # Собираем результат
-    result = '\n'.join(formatted_lines)
-    
-    # Если был XML declaration, добавляем его в начало
-    if xml_declaration:
-        result = xml_declaration + '\n' + result
-    
-    return result
 
 
 class GenreAssignmentService:
@@ -417,16 +352,11 @@ class GenreAssignmentService:
                 self.logger.log(f"ОШИБКА: не найден </title-info> в {fb2_path}")
                 return False
             
-            # Форматировать XML для красивого отображения
-            result_text = pretty_print_xml(result_text)
-            
             # Сохранить файл с ОРИГИНАЛЬНОЙ кодировкой (не меняем ео на UTF-8)
             # Обновляем XML-декларацию если кодировка изменилась
             if content_encoding.lower().replace('-', '').replace('_', '') in ('utf8', 'utf8sig'):
                 # Уже UTF-8: просто записываем с BOM если был
                 encoding_to_write = 'utf-8-sig' if has_bom else 'utf-8'
-                with open(fb2_path, 'w', encoding=encoding_to_write, errors='replace') as f:
-                    f.write(result_text)
             else:
                 # Не-UTF-8 (например cp1251): обновить XML-декларацию и записать обратно
                 result_text = re.sub(
@@ -434,9 +364,21 @@ class GenreAssignmentService:
                     lambda m: m.group(1) + content_encoding + m.group(2),
                     result_text, count=1
                 )
-                with open(fb2_path, 'w', encoding=content_encoding, errors='replace') as f:
+                encoding_to_write = content_encoding
+
+            # Пишем во временный файл рядом и атомарно подменяем оригинал —
+            # если процесс прервётся посреди записи (например, ассайн жанра
+            # на большой папке не уложился в таймаут воркера gunicorn),
+            # оригинальный файл останется целым вместо усечённого/битого.
+            tmp_path = fb2_path.with_name(fb2_path.name + '.tmp')
+            try:
+                with open(tmp_path, 'w', encoding=encoding_to_write, errors='replace') as f:
                     f.write(result_text)
-            
+                os.replace(tmp_path, fb2_path)
+            except Exception:
+                tmp_path.unlink(missing_ok=True)
+                raise
+
             return True
         
         except Exception as e:
