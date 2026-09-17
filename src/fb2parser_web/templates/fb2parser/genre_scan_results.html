@@ -3,14 +3,19 @@
 
     <!-- Панель 1: Наборы жанров -->
     <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
-        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">
             <span>{% trans "Genre combinations" %} <span style="font-weight:normal; color:#bdc3c7;">({{ combos|length }})</span></span>
-            <button id="gs-apply-btn" type="button" class="button success" style="display:none; margin:0; padding:0.15rem 0.6rem; font-size:0.76rem;" onclick="gsApply()">
-                {% trans "✅ Apply" %} (<span id="gs-apply-count">0</span>)
-            </button>
+            <span style="display:flex; gap:0.4rem;">
+                <button id="gs-assign-selected-btn" type="button" class="button warning" style="display:none; margin:0; padding:0.15rem 0.6rem; font-size:0.76rem;" onclick="gsOpenPicker()">
+                    {% trans "🏷️ Assign to selected" %} (<span id="gs-selected-count">0</span>)
+                </button>
+                <button id="gs-apply-btn" type="button" class="button success" style="display:none; margin:0; padding:0.15rem 0.6rem; font-size:0.76rem;" onclick="gsApply()">
+                    {% trans "✅ Apply" %} (<span id="gs-apply-count">0</span>)
+                </button>
+            </span>
         </div>
         <div style="padding:0.3rem 0.6rem; font-size:0.74rem; color:var(--text-muted); border-bottom:1px solid var(--border);">
-            {% trans "Right-click a combination to map it to a genre from the reference list." %}
+            {% trans "Click to select, Ctrl/Cmd+click to toggle, Shift+click to select a range. Right-click (or the button above) maps the selection to a genre from the reference list." %}
             {% if auto_resolved_count %}
             <br>{% blocktrans with n=auto_resolved_count %}Auto-suggested for {{ n }} combination(s) — review and apply.{% endblocktrans %}
             {% endif %}
@@ -19,10 +24,11 @@
             {% if combos %}
             <ul class="no-bullet" style="margin:0;">
                 {% for c in combos %}
-                <li data-combo="{{ c.combo }}" {% if c.suggested %}data-suggested="{{ c.suggested }}"{% endif %}
+                <li data-combo="{{ c.combo }}" data-index="{{ forloop.counter0 }}" {% if c.suggested %}data-suggested="{{ c.suggested }}"{% endif %}
                     style="border-bottom:1px solid var(--border); cursor:pointer;"
-                    onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''"
-                    oncontextmenu="event.preventDefault(); gsOpenPicker('{{ c.combo|escapejs }}');"
+                    onmouseover="if (!this.classList.contains('gs-row-selected')) this.style.background='var(--bg-hover)'" onmouseout="if (!this.classList.contains('gs-row-selected')) this.style.background=''"
+                    onclick="gsRowClick(event, '{{ c.combo|escapejs }}', {{ forloop.counter0 }})"
+                    oncontextmenu="event.preventDefault(); gsRowClick(event, '{{ c.combo|escapejs }}', {{ forloop.counter0 }}, true); gsOpenPicker();"
                     hx-get="{% url 'fb2parser:genre_scan_files' %}?combo={{ c.combo|urlencode }}"
                     hx-target="#genre-scan-details-panel"
                     hx-swap="innerHTML">
@@ -88,7 +94,9 @@
     var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
     var ASSIGN_URL = "{% url 'fb2parser:genre_scan_assign' %}";
     var _gsMappings = new Map();   // combo -> genre name
-    var _gsCurrentCombo = null;
+    var _gsSelected = new Set();   // combo -> (в множественном выборе)
+    var _gsLastIndex = null;
+    var _gsCurrentTargets = [];    // комбинации, к которым применится выбор в picker'е
     var _gsLoaded = false;
 
     function _gsGetCsrf() {
@@ -96,8 +104,55 @@
         return m ? m[1] : '';
     }
 
-    window.gsOpenPicker = function (combo) {
-        _gsCurrentCombo = combo;
+    function _gsRows() {
+        return Array.from(document.querySelectorAll('#genre-combos-panel li[data-combo]'));
+    }
+
+    function _gsUpdateSelectionStyle() {
+        _gsRows().forEach(function (li) {
+            var selected = _gsSelected.has(li.dataset.combo);
+            li.classList.toggle('gs-row-selected', selected);
+            li.style.background = selected ? 'var(--fp-accent, #2980b9)' : '';
+            li.style.color = selected ? '#fff' : '';
+        });
+        var btn = document.getElementById('gs-assign-selected-btn');
+        var count = document.getElementById('gs-selected-count');
+        count.textContent = _gsSelected.size;
+        btn.style.display = _gsSelected.size > 0 ? 'inline-block' : 'none';
+    }
+
+    // Множественный выбор (баг №83) — Shift/Ctrl, как в Genres на Home
+    // (main_results.html, баг №80). preserveSelection=true — для правого
+    // клика: если строка уже в текущем множественном выборе, весь выбор
+    // сохраняется (иначе правый клик по одной из уже выбранных строк
+    // неожиданно схлопывал бы выбор до одной).
+    window.gsRowClick = function (event, combo, index, preserveSelection) {
+        var rows = _gsRows();
+        if (preserveSelection && _gsSelected.has(combo)) {
+            // ничего не меняем — открываем picker для всего текущего выбора
+        } else if (event.shiftKey && _gsLastIndex !== null) {
+            var lo = Math.min(_gsLastIndex, index);
+            var hi = Math.max(_gsLastIndex, index);
+            for (var i = lo; i <= hi; i++) {
+                _gsSelected.add(rows[i].dataset.combo);
+            }
+        } else if (event.ctrlKey || event.metaKey) {
+            if (_gsSelected.has(combo)) {
+                _gsSelected.delete(combo);
+            } else {
+                _gsSelected.add(combo);
+            }
+        } else {
+            _gsSelected.clear();
+            _gsSelected.add(combo);
+        }
+        _gsLastIndex = index;
+        _gsUpdateSelectionStyle();
+    };
+
+    window.gsOpenPicker = function () {
+        if (_gsSelected.size === 0) return;
+        _gsCurrentTargets = Array.from(_gsSelected);
         var panel = document.getElementById('gs-genre-picker-panel');
         panel.classList.add('open');
         document.getElementById('gs-gp-filter').value = '';
@@ -110,7 +165,7 @@
 
     window.gsClosePicker = function () {
         document.getElementById('gs-genre-picker-panel').classList.remove('open');
-        _gsCurrentCombo = null;
+        _gsCurrentTargets = [];
     };
 
     window.gsFilterPicker = function (q) {
@@ -154,8 +209,10 @@
     }
 
     window.gpSelectGenre = function (name) {
-        if (!_gsCurrentCombo) return;
-        _gsMarkMapped(_gsCurrentCombo, name);
+        if (_gsCurrentTargets.length === 0) return;
+        _gsCurrentTargets.forEach(function (combo) {
+            _gsMarkMapped(combo, name);
+        });
         gsClosePicker();
         gsUpdateApplyBar();
     };
