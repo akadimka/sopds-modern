@@ -21,6 +21,13 @@ class GenreNode:
         self.parent = parent
         self.children = []
         self.assigned = set()
+        # Грубые правила по семейству кода (баг №82): «sf» → узел «Фантастика»
+        # означает "любой код, чьё семейство до первого '_' — 'sf', если для
+        # него самого нет точной ассоциации в `assigned`". Список, не set —
+        # порядок сохраняется при сериализации ради предсказуемого редактирования,
+        # хотя для самого разрешения кода порядок между УЗЛАМИ (а не внутри
+        # списка одного узла) задаёт genre_priority_order, см. resolve_code().
+        self.patterns = []
 
     def add_child(self, child):
         """
@@ -72,6 +79,9 @@ class GenresManager:
             assigned = elem.find('assigned')
             if assigned is not None:
                 node.assigned = set(a.text.strip() for a in assigned.findall('genre') if a.text)
+            patterns = elem.find('patterns')
+            if patterns is not None:
+                node.patterns = [p.text.strip() for p in patterns.findall('pattern') if p.text and p.text.strip()]
             for child_elem in elem.findall('genre'):
                 node.add_child(parse_node(child_elem, node))
             return node
@@ -87,6 +97,11 @@ class GenresManager:
                 for genre_str in sorted(node.assigned):  # Сортируем для консистентности
                     g = ET.SubElement(assigned_elem, 'genre')
                     g.text = genre_str
+            if node.patterns:
+                patterns_elem = ET.SubElement(elem, 'patterns')
+                for pattern_str in node.patterns:
+                    p = ET.SubElement(patterns_elem, 'pattern')
+                    p.text = pattern_str
             for child in node.children:
                 elem.append(node_to_elem(child))
             return elem
@@ -124,6 +139,102 @@ class GenresManager:
         if node and genre_str in node.assigned:
             node.assigned.remove(genre_str)
             self.save()
+
+    def associate_pattern(self, pattern, main_genre):
+        """Грубое правило по семейству кода (баг №82) — см. `resolve_code()`.
+
+        `pattern` сравнивается с частью необработанного кода жанра ДО первого
+        `_` (например "sf" для "sf_action"/"sf_cyberpunk"), без учёта регистра.
+        """
+        pattern = (pattern or '').strip().lower()
+        if not pattern:
+            return
+        self.load()
+        node = self.find_node(main_genre)
+        if node and pattern not in node.patterns:
+            node.patterns.append(pattern)
+            self.save()
+
+    def remove_pattern_association(self, pattern, main_genre):
+        pattern = (pattern or '').strip().lower()
+        self.load()
+        node = self.find_node(main_genre)
+        if node and pattern in node.patterns:
+            node.patterns.remove(pattern)
+            self.save()
+
+    def _ordered_nodes(self, priority_order):
+        """Все узлы дерева, отсортированные по `priority_order` (имена
+        корневых жанров в порядке приоритета — см. баг №82). Узлы, чьё имя
+        не входит в `priority_order` (в т.ч. неё-корневые дочерние узлы),
+        идут последними, в естественном порядке обхода дерева.
+        """
+        flat = []
+        def _walk(nodes):
+            for n in nodes:
+                flat.append(n)
+                _walk(n.children)
+        _walk(self.root_nodes)
+        order_index = {name: i for i, name in enumerate(priority_order or [])}
+        return sorted(flat, key=lambda n: order_index.get(n.name, len(order_index)))
+
+    def resolve_code(self, code, priority_order=None):
+        """Разрешить ОДИН сырой код жанра (`<genre>` из FB2) в корневой жанр.
+
+        Баг №82 (docs/quality-roadmap.md): двухуровневое правило —
+        1) точная ассоциация (`assigned`) побеждает всегда, если есть;
+        2) иначе — грубое совпадение по семейству кода (часть до первого
+           `_`, например "sf" для "sf_cyberpunk") с `patterns` узла.
+        При конфликте между несколькими узлами (редкий случай — код
+        ассоциирован/подпадает под правило сразу нескольких корневых
+        жанров) побеждает узел, который раньше встречается в
+        `priority_order`.
+
+        Returns:
+            Имя корневого жанра (str) или None, если код не разрешился.
+        """
+        code_l = (code or '').strip().lower()
+        if not code_l:
+            return None
+        nodes = self._ordered_nodes(priority_order)
+        for node in nodes:
+            if code_l in node.assigned:
+                return node.name
+        family = code_l.split('_', 1)[0]
+        for node in nodes:
+            if family in node.patterns:
+                return node.name
+        return None
+
+    def resolve_combo(self, combo, priority_order=None):
+        """Разрешить КОМБИНАЦИЮ жанров (строку через запятую, как её
+        возвращает `scan_fb2_genres()`/`metadata_genre`) в один корневой
+        жанр — баг №82.
+
+        Каждый код комбинации разрешается независимо (`resolve_code`);
+        среди успешно разрешившихся выбирается один по `priority_order`.
+        Коды, которые не разрешились вообще, не блокируют результат — если
+        разрешился хотя бы один код, он и используется (см. обсуждение в
+        docs/quality-roadmap.md).
+
+        Returns:
+            Имя корневого жанра или None, если НИ ОДИН код не разрешился.
+        """
+        codes = [c.strip() for c in (combo or '').split(',') if c.strip()]
+        resolved = []
+        for code in codes:
+            genre = self.resolve_code(code, priority_order)
+            if genre and genre not in resolved:
+                resolved.append(genre)
+        if not resolved:
+            return None
+        if len(resolved) == 1:
+            return resolved[0]
+        for genre in (priority_order or []):
+            if genre in resolved:
+                return genre
+        return resolved[0]
+
     def _siblings_of(self, node):
         """Список-контейнер, в котором физически лежит node (root_nodes или node.parent.children)."""
         return node.parent.children if node.parent else self.root_nodes

@@ -346,6 +346,30 @@ class SettingsManager:
             return list(v)
         return None
 
+    def get_genre_priority_order(self) -> list:
+        """Приоритет корневых жанров при разрешении неоднозначных комбинаций
+        (баг №82, docs/quality-roadmap.md): если коды одной комбинации
+        `<genre>` разрешаются в РАЗНЫЕ корневые жанры (через точные
+        ассоциации или грубые правила по семейству кода —
+        `GenresManager.resolve_combo()`), побеждает тот, что раньше в этом
+        списке. Хранится в config.json под ключом genre_priority_order.
+
+        Returns:
+            Список имён корневых жанров в порядке приоритета — пустой,
+            если ничего не настроено (тогда порядок не определён — резолвер
+            использует порядок обхода дерева genres.xml как есть).
+        """
+        lst = self.settings.get('genre_priority_order')
+        return list(lst) if isinstance(lst, list) else []
+
+    def set_genre_priority_order(self, lst) -> None:
+        """Установить приоритет корневых жанров и сохранить конфиг."""
+        if lst is None:
+            self.settings.pop('genre_priority_order', None)
+        else:
+            self.settings['genre_priority_order'] = [str(item) for item in lst]
+        self.save()
+
     def get_writer_occupation_qids(self) -> list:
         """Вернуть список Wikidata QID писательских профессий (P106).
 

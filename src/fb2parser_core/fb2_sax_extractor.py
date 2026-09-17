@@ -71,13 +71,29 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
             self.in_last_name = True
         elif self.in_title_info and local_name == 'sequence':
             self.in_sequence = True
-            # Извлекаем атрибуты серии; series_name/series_number — последний тег (обратная совместимость)
             seq_name = attrs.get('name', '')
             seq_num  = attrs.get('number', '')
+            # Баг №81 (docs/quality-roadmap.md): реальный случай — файл несёт
+            # несколько <sequence> тегов, например настоящую пронумерованную
+            # серию первой ("Траун. Доминация" number="2") и родовую
+            # группировку/вселенную второй ("Звёздные Войны", без номера) — а
+            # у соседнего тома того же цикла порядок тегов в файле обратный.
+            # Старое правило "последний тег побеждает" (чистая случайность
+            # порядка в исходном файле) давало РАЗНУЮ metadata_series для
+            # соседних томов одной и той же серии. Тег С НОМЕРОМ — это и есть
+            # настоящая пронумерованная серия (а не родовая группировка без
+            # номера) и потому предпочитается независимо от порядка в файле;
+            # первый уже найденный номерной тег не переопределяется более
+            # поздним ненумерованным. Диапазон series_number по нескольким
+            # томам того же имени пересчитывается отдельно ниже, из
+            # `_all_sequences`, поэтому ранняя фиксация здесь этому не мешает.
             if seq_name:
-                self.series_name = seq_name
-            if seq_num:
-                self.series_number = seq_num
+                if seq_num:
+                    if not self.series_number:
+                        self.series_name = seq_name
+                        self.series_number = seq_num
+                elif not self.series_name:
+                    self.series_name = seq_name
             self._all_sequences.append((seq_name, seq_num))
         elif self.in_title_info and local_name == 'book-title':
             self.in_book_title = True

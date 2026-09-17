@@ -11,12 +11,16 @@
         </div>
         <div style="padding:0.3rem 0.6rem; font-size:0.74rem; color:var(--text-muted); border-bottom:1px solid var(--border);">
             {% trans "Right-click a combination to map it to a genre from the reference list." %}
+            {% if auto_resolved_count %}
+            <br>{% blocktrans with n=auto_resolved_count %}Auto-suggested for {{ n }} combination(s) — review and apply.{% endblocktrans %}
+            {% endif %}
         </div>
         <div id="genre-combos-panel" style="flex:1; overflow-y:auto; font-size:0.82rem;">
             {% if combos %}
             <ul class="no-bullet" style="margin:0;">
                 {% for c in combos %}
-                <li data-combo="{{ c.combo }}" style="border-bottom:1px solid var(--border); cursor:pointer;"
+                <li data-combo="{{ c.combo }}" {% if c.suggested %}data-suggested="{{ c.suggested }}"{% endif %}
+                    style="border-bottom:1px solid var(--border); cursor:pointer;"
                     onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''"
                     oncontextmenu="event.preventDefault(); gsOpenPicker('{{ c.combo|escapejs }}');"
                     hx-get="{% url 'fb2parser:genre_scan_files' %}?combo={{ c.combo|urlencode }}"
@@ -131,25 +135,35 @@
         return null;
     }
 
-    window.gpSelectGenre = function (name) {
-        if (!_gsCurrentCombo) return;
-        var combo = _gsCurrentCombo;
+    // Баг №82: и ручной выбор через picker (gpSelectGenre), и автоматическая
+    // подсказка резолвера (при загрузке страницы) заполняют один и тот же
+    // _gsMappings — общая кнопка "Применить" работает одинаково для обоих.
+    function _gsMarkMapped(combo, name) {
         _gsMappings.set(combo, name);
         var li = _gsFindComboRow(combo);
-        if (li) {
-            var badge = li.querySelector('.gs-mapped-badge');
-            badge.textContent = '→ ' + name + ' ✕';
-            badge.style.display = 'inline';
-            badge.onclick = function (e) {
-                e.stopPropagation();
-                _gsMappings.delete(combo);
-                badge.style.display = 'none';
-                gsUpdateApplyBar();
-            };
-        }
+        if (!li) return;
+        var badge = li.querySelector('.gs-mapped-badge');
+        badge.textContent = '→ ' + name + ' ✕';
+        badge.style.display = 'inline';
+        badge.onclick = function (e) {
+            e.stopPropagation();
+            _gsMappings.delete(combo);
+            badge.style.display = 'none';
+            gsUpdateApplyBar();
+        };
+    }
+
+    window.gpSelectGenre = function (name) {
+        if (!_gsCurrentCombo) return;
+        _gsMarkMapped(_gsCurrentCombo, name);
         gsClosePicker();
         gsUpdateApplyBar();
     };
+
+    document.querySelectorAll('#genre-combos-panel li[data-suggested]').forEach(function (li) {
+        _gsMarkMapped(li.dataset.combo, li.dataset.suggested);
+    });
+    gsUpdateApplyBar();
 
     function gsUpdateApplyBar() {
         var btn = document.getElementById('gs-apply-btn');

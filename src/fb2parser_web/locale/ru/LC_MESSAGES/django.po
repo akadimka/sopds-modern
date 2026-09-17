@@ -984,6 +984,9 @@ msgstr "Ошибок:"
 msgid "Genre combinations"
 msgstr "Наборы жанров"
 
+msgid "Auto-suggested for %(n)s combination(s) — review and apply."
+msgstr "Автоматически предложено для %(n)s набор(ов) — проверьте и примените."
+
 msgid "Files"
 msgstr "Файлы"
 

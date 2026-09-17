@@ -461,15 +461,35 @@ def _render_genre_scan_status(state):
 
 @staff_member_required(login_url="/web/login/")
 def genre_scan_results(request):
-    """3-панельный вид результатов: жанровые наборы / ошибки / детали."""
+    """3-панельный вид результатов: жанровые наборы / ошибки / детали.
+
+    Баг №82: для каждого набора жанров пытаемся предложить корневой жанр
+    автоматически (`GenresManager.resolve_combo()` — точные ассоциации +
+    грубые правила по семейству кода + приоритетный список). Ничего не
+    применяется молча — только подсказка в UI и групповая кнопка
+    "Применить предложенное" (см. `genre_scan_assign`).
+    """
+    from .fb2parser_bridge import get_genres_manager, _config_path
+    from fb2parser_core.settings_manager import SettingsManager
+
     state = genre_scan_job.get()
-    combos = sorted(
-        ({"combo": k, "cnt": len(v)} for k, v in state["results"].items()),
-        key=lambda r: r["combo"],
-    )
+    try:
+        gm = get_genres_manager()
+        priority_order = SettingsManager(_config_path()).get_genre_priority_order()
+    except Exception:
+        gm = None
+        priority_order = []
+
+    combos = []
+    for k, v in state["results"].items():
+        suggested = gm.resolve_combo(k, priority_order) if gm else None
+        combos.append({"combo": k, "cnt": len(v), "suggested": suggested})
+    combos.sort(key=lambda r: r["combo"])
+
     return render(request, "fb2parser/genre_scan_results.html", {
         "state": state,
         "combos": combos,
+        "auto_resolved_count": sum(1 for c in combos if c["suggested"]),
     })
 
 
@@ -515,6 +535,16 @@ def genre_scan_assign(request):
     except Exception as e:
         return JsonResponse({"error": f"Не удалось загрузить fb2parser: {e}"}, status=500)
 
+    # Баг №82: каждое подтверждённое (авто или вручную) назначение сразу
+    # запоминается как точная ассоциация код→корневой жанр — следующий скан
+    # (эта же или любая другая папка) разрешит такой код автоматически, без
+    # повторного ручного решения.
+    from .fb2parser_bridge import get_genres_manager
+    try:
+        gm = get_genres_manager()
+    except Exception:
+        gm = None
+
     assignments = genre_assignments.get()
     times = genre_assignment_times.get()
     now = time.time()
@@ -536,6 +566,11 @@ def genre_scan_assign(request):
         results[combo] = {"success": success_count, "failed": failed_count}
         if success_count:
             applied_combos.append(combo)
+            if gm is not None:
+                for code in combo.split(','):
+                    code = code.strip()
+                    if code:
+                        gm.associate(code, genre)
         for abs_path, ok in per_file.items():
             if not ok:
                 continue
