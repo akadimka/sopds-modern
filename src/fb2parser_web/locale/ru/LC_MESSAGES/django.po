@@ -990,6 +990,12 @@ msgstr "Автоматически предложено для %(n)s набор(
 msgid "🏷️ Assign to selected"
 msgstr "🏷️ Назначить выбранным"
 
+msgid "Confirmed — exact association"
+msgstr "Подтверждено — точная ассоциация"
+
+msgid "Guessed from the code family — please double-check"
+msgstr "Предположено по семейству кода — стоит проверить"
+
 msgid "Click to select, Ctrl/Cmd+click to toggle, Shift+click to select a range. Right-click (or the button above) maps the selection to a genre from the reference list."
 msgstr "Клик — выбрать, Ctrl/Cmd+клик — добавить/убрать, Shift+клик — выбрать диапазон. Правый клик (или кнопка выше) назначает выбору жанр из справочника."
 

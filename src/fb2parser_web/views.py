@@ -482,8 +482,11 @@ def genre_scan_results(request):
 
     combos = []
     for k, v in state["results"].items():
-        suggested = gm.resolve_combo(k, priority_order) if gm else None
-        combos.append({"combo": k, "cnt": len(v), "suggested": suggested})
+        suggested, suggested_exact = gm.resolve_combo(k, priority_order) if gm else (None, None)
+        combos.append({
+            "combo": k, "cnt": len(v),
+            "suggested": suggested, "suggested_exact": suggested_exact,
+        })
     combos.sort(key=lambda r: r["combo"])
 
     return render(request, "fb2parser/genre_scan_results.html", {

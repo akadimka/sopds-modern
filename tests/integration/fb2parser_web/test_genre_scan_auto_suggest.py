@@ -97,4 +97,4 @@ class TestGenreScanAssignLearnsAssociations:
         # Тот же код теперь должен разрешаться автоматически — без
         # какого-либо правила по паттерну, чисто по точной ассоциации.
         gm2 = GenresManager(str(patched_gm.xml_path))
-        assert gm2.resolve_code("new_family_code") == "Детектив"
+        assert gm2.resolve_code("new_family_code") == ("Детектив", True)

@@ -191,20 +191,25 @@ class GenresManager:
         `priority_order`.
 
         Returns:
-            Имя корневого жанра (str) или None, если код не разрешился.
+            Tuple[Optional[str], Optional[bool]]: (имя корневого жанра, был
+            ли это ТОЧНОЙ ассоциацией — баг №84). `(None, None)`, если код
+            не разрешился вообще. Различие важно для UI: точная ассоциация
+            означает "пользователь уже подтверждал именно этот код раньше" —
+            это НЕ то же самое, что грубое совпадение по семейству кода
+            (предположение, которое ещё стоит проверить).
         """
         code_l = (code or '').strip().lower()
         if not code_l:
-            return None
+            return None, None
         nodes = self._ordered_nodes(priority_order)
         for node in nodes:
             if code_l in node.assigned:
-                return node.name
+                return node.name, True
         family = code_l.split('_', 1)[0]
         for node in nodes:
             if family in node.patterns:
-                return node.name
-        return None
+                return node.name, False
+        return None, None
 
     def resolve_combo(self, combo, priority_order=None):
         """Разрешить КОМБИНАЦИЮ жанров (строку через запятую, как её
@@ -218,22 +223,39 @@ class GenresManager:
         docs/quality-roadmap.md).
 
         Returns:
-            Имя корневого жанра или None, если НИ ОДИН код не разрешился.
+            Tuple[Optional[str], Optional[bool]]: (имя корневого жанра, был
+            ли результат подтверждён ТОЧНОЙ ассоциацией хотя бы одного кода
+            комбинации — баг №84). Если победивший жанр получен только по
+            грубому правилу семейства (ни один код не имеет точной
+            ассоциации именно на этот жанр) — `False`. `(None, None)`, если
+            НИ ОДИН код не разрешился.
         """
         codes = [c.strip() for c in (combo or '').split(',') if c.strip()]
-        resolved = []
+        # genre -> уже встречалась ли для него точная ассоциация среди кодов комбинации
+        resolved: dict = {}
+        order = []
         for code in codes:
-            genre = self.resolve_code(code, priority_order)
-            if genre and genre not in resolved:
-                resolved.append(genre)
-        if not resolved:
-            return None
-        if len(resolved) == 1:
-            return resolved[0]
-        for genre in (priority_order or []):
-            if genre in resolved:
-                return genre
-        return resolved[0]
+            genre, is_exact = self.resolve_code(code, priority_order)
+            if not genre:
+                continue
+            if genre not in resolved:
+                resolved[genre] = False
+                order.append(genre)
+            if is_exact:
+                resolved[genre] = True
+        if not order:
+            return None, None
+        if len(order) == 1:
+            winner = order[0]
+        else:
+            winner = None
+            for genre in (priority_order or []):
+                if genre in resolved:
+                    winner = genre
+                    break
+            if winner is None:
+                winner = order[0]
+        return winner, resolved[winner]
 
     def _siblings_of(self, node):
         """Список-контейнер, в котором физически лежит node (root_nodes или node.parent.children)."""

@@ -24,7 +24,8 @@
             {% if combos %}
             <ul class="no-bullet" style="margin:0;">
                 {% for c in combos %}
-                <li data-combo="{{ c.combo }}" data-index="{{ forloop.counter0 }}" {% if c.suggested %}data-suggested="{{ c.suggested }}"{% endif %}
+                <li data-combo="{{ c.combo }}" data-index="{{ forloop.counter0 }}"
+                    {% if c.suggested %}data-suggested="{{ c.suggested }}" data-suggested-exact="{{ c.suggested_exact|yesno:"1," }}"{% endif %}
                     style="border-bottom:1px solid var(--border); cursor:pointer;"
                     onmouseover="if (!this.classList.contains('gs-row-selected')) this.style.background='var(--bg-hover)'" onmouseout="if (!this.classList.contains('gs-row-selected')) this.style.background=''"
                     onclick="gsRowClick(event, '{{ c.combo|escapejs }}', {{ forloop.counter0 }})"
@@ -193,12 +194,27 @@
     // Баг №82: и ручной выбор через picker (gpSelectGenre), и автоматическая
     // подсказка резолвера (при загрузке страницы) заполняют один и тот же
     // _gsMappings — общая кнопка "Применить" работает одинаково для обоих.
-    function _gsMarkMapped(combo, name) {
+    //
+    // Баг №84: цвет плашки различает НЕ "кто поставил" (авто/вручную), а
+    // НАСКОЛЬКО уверенно определён жанр — по источнику самого резолвера:
+    //   синий (акцентный)  — точная ассоциация (`assigned`): этот КОНКРЕТНЫЙ
+    //                         код уже был подтверждён раньше, в т.ч. вами
+    //                         самими — высокая уверенность;
+    //   жёлтый             — грубое совпадение по семейству кода (`patterns`,
+    //                         "sf"/"det") — предположение, стоит проверить.
+    // Выбор через picker ПРЯМО СЕЙЧАС тоже считается точным (синий) — это
+    // осознанное решение пользователя, а не догадка.
+    var _GS_GUESS_COLOR = '#f39c12';
+    function _gsMarkMapped(combo, name, isExact) {
         _gsMappings.set(combo, name);
         var li = _gsFindComboRow(combo);
         if (!li) return;
         var badge = li.querySelector('.gs-mapped-badge');
-        badge.textContent = '→ ' + name + ' ✕';
+        badge.textContent = '→ ' + name + (isExact ? '' : ' (?)') + ' ✕';
+        badge.style.color = isExact ? 'var(--fp-accent)' : _GS_GUESS_COLOR;
+        badge.title = isExact
+            ? "{% trans 'Confirmed — exact association' %}"
+            : "{% trans 'Guessed from the code family — please double-check' %}";
         badge.style.display = 'inline';
         badge.onclick = function (e) {
             e.stopPropagation();
@@ -211,14 +227,14 @@
     window.gpSelectGenre = function (name) {
         if (_gsCurrentTargets.length === 0) return;
         _gsCurrentTargets.forEach(function (combo) {
-            _gsMarkMapped(combo, name);
+            _gsMarkMapped(combo, name, true);
         });
         gsClosePicker();
         gsUpdateApplyBar();
     };
 
     document.querySelectorAll('#genre-combos-panel li[data-suggested]').forEach(function (li) {
-        _gsMarkMapped(li.dataset.combo, li.dataset.suggested);
+        _gsMarkMapped(li.dataset.combo, li.dataset.suggested, li.dataset.suggestedExact === '1');
     });
     gsUpdateApplyBar();
 
