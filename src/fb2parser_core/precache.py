@@ -206,13 +206,14 @@ class Precache:
                     # Cache work_dir as author so Pass1 assigns folder_dataset to ALL files
                     self.author_folder_cache[folder] = (wd_author, "high")
                     print(f"[CACHE] Work_dir is AUTHOR: {wd_name} → '{wd_author}'")
-                try:
-                    for subdir in folder.iterdir():
-                        if subdir.is_dir() and not subdir.name.startswith('.'):
-                            scan_folder_hierarchy(subdir, depth + 1,
-                                                  inside_author_folder=wd_is_author)
-                except (PermissionError, OSError):
-                    pass
+                if not _no_recurse:
+                    try:
+                        for subdir in folder.iterdir():
+                            if subdir.is_dir() and not subdir.name.startswith('.'):
+                                scan_folder_hierarchy(subdir, depth + 1,
+                                                      inside_author_folder=wd_is_author)
+                    except (PermissionError, OSError):
+                        pass
                 return None
 
             if depth > self.folder_parse_limit:
@@ -225,13 +226,14 @@ class Precache:
             # Прозрачно пропускаем папки с именами-расширениями (fb2, pdf, epub…)
             # Структура "Автор\fb2\Серия" обрабатывается как "Автор\Серия".
             if folder_name.lower() in FILE_EXTENSION_FOLDER_NAMES:
-                try:
-                    for subdir in folder.iterdir():
-                        if subdir.is_dir() and not subdir.name.startswith('.'):
-                            # depth не увеличивается, inside_author_folder наследуется
-                            scan_folder_hierarchy(subdir, depth, inside_author_folder)
-                except (PermissionError, OSError):
-                    pass
+                if not _no_recurse:
+                    try:
+                        for subdir in folder.iterdir():
+                            if subdir.is_dir() and not subdir.name.startswith('.'):
+                                # depth не увеличивается, inside_author_folder наследуется
+                                scan_folder_hierarchy(subdir, depth, inside_author_folder)
+                    except (PermissionError, OSError):
+                        pass
                 return None
 
             # Если мы уже внутри авторской папки — эта папка является серией, не автором.
@@ -277,7 +279,7 @@ class Precache:
             # Исключение: если сама папка — авторская коллекция (in collection_names),
             # её подпапки всё равно являются авторами — рекурсируем с force_author=True.
             if inside_genre_folder:
-                if folder_name.lower() in collection_names:
+                if folder_name.lower() in collection_names and not _no_recurse:
                     try:
                         for subdir in folder.iterdir():
                             if subdir.is_dir() and not subdir.name.startswith('.'):
@@ -288,13 +290,23 @@ class Precache:
 
             # Пропускаем жанровые/издательские папки — они не являются авторами
             if any(folder_name.lower().startswith(p) for p in genre_prefixes):
-                try:
-                    for subdir in folder.iterdir():
-                        if subdir.is_dir() and not subdir.name.startswith('.'):
-                            scan_folder_hierarchy(subdir, depth + 1,
-                                                  inside_genre_folder=True)
-                except (PermissionError, OSError):
-                    pass
+                # _no_recurse: эта папка сканируется только как ПРОМЕЖУТОЧНЫЙ уровень
+                # цепочки родителей до filter_paths-цели (см. execute()) — надо только
+                # определить, что это жанровая папка (контекст для потомков), а НЕ
+                # рекурсивно обходить вообще ВСЕХ авторов внутри неё. Раньше эта ветка
+                # игнорировала _no_recurse и при каждом вызове (per-target в цепочке
+                # родителей) заново пересканировала ВСЮ жанровую папку целиком —
+                # на скоуп-компиляции после синхронизации (сотни/тысячи затронутых
+                # авторов в одной genre-папке) это превращало "просканировать N папок"
+                # в "пересканировать ВСЮ библиотеку N раз подряд".
+                if not _no_recurse:
+                    try:
+                        for subdir in folder.iterdir():
+                            if subdir.is_dir() and not subdir.name.startswith('.'):
+                                scan_folder_hierarchy(subdir, depth + 1,
+                                                      inside_genre_folder=True)
+                    except (PermissionError, OSError):
+                        pass
                 return None
 
             # Паттерны вида "NN. Серия - Автор" → берём capture group 1 как автора
@@ -306,13 +318,14 @@ class Precache:
                         result = (pattern_author, 'high')
                         self.author_folder_cache[folder] = result
                         print(f"[CACHE] Pattern match: {folder.name} → '{pattern_author}'")
-                        try:
-                            for subdir in folder.iterdir():
-                                if subdir.is_dir() and not subdir.name.startswith('.'):
-                                    scan_folder_hierarchy(subdir, depth + 1,
-                                                          inside_author_folder=True)
-                        except (PermissionError, OSError):
-                            pass
+                        if not _no_recurse:
+                            try:
+                                for subdir in folder.iterdir():
+                                    if subdir.is_dir() and not subdir.name.startswith('.'):
+                                        scan_folder_hierarchy(subdir, depth + 1,
+                                                              inside_author_folder=True)
+                            except (PermissionError, OSError):
+                                pass
                         return result
                     break
 
@@ -386,13 +399,14 @@ class Precache:
                 result = (author_name, "high")
                 self.author_folder_cache[folder] = result
                 print(f"[CACHE] Added HIGH: {folder.name} → '{author_name}'")
-                try:
-                    for subdir in folder.iterdir():
-                        if subdir.is_dir() and not subdir.name.startswith('.'):
-                            scan_folder_hierarchy(subdir, depth + 1,
-                                                  inside_author_folder=True)
-                except (PermissionError, OSError):
-                    pass
+                if not _no_recurse:
+                    try:
+                        for subdir in folder.iterdir():
+                            if subdir.is_dir() and not subdir.name.startswith('.'):
+                                scan_folder_hierarchy(subdir, depth + 1,
+                                                      inside_author_folder=True)
+                    except (PermissionError, OSError):
+                        pass
                 return result
 
             # If name parses as author but fails validation → skip caching
@@ -438,6 +452,14 @@ class Precache:
                 # work_dir чтобы определить контекст (force_author, inside_genre_folder и т.д.),
                 # затем полностью просканировать саму выбранную папку.
                 # Родители сканируются только для контекста — без рекурсии в их дочерние папки.
+                # Разные target'ы почти всегда делят один и тот же префикс родителей
+                # (одна genre-папка на сотни/тысячи затронутых авторов при
+                # авто-компиляции после синхронизации) — без дедупликации каждый
+                # уровень этого общего префикса пересканировался бы заново (полный
+                # iterdir()+stat() по ВСЕМ соседям ради has_fb2_files) один раз НА
+                # КАЖДЫЙ target, превращая "просканировать N затронутых папок" в
+                # число операций, растущее как N × размер общей родительской папки.
+                _visited_ancestors = set()
                 for target in _filter_abs:
                     # Строим цепочку папок от work_dir до target (не включая target)
                     try:
@@ -450,7 +472,9 @@ class Precache:
                     depth = 0
                     for part in parts[:-1]:  # все уровни кроме самого target
                         current = current / part
-                        scan_folder_hierarchy(current, depth=depth, _no_recurse=True)
+                        if current not in _visited_ancestors:
+                            _visited_ancestors.add(current)
+                            scan_folder_hierarchy(current, depth=depth, _no_recurse=True)
                         depth += 1
                     # Полное сканирование самой выбранной папки
                     scan_folder_hierarchy(target, depth=depth)
