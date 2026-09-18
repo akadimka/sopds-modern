@@ -509,12 +509,15 @@ function martyrsOpen() {
 function martyrsClose() {
     document.getElementById('martyrs-panel').style.display = 'none';
 }
-var _brokenFilesUrl = "{% url 'fb2parser:broken_files_list' %}";
+var _brokenFilesStartUrl = "{% url 'fb2parser:broken_files_start' %}";
 function brokenFilesOpen() {
     var panel = document.getElementById('broken-files-panel');
     panel.style.display = 'flex';
     document.getElementById('broken-files-body').innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;">' + MSG_LOADING + '</div>';
-    htmx.ajax('GET', _brokenFilesUrl, {target: '#broken-files-body', swap: 'innerHTML'}).then(function() {
+    // Баг №99: раньше один синхронный GET, парсящий всю библиотеку внутри
+    // запроса. Теперь — POST запускает фоновый скан, ответ сразу содержит
+    // само-опрашивающийся прогресс (см. broken_files_status.html).
+    htmx.ajax('POST', _brokenFilesStartUrl, {target: '#broken-files-body', swap: 'innerHTML', headers: {'X-CSRFToken': _getCsrf()}}).then(function() {
         htmx.process(document.getElementById('broken-files-body'));
     });
 }

@@ -27,9 +27,24 @@ def sopds_processor(request):
     if args["sopds_auth"]:
         user = request.user
         if user.is_authenticated:
+            # Баг №103: раньше на каждую из до 8 строк книжной полки шёл
+            # отдельный Book.objects.get(id=...) — N+1 на КАЖДЫЙ рендер
+            # шаблона для авторизованного пользователя (context processor
+            # исполняется на каждой странице сайта). select_related('book')
+            # сразу забирает книгу тем же запросом. Отдельный
+            # book.authors.values() ниже — самостоятельный, более мелкий
+            # M2M-запрос на каждую книгу; prefetch_related здесь не поможет
+            # (кэш prefetch обслуживает только .all()-эквивалентные
+            # обращения, .values() всегда идёт в БД заново) — вне
+            # рамок этого фикса.
             result = []
-            for row in bookshelf.objects.filter(user=user).order_by("-readtime")[:8]:
-                book = Book.objects.get(id=row.book_id)
+            rows = (
+                bookshelf.objects.filter(user=user)
+                .select_related("book")
+                .order_by("-readtime")[:8]
+            )
+            for row in rows:
+                book = row.book
                 p = {
                     "id": row.id,
                     "readtime": row.readtime,

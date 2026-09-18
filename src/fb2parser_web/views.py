@@ -553,6 +553,12 @@ def genre_scan_assign(request):
     now = time.time()
     results = {}
     applied_combos = []
+    # Баг №102: собираем все пары (код, жанр) за весь батч и сохраняем в
+    # genres.xml ОДНИМ associate_many() после цикла — раньше gm.associate()
+    # вызывался на каждый код каждого комбо, а он сам делает полный
+    # load()+save() genres.xml на каждый вызов (до M циклов чтения+
+    # перезаписи вместо одного load, N мутаций, одного save).
+    pending_associations = []
 
     for combo, genre in mappings.items():
         genre = (genre or "").strip()
@@ -573,7 +579,7 @@ def genre_scan_assign(request):
                 for code in combo.split(','):
                     code = code.strip()
                     if code:
-                        gm.associate(code, genre)
+                        pending_associations.append((code, genre))
         for abs_path, ok in per_file.items():
             if not ok:
                 continue
@@ -587,6 +593,9 @@ def genre_scan_assign(request):
 
     genre_assignments.set(assignments)
     genre_assignment_times.set(times)
+
+    if gm is not None and pending_associations:
+        gm.associate_many(pending_associations)
 
     # Раз файлы уже переписаны — старая группировка "combo → файлы" для них
     # больше не соответствует содержимому файлов на диске. Не пытаемся
@@ -1877,13 +1886,66 @@ def _classify_broken_or_incomplete(path):
     return None
 
 
-@staff_member_required(login_url="/web/login/")
-def broken_files_list(request):
-    """Сканирует библиотеку и находит битые (не парсятся) и неполные
-    (ознакомительный фрагмент вместо полного текста) FB2-файлы."""
-    from pathlib import Path as _Path
+# Баг №99: раньше broken_files_list сканировала и парсила ВСЮ библиотеку
+# СИНХРОННО внутри самого HTTP-запроса — тот же анти-паттерн, что уже был
+# найден и исправлен для genre_assign_job (см. комментарий у него выше):
+# на большой библиотеке это не укладывается в таймаут воркера gunicorn
+# (WEB_TIMEOUT, 120с), воркер убивается посреди работы, а для пользователя
+# это выглядит как зависание навечно без обратной связи. Тот же
+# JobState-паттерн, что и у compress_job/genre_assign_job.
+broken_files_job = JobState("fb2parser:broken_files", {
+    "running": False,
+    "done": False,
+    "error": None,
+    "processed": 0,
+    "total": 0,
+    "current": "",
+    "rows": [],
+    "folder": "",
+})
 
-    from fb2parser_core.fb2_utils import fb2_rglob
+
+def _run_broken_files_thread(folder):
+    from django import db
+    db.connections.close_all()
+    try:
+        from pathlib import Path as _Path
+        from fb2parser_core.fb2_utils import fb2_rglob
+
+        folder_path = _Path(folder)
+        all_paths = fb2_rglob(folder_path)
+        total = len(all_paths)
+        rows = []
+
+        for idx, path in enumerate(all_paths, 1):
+            reason = _classify_broken_or_incomplete(path)
+            if reason:
+                try:
+                    rel = str(path.relative_to(folder_path))
+                except ValueError:
+                    rel = str(path)
+                rows.append({"file_path": rel, "full_path": str(path), "reason": reason})
+            broken_files_job.update(processed=idx, total=total, current=path.name, rows=list(rows))
+
+        broken_files_job.update(done=True, running=False, processed=total, total=total)
+    except Exception as exc:
+        broken_files_job.update(error=str(exc), running=False)
+    finally:
+        from django import db as _db
+        _db.connections.close_all()
+        broken_files_job.finish()
+
+
+@staff_member_required(login_url="/web/login/")
+def broken_files_start(request):
+    """Запускает фоновое сканирование библиотеки на битые/неполные файлы.
+    Прогресс и итоговый список — через broken_files_status."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+
+    if broken_files_job.get()["running"]:
+        return _render_broken_files_status(broken_files_job.get())
 
     _state = norm_job.get()
     folder = _state.get("folder", "")
@@ -1894,24 +1956,29 @@ def broken_files_list(request):
     if not folder or not os.path.isdir(folder):
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 
-    folder_path = _Path(folder)
-    rows = []
-    for path in fb2_rglob(folder_path):
-        reason = _classify_broken_or_incomplete(path)
-        if not reason:
-            continue
-        try:
-            rel = str(path.relative_to(folder_path))
-        except ValueError:
-            rel = str(path)
-        rows.append({
-            "file_path": rel,
-            "full_path": str(path),
-            "reason": reason,
-        })
+    if not broken_files_job.try_start(folder=folder):
+        return _render_broken_files_status(broken_files_job.get())
 
+    t = threading.Thread(target=_run_broken_files_thread, args=(folder,), daemon=True)
+    t.start()
+    return _render_broken_files_status(broken_files_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+def broken_files_status(request):
+    return _render_broken_files_status(broken_files_job.get())
+
+
+def _render_broken_files_status(state):
+    pct = 0
+    if state["total"] > 0:
+        pct = min(100, int(state["processed"] / state["total"] * 100))
     from django.template.loader import render_to_string
-    return HttpResponse(render_to_string("fb2parser/broken_files.html", {"rows": rows, "folder": folder}))
+    html = render_to_string(
+        "fb2parser/broken_files_status.html",
+        {"state": state, "pct": pct, "rows": state.get("rows", []), "folder": state.get("folder", "")},
+    )
+    return HttpResponse(html)
 
 
 @staff_member_required(login_url="/web/login/")

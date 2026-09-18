@@ -87,9 +87,41 @@ _KEY_MAP: dict[str, str | None] = {
 }
 
 
+# Баг №100: раньше _get_sm() безусловно строила НОВЫЙ SettingsManager
+# (два json.load() + copy.deepcopy() всего дерева настроек, см.
+# settings_manager.py) на КАЖДЫЙ config.SOPDS_* атрибут — а
+# SOPDSLocaleMiddleware читает config.SOPDS_LANGUAGE на каждом запросе
+# сайта, не говоря про десятки обращений на каждый рендер каталога/фида.
+# Кэшируем по mtime обоих файлов настроек — тот же приём, что уже
+# используется для genres.xml в opdsdb._get_genres_xml_lookup().
+_sm_cache: dict = {"config_mtime": None, "app_settings_mtime": None, "sm": None}
+
+
 def _get_sm():
     from fb2parser_core.settings_manager import SettingsManager
-    return SettingsManager(_CONFIG_PATH)
+
+    def _mtime(path):
+        try:
+            return os.path.getmtime(path)
+        except OSError:
+            return None
+
+    app_settings_path = os.path.join(os.path.dirname(_CONFIG_PATH), "app_settings.json")
+    config_mtime = _mtime(_CONFIG_PATH)
+    app_settings_mtime = _mtime(app_settings_path)
+
+    if (
+        _sm_cache["sm"] is not None
+        and _sm_cache["config_mtime"] == config_mtime
+        and _sm_cache["app_settings_mtime"] == app_settings_mtime
+    ):
+        return _sm_cache["sm"]
+
+    sm = SettingsManager(_CONFIG_PATH)
+    _sm_cache["sm"] = sm
+    _sm_cache["config_mtime"] = config_mtime
+    _sm_cache["app_settings_mtime"] = app_settings_mtime
+    return sm
 
 
 class SopdsConfig:

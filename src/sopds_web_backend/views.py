@@ -1,5 +1,6 @@
 import logging
 import threading
+from random import randint
 
 from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
@@ -816,9 +817,24 @@ def hello(request):
     args["recent_books"] = Book.objects.select_related(
         "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
     ).order_by("-id").prefetch_related("genres")[:10]
-    args["random_book"]  = Book.objects.select_related(
-        "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
-    ).order_by("?").first()
+    # Баг №104: order_by("?") компилируется в ORDER BY RANDOM() на SQLite —
+    # полная сортировка ВСЕЙ таблицы книг на каждый заход на главную
+    # страницу сайта. Тот же offset-based приём, что уже используется
+    # для той же задачи в sopds_processor (context processor, тоже
+    # рендерится на каждой странице) — там ORDER BY RANDOM() уже
+    # сознательно не используется.
+    random_book = None
+    books_count = args["stats"]["allbooks"]
+    if books_count:
+        book_num = randint(1, books_count)
+        try:
+            random_book_id = Book.objects.values("id").all()[book_num - 1 : book_num][0]["id"]
+            random_book = Book.objects.select_related(
+                "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
+            ).get(id=random_book_id)
+        except (IndexError, Book.DoesNotExist):
+            random_book = None
+    args["random_book"] = random_book
     args["samlib_rating_enabled"] = config.SOPDS_SAMLIB_RATING
     if config.SOPDS_SAMLIB_RATING:
         args["popular_books"] = list(Book.objects.filter(

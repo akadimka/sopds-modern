@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Prefetch, QuerySet
 from django.utils.html import strip_tags
 
@@ -77,6 +76,53 @@ def get_books_count(root: Catalog) -> int:
     return get_books_query(root).count()
 
 
+def _catalog_row_to_dict(row) -> dict:
+    return {
+        "is_catalog": 1,
+        "title": row.cat_name,
+        "id": row.id,
+        "cat_type": row.cat_type,
+        "parent_id": row.parent_id,
+        "prefix": "c",
+    }
+
+
+def _book_row_to_dict(row, auth_enabled: bool) -> dict:
+    authors_list = list(row.c_authors)
+    genres_list = list(row.c_genres)
+    series_list = list(row.c_series)
+    ser_no_list = list(row.c_ser_no)
+
+    readtime = None
+    if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:
+        readtime = row.c_bookshelf[0].readtime
+
+    return {
+        "is_catalog": 0,
+        "lang_code": row.lang_code,
+        "lang": get_lang_name(row.lang),
+        "filename": row.filename,
+        "path": row.path,
+        "registerdate": row.registerdate,
+        "id": row.id,
+        "annotation": strip_tags(row.annotation),
+        "docdate": row.docdate,
+        "format": row.format,
+        "title": row.title,
+        "filesize": row.filesize // 1000,
+        "authors": authors_list,
+        "genres": genres_list,
+        "series": series_list,
+        "ser_no": ser_no_list,
+        "readtime": readtime,
+        "prefix": "b",
+        "samlib_rating": getattr(row, "samlib_rating", None),
+        "authortoday_rating": getattr(row, "authortoday_rating", None),
+        "fantlab_rating": getattr(row, "fantlab_rating", None),
+        "litmarket_rating": getattr(row, "litmarket_rating", None),
+    }
+
+
 def paginated_catalog_content(
     cat: Catalog,
     current_page: int,
@@ -84,7 +130,20 @@ def paginated_catalog_content(
     user=None,
     auth_enabled: bool = False,
 ) -> tuple[list, dict]:
-    """Предоставляет содержимое каталога в виде одной страницы."""
+    """Предоставляет содержимое каталога в виде одной страницы.
+
+    Баг №101: раньше ВСЕ подкаталоги и ВСЕ книги папки полностью
+    материализовались в Python-список и только потом оборачивались в
+    Paginator — то есть каждый запрос страницы вытягивал из БД и
+    строил словари для целой папки, а не только для нужной страницы.
+    На папке из тысяч книг (например, "плоская" неотсортированная
+    свалка файлов) это означало полный проход по ВСЕЙ папке на каждый
+    запрос страницы. Теперь считаем count() подкаталогов/книг (2
+    быстрых запроса) и вытягиваем через QuerySet-слайсинг (LIMIT/OFFSET
+    на уровне БД) только тот диапазон записей, что реально попадает на
+    запрошенную страницу — подкаталоги всегда идут первыми, книги
+    следом, как и раньше, просто без материализации целиком.
+    """
 
     # Prefetch связанных объектов для книг
     prefetch = [
@@ -109,80 +168,47 @@ def paginated_catalog_content(
         ).order_by("search_title").prefetch_related(*prefetch)
     )
 
-    # Собираем единый список: сначала подкаталоги, потом книги
+    catalogs_count = catalogs_list.count()
+    books_count = books_list.count()
+    total_count = catalogs_count + books_count
+
+    per_page = pager_max_items if pager_max_items and pager_max_items > 0 else 1
+    num_pages = max(1, -(-total_count // per_page))  # ceil(total_count / per_page)
+
+    try:
+        page_number = int(current_page)
+        if page_number < 1 or page_number > num_pages:
+            raise ValueError
+    except (TypeError, ValueError):
+        # Тот же фолбэк, что и раньше был у Paginator для
+        # PageNotAnInteger/EmptyPage — откат на ПОСЛЕДНЮЮ страницу.
+        page_number = num_pages
+
+    start = (page_number - 1) * per_page
+    end = start + per_page
+
     merged: list[dict] = []
 
-    for row in catalogs_list:
-        merged.append(
-            {
-                "is_catalog": 1,
-                "title": row.cat_name,
-                "id": row.id,
-                "cat_type": row.cat_type,
-                "parent_id": row.parent_id,
-                "prefix": "c",
-            }
-        )
+    cat_start = max(0, min(start, catalogs_count))
+    cat_end = max(0, min(end, catalogs_count))
+    if cat_start < cat_end:
+        for row in catalogs_list[cat_start:cat_end]:
+            merged.append(_catalog_row_to_dict(row))
 
-    for row in books_list:
-        authors_list = list(row.c_authors)
-        genres_list = list(row.c_genres)
-        series_list = list(row.c_series)
-        ser_no_list = list(row.c_ser_no)
+    book_start = max(0, min(start - catalogs_count, books_count))
+    book_end = max(0, min(end - catalogs_count, books_count))
+    if book_start < book_end:
+        for row in books_list[book_start:book_end]:
+            merged.append(_book_row_to_dict(row, auth_enabled))
 
-        readtime = None
-        if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:
-            readtime = row.c_bookshelf[0].readtime
-
-        merged.append(
-            {
-                "is_catalog": 0,
-                "lang_code": row.lang_code,
-                "lang": get_lang_name(row.lang),
-                "filename": row.filename,
-                "path": row.path,
-                "registerdate": row.registerdate,
-                "id": row.id,
-                "annotation": strip_tags(row.annotation),
-                "docdate": row.docdate,
-                "format": row.format,
-                "title": row.title,
-                "filesize": row.filesize // 1000,
-                "authors": authors_list,
-                "genres": genres_list,
-                "series": series_list,
-                "ser_no": ser_no_list,
-                "readtime": readtime,
-                "prefix": "b",
-                "samlib_rating": getattr(row, "samlib_rating", None),
-                "authortoday_rating": getattr(row, "authortoday_rating", None),
-                "fantlab_rating": getattr(row, "fantlab_rating", None),
-                "litmarket_rating": getattr(row, "litmarket_rating", None),
-            }
-        )
-
-    paginator = Paginator(merged, pager_max_items)
-    try:
-        page = paginator.page(current_page)
-    except (EmptyPage, PageNotAnInteger):
-        page = paginator.page(paginator.num_pages)
-
-    return page.object_list, _paginator_to_dict(page)
-
-
-def _paginator_to_dict(page) -> dict:
-    """Преобразует Django Paginator Page в словарь, совместимый с OPDS."""
-    paginator = page.paginator
-    return {
-        "num_pages": paginator.num_pages,
-        "has_previous": page.has_previous(),
-        "has_next": page.has_next(),
-        "previous_page_number": page.previous_page_number()
-        if page.has_previous()
-        else 1,
-        "next_page_number": page.next_page_number()
-        if page.has_next()
-        else paginator.num_pages,
-        "number": page.number,
-        "page_range": list(paginator.page_range),
+    pager_dict = {
+        "num_pages": num_pages,
+        "has_previous": page_number > 1,
+        "has_next": page_number < num_pages,
+        "previous_page_number": page_number - 1 if page_number > 1 else 1,
+        "next_page_number": page_number + 1 if page_number < num_pages else num_pages,
+        "number": page_number,
+        "page_range": list(range(1, num_pages + 1)),
     }
+
+    return merged, pager_dict

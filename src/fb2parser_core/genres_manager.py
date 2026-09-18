@@ -133,6 +133,27 @@ class GenresManager:
                 node.assigned.add(genre_str)
                 self.save()
 
+    def associate_many(self, pairs):
+        """Пакетная версия `associate()` — один `load()`, N мутаций в
+        памяти, один `save()` (только если хоть что-то реально
+        изменилось) — вместо до N полных циклов чтения+перезаписи
+        `genres.xml`, если вызывать `associate()` в цикле (баг №102:
+        `genre_scan_assign()` применяет это к десяткам кодов за один
+        батч).
+
+        Args:
+            pairs: итерируемое пар (genre_str, main_genre).
+        """
+        self.load()
+        changed = False
+        for genre_str, main_genre in pairs:
+            node = self.find_node(main_genre)
+            if node and genre_str not in node.assigned:
+                node.assigned.add(genre_str)
+                changed = True
+        if changed:
+            self.save()
+
     def remove_association(self, genre_str, main_genre):
         self.load()  # Загрузить актуальные данные из файла
         node = self.find_node(main_genre)
