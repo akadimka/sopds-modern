@@ -109,29 +109,6 @@ class SettingsManager:
             self.app_settings_path = self.config_path.parent / 'app_settings.json'
         self.save()
 
-    def auto_init_file_paths(self) -> None:
-        """Auto-detect project-root paths for config.json and genres.xml.
-
-        Called once at startup.  Each path is set only when the current stored
-        value is empty OR points to a non-existent file.
-        """
-        project_root = Path(__file__).resolve().parent
-
-        # Settings file (config.json)
-        stored_cfg = self.settings.get('settings_file_path', '')
-        if not stored_cfg or not Path(stored_cfg).exists():
-            candidate = project_root / 'config.json'
-            self.settings['settings_file_path'] = str(candidate) if candidate.exists() else ''
-
-        # Genres file (genres.xml)
-        stored_genres = self.settings.get('genres_file_path', '')
-        if not stored_genres or not Path(stored_genres).exists():
-            candidate = project_root / 'genres.xml'
-            self.settings['genres_file_path'] = str(candidate) if candidate.exists() else ''
-
-        self.save()
-
-        
     def get_genre_association_method(self):
         """Get genre association method / Получить метод ассоциации жанров."""
         return self.settings.get('genre_association_method', 'context_menu')

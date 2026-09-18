@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 from typing import Optional, Callable, List, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import xml.etree.ElementTree as ET
 
 
 def _detect_optimal_workers(path: Path) -> int:
@@ -402,41 +401,6 @@ class GenreAssignmentService:
         except Exception as e:
             self.logger.log(f"Ошибка при обработке {fb2_path}: {str(e)}")
             return False
-
-
-def assign_genre_threaded(
-    folder_path: str,
-    genre_name: str,
-    progress_callback: Optional[Callable] = None,
-    completion_callback: Optional[Callable] = None,
-    logger: Optional[object] = None
-) -> threading.Thread:
-    """
-    Запустить присвоение жанра в отдельном потоке.
-    
-    Args:
-        folder_path: Путь к папке
-        genre_name: Название жанра
-        progress_callback: Callback для прогресса
-        completion_callback: Callback для завершения
-        logger: Logger instance (optional)
-    
-    Returns:
-        Thread объект (уже запущен)
-    """
-    service = GenreAssignmentService(logger=logger)
-    
-    def worker():
-        service.assign_genre_to_folder(
-            folder_path,
-            genre_name,
-            progress_callback,
-            completion_callback
-        )
-    
-    thread = threading.Thread(target=worker, daemon=True)
-    thread.start()
-    return thread
 
 
 if __name__ == '__main__':

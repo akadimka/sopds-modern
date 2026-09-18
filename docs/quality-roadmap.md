@@ -5172,3 +5172,130 @@ genre)`) — то есть до M полных циклов чтения+пер�
 `python manage.py check` пройден. Прогнан
 `tests/acceptance/test_views.py`+`tests/unit`+`tests/integration` —
 без новых регрессий.
+
+## Баг №105 — удаление мёртвого кода, найденного архитектурным аудитом (Queue 4)
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+В отличие от баг №85–104 (реальные баги с исправлением поведения), это
+чистка: код, у которого после свежей проверки `grep` по всему репозиторию
+(`src/` и `tests/`, с учётом теневых одноимённых методов в других классах)
+не нашлось ни одного внешнего вызывающего — ни в продакшен-коде, ни в
+тестах. Правило сессии: тестовое использование считается использованием
+(должно быть сохранено) — так, `FB2SAXExtractor._extract_metadata_with_sax()`
+сохранён именно по этой причине, хотя в продакшене вызывается только
+`_extract_all_metadata_at_once()`.
+
+Способ проверки для чистки мёртвого кода отличается от обычного бага:
+доказательство — что весь тестовый набор остаётся зелёным до/после
+(без теста "падает без фикса/проходит с фиксом", т.к. новое поведение не
+добавляется — только подтверждение, что ничего не зависело от удалённого).
+После каждого файла: `python manage.py check` + прогон
+`tests/unit/fb2parser_core`+`tests/integration/fb2parser_core`+
+`tests/integration/fb2parser_web`+`tests/unit/fb2parser_web` (для правок
+в fb2parser_core/fb2parser_web) или `tests/unit`+`tests/integration` (для
+правок в opds_catalog/book_tools/sopds). В конце — полный набор
+`tests/unit`+`tests/integration`+`tests/acceptance`, сравнённый с чистым
+`git stash`-бейзлайном: набор регрессий в `tests/acceptance` идентичен на
+бейзлайне и после чистки — известная фоновая нестабильность
+(`django-constance` требует `redis-py`, которого нет в системе;
+`@pytest.mark.override_config` в одном тесте ломает `constance`-backend
+на весь процесс pytest, порядок каскада недетерминирован между запусками) —
+не связана с этой чисткой.
+
+Удалено:
+
+- `fb2parser_core/fb2_author_extractor.py` (2254→309 строк) и
+  `fb2parser_core/fb2_sax_extractor.py` (1365→345 строк): обе реализовывали
+  многоуровневую приоритетную стратегию извлечения автора
+  (`resolve_author_by_priority` + ~15-25 поддерживающих методов каждая) —
+  ни один внешний вызывающий (`pass1_read_files.py`, `regen_csv.py`,
+  `genre_scan_service.py`, `fb2parser_web/genre_conflict_check.py`) к ней
+  не обращался; извлечение автора по факту выполняют
+  `passes/pass2_filename.py`/`pass2_series_filename.py` и consensus-пассы.
+  Оставлены только реально используемые методы (в т.ч.
+  `_extract_metadata_with_sax()` — тестовое использование).
+- `fb2parser_core/author_utils.py`, `fb2parser_core/author_processor.py`,
+  `fb2parser_core/structural_block_analyzer.py` — удалены целиком.
+  `author_processor.py` стал мёртвым после трима `fb2_sax_extractor.py`
+  (его последний внешний вызывающий); `structural_block_analyzer.py`'s
+  `BlockLevelPatternSelector` использовался только в собственном demo-коде
+  файла — реальный, рабочий класс с тем же именем определён отдельно и
+  независимо внутри `passes/pass2_series_filename.py`.
+- `fb2parser_core/series_processor.py`: удалены `extract_series_from_filename`/
+  `extract_series_from_filepath`/`extract_sequence_number`/
+  `extract_series_combined`/`categorize_series`/`reload_patterns`/
+  `_load_patterns` — ни одного внешнего вызывающего, и вдобавок их код звал
+  `ExtractionResult(extracted_value=..., source_priority=...)` —
+  именованные аргументы, которых нет в реальной сигнатуре
+  `ExtractionResult.__init__()` (там `value`/`priority`) — упал бы при
+  первом вызове. Осталось `apply_author_consensus()`/
+  `apply_series_consensus()` (использует `passes/pass4_consensus.py`).
+- `fb2parser_core/extraction_constants.py`: удалены `AuthorExtractionPriority`/
+  `SeriesExtractionPriority`/`ConfidenceLevel`/`FilterReason`/
+  `ExtractionResult` — использовались исключительно из только что удалённых
+  деревьев выше. Оставлены `is_no_series_folder`/`NO_SERIES_FOLDER_NAMES`/
+  `FILE_EXTENSION_FOLDER_NAMES` (используются `regen_csv.py`,
+  `precache.py`, `passes/pass1_read_files.py`,
+  `passes/pass2_series_filename.py`).
+- `fb2parser_core/passes/folder_series_parser/` (весь пакет, 4 файла,
+  ~220 строк) — импортировался в `regen_csv.py`, но
+  `parse_series_from_folder_name()` никогда не вызывался.
+- `fb2parser_core/passes/pass1_read_files.py`: `Pass1ReadFiles._get_author_for_file()` —
+  0 вызывающих (живой код использует отдельную функцию-воркер
+  `_get_author_for_file_worker()`).
+- `fb2parser_core/author_pipeline_service.py`: `run_author_only_pipeline()` +
+  `collect_unknown_gender_authors()` — 0 вызывающих. `guess_first_name()`
+  (использует `fb2parser_web/views.py`) не тронут.
+- `fb2parser_core/logger.py`: `Logger.get_entries()` + `Logger.clear()` —
+  0 вызывающих.
+- `fb2parser_core/settings_manager.py`: `auto_init_file_paths()` —
+  0 вызывающих.
+- `fb2parser_core/genre_assign.py` + `fb2parser_web/fb2parser_bridge.py`:
+  `assign_genre_threaded()` (в обоих местах — реальная функция и её
+  bridge-обёртка) — 0 вызывающих; жанр в `views.py` назначается только
+  через `get_genre_assignment_service()`. Также удалён неиспользуемый
+  `import xml.etree.ElementTree as ET`.
+- `fb2parser_core/series_normalizer.py`: `SeriesNormalizer.normalize_text()` +
+  `clear_cache()` — 0 вызывающих (используется только
+  `normalize_series_for_consensus()`).
+- `opds_catalog/services/catalog_services.py`: `get_catalogs_count()`/
+  `get_books_count()` (принимают `root: Catalog`) — 0 вызывающих;
+  затенялись одноимёнными функциями без параметров в
+  `opds_catalog/services/counter_services.py`, которые и используются
+  реально (`feeds.py`).
+- `opds_catalog/services/__init__.py`: `get_fb2_parser_factory()` — пустая
+  заглушка (`pass`), 0 вызывающих.
+- `book_tools/format/ebook_parsers/base.py` (`EbookParser`) и `factory.py`
+  (`ParserFactory`) удалены целиком — конкурирующий реестр парсеров, на
+  который никто не подписывался (`ParserFactory.register()` никогда не
+  вызывался) и через который никто не запрашивал парсер; единственный
+  внешний потребитель пакета (`book_tools/services.py`) импортирует
+  `Author`/`BookMetadata`/`Series` прямо из `dto.py`, минуя реэкспорт в
+  `__init__.py`. `dto.py` (реальные dataclass'ы) не тронут.
+- `book_tools/format/bookfile.py`: `BookFile.extract_cover(working_dir)` +
+  `BookFile.repair(working_dir)` — 0 вызывающих (весь реальный код обложек
+  идёт через `extract_cover_internal()`/`extract_cover_memory()`, которые
+  переопределяются в подклассах и не тронуты). Следом удалён и
+  `book_tools/format/epub.py`'s `EPub.repair()` — осиротевший override
+  без единого вызывающего после удаления базового метода, и
+  `book_tools/format/util.py`'s `minify_cover()` — не-операция с
+  закомментированным PIL/PythonMagick кодом, единственным вызывающим
+  которой была удалённая `BookFile.extract_cover()`.
+- `sopds/settings/base.py`: `django.middleware.cache.UpdateCacheMiddleware`
+  убран из `MIDDLEWARE` — постоянный no-op без пары
+  `FetchFromCacheMiddleware` (Django требует ОБА мидлвара для реального
+  кеширования; `FetchFromCacheMiddleware` в проекте не существует вовсе —
+  подтверждено комментарием в `tests/integration/opds_catalog/test_middleware.py`).
+- `sopds/asgi.py` — удалён целиком: не используется ни одним деплой-путём
+  (`gunicorn` в `bootstrap.sh`/`scripts/start_server.sh` запускает
+  `sopds.wsgi`, не `sopds.asgi`; ни ASGI-сервера, ни `channels` в
+  зависимостях нет), и вдобавок содержал неверный дефолт
+  `DJANGO_SETTINGS_MODULE=sopds.settings` (в отличие от корректного
+  `sopds.wsgi`, который дефолтит на `sopds.settings.base`).
+
+Проверка: `python manage.py check` — чисто. `tests/unit`+`tests/integration`
+(без `tests/acceptance`, где сидит несвязанная `constance`-нестабильность) —
+идентичны бейзлайну без единой новой регрессии, включая оба ранее
+существовавших `XFAIL`. Полный набор с `tests/acceptance` даёт тот же вывод
+после сравнения через `git stash` с чистым бейзлайном (см. выше про
+`constance`/`redis-py`).

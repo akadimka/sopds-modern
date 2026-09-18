@@ -32,7 +32,6 @@ from .passes import (
 )
 from .passes.pass2_series_filename import Pass2SeriesFilename
 from .passes.pass3_series_normalize import Pass3SeriesNormalize
-from .passes.folder_series_parser import parse_series_from_folder_name
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from .pattern_converter import compile_patterns
 from .folder_classifier import FolderClassifier, FolderType

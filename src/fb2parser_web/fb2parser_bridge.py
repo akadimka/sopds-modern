@@ -35,17 +35,6 @@ def get_genre_assignment_service(logger=None):
     return GenreAssignmentService(logger=logger)
 
 
-def assign_genre_threaded(folder_path, genre_name, progress_callback=None,
-                          completion_callback=None, logger=None):
-    from fb2parser_core.genre_assign import assign_genre_threaded as _agt
-    return _agt(
-        folder_path, genre_name,
-        progress_callback=progress_callback,
-        completion_callback=completion_callback,
-        logger=logger,
-    )
-
-
 def get_sync_service():
     from fb2parser_core.synchronization import SynchronizationService
     return SynchronizationService(_config_path())

@@ -28,19 +28,3 @@ class Logger:
         entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}"
         self.entries.append(entry)
 
-    def get_entries(self):
-        """
-        Get last 1000 log entries.
-        
-        / Получить последние 1000 записей логов.
-        """
-        entries_list = list(self.entries)
-        return entries_list[-1000:]
-
-    def clear(self):
-        """
-        Clear all log entries.
-        
-        / Очистить все записи логов.
-        """
-        self.entries.clear()

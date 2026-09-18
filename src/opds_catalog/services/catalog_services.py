@@ -66,16 +66,6 @@ def get_books_query(catalog: Catalog) -> QuerySet[Book, Book]:
     return Book.objects.filter(catalog=catalog)
 
 
-def get_catalogs_count(root: Catalog) -> int:
-    """Запрос числа подкаталогов в каталоге."""
-    return get_catalogs_query(root).count()
-
-
-def get_books_count(root: Catalog) -> int:
-    """Запрос числа книг в каталоге."""
-    return get_books_query(root).count()
-
-
 def _catalog_row_to_dict(row) -> dict:
     return {
         "is_catalog": 1,

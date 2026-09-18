@@ -7,7 +7,6 @@
 
 import re
 import unicodedata
-from typing import Optional
 
 
 def _nfc_lower_yo(s: str) -> str:
@@ -64,19 +63,3 @@ class SeriesNormalizer:
         result = text if text else series_candidate
         self._series_norm_cache[series_candidate] = result
         return result
-
-    def normalize_text(self, text: str) -> str:
-        """
-        Общая нормализация текста: NFC + lower + ё→е.
-
-        Args:
-            text: Исходный текст
-
-        Returns:
-            Нормализованный текст
-        """
-        return _nfc_lower_yo(text)
-
-    def clear_cache(self):
-        """Очистить кэш нормализаций."""
-        self._series_norm_cache.clear()

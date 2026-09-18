@@ -496,22 +496,6 @@ class EPub(BookFile):
         self.close()
         self.__initialize()
 
-    def repair(self, working_dir):
-        self.__zip_file.extractall(path=working_dir)
-
-        new_epub = mktemp(dir=working_dir)
-        with zipfile.ZipFile(new_epub, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
-            for entry in [
-                info.filename
-                for info in list_zip_file_infos(self.__zip_file)
-                if info.filename != EPub.Entry.MIMETYPE
-            ]:
-                zip_file.write(os.path.join(working_dir, entry), arcname=entry)
-        shutil.move(new_epub, self.path)
-        self.close()
-        self.__initialize()
-
     def extract_cover_internal(self, working_dir):
         if len(self.cover_fileinfos) == 0:
             return (None, False)

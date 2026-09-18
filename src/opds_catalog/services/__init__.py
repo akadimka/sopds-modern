@@ -6,7 +6,6 @@ from io import BytesIO
 
 from opds_catalog.sopds_config import sopds_cfg as config
 
-from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2, FB2sax
 
 
@@ -76,10 +75,6 @@ def extract_fb2_cover(
         parser = FB2(file)
     # parser.parse()
     return parser.extract_cover()
-
-
-def get_fb2_parser_factory(file: BytesIO, original_filename: str, mimetype: Mimetype):
-    pass
 
 
 def unzip_fb2_service(file: BytesIO) -> BytesIO:
