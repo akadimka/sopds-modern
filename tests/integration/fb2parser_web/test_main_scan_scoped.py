@@ -65,7 +65,9 @@ class TestScopedFolderScan:
         assert Book.objects.filter(path="folderA").count() == 1
         assert Book.objects.filter(path="folderB").count() == 1
 
-    def test_scanning_the_library_root_still_does_a_full_scan(self, two_folder_library):
+    def test_scanning_the_library_root_still_does_a_full_scan(
+        self, two_folder_library, override_config
+    ):
         from fb2parser_web.views import _run_scan_thread
 
         root, folder_a, folder_b = two_folder_library
@@ -76,9 +78,14 @@ class TestScopedFolderScan:
 
         # Файл в folderA исчезает, но сканируется КОРЕНЬ библиотеки целиком —
         # это должно по-прежнему быть полным пересканированием (старое
-        # поведение не должно измениться для этого случая).
+        # поведение не должно измениться для этого случая). Явно
+        # фиксируем физическое удаление (баг №89: по умолчанию
+        # SOPDS_DELETE_LOGICAL=true — исчезнувшая книга мягко скрывается
+        # (avail=0), а не удаляется — эта проверка про сам факт полного
+        # пересканирования, а не про режим удаления, поэтому пин явный).
         shutil.rmtree(folder_a)
-        _run_scan_thread(root)
+        with override_config(SOPDS_DELETE_LOGICAL=False):
+            _run_scan_thread(root)
 
         assert Book.objects.filter(path="folderA").count() == 0
         assert Book.objects.filter(path="folderB").count() == 1

@@ -259,3 +259,45 @@ def test_inpx_scanner(fake_sopds_root_lib, override_config) -> None:
     assert scanner.books_added == 3
     assert scanner.bad_books == 0
     assert Book.objects.count() == scanner.books_added
+
+
+@pytest.mark.django_db
+class TestScanAllRespectsDeleteLogicalSetting:
+    """Регрессия — docs/quality-roadmap.md, баг №89.
+
+    `scan_all()` игнорировал `SOPDS_DELETE_LOGICAL` — ветка была
+    закомментирована, и книги, пропавшие с диска, ВСЕГДА удалялись из
+    БД физически и безвозвратно, даже когда в настройках сайта включено
+    «логическое удаление» (checkbox в sopds_settings.html), которое
+    пользователь ожидает восстанавливаемым.
+    """
+
+    def test_logical_delete_keeps_row_but_marks_unavailable(
+        self, override_config, tmp_path, catalog
+    ):
+        book = Book.objects.create(
+            filename="gone.fb2", path=".", format="fb2", cat_type=0,
+            title="Gone", search_title="GONE", avail=2, catalog=catalog,
+        )
+        with override_config(SOPDS_ROOT_LIB=str(tmp_path), SOPDS_DELETE_LOGICAL=True):
+            scanner = opdsScanner()
+            scanner.scan_all()
+
+        assert scanner.books_deleted == 1
+        book.refresh_from_db()
+        assert book.avail == 0  # мягко скрыта, но строка сохранена
+        assert Book.objects.filter(id=book.id).exists()
+
+    def test_physical_delete_removes_row(self, override_config, tmp_path, catalog):
+        book = Book.objects.create(
+            filename="gone.fb2", path=".", format="fb2", cat_type=0,
+            title="Gone", search_title="GONE", avail=2, catalog=catalog,
+        )
+        with override_config(SOPDS_ROOT_LIB=str(tmp_path), SOPDS_DELETE_LOGICAL=False):
+            scanner = opdsScanner()
+            scanner.scan_all()
+
+        # books_del_phisical() возвращает результат QuerySet.delete() —
+        # (total_count, {model_label: count}), а не голое число.
+        assert scanner.books_deleted[0] == 1
+        assert not Book.objects.filter(id=book.id).exists()

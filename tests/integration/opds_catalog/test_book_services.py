@@ -34,6 +34,16 @@ class TestBookServices:
         results = book_services.search_book("s", series_obj.id, None, None)
         assert results.count() == 1
 
+    def test_search_book_by_author_and_series(self, book_with_relations):
+        """Поиск книг по автору+серии (баг №86: find_by_author_and_series
+        фильтровала по несуществующим полям author_id/series_id вместо
+        M2M-полей authors/series — всегда падала с FieldError)."""
+        author = book_with_relations.authors.first()
+        series_obj = book_with_relations.series.first()
+        results = book_services.search_book("as", author.id, series_obj.id, None)
+        assert results.count() == 1
+        assert results[0].id == book_with_relations.id
+
     def test_search_book_without_results(self):
         """Поиск несуществующей книги."""
         results = book_services.search_book("b", "Nonexist", None, None)

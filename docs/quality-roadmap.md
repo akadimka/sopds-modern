@@ -4311,3 +4311,265 @@ picker прямо сейчас тоже считается точным (син�
 `tests/integration/fb2parser_web/test_genre_scan_auto_suggest.py`.
 Прогнан `tests/integration/fb2parser_web/`+
 `tests/unit/fb2parser_core/` без регрессий.
+
+## Баг №85 — `_patch_fb2_tags()` вставляла автора/серию в XML файла без экранирования — риск порчи уже перенесённого файла
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+
+`SynchronizationService._patch_fb2_tags()` перезаписывает теги
+`<author>`/`<sequence>` в уже ПЕРЕНЕСЁННОМ синхронизацией FB2-файле,
+собирая XML через f-строки прямо из `proposed_author`/`proposed_series`
+— значений эвристического пайплайна (сырые метаданные/имена папок), без
+`html.escape()`. Соседний патч `<book-title>` в той же функции экранирует
+корректно (`html.escape(proposed_title)`) — то есть необходимость
+экранирования была осознана, но применена не везде. Автор или название
+серии с `&`, `<` или `"` (обычная ситуация в неряшливых реальных
+метаданных, которые этот пайплайн и создан разгребать) превращали файл
+в невалидный XML — без какого-либо отката, так как файл уже перемещён.
+
+Исправление:
+- Добавлен `import html as _html_mod` на уровень модуля
+  `synchronization.py` (был локальный импорт только внутри патча
+  `<book-title>`).
+- И автор (`<last-name>`/`<first-name>`), и серия (атрибут
+  `name="…"` тега `<sequence>`) теперь экранируются через
+  `_html_mod.escape()` перед вставкой — как уже делалось для заголовка.
+- Заодно слиты два идентичных (кроме комментария) branch'а патча автора
+  для 2 и 3+ слов — экранирование писать один раз, а не дублировать.
+
+Закреплено новым
+`tests/unit/fb2parser_core/test_sync_patch_fb2_tags_escapes_xml.py`:
+3 сценария (серия с `&`, фамилия с `&`, серия с `"`/`<`/`>`) явно
+воспроизводят повреждение — без фикса `lxml.etree.fromstring()` на
+результирующем файле бросает `XMLSyntaxError` (проверено через
+`git stash` на исходной версии файла), с фиксом файл валиден и значения
+корректно round-trip'ятся. Плюс контрольный тест на обычные значения
+без спецсимволов — поведение не изменилось. Прогнан
+`tests/unit/fb2parser_core/`+`tests/integration/fb2parser_core/` —
+без регрессий (два предсуществующих `XFAIL`, не связанных с этим
+изменением). Более широкий прогон `tests/unit`+`tests/integration`
+показал ряд ПРЕДСУЩЕСТВУЮЩИХ падений в `opds_catalog`/`book_tools`
+(отсутствует пакет `redis-py` для backend'а `constance`,
+несостыковка `opdsdb.findauthor`/`addauthor` после недавнего мерджа
+апстрима) — воспроизведены и через `git stash` на версии ДО этого
+фикса, то есть не вызваны этим изменением.
+
+## Баг №86 — поиск «автор+серия» в каталоге падал всегда (FieldError) — фильтровала по несуществующим полям
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+
+`book_services.find_by_author_and_series()` (тип поиска `SearchType.
+BY_AUTHOR_AND_SERIES = "as"`) фильтровала
+`Book.objects.filter(author_id=..., series_id=...)` — но у модели `Book`
+нет полей `author`/`series` (одиночные FK), только M2M `authors`
+(через `bauthor`) и `series` (через `bseries`). Любой вызов этого пути
+падал с `django.core.exceptions.FieldError`. Путь реально достижим:
+ссылки "Книги вне серии"/переходы автор→серия в навигации каталога
+(`feeds.py`) ведут именно сюда — то есть клик по ним всегда завершался
+500-й ошибкой.
+
+Исправление: `authors=to_int(author_id), series=to_int(series_id)` —
+как уже делают соседние `find_books_by_author()`/`find_books_by_series()`
+в том же файле.
+
+Закреплено новым тестом
+`test_search_book_by_author_and_series` в
+`tests/integration/opds_catalog/test_book_services.py` — без фикса
+воспроизводит именно `FieldError: Cannot resolve keyword 'author_id'...`
+(проверено через `git stash` на версии до фикса), с фиксом находит
+книгу через `search_book("as", author_id, series_id, None)`. Прогнан
+`tests/integration/opds_catalog/` — без новых регрессий (тот же набор
+предсуществующих падений в `test_get_filename.py`/`test_opdsdb.py`/
+`test_paginator.py`/`test_scan.py`, воспроизводимых и без этого фикса).
+
+## Баг №87 — извлечение обложки было тихим no-op для ВСЕХ форматов кроме FB2 (EPUB/MOBI/DjVu/PDF)
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+
+`create_bookfile_service()` (единая точка входа для чтения метаданных
+книги для скана каталога и для отдачи обложек в `dl.py`) для ЛЮБОГО
+формата всегда строила ответ через `book_metadata_to_bookfile()` —
+generic `BookFile` с DTO-метаданными, чьи `extract_cover_internal()`/
+`extract_cover_memory()` — жёстко закодированные `(None, False)`/`None`.
+При этом рабочие реализации извлечения обложки для EPUB/MOBI уже
+существовали (`format/epub.py::EPub`, `format/mobi.py::Mobipocket`,
+оба — подклассы `BookFile`, оба уже вызываются внутри
+`parse_epub()`/`parse_mobi()` для чтения метаданных), но объект
+парсера отбрасывался сразу после извлечения DTO, и наружу уходил
+только generic `BookFile`. Итог: `dl.py.Cover()` для FB2 показывал
+реальную обложку, а для EPUB/MOBI/DjVu/PDF — всегда редирект на
+заглушку "Нет обложки", даже когда обложка в файле физически есть.
+
+Исправление: `create_bookfile_service()` для `Mimetype.EPUB`/
+`Mimetype.MOBI` строит и возвращает напрямую `EPub`/`Mobipocket` —
+они уже атрибутно совместимы с generic `BookFile` (используют те же
+унаследованные `__set_title__`/`__add_author__`/... что и DTO-путь),
+но при этом реально умеют отдавать обложку. При любой ошибке
+конструирования — откат на прежний DTO-путь (`book_metadata_to_bookfile`),
+то есть в худшем случае поведение не хуже, чем было. `parse_epub()`/
+`parse_mobi()` (сохранены как есть — используются как раньше для
+логики реестра парсеров) от изменения не затронуты.
+
+Закреплено новым тестом
+`test_create_bookfile_service_extracts_real_cover` (параметризован по
+`mirer.epub`/`robin_cook.mobi` — реальным тестовым файлам, у которых
+предварительно подтверждено прямым запуском `EPub`/`Mobipocket`, что
+обложка реально извлекается) в
+`tests/integration/book_tools/test_mime_detector.py`. Без фикса оба
+параметра падают на `assert cover is not None` (проверено через
+`git stash` на версии до фикса), с фиксом — проходят. Прогнан
+`tests/integration/book_tools/`+`tests/unit/book_tools/` — без новых
+регрессий (одно предсуществующее падение `test_epub_parser.py::
+TestEpubParserValues::test_cover` — это отдельный, неиспользуемый в
+продакшене парсер `format/parsers.py::EpubParser`, ломается на Windows
+из-за `\`/`/` в собираемом пути; воспроизведено и без этого фикса).
+
+## Баг №88 — `SettingsManager()` без `config_path` всегда падал и тихо проглатывался — часть настроек пользователя никогда не применялась
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+
+`SettingsManager.__init__(self, config_path)` не имеет значения по
+умолчанию — вызов без аргумента всегда бросает `TypeError` (а под
+pytest/Django, где нет доступа к `settings_manager` как к
+top-level-модулю, бару-импорт `from settings_manager import
+SettingsManager` вообще падает `ImportError`/`ModuleNotFoundError`
+раньше, чем до конструктора доходит очередь). Три места так и
+вызывали `SettingsManager()` внутри `try: ... except Exception:
+<hardcoded fallback>` — ошибка проглатывалась молча, и фактически
+ВСЕГДА срабатывал fallback, даже когда `config.json` был доступен:
+- `fb2parser_core/gender_lookup.py` (`writer_occupation_qids` для
+  приоритета Wikidata-поиска пола — единственный реальный вызывающий
+  `fb2parser_web/views.py:names_check_online` вообще не передавал
+  `settings=`);
+- `fb2parser_core/passes/folder_author_parser/__init__.py`
+  (`collection_keywords` — стоп-слова для отсева "не-авторских" папок,
+  этот модуль реально используется в живом пайплайне);
+- `fb2parser_core/passes/folder_series_parser/pass2_series_extraction.py`
+  — этот путь оставлен как есть: весь пакет `folder_series_parser`
+  подтверждённо мёртвый код (см. баг №82... ошибка, см. аудит,
+  раздел `core-passes-early`, находка №2 — `parse_series_from_folder_name`
+  нигде не вызывается), чинить `SettingsManager()` внутри кода, который
+  никогда не выполняется, не имеет практического эффекта.
+
+Исправление — в обоих реальных местах конструируем
+`SettingsManager(default_config_path)` с тем же путём по умолчанию,
+что уже использует `fb2_compiler.py`
+(`src/fb2_data/settings/config.json`, вычисляется от `__file__`).
+**Важный нюанс, найденный ПРИ проверке фикса на реальном
+`config.json`**: `collection_keywords` в реальном конфиге НЕ содержит
+часть встроенных категорийных слов (`Цикл`, `Архив`, `Разное`,
+`Другое`, `Подборка`, `Серия`) — наивная замена встроенного списка
+конфигом расблокировала бы такие папки как "авторов" (проверено
+вручную: `"Цикл Иванова"` начинал давать `"Цикл Иванова"` вместо `""`).
+Поэтому `folder_author_parser` теперь **объединяет** встроенный список
+с `collection_keywords` из конфига, а не заменяет его — конфиг может
+только РАСШИРЯТЬ чёрный список, никогда не сужать. Заодно упрощён
+вызывающий код в `fb2parser_web/views.py:names_check_online` — теперь
+явно передаёт `GenderLookupService(settings=SettingsManager(_config_path()))`,
+что попутно убирает больше не нужный ручной патч `svc._db_path` после
+конструктора (тот же `settings` уже сам кладёт кэш туда же).
+
+Закреплено новым
+`tests/unit/fb2parser_core/test_settings_manager_default_construction.py`
+(подменяет `SettingsManager` фейком с контролируемым содержимым, а не
+зависит от текущего реального `config.json`):
+- слово из встроенного списка, которого НЕТ в (фейковом) конфиге,
+  остаётся в чёрном списке — регрессионный барьер именно на найденный
+  выше риск;
+- слово ТОЛЬКО из конфига (`"компиляция"`) реально начинает работать —
+  без фикса падает (проверено через `git stash`: `SettingsManager()`
+  без пути роняет исключение, конфиг никогда не читается);
+- то же для `GenderLookupService()` без явного `settings=` —
+  `writer_occupation_qids` из (фейкового) конфига теперь реально
+  применяется, без фикса тест падает и остаётся встроенный дефолт.
+
+Прогнан `tests/unit/fb2parser_core/`+`tests/integration/fb2parser_core/`+
+`tests/integration/fb2parser_web/`+`tests/unit/fb2parser_web/` — без
+регрессий (те же два предсуществующих `XFAIL`, не связанных с этим
+изменением).
+
+## Баг №89 — настройка «логическое удаление» при сканировании была мёртвой — всегда безвозвратное физическое удаление
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+
+`opdsScanner.scan_all()` содержал закомментированную ветку
+`if config.SOPDS_DELETE_LOGICAL: books_del_logical() else:
+books_del_phisical()` и вместо неё безусловно вызывал
+`opdsdb.books_del_phisical()` — то есть книги, пропавшие с диска между
+сканами, ВСЕГДА удалялись из БД (и каскадно — их связи
+автор/жанр/серия) физически и безвозвратно, даже когда в настройках
+сайта включено «логическое удаление» (чекбокс в `sopds_settings.html`,
+поддержан `sopds_web_backend/views.py` и `config.json`), которое
+пользователь ожидает восстанавливаемым (мягкая пометка `avail=0`, без
+удаления строки). `log_stats()` при этом продолжал печатать РАЗНЫЙ
+текст в зависимости от настройки ("Books deleted" vs "Books DB entries
+deleted"), создавая иллюзию, что настройка на что-то влияет.
+
+Исправление: раскомментирована исходная ветка.
+`opdsdb.books_del_logical()` (было подтверждённо мёртвым кодом с
+единственной ссылкой — из этого же закомментированного блока) снова
+реально вызывается.
+
+Закреплено новым `TestScanAllRespectsDeleteLogicalSetting` в
+`tests/integration/opds_catalog/test_scan.py`: создаёт книгу, сканирует
+пустую `tmp_path` (книга "не находится" при скане и должна считаться
+удалённой) при `SOPDS_DELETE_LOGICAL=True` — строка должна СОХРАНИТЬСЯ
+с `avail=0`, и при `SOPDS_DELETE_LOGICAL=False` — строка должна
+ИСЧЕЗНУТЬ. Без фикса первый сценарий падает (реально происходит
+физическое удаление независимо от настройки; проверено через
+`git stash`). Прогнан `tests/integration/opds_catalog/` — без НОВЫХ
+регрессий (тот же неизменный набор предсуществующих падений в
+`test_get_filename.py`/`test_opdsdb.py`/`test_paginator.py`/
+`test_scan.py::TestBookScaner`/`test_inpx_scanner`, воспроизводимых и
+без этого фикса).
+
+**Побочный эффект, замеченный при полном прогоне
+`tests/integration/fb2parser_web/`**: тест
+`test_main_scan_scoped.py::TestScopedFolderScan::
+test_scanning_the_library_root_still_does_a_full_scan` (баг №77)
+неявно опирался на старое (ошибочное) поведение "всегда физическое
+удаление" — с реальным дефолтом `SOPDS_DELETE_LOGICAL=true`
+(`sopds_config.py`/`config.json`) он начал падать: пропавшая книга
+теперь мягко скрывается (`avail=0`), а не удаляется. Тест
+скорректирован — явно фиксирует `override_config(SOPDS_DELETE_LOGICAL=
+False)` для той конкретной проверки (её реальная цель — подтвердить,
+что полный скан по корню библиотеки не игнорирует пропавшие файлы, а
+не проверять конкретный режим удаления).
+
+## Баг №90 — «Перезагрузка сервера» в UI рапортовала успех, хотя в проде (gunicorn) ничего не перезапускала
+
+Найдено при архитектурном аудите проекта (`docs/architecture-audit-2026-09.md`).
+
+`server_restart()` касается mtime `manage.py`, чтобы триггернуть
+autoreload Django dev-сервера (`manage.py runserver`). В продакшене
+приложение запускается через gunicorn
+(`sopds.settings.gunicorn`: `reload = False`, см. `DEPLOY.md`,
+systemd-юнит `sopds-modern.service`) — gunicorn-воркеры НЕ следят за
+изменениями файлов на диске, касание `manage.py` ничего не делает.
+Несмотря на это, view всегда возвращал `<script>...location.reload();
+...</script>` и текст "⟳ Перезагрузка...", создавая у администратора
+ложное впечатление, что сервер реально перезапустился.
+
+Исправление: определяем реальный WSGI-сервер по
+`request.META['SERVER_SOFTWARE']` (gunicorn сам устанавливает это
+поле в `gunicorn/<версия>`, дев-сервер — `WSGIServer/...`). Под
+gunicorn — честный ответ с подсказкой выполнить
+`systemctl restart sopds-modern` на сервере, вместо фиктивного
+"успеха". Под dev-сервером поведение не изменилось. Новая строка
+обёрнута в `gettext`, добавлен перевод в
+`src/fb2parser_web/locale/ru/LC_MESSAGES/django.po`, скомпилирован
+через `python compile_messages.py`. Реального механизма перезапуска
+gunicorn-сервиса из процесса приложения не добавлялось — это требовало
+бы выдать веб-процессу привилегии на `systemctl`/`sudo`, что является
+самостоятельным решением о безопасности деплоя, а не багфиксом.
+
+Закреплено новым
+`tests/integration/fb2parser_web/test_server_restart_honest_under_gunicorn.py`:
+под `SERVER_SOFTWARE=gunicorn/...` ответ не должен содержать
+`location.reload()`/"Перезагрузка" и должен содержать подсказку про
+`systemctl`; под dev-сервером — старое поведение сохраняется. Без
+фикса первый тест падает (ответ всегда "успех", проверено через
+`git stash`). Прогнан
+`tests/integration/fb2parser_web/`+`tests/unit/fb2parser_web/`+
+`tests/unit/fb2parser_core/`+`tests/integration/fb2parser_core/` —
+без регрессий (те же два предсуществующих `XFAIL`).

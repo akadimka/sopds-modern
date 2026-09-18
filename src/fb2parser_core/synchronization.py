@@ -18,6 +18,7 @@ import re
 import sqlite3
 import shutil
 import hashlib
+import html as _html_mod
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional, Callable
@@ -1729,25 +1730,23 @@ class SynchronizationService:
                 author_xmls = []
                 for auth in authors:
                     parts = auth.split()
+                    # Экранируем перед вставкой в XML — proposed_author приходит
+                    # из эвристического пайплайна (сырые метаданные/имена папок),
+                    # а не из уже провалидированных для путей переменных, и может
+                    # содержать &, < или " (баг №85).
+                    safe_parts = [_html_mod.escape(p) for p in parts]
                     if len(parts) == 1:
                         xml = (
                             f'<{ns}author>'
-                            f'<{ns}last-name>{parts[0]}</{ns}last-name>'
-                            f'</{ns}author>'
-                        )
-                    elif len(parts) == 2:
-                        xml = (
-                            f'<{ns}author>'
-                            f'<{ns}last-name>{parts[0]}</{ns}last-name>'
-                            f'<{ns}first-name>{parts[1]}</{ns}first-name>'
+                            f'<{ns}last-name>{safe_parts[0]}</{ns}last-name>'
                             f'</{ns}author>'
                         )
                     else:
                         # Формат всегда "Фамилия Имя" — отчество не пишем в FB2
                         xml = (
                             f'<{ns}author>'
-                            f'<{ns}last-name>{parts[0]}</{ns}last-name>'
-                            f'<{ns}first-name>{parts[1]}</{ns}first-name>'
+                            f'<{ns}last-name>{safe_parts[0]}</{ns}last-name>'
+                            f'<{ns}first-name>{safe_parts[1]}</{ns}first-name>'
                             f'</{ns}author>'
                         )
                     author_xmls.append(xml)
@@ -1786,7 +1785,9 @@ class SynchronizationService:
                     if num_m:
                         number_attr = f' number="{num_m.group(1)}"'
 
-                new_seq = f'<sequence name="{proposed_series}"{number_attr}/>'
+                # Экранируем — proposed_series может содержать &, < или " (баг №85).
+                safe_series = _html_mod.escape(proposed_series)
+                new_seq = f'<sequence name="{safe_series}"{number_attr}/>'
                 if seq_m:
                     ti_body = ti_body[:seq_m.start()] + new_seq + ti_body[seq_m.end():]
                 else:
@@ -1794,7 +1795,6 @@ class SynchronizationService:
 
             # ---- 3. patch book-title tag ----
             if proposed_title:
-                import html as _html_mod
                 safe_title = _html_mod.escape(proposed_title)
                 bt_m = re.search(
                     r'<(?:fb:)?book-title>.*?</(?:fb:)?book-title>',

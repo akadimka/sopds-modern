@@ -110,9 +110,22 @@ class GenderLookupService:
         if settings is not None:
             qids = settings.get_writer_occupation_qids()
         else:
+            # Фолбэк для конструирования без settings: SettingsManager()
+            # без config_path всегда бросает TypeError (обязательный
+            # позиционный аргумент) — раньше это тихо проглатывалось, и
+            # writer_occupation_qids из config.json никогда не применялся
+            # (баг №88). Используем тот же путь по умолчанию, что и
+            # fb2_compiler.py — src/fb2_data/settings/config.json.
             try:
-                from settings_manager import SettingsManager
-                qids = SettingsManager().get_writer_occupation_qids()
+                try:
+                    from settings_manager import SettingsManager
+                except ImportError:
+                    from .settings_manager import SettingsManager
+                default_config_path = str(
+                    Path(__file__).resolve().parent.parent
+                    / 'fb2_data' / 'settings' / 'config.json'
+                )
+                qids = SettingsManager(default_config_path).get_writer_occupation_qids()
             except Exception:
                 qids = None
         self._writer_occupations: set = set(qids) if qids else _DEFAULT_WRITER_OCCUPATIONS

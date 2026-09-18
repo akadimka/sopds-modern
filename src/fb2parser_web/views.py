@@ -812,7 +812,24 @@ def folder_tree(request):
 @staff_member_required(login_url="/web/login/")
 @staff_member_required
 def server_restart(request):
-    """Touch manage.py to trigger Django dev server autoreload."""
+    """Touch manage.py to trigger Django dev server autoreload.
+
+    В продакшене (gunicorn, sopds.settings.gunicorn: reload=False)
+    касание manage.py ничего не делает — gunicorn-воркеры не следят за
+    изменениями файлов. Раньше это тихо игнорировалось и ответ ВСЕГДА
+    рапортовал успех перезапуска (баг №90) — определяем реальный сервер
+    по SERVER_SOFTWARE и не обещаем то, что физически не выполняем.
+    """
+    from django.utils.translation import gettext as _
+    if "gunicorn" in request.META.get("SERVER_SOFTWARE", "").lower():
+        message = _(
+            "Automatic restart is unavailable under gunicorn — "
+            "run 'systemctl restart sopds-modern' on the server."
+        )
+        return HttpResponse(
+            f'<span style="color:#c0392b">✗ {message}</span>',
+            content_type="text/html; charset=utf-8",
+        )
     import pathlib, threading
     manage_py = pathlib.Path(__file__).parent.parent / "manage.py"
     def _touch():
@@ -1643,13 +1660,16 @@ def names_check_online(request):
         return JsonResponse({"error": "bad json"}, status=400)
 
     from fb2parser_core.gender_lookup import GenderLookupService, STATUS_FOUND
+    from fb2parser_core.settings_manager import SettingsManager
     from .fb2parser_bridge import _config_path
-    db_path = os.path.join(os.path.dirname(_config_path()), "gender_cache.db")
 
     def event_stream():
-        svc = GenderLookupService()
-        svc._db_path = __import__('pathlib').Path(db_path)
-        svc._load_db_cache()
+        # Передаём settings явно — иначе GenderLookupService() падает на
+        # SettingsManager() без обязательного config_path (баг №88),
+        # молча проглатывает исключение и никогда не применяет
+        # writer_occupation_qids из config.json; попутно settings уже
+        # сам кладёт gender_cache.db рядом с config.json.
+        svc = GenderLookupService(settings=SettingsManager(_config_path()))
         for author in authors:
             try:
                 result = svc.lookup_one(author)

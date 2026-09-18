@@ -143,6 +143,24 @@ def test_create_bookfile_service(filename, expected_attr, test_rootlib) -> None:
     assert getattr(result, expected_attr, None) is not None
 
 
+@pytest.mark.parametrize(
+    "filename",
+    ["mirer.epub", "robin_cook.mobi"],
+)
+def test_create_bookfile_service_extracts_real_cover(filename, test_rootlib) -> None:
+    """create_bookfile_service() возвращает объект с рабочим извлечением
+    обложки для EPUB/MOBI (баг №87: раньше всегда возвращался generic
+    BookFile, чей extract_cover_memory() — no-op, возвращающий None для
+    ЛЮБОГО формата кроме FB2, даже если обложка реально есть в файле)."""
+    path = os.path.join(test_rootlib, filename)
+    with open(path, "rb") as f:
+        data = BytesIO(f.read())
+    result = create_bookfile_service(data, filename)
+    cover = result.extract_cover_memory()
+    assert cover is not None
+    assert len(cover) > 0
+
+
 def test_create_bookfile_service_dummy() -> None:
     """Dummy-файлы (txt, pdf) возвращают BookFile с минимальными данными."""
     data = BytesIO(b"plain text content")

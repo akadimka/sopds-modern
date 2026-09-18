@@ -1048,3 +1048,7 @@ msgstr "Освобождено места:"
 
 msgid "Compression not started."
 msgstr "Сжатие не запущено."
+
+# --- views.py: server_restart() ---
+msgid "Automatic restart is unavailable under gunicorn — run 'systemctl restart sopds-modern' on the server."
+msgstr "Автоматический перезапуск недоступен под gunicorn — выполните на сервере «systemctl restart sopds-modern»."

@@ -150,12 +150,10 @@ class opdsScanner:
         opdsdb.avail_check_prepare()
         self.scan_path(config.SOPDS_ROOT_LIB)
 
-        # if config.SOPDS_DELETE_LOGICAL:
-        #    self.books_deleted=opdsdb.books_del_logical()
-        # else:
-        #    self.books_deleted=opdsdb.books_del_phisical()
-
-        self.books_deleted = opdsdb.books_del_phisical()
+        if config.SOPDS_DELETE_LOGICAL:
+            self.books_deleted = opdsdb.books_del_logical()
+        else:
+            self.books_deleted = opdsdb.books_del_phisical()
         self.orphans_deleted = opdsdb.cleanup_orphan_entities()
 
         self.log_stats()

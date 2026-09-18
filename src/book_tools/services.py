@@ -26,6 +26,7 @@ from .format.bookfile import BookFile
 from .format.ebook_parsers.dto import Author, BookMetadata, Series
 from .format.epub import EPub as EPubOld
 from .format.mimetype import Mimetype
+from .format.mobi import Mobipocket
 from .format.parsers import FB2
 from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
@@ -344,6 +345,33 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
         raise UnsupportedFileType(content_mimetype, original_filename) from e
 
     metadata = parser_fn(content_data, original_filename)
+
+    # EPUB/MOBI уже имеют полноценные BookFile-подклассы (EPub/Mobipocket)
+    # с рабочим извлечением обложки — используем их напрямую, а не только
+    # DTO-конвертацию в generic BookFile, у которой extract_cover_*()
+    # всегда no-op (баг №87: обложка не отображалась для ЛЮБОГО формата
+    # кроме FB2). При любой ошибке молча откатываемся к уже готовому
+    # metadata — ничего не теряем по сравнению с прежним поведением.
+    content_data.seek(0)
+    if content_mimetype == Mimetype.EPUB:
+        try:
+            return EPubOld(content_data, original_filename)
+        except Exception:
+            logger.warning(
+                f"Failed to build EPub cover-capable instance for "
+                f"{original_filename}, falling back to metadata-only BookFile",
+                exc_info=True,
+            )
+    elif content_mimetype == Mimetype.MOBI:
+        try:
+            return Mobipocket(content_data, original_filename)
+        except Exception:
+            logger.warning(
+                f"Failed to build Mobipocket cover-capable instance for "
+                f"{original_filename}, falling back to metadata-only BookFile",
+                exc_info=True,
+            )
+
     return book_metadata_to_bookfile(
         metadata, data, original_filename, content_mimetype
     )

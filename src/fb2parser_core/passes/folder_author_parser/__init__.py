@@ -59,17 +59,36 @@ def parse_author_from_folder_name(folder_name: str,
         return ""
 
     # ==================== Check blacklist ====================
-    # Загружаем категории из конфига
+    # Встроенный список категорийных слов — всегда участвует в проверке,
+    # независимо от того, доступен ли config.json (см. ниже).
+    _BUILTIN_BLACKLIST = [
+        'Серия', 'Сборник', 'Коллекция', 'Антология', 'Цикл', 'Подборка',
+        'Архив', 'Разное', 'Другое', 'Unknown', 'Various'
+    ]
+    # Дополняем из конфига. SettingsManager() без config_path всегда
+    # бросал TypeError (обязательный позиционный аргумент) — раньше это
+    # тихо проглатывалось except'ом ниже, и collection_keywords из
+    # config.json никогда не применялся (баг №88). Путь по умолчанию — как
+    # в fb2_compiler.py. ВАЖНО: список из конфига ДОБАВЛЯЕТСЯ к встроенному,
+    # а не заменяет его — collection_keywords в реальном config.json не
+    # содержит часть встроенных слов ("Цикл", "Архив", "Разное", "Другое",
+    # "Подборка", "Серия"), и простая замена расблокировала бы такие папки
+    # как "авторов" (проверено вручную на реальном config.json).
     try:
-        from settings_manager import SettingsManager
-        settings = SettingsManager()
-        blacklist_starts = settings.get_list('collection_keywords') + ['Unknown', 'Various']
+        from pathlib import Path as _Path
+        try:
+            from settings_manager import SettingsManager
+        except ImportError:
+            from ...settings_manager import SettingsManager
+        _default_config_path = str(
+            _Path(__file__).resolve().parent.parent.parent.parent
+            / 'fb2_data' / 'settings' / 'config.json'
+        )
+        settings = SettingsManager(_default_config_path)
+        blacklist_starts = _BUILTIN_BLACKLIST + settings.get_list('collection_keywords')
     except Exception:
         # Fallback если конфиг недоступен
-        blacklist_starts = [
-            'Серия', 'Сборник', 'Коллекция', 'Антология', 'Цикл', 'Подборка',
-            'Архив', 'Разное', 'Другое', 'Unknown', 'Various'
-        ]
+        blacklist_starts = _BUILTIN_BLACKLIST
     
     name_lower = name.lower()
     for word in blacklist_starts:
