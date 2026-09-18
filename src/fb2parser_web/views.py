@@ -843,8 +843,14 @@ def server_restart(request):
     )
 
 
+@staff_member_required(login_url="/web/login/")
 def folder_count(request):
-    """Рекурсивный подсчёт FB2 в папке — вызывается асинхронно после рендера узла."""
+    """Рекурсивный подсчёт FB2 в папке — вызывается асинхронно после рендера узла.
+
+    Баг №91: раньше без декоратора авторизации — любой неавторизованный
+    мог обходить произвольные папки на диске и вызывать неограниченные
+    рекурсивные os.walk() (в т.ч. по медленным сетевым шарам).
+    """
     path = request.GET.get("path", "").strip()
     if not path or not os.path.isdir(path):
         return HttpResponse("")
@@ -1548,8 +1554,14 @@ def names_from_csv(request):
     return HttpResponse(html)
 
 
+@staff_member_required(login_url="/web/login/")
 def names_list(request):
-    """Возвращает список авторов с неизвестным полом из текущего norm_job."""
+    """Возвращает список авторов с неизвестным полом из текущего norm_job.
+
+    Баг №91: раньше без декоратора авторизации — отдавал внутренние
+    данные библиотеки (имена авторов, пути файлов) любому анонимному
+    посетителю.
+    """
     import re as _re
     _state = norm_job.get()
     records = list(_state["records"])
@@ -1748,24 +1760,41 @@ def martyrs_list(request):
     return HttpResponse(render_to_string("fb2parser/martyrs.html", {"rows": rows, "folder": folder}))
 
 
-@staff_member_required(login_url="/web/login/")
-def martyrs_delete(request):
-    """POST {paths: [...]} — удаляет файлы и пустые папки вверх до корня."""
-    if request.method != "POST":
-        from django.http import HttpResponseNotAllowed
-        return HttpResponseNotAllowed(["POST"])
-    import json
+def _is_within_folder(path, folder):
+    """True если `path` реально находится внутри `folder`.
+
+    Баг №93: `martyrs_delete`/`broken_files_delete`/`duplicates_delete`
+    принимают список путей от клиента (JSON-тело POST-запроса) и
+    удаляли их через os.remove() без этой проверки — `folder`
+    использовался только ПОСЛЕ удаления, для чистки пустых папок,
+    а не как граница доверия перед самим удалением.
+    """
+    if not folder or not path:
+        return False
     try:
-        data  = json.loads(request.body)
-        paths = [p.strip() for p in data.get("paths", []) if p.strip()]
+        real_folder = os.path.normcase(os.path.realpath(folder))
+        real_path = os.path.normcase(os.path.realpath(path))
+        return os.path.commonpath([real_folder, real_path]) == real_folder
     except Exception:
-        return JsonResponse({"error": "bad json"}, status=400)
+        return False
 
-    folder = norm_job["folder"]
 
+def _delete_paths_confined(paths, folder):
+    """Удаляет файлы из `paths` (только те, что реально лежат внутри
+    `folder` — см. `_is_within_folder`, баг №93) и чистит опустевшие
+    родительские папки вверх до `folder`. Общая логика для
+    `martyrs_delete`/`broken_files_delete`/`duplicates_delete` — раньше
+    была продублирована в этих трёх view почти буквально.
+
+    Returns:
+        (deleted_count, errors) — как и раньше возвращали все три view.
+    """
     deleted, errors = 0, []
     deleted_dirs = set()
     for p in paths:
+        if not _is_within_folder(p, folder):
+            errors.append(f"{p}: путь вне отсканированной папки, отказано")
+            continue
         try:
             if os.path.isfile(p):
                 parent = os.path.dirname(p)
@@ -1787,6 +1816,24 @@ def martyrs_delete(request):
         except Exception:
             pass
 
+    return deleted, errors
+
+
+@staff_member_required(login_url="/web/login/")
+def martyrs_delete(request):
+    """POST {paths: [...]} — удаляет файлы и пустые папки вверх до корня."""
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data  = json.loads(request.body)
+        paths = [p.strip() for p in data.get("paths", []) if p.strip()]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    folder = norm_job["folder"]
+    deleted, errors = _delete_paths_confined(paths, folder)
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
@@ -1881,30 +1928,7 @@ def broken_files_delete(request):
         return JsonResponse({"error": "bad json"}, status=400)
 
     folder = norm_job["folder"]
-
-    deleted, errors = 0, []
-    deleted_dirs = set()
-    for p in paths:
-        try:
-            if os.path.isfile(p):
-                parent = os.path.dirname(p)
-                os.remove(p)
-                deleted += 1
-                deleted_dirs.add(parent)
-        except Exception as e:
-            errors.append(f"{p}: {e}")
-
-    for d in sorted(deleted_dirs, key=len, reverse=True):
-        try:
-            cur = d
-            while cur and os.path.isdir(cur) and not os.listdir(cur):
-                if folder and os.path.normpath(cur) == os.path.normpath(folder):
-                    break
-                os.rmdir(cur)
-                cur = os.path.dirname(cur)
-        except Exception:
-            pass
-
+    deleted, errors = _delete_paths_confined(paths, folder)
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
@@ -2179,30 +2203,7 @@ def duplicates_delete(request):
         return JsonResponse({"error": "bad json"}, status=400)
 
     folder = norm_job["folder"]
-
-    deleted, errors = 0, []
-    deleted_dirs = set()
-    for p in paths:
-        try:
-            if os.path.isfile(p):
-                parent = os.path.dirname(p)
-                os.remove(p)
-                deleted += 1
-                deleted_dirs.add(parent)
-        except Exception as e:
-            errors.append(f"{p}: {e}")
-
-    for d in sorted(deleted_dirs, key=len, reverse=True):
-        try:
-            cur = d
-            while cur and os.path.isdir(cur) and not os.listdir(cur):
-                if folder and os.path.normpath(cur) == os.path.normpath(folder):
-                    break
-                os.rmdir(cur)
-                cur = os.path.dirname(cur)
-        except Exception:
-            pass
-
+    deleted, errors = _delete_paths_confined(paths, folder)
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 

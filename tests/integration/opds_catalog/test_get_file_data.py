@@ -89,6 +89,38 @@ class TestGetFileData:
 # tests/acceptance/test_downloads.py — тот же сценарий через реальный HTTP-эндпоинт).
 
 
+# ── Баг №95: path traversal через book.path ──────────────────────────────
+
+
+class TestGetFileDataRefusesPathOutsideRootLib:
+    """`book.path` может быть выставлен из непроверенных сторонних данных
+    (например, INPX-импорт) — getFileData() должен отказаться читать
+    файл, если итоговый путь выходит за пределы SOPDS_ROOT_LIB, вместо
+    того чтобы читать что попросили."""
+
+    def test_dotdot_traversal_refused(self, book_factory, tmp_path, override_config) -> None:
+        root = tmp_path / "library"
+        root.mkdir()
+        secret_dir = tmp_path / "secret"
+        secret_dir.mkdir()
+        (secret_dir / "leak.fb2").write_bytes(b"TOP-SECRET-CONTENT")
+
+        book = book_factory(filename="leak.fb2", cat_type=0, path="../secret")
+        with override_config(SOPDS_ROOT_LIB=str(root)):
+            assert getFileData(book) is None
+
+    def test_absolute_path_refused(self, book_factory, tmp_path) -> None:
+        outside = tmp_path / "outside.zip"
+        outside.write_bytes(b"not a real zip, doesn't matter")
+        book = book_factory(filename="secret.fb2", cat_type=1, path=str(outside))
+        assert getFileData(book) is None
+
+    @pytest.mark.usefixtures("fake_sopds_root_lib")
+    def test_normal_path_inside_root_still_works(self, book_factory) -> None:
+        book = book_factory(filename="262001.fb2", cat_type=0, path=".")
+        assert getFileData(book) is not None
+
+
 # ── get_fs_book_path ─────────────────────────────────────────────────────
 
 

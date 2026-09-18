@@ -34,6 +34,29 @@ sKeyWords = "KEYWORDS"
 logger = logging.getLogger("scanner")
 
 
+def _is_safe_relative_path(value: str) -> bool:
+    """True если `value` — безопасный относительный путь без выхода
+    за пределы каталога (`..`) и без абсолютного пути/буквы диска.
+
+    Баг №95: `FOLDER` в .inp-записи приходит из стороннего INPX-архива
+    (типичный источник — сторонние файлообменники) без проверки и
+    напрямую участвует в построении пути к файлу на диске
+    (см. `zip_file = os.path.join(self.inpx_catalog, meta_data[sFolder])`
+    ниже, а также `sopdscan.inpx_callback`).
+    """
+    if not value:
+        return True
+    # Проверяем через реальную join+normpath-математику ОС (а не через
+    # os.path.isabs — на Windows путь вида "\\etc" без буквы диска не
+    # считается isabs()-абсолютным, но os.path.join всё равно "прыгает"
+    # в корень текущего диска, обходя предполагаемый базовый каталог).
+    probe_base = os.path.normpath(
+        ("C:" + os.sep if os.name == "nt" else os.sep) + "__inpx_safety_probe__"
+    )
+    candidate = os.path.normpath(os.path.join(probe_base, value))
+    return candidate == probe_base or candidate.startswith(probe_base + os.sep)
+
+
 class Inpx:
     def __init__(
         self,
@@ -135,6 +158,25 @@ class Inpx:
                     except IndexError as e:
                         logger.error(f"Error during processing {key} field: {e}")
                         meta_data[key] = ""
+
+                # Баг №95: FILE/EXT — это ИМЯ файла, не путь; отбрасываем
+                # любые каталожные компоненты, чтобы '../../secret' не
+                # смогло стать частью итогового пути к файлу.
+                if sFile in meta_data:
+                    meta_data[sFile] = os.path.basename(meta_data[sFile])
+                if sExt in meta_data:
+                    meta_data[sExt] = os.path.basename(meta_data[sExt])
+
+                # Баг №95: FOLDER — относительный путь; запись с '..'/
+                # абсолютным путём отбрасываем целиком, не доходя до
+                # append_callback (иначе book.path в БД мог бы указывать
+                # за пределы каталога библиотеки).
+                if sFolder in meta_data and not _is_safe_relative_path(meta_data[sFolder]):
+                    logger.warning(
+                        f"Book {meta_data.get(sTitle)} has unsafe FOLDER path "
+                        f"{meta_data[sFolder]!r}, skipping."
+                    )
+                    continue
 
                 # Если книга помечена как удаленная в INP, то пропускаем вызов callback
                 if meta_data[sDel].strip() not in ["", "0"]:

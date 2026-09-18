@@ -11,7 +11,7 @@ from lxml.etree import _ElementTree
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos, normalize_string
+from book_tools.format.util import list_zip_file_infos, normalize_string, safe_xml_parser
 
 
 @dataclass
@@ -217,7 +217,7 @@ class FB2(FB2Base):
     def __create_tree__(self) -> etree._ElementTree:
         try:
             self.file.seek(0, 0)
-            return etree.parse(self.file)
+            return etree.parse(self.file, parser=safe_xml_parser())
         except Exception as err:
             raise FB2StructureException("the file is not a valid XML (%s)" % err)
 
@@ -261,7 +261,7 @@ class FB2Zip(FB2Base):
 
         book.seek(0, 0)
         try:
-            return etree.parse(book)
+            return etree.parse(book, parser=safe_xml_parser())
         except Exception:
             raise FB2StructureException("'%s' is not a valid XML" % bookname)
 

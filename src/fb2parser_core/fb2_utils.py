@@ -46,6 +46,9 @@ def fb2_count(directory: Path) -> int:
            sum(1 for _ in directory.rglob('*.fb2.zip'))
 
 
+MAX_FB2_UNCOMPRESSED_SIZE = 200 * 1024 * 1024  # 200 МБ — см. read_fb2_bytes (баг №97)
+
+
 def read_fb2_bytes(path: Path) -> bytes:
     """Прочитать содержимое FB2 (XML) из файла или zip-архива."""
     raw = path.read_bytes()
@@ -58,6 +61,19 @@ def read_fb2_bytes(path: Path) -> bytes:
                     names[0] if names else None,
                 )
                 if fb2_name:
+                    # Баг №97: без этой проверки крошечный по размеру
+                    # .fb2.zip с объявленным огромным распакованным
+                    # размером (zip-bomb) полностью разворачивался бы в
+                    # память через zf.read() — этот путь дёргается на
+                    # каждый файл при хешировании (metadata_cache.py),
+                    # синхронизации и компиляции, не только при разборе
+                    # одного конкретного файла.
+                    if zf.getinfo(fb2_name).file_size > MAX_FB2_UNCOMPRESSED_SIZE:
+                        raise ValueError(
+                            f"'{fb2_name}' in {path.name} declares "
+                            f"{zf.getinfo(fb2_name).file_size} bytes uncompressed "
+                            f"(> {MAX_FB2_UNCOMPRESSED_SIZE}) - refusing, looks like a zip bomb"
+                        )
                     return zf.read(fb2_name)
         except Exception:
             pass

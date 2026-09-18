@@ -77,6 +77,54 @@ class TestGenreAssignmentSkipsPrettyPrinting:
         assert elapsed < 2.0, f"assign_genre_to_file took {elapsed:.2f}s — pretty-printing regression?"
 
 
+class TestGenreAssignmentRefusesZipBomb:
+    """Регрессия — docs/quality-roadmap.md, баг №97.
+
+    `_assign_genre_to_file` читает `.fb2.zip`/FBZ через `zf.open(...).read()`
+    без проверки заявленного распакованного размера — крошечный по
+    размеру архив с огромным объявленным распакованным размером
+    (zip-bomb) полностью разворачивался бы в память.
+    """
+
+    def test_declared_huge_uncompressed_size_refused(self, tmp_path):
+        import zipfile
+
+        # ВАЖНО: payload должен выглядеть как ВАЛИДНЫЙ FB2 (не просто нули) —
+        # иначе старый (безфиксовый) код тоже вернёт False, но по ДРУГОЙ
+        # причине ("не валидный XML файл"), уже ПОСЛЕ полной распаковки
+        # 250 МБ в память. Тест обязан различать "отказ до распаковки"
+        # от "успешно распаковали и только потом отказали".
+        fb2_zip_path = tmp_path / "bomb.fb2.zip"
+        body = b"<p>Abzac tekst povtoryaetsya mnogo raz.</p>" * 6_000_000  # ~258 МБ
+        payload = (
+            b"<?xml version='1.0'?><FictionBook><description><title-info>"
+            b"<genre>old</genre><book-title>Bomb</book-title></title-info></description>"
+            b"<body><section>" + body + b"</section></body></FictionBook>"
+        )
+        with zipfile.ZipFile(fb2_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("bomb.fb2", payload)
+
+        svc = GenreAssignmentService()
+        assert svc._assign_genre_to_file(fb2_zip_path, "фантастика") is False
+
+    def test_normal_size_zip_still_works(self, tmp_path):
+        import zipfile
+
+        fb2_zip_path = tmp_path / "normal.fb2.zip"
+        with zipfile.ZipFile(fb2_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("normal.fb2", _FB2_TEMPLATE.format(body="<p>Текст</p>").encode("utf-8"))
+
+        svc = GenreAssignmentService()
+        # Не проверяем итоговый формат файла на диске — отдельно от бага
+        # №97 обнаружено, что запись после присвоения жанра всегда пишет
+        # ОБЫЧНЫЙ текстовый файл поверх исходного пути, даже если исходный
+        # файл был .fb2.zip (не перепаковывает обратно в zip) — это
+        # существовало и до этого фикса, вне текущего скоупа. Здесь
+        # достаточно убедиться, что нормальный (не-бомбовый) размер не
+        # отклоняется новой проверкой.
+        assert svc._assign_genre_to_file(fb2_zip_path, "фантастика") is True
+
+
 class TestGenreAssignmentAtomicWrite:
     def test_no_leftover_tmp_file_after_success(self, tmp_path):
         fb2_path = tmp_path / "book.fb2"

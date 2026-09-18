@@ -9,7 +9,7 @@ from lxml import etree
 from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos, normalize_string
+from book_tools.format.util import list_zip_file_infos, normalize_string, safe_xml_parser
 
 
 class EPub(BookFile):
@@ -95,7 +95,7 @@ class EPub(BookFile):
     def __etree_from_entry(self, info):
         with self.__zip_file.open(info) as entry:
             try:
-                return etree.fromstring(entry.read(1048576))
+                return etree.fromstring(entry.read(1048576), parser=safe_xml_parser())
             except:
                 raise EPub.StructureException(
                     "'" + info.filename + "' is not a valid XML"

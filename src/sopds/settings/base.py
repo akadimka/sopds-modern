@@ -71,6 +71,27 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+# ── HTTPS / secure-cookie hardening (баг №98) ─────────────────────────────────
+# Выключено по умолчанию — сохраняет текущее поведение деплоя из DEPLOY.md
+# (Apache reverse-proxy без TLS-шага). Включать SOPDS_USE_HTTPS=True только
+# когда TLS реально терминируется (на самом gunicorn или на reverse-proxy
+# ПЕРЕД ним) — иначе SECURE_SSL_REDIRECT уведёт весь сайт в бесконечный
+# редирект, а куки с Secure-флагом браузер просто не станет отправлять по
+# незашифрованному HTTP.
+SOPDS_USE_HTTPS = env.bool("SOPDS_USE_HTTPS", default=False)
+if SOPDS_USE_HTTPS:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    # Нужно ТОЛЬКО если TLS терминируется на reverse-proxy (Apache/nginx)
+    # перед gunicorn, а не на самом gunicorn — и только если этот заголовок
+    # не может прийти от клиента напрямую (proxy должен либо всегда
+    # перезаписывать X-Forwarded-Proto сам, либо gunicorn должен быть
+    # недостижим иначе как через proxy). Раздельный флаг, чтобы включение
+    # HTTPS само по себе не создавало спуфинг-вектор без явного решения.
+    if env.bool("SOPDS_TRUST_X_FORWARDED_PROTO", default=False):
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 ROOT_URLCONF = "sopds.urls.base"
 
 TEMPLATES = [

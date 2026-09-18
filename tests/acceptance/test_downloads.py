@@ -80,10 +80,13 @@ def test_get_book_cover(
     fake_sopds_root_lib, create_regular_book, client, override_config, use_sax
 ) -> None:
     """Обложка книги (FB2SAX вкл/выкл)."""
+    # Баг №92: Cover теперь защищён @sopds_auth_validate — эти тесты
+    # проверяют извлечение обложки как таковое, не авторизацию (та уже
+    # покрыта TestDownloads выше через Download), поэтому явно отключаем.
     book: Book = create_regular_book
     assert book is not None
     url = reverse("opds:cover", args=(book.id,))
-    with override_config(SOPDS_FB2SAX=use_sax):
+    with override_config(SOPDS_FB2SAX=use_sax, SOPDS_AUTH=False):
         actual = client.get(url)
         assert actual.status_code == 200
         assert actual["Content-Length"] == "56360"
@@ -93,13 +96,15 @@ def test_cover_redirect_when_no_cover(
     fake_sopds_root_lib,
     create_regular_book,
     client,
+    override_config,
 ) -> None:
     """Cover без обложки -> редирект на заглушку."""
     book: Book = create_regular_book
     book.filename = "nonexist.fb2"
     book.save()
     url = reverse("opds:cover", args=(book.id,))
-    response = client.get(url)
+    with override_config(SOPDS_AUTH=False):
+        response = client.get(url)
     assert response.status_code == 302
     assert "nocover" in response.url
 
@@ -110,10 +115,50 @@ def test_thumbnail(
     """Проверка Thumbnail."""
     book: Book = create_regular_book
     url = reverse("opds:thumb", args=(book.id,))
-    with override_config(SOPDS_FB2SAX=True):
+    with override_config(SOPDS_FB2SAX=True, SOPDS_AUTH=False):
         response = client.get(url)
     assert response.status_code == 200
     assert response["Content-Type"] == "image/jpeg"
+
+
+# ── Баг №92: Cover/Thumbnail/ViewHtml/ConvertFB2 требуют авторизацию ─────
+#
+# Раньше эти четыре view были достижимы без авторизации даже при
+# SOPDS_AUTH=True (в отличие от Download, защищённого с самого начала) —
+# полный текст книги, обложки и конвертация отдавались кому угодно.
+# Используем fixture override_config (`with override_config(...)`), а
+# НЕ `@pytest.mark.override_config` — последний конфликтует с
+# pytest-плагином django-constance (падает на отсутствующем redis-py
+# независимо от этого фикса, см. TestDownloads выше).
+
+
+class TestBug92CoverViewHtmlConvertRequireAuth:
+    def test_cover_requires_auth(self, fake_sopds_root_lib, create_regular_book, client, override_config):
+        url = reverse("opds:cover", args=(create_regular_book.id,))
+        with override_config(SOPDS_AUTH=True):
+            response = client.get(url)
+        assert response.status_code == 401
+
+    def test_thumbnail_requires_auth(self, fake_sopds_root_lib, create_regular_book, client, override_config):
+        url = reverse("opds:thumb", args=(create_regular_book.id,))
+        with override_config(SOPDS_AUTH=True):
+            response = client.get(url)
+        assert response.status_code == 401
+
+    def test_view_html_requires_auth(self, fake_sopds_root_lib, create_regular_book, client, override_config):
+        url = reverse("opds:view_html", args=(create_regular_book.id,))
+        with override_config(SOPDS_AUTH=True):
+            response = client.get(url)
+        assert response.status_code == 401
+
+    def test_convert_requires_auth(self, fake_sopds_root_lib, create_regular_book, client, override_config, tmp_path):
+        url = reverse("opds:convert", args=(create_regular_book.id, "epub"))
+        with override_config(
+            SOPDS_AUTH=True, SOPDS_FB2TOEPUB="fake-converter", SOPDS_TEMP_DIR=str(tmp_path)
+        ):
+            with patch("opds_catalog.dl.subprocess.Popen", side_effect=_fake_converter):
+                response = client.get(url)
+        assert response.status_code == 401
 
 
 # ── Вспомогательные тесты загрузок ───────────────────────────────────────
@@ -155,21 +200,31 @@ def _fake_converter(*args, **kwargs):
 
 @pytest.mark.usefixtures("fake_sopds_root_lib")
 class TestConvertFB2:
-    """Тесты view ConvertFB2 — конвертация в EPUB/MOBI/AZW3."""
+    """Тесты view ConvertFB2 — конвертация в EPUB/MOBI/AZW3.
 
-    def test_convert_non_fb2_book_404(self, client, catalog) -> None:
+    Баг №92: ConvertFB2 теперь защищён @sopds_auth_validate — этот класс
+    проверяет саму конвертацию (маршрутизация форматов, распаковка ZIP
+    перед конвертацией и т.п.), не авторизацию, поэтому каждый тест
+    явно отключает SOPDS_AUTH через fixture `override_config` (маркер
+    `@pytest.mark.override_config` здесь НЕ используется — конфликтует
+    с pytest-плагином django-constance, падающим на отсутствующем
+    redis-py, независимо от этого фикса).
+    """
+
+    def test_convert_non_fb2_book_404(self, client, catalog, override_config) -> None:
         book = Book.objects.create(
             title="Not a fb2 book", search_title="NOT A FB2 BOOK",
             format="pdf", filename="x.pdf",
             path=".", cat_type=0, catalog=catalog,
         )
-        response = client.get(reverse("opds:convert", args=(book.id, "epub")))
+        with override_config(SOPDS_AUTH=False):
+            response = client.get(reverse("opds:convert", args=(book.id, "epub")))
         assert response.status_code == 404
 
     def test_convert_no_converter_configured_404(
         self, client, create_regular_book, override_config
     ) -> None:
-        with override_config(SOPDS_FB2TOEPUB="", SOPDS_TEMP_DIR="/tmp"):
+        with override_config(SOPDS_FB2TOEPUB="", SOPDS_TEMP_DIR="/tmp", SOPDS_AUTH=False):
             response = client.get(
                 reverse("opds:convert", args=(create_regular_book.id, "epub"))
             )
@@ -180,7 +235,8 @@ class TestConvertFB2:
     ) -> None:
         """CAT_NORMAL: конвертер получает путь напрямую к файлу в библиотеке."""
         with override_config(
-            SOPDS_FB2TOEPUB="fake-converter", SOPDS_TEMP_DIR=str(tmp_path)
+            SOPDS_FB2TOEPUB="fake-converter", SOPDS_TEMP_DIR=str(tmp_path),
+            SOPDS_AUTH=False,
         ):
             with patch("opds_catalog.dl.subprocess.Popen", side_effect=_fake_converter):
                 response = client.get(
@@ -226,7 +282,8 @@ class TestConvertFB2:
             return _fake_converter(*args, **kwargs)
 
         with override_config(
-            SOPDS_FB2TOEPUB="fake-converter", SOPDS_TEMP_DIR=str(tmp_path)
+            SOPDS_FB2TOEPUB="fake-converter", SOPDS_TEMP_DIR=str(tmp_path),
+            SOPDS_AUTH=False,
         ):
             with patch(
                 "opds_catalog.dl.subprocess.Popen", side_effect=_capturing_converter
@@ -240,3 +297,46 @@ class TestConvertFB2:
         # а не .zip и не путь внутрь .zip.
         assert captured["path"].endswith("262001.fb2")
         assert captured["content"] == original_bytes
+
+    def test_convert_malicious_zip_entry_name_stays_inside_temp_dir(
+        self, client, catalog, override_config, tmp_path
+    ) -> None:
+        """Баг №96: book.filename с '../' (сырое имя ZIP-записи, см.
+        sopdscan.processzip) не должно писать временный файл ЗА
+        пределами SOPDS_TEMP_DIR."""
+        import zipfile
+
+        library = tmp_path / "library"
+        library.mkdir()
+        temp_dir = tmp_path / "temp"
+        temp_dir.mkdir()
+        # Ловушка: если traversal не заблокирован, файл появится здесь.
+        escape_target = tmp_path / "evil.fb2"
+
+        malicious_name = "../../evil.fb2"
+        with zipfile.ZipFile(library / "books.zip", "w") as zf:
+            zf.writestr(malicious_name, b"payload")
+
+        book = Book.objects.create(
+            title="Evil book", search_title="EVIL BOOK",
+            format="fb2", filename=malicious_name,
+            path="books.zip", cat_type=opdsdb.CAT_ZIP, catalog=catalog,
+        )
+
+        captured = {}
+
+        def _capturing_converter(*args, **kwargs):
+            captured["path"] = args[0][1]
+            return _fake_converter(*args, **kwargs)
+
+        with override_config(
+            SOPDS_ROOT_LIB=str(library), SOPDS_FB2TOEPUB="fake-converter",
+            SOPDS_TEMP_DIR=str(temp_dir), SOPDS_AUTH=False,
+        ):
+            with patch(
+                "opds_catalog.dl.subprocess.Popen", side_effect=_capturing_converter
+            ):
+                client.get(reverse("opds:convert", args=(book.id, "epub")))
+
+        assert not escape_target.exists()
+        assert os.path.dirname(os.path.normpath(captured["path"])) == os.path.normpath(str(temp_dir))

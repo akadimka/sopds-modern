@@ -14,7 +14,7 @@ from lxml.etree import _Element
 
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.fb2sax import fb2parser
-from book_tools.format.util import strip_symbols
+from book_tools.format.util import safe_xml_parser, strip_symbols
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ class FB2(EbookMetaParser):
         """Парсинг полученного файла."""
         try:
             self._file.seek(0, 0)
-            parser = etree.XMLParser(recover=True)
+            parser = safe_xml_parser(recover=True)
             try:
                 self._etree = etree.parse(self._file, parser)
             except etree.XMLSyntaxError:
@@ -175,7 +175,7 @@ class FB2(EbookMetaParser):
                     sanitised,
                     count=1,
                 )
-                parser2 = etree.XMLParser(recover=True, encoding="utf-8")
+                parser2 = safe_xml_parser(recover=True, encoding="utf-8")
                 self._etree = etree.fromstring(sanitised, parser2).getroottree()
             if self._etree is None or self._etree.getroot() is None:
                 raise FB2StructureException("XML recovery failed: empty document")
@@ -452,14 +452,14 @@ class EpubParser(EbookMetaParser):
         """Читает контейнерный файл и загружает основной OPF-файл."""
         with zipfile.ZipFile(self.file, mode="r") as zf:
             container_xml = zf.read("META-INF/container.xml")
-            root = etree.fromstring(container_xml)
+            root = etree.fromstring(container_xml, parser=safe_xml_parser())
             rootfile = root.find(
                 ".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
             )
             if rootfile is not None:
                 self.opf_path: str = rootfile.get("full-path")
                 opf_xml = zf.read(self.opf_path)
-                self.root = etree.fromstring(opf_xml)
+                self.root = etree.fromstring(opf_xml, parser=safe_xml_parser())
 
     @property
     def title(self) -> str:

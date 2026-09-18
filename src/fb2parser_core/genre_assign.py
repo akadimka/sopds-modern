@@ -43,6 +43,11 @@ try:
 except ImportError:
     from .logger import Logger
 
+try:
+    from fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
+except ImportError:
+    from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
+
 
 class GenreAssignmentService:
     """Сервис для присвоения жанра FB2 файлам."""
@@ -240,6 +245,19 @@ class GenreAssignmentService:
                             self.logger.log(f"ОШИБКА: {fb2_path} - в архиве не найдены XML файлы")
                             return False
                         
+                        # Баг №97: без проверки размера крошечный по
+                        # размеру .fb2.zip с огромным заявленным
+                        # распакованным размером (zip-bomb) полностью
+                        # разворачивался бы в память через f.read().
+                        info = zf.getinfo(xml_files[0])
+                        if info.file_size > MAX_FB2_UNCOMPRESSED_SIZE:
+                            self.logger.log(
+                                f"ОШИБКА: {fb2_path} - '{xml_files[0]}' в архиве "
+                                f"объявляет {info.file_size} байт распакованным "
+                                f"(> {MAX_FB2_UNCOMPRESSED_SIZE}) - похоже на zip-bomb, отказ"
+                            )
+                            return False
+
                         # Прочитать первый XML файл
                         with zf.open(xml_files[0]) as f:
                             content = f.read().decode('utf-8-sig', errors='replace')

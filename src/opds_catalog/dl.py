@@ -100,6 +100,9 @@ def Download(request, book_id, zip_flag):
 
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
 # @cache_page(config.SOPDS_CACHE_TIME)
+# Баг №92: раньше без @sopds_auth_validate — обложка отдавалась без
+# авторизации даже при включённом SOPDS_AUTH, в отличие от Download.
+@sopds_auth_validate
 def Cover(
     request: HttpRequest, book_id: int, thumbnail=False
 ) -> HttpResponse | HttpResponseRedirect:
@@ -166,6 +169,9 @@ def Thumbnail(request, book_id):
     return Cover(request, book_id, True)
 
 
+# Баг №92: раньше без @sopds_auth_validate — полный текст книги
+# отдавался без авторизации даже при включённом SOPDS_AUTH.
+@sopds_auth_validate
 @xframe_options_exempt
 def ViewHtml(request, book_id):
     """Отдать книгу как HTML для чтения в браузере (только fb2)."""
@@ -260,6 +266,12 @@ def SaveProgress(request, book_id):
     return JsonResponse({"ok": True})
 
 
+# Баг №92: раньше без @sopds_auth_validate — конвертация и скачивание
+# результата (запускающее внешний конвертер-подпроцесс) были доступны
+# без авторизации даже при включённом SOPDS_AUTH; проверка на строке
+# ниже (`config.SOPDS_AUTH and request.user.is_authenticated`) только
+# решала, писать ли запись в bookshelf, а не пускать ли на сам эндпоинт.
+@sopds_auth_validate
 def ConvertFB2(request, book_id, convert_type):
     """Выдача файла книги после конвертации в EPUB, MOBI или AZW3."""
     from urllib.parse import quote
@@ -271,7 +283,13 @@ def ConvertFB2(request, book_id, convert_type):
     if config.SOPDS_AUTH and request.user.is_authenticated:
         bookshelf.objects.get_or_create(user=request.user, book=book)
 
-    base_name = os.path.splitext(getFileName(book))[0]
+    # Баг №96: getFileName(book) может вернуть book.title (свободный текст
+    # из FB2-метаданных самой книги, если включён SOPDS_TITLE_AS_FILENAME)
+    # или book.filename (для CAT_ZIP/CAT_INP — сырое имя записи из ZIP,
+    # см. sopdscan.processzip) — ни то, ни другое не гарантированно чистое
+    # имя файла без каталожных компонентов. os.path.basename() гарантирует
+    # это перед использованием ниже как части пути.
+    base_name = os.path.splitext(os.path.basename(getFileName(book)))[0]
     dlfilename = f"{base_name}.{convert_type}"
 
     if convert_type == "epub":
@@ -299,12 +317,17 @@ def ConvertFB2(request, book_id, convert_type):
     # падало необработанным KeyError вместо аккуратного 404.
     if book.cat_type == opdsdb.CAT_NORMAL:
         tmp_fb2_path = None
-        file_path = os.path.join(get_fs_book_path(book), book.filename)
+        file_path = os.path.join(get_fs_book_path(book), os.path.basename(book.filename))
     elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
         file_data = getFileData(book)
         if file_data is None:
             raise Http404
-        tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
+        # Баг №96: book.filename — сырое имя записи внутри ZIP/INP-архива,
+        # не гарантированно безопасное (см. sopdscan.processzip: имя берётся
+        # прямо из z.namelist()) — os.path.basename() перед вставкой во
+        # временный путь, иначе '../../../x' записал бы файл ЗА пределами
+        # SOPDS_TEMP_DIR.
+        tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, os.path.basename(book.filename))
         with open(tmp_fb2_path, "wb") as f:
             f.write(file_data.read())
         file_path = tmp_fb2_path

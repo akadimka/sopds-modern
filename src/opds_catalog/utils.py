@@ -160,10 +160,35 @@ def read_from_zipped_file(zip_path: str, filename: str) -> BytesIO | None:
         return None
 
 
+def _is_within_root_lib(path: str) -> bool:
+    """True если `path` реально находится внутри `config.SOPDS_ROOT_LIB`.
+
+    Баг №95: `book.path` в БД может быть выставлен из непроверенных
+    сторонних данных (например, INPX-импорт — см. `inpx_parser.py`) и
+    напрямую участвует в построении пути к файлу
+    (`get_fs_book_path()` просто делает `os.path.join`, без проверки
+    результата). Это защита на самой границе чтения с диска — второй
+    слой ЗА санитизацией на входе, независимо от того, как именно
+    небезопасное значение попало в БД.
+    """
+    try:
+        real_root = os.path.normcase(os.path.realpath(config.SOPDS_ROOT_LIB))
+        real_path = os.path.normcase(os.path.realpath(path))
+        return os.path.commonpath([real_root, real_path]) == real_root
+    except Exception:
+        return False
+
+
 def getFileData(book: Book) -> BytesIO | None:
     """Поиск и считывание файла книги из ФС"""
     logger.info(f"Reading book file {book.filename} from file system")
     full_path = get_fs_book_path(book)
+    if not _is_within_root_lib(full_path):
+        logger.error(
+            f"Book {book.id} path resolves outside SOPDS_ROOT_LIB "
+            f"({full_path!r}), refusing to read"
+        )
+        return None
     logger.info(f"Read file from {full_path}")
     if book.cat_type == opdsdb.CAT_NORMAL:
         file_path = os.path.join(full_path, book.filename)
