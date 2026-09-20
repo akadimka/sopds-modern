@@ -11,7 +11,7 @@
 """
 from pathlib import Path
 
-from fb2parser_core.synchronization import SynchronizationService
+from fb2parser_core.synchronization import SynchronizationService, _shorten_path_component
 
 
 def _sync():
@@ -93,6 +93,45 @@ class TestShortenFilenameForFilesystemByteLimit:
         name = "A" * 200 + ".fb2"
         result = _sync()._shorten_filename_for_path_limit(Path("C:/x"), name)
         assert result == name
+
+
+class TestShortenPathComponentForAnthologyAuthorFolders:
+    """Реальный случай (антология "Redrum"/"Самая страшная книга 2019"):
+    _build_folder_structure() конкатенирует ВСЕХ соавторов сборника через
+    запятую в ОДНО имя папки автора — "Абрамович Евгений, Артемьев
+    Михаил, ... Хмелева Наталья" (17 имён, 274 символа / 499 байт UTF-8).
+    В отличие от имени файла (защищено _shorten_filename_for_path_limit),
+    сама папка автора не проверялась вообще — target_dir.mkdir() падал с
+    [WinError 123] ещё до того, как дело доходило до имени файла внутри.
+    """
+
+    def test_short_component_untouched(self):
+        name = "Минин Станислав"
+        assert _shorten_path_component(name) == name
+
+    def test_long_anthology_author_list_shortened_below_byte_limit(self):
+        many_authors = (
+            "Абрамович Евгений, Артемьев Михаил, Артемьева Мария, Гольдин "
+            "Даниил, Жарков Алексей, Кабир Максим, Кожин Олег, Лагода Анна, "
+            "Малухина Мария, Матюхин Александр, Минин Станислав, Назаров "
+            "Денис, Перминов Пётр, Ромахин Владимир, Саймоназари Юлия, "
+            "Тищенко Валерий, Хмелева Наталья"
+        )
+        assert len(many_authors.encode('utf-8')) > SynchronizationService._MAX_NAME_BYTES
+
+        result = _shorten_path_component(many_authors)
+
+        assert len(result.encode('utf-8')) <= SynchronizationService._MAX_NAME_BYTES
+        assert result != many_authors
+        assert result.endswith('…')
+
+    def test_shortened_component_actually_creatable_on_disk(self, tmp_path):
+        # Не только "число байт в пределах лимита" на бумаге — реальный
+        # mkdir() тем же именем должен физически сработать без WinError 123.
+        many_authors = "Автор " * 60  # заведомо длинное, кириллицы не нужно для сути проверки
+        result = _shorten_path_component(many_authors)
+        (tmp_path / result).mkdir()
+        assert (tmp_path / result).is_dir()
 
 
 def sync_max_path() -> int:

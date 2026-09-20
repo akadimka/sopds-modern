@@ -39,6 +39,12 @@ except ImportError:
 # Символы, недопустимые в имени файла/папки на Windows.
 _ILLEGAL_PATH_CHARS_RE = re.compile(r'[<>:"/\\|?*]')
 
+# Лимит файловой системы на ОДИН компонент пути, в байтах UTF-8 — тот же
+# класс ограничения, что и SynchronizationService._MAX_NAME_BYTES для имени
+# файла (см. _shorten_filename_for_path_limit), но применяется раньше, к
+# самим именам папок (жанр/автор/серия/подсерия).
+_MAX_PATH_COMPONENT_BYTES = 255
+
 
 def _sanitize_path_component(value: str, fallback: str) -> str:
     """Убрать недопустимые для Windows-путей символы из сегмента пути.
@@ -56,6 +62,26 @@ def _sanitize_path_component(value: str, fallback: str) -> str:
     """
     cleaned = _ILLEGAL_PATH_CHARS_RE.sub('', value).strip().strip('.')
     return cleaned or fallback
+
+
+def _shorten_path_component(value: str) -> str:
+    """Укоротить ОДИН сегмент пути (жанр/автор/серия/подсерия), если он сам
+    превышает лимит байт файловой системы на компонент — независимо от
+    MAX_PATH и от количества символов (кириллица — 2 байта на символ).
+
+    Реальный случай: антологии со множеством соавторов конкатенируют ВСЕ
+    имена через запятую в одно имя папки автора ("Абрамович Евгений,
+    Артемьев Михаил, ... Хмелева Наталья" — 17 имён, 274 символа / 499
+    байт UTF-8) — `target_dir.mkdir()` падал с WinError 123 ещё на уровне
+    самой папки автора, до того как дело доходило до имени файла внутри
+    неё (которое уже отдельно защищено — см. _shorten_filename_for_path_limit).
+    """
+    if len(value.encode('utf-8')) <= _MAX_PATH_COMPONENT_BYTES:
+        return value
+    keep = len(value)
+    while keep > 1 and len((value[:keep].rstrip(' .,') + '…').encode('utf-8')) > _MAX_PATH_COMPONENT_BYTES:
+        keep -= 1
+    return value[:keep].rstrip(' .,') + '…'
 
 
 class SynchronizationService:
@@ -534,6 +560,14 @@ class SynchronizationService:
             author = _sanitize_path_component(author, "Неизвестный автор")
             series = _sanitize_path_component(series, "") if series else ""
             subseries = _sanitize_path_component(subseries, "") if subseries else ""
+
+            # Защита от превышения лимита ФС на один компонент пути (см.
+            # _shorten_path_component) — актуально для автора, где список
+            # соавторов антологии конкатенируется в одно длинное имя папки.
+            primary_genre = _shorten_path_component(primary_genre)
+            author = _shorten_path_component(author)
+            series = _shorten_path_component(series) if series else ""
+            subseries = _shorten_path_component(subseries) if subseries else ""
             
             # Detect duplicates
             #
