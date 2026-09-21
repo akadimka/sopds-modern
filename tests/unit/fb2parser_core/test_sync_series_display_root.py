@@ -33,14 +33,16 @@ def _make_service(tmp_path):
     return svc
 
 
-def _rec(file_path, proposed_series, series_display_root=""):
+def _rec(file_path, proposed_series, series_display_root="", proposed_author="Михайлов Руслан",
+         author_folder_root=""):
     return BookRecord(
         file_path=file_path, file_title=Path(file_path).stem,
-        metadata_authors="Михайлов Руслан", proposed_author="Михайлов Руслан",
+        metadata_authors=proposed_author, proposed_author=proposed_author,
         author_source="folder_dataset",
         metadata_series="", proposed_series=proposed_series, series_source="folder_dataset",
         series_number="", metadata_genre="sf_fantasy",
         series_display_root=series_display_root,
+        author_folder_root=author_folder_root,
     )
 
 
@@ -94,3 +96,34 @@ class TestDisplayRootInSingleVolumeFilename:
         kind, vols, _conf = svc._classify_record(rec)
         name = svc._build_target_filename(rec, kind, vols)
         assert name == "Михайлов Руслан - Обычная серия. Название т. 1.fb2"
+
+
+class TestAuthorFolderRootUsedForFolderPathOnly:
+    """Реальный случай (Маркова Юлия, Михайловский Александр / "В
+    закоулках мироздания"): 2 из 18 файлов серии в СВОИХ метаданных
+    указывают только одного автора — их `proposed_author` остаётся
+    узким (файл/теги в FB2 не трогаем), но `author_folder_root`
+    (стабильный консенсус всей группы, см. Pass4Consensus) должен
+    определять папку АВТОРА при синхронизации — иначе эти 2 файла
+    физически уезжают в другую авторскую папку библиотеки, чем
+    остальные 16 той же серии.
+    """
+
+    def test_folder_uses_author_folder_root_not_proposed_author(self, tmp_path):
+        svc = _make_service(tmp_path)
+        records = [_rec(
+            "17.fb2", "В закоулках мироздания",
+            proposed_author="Михайловский Александр",
+            author_folder_root="Маркова Юлия, Михайловский Александр",
+        )]
+        folder_structure, _ = svc._build_folder_structure(records)
+        genre, author, display_root, series, subseries = folder_structure["17.fb2"]
+        assert author == "Маркова Юлия, Михайловский Александр"
+
+    def test_no_author_folder_root_falls_back_to_proposed_author(self, tmp_path):
+        # Sanity: без author_folder_root поведение не меняется.
+        svc = _make_service(tmp_path)
+        records = [_rec("1.fb2", "Обычная серия", proposed_author="Автор Тест")]
+        folder_structure, _ = svc._build_folder_structure(records)
+        genre, author, display_root, series, subseries = folder_structure["1.fb2"]
+        assert author == "Автор Тест"

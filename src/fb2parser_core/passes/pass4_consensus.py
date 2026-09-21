@@ -1740,6 +1740,17 @@ class Pass4Consensus:
                     r.proposed_author = _best_cand
                     r.author_source = f'{r.author_source}+metadata-coauthors'
                     _folder_author_widened += 1
+                # Баг №109 (продолжение): ВСЕЙ группе (даже записям, чьи
+                # собственные метаданные соавторство не подтвердили —
+                # напр. издатель забыл указать второго автора у пары
+                # томов) присваиваем один и тот же стабильный
+                # author_folder_root = _best_cand, чтобы вся серия при
+                # синхронизации физически легла в ОДНУ папку автора, а
+                # не раскидалась по двум из-за неполных метаданных
+                # отдельных файлов. proposed_author (имя файла, теги в
+                # самом FB2) при этом не трогаем для записей без своего
+                # подтверждения — см. комментарий у поля в BookRecord.
+                r.author_folder_root = _best_cand
 
         if _folder_author_widened:
             print(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")

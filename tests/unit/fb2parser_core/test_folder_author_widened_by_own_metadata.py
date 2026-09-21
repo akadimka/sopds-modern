@@ -151,6 +151,40 @@ class TestFolderDatasetAuthorWidenedByOwnMetadataConfirmation:
         assert records[0].proposed_author != "Волков Сергей, Лисицына Анна"
         assert "Смирнов" in records[0].proposed_author
 
+    def test_author_folder_root_set_for_all_records_including_unwidened_minority(self):
+        # Реальный случай (Маркова Юлия, Михайловский Александр / "В
+        # закоулках мироздания"): 16 из 18 файлов честно несут ОБОИХ
+        # соавторов в метаданных (расширяются, как обычно), а 2 файла
+        # (14, 17) в СВОИХ метаданных указывают только Михайловского —
+        # эти два по политике "не трогаем без своего подтверждения"
+        # proposed_author не меняют. Но author_folder_root (стабильное
+        # имя папки при синхронизации, docs/quality-roadmap.md, баг №109)
+        # должен получить победивший консенсус ВСЕМ 18 записям одинаково
+        # — иначе серия физически раскидывается по двум разным папкам
+        # автора в библиотеке (это и было настоящей причиной "файл
+        # потерялся", замеченной пользователем).
+        _META = "Александр Михайловский; Юлия Маркова"
+        records = [
+            _rec(rf"В закоулках мироздания\{n:02d}.fb2", "Михайловский Александр", _META)
+            for n in range(1, 17)
+        ] + [
+            # 2 файла с неполными метаданными — только один автор.
+            _rec(r"В закоулках мироздания\17.fb2", "Михайловский Александр",
+                 "Александр Михайловский"),
+            _rec(r"В закоулках мироздания\18.fb2", "Михайловский Александр",
+                 "Александр Михайловский"),
+        ]
+
+        Pass4Consensus(Logger(), settings=_settings()).execute(records)
+
+        widened = records[:16]
+        unwidened = records[16:]
+        assert all(r.proposed_author == "Маркова Юлия, Михайловский Александр" for r in widened)
+        assert all(r.proposed_author == "Михайловский Александр" for r in unwidened)
+        # Ключевая проверка: author_folder_root одинаков у ВСЕХ 18, включая
+        # те 2, чей proposed_author не тронут.
+        assert all(r.author_folder_root == "Маркова Юлия, Михайловский Александр" for r in records)
+
     def test_metadata_series_bracket_suffix_does_not_block_widening(self):
         # Реальный случай — "СМЕРШ" (Барчук, Ларин): metadata_series одной
         # записи — "СМЕРШ [Барчук, Ларин]" (с уточнением в скобках),

@@ -8,15 +8,16 @@
 
 При синхронизации несжатого (ещё не скомпилированного) тома
 `_build_target_filename()` (synchronization.py) переименовывает файл в
-"Михайлов Руслан - Кроу. - 2 т. 2.fb2" — свой АББРЕВИИРОВАННЫЙ маркер
-тома "т. N" в хвосте (тот же формат, что и в итоговом суффиксе
-компиляции "(т. N-M)"). Когда `auto_compile_library()` позже
-пере-сканирует ЭТОТ, уже переименованный файл (библиотека, а не
-исходная папка), "Кроу" больше не стоит СРАЗУ перед цифрой (мешает
-"Кроу. - 2" — точка перед цифрой), Правило 2 не матчит; `_TOM_WORD_RE`
-(Правило 6) требовал ПОЛНОЕ слово ("том"/"часть"/...) — аббревиатуру
-"т." не распознавал вовсе. Итог: том 2 терял номер при повторном
-скане и не попадал в объединённую компиляцию с томами 3-5.
+"Михайлов Руслан - Кроу. Азы мастерства т. 3.fb2" — свой
+АББРЕВИИРОВАННЫЙ маркер тома "т. N" в хвосте (тот же формат, что и в
+итоговом суффиксе компиляции "(т. N-M)"). Когда `auto_compile_library()`
+позже пере-сканирует ЭТОТ, уже переименованный файл (библиотека, а не
+исходная папка) — между "Кроу" и номером теперь стоит целое название
+("Азы мастерства"), Правило 2 (даже расширенное точкой-разделителем,
+см. `test_series_number_root_rule_period_separator.py`) не матчит;
+`_TOM_WORD_RE` (Правило 6) требовал ПОЛНОЕ слово ("том"/"часть"/...) —
+аббревиатуру "т." не распознавал вовсе. Итог: том терял номер при
+повторном скане и не попадал в объединённую компиляцию с соседями.
 
 Фикс: `_TOM_WORD_RE` также распознаёт "т." — свой же формат маркера,
 уже используемый в suffix-е компилятора/синхронизации.
@@ -42,16 +43,20 @@ def _rec(file_path, series="Кроу"):
 
 class TestAbbreviatedTomMarkerRecognized:
     def test_abbreviated_tom_suffix_recognized(self):
-        rec = _rec("Михайлов Руслан - Кроу. - 2 т. 2.fb2")
+        rec = _rec("Михайлов Руслан - Кроу. Азы мастерства т. 3.fb2")
         _pass2()._correct_series_number_from_filename([rec])
-        assert rec.series_number == "2"
+        assert rec.series_number == "3"
         assert rec.series_number_source == "filename_word_number"
 
-    def test_does_not_override_existing_series_number(self):
-        rec = _rec("Михайлов Руслан - Кроу. - 2 т. 2.fb2")
-        rec.series_number = "9"
+    def test_matching_existing_number_left_as_is(self):
+        # Sanity: если series_number уже совпадает (напр. из metadata) —
+        # источник не перезаписывается.
+        rec = _rec("Михайлов Руслан - Кроу. Азы мастерства т. 3.fb2")
+        rec.series_number = "3"
+        rec.series_number_source = "metadata"
         _pass2()._correct_series_number_from_filename([rec])
-        assert rec.series_number == "9"
+        assert rec.series_number == "3"
+        assert rec.series_number_source == "metadata"
 
     def test_full_word_still_recognized_unaffected(self):
         # Sanity: полное слово "том" — старое поведение не сломано.

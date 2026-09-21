@@ -548,7 +548,15 @@ class SynchronizationService:
             
             # Extract metadata
             genre = record.metadata_genre or "Без жанра"
-            author = record.proposed_author or "Неизвестный автор"
+            # Баг №109 (продолжение): author_folder_root — стабильное имя
+            # авторской папки для всей folder_dataset-группы (см. PASS4
+            # "Widened N folder_dataset authors..."), не зависящее от того,
+            # у КАКОГО конкретно файла метаданные подтверждают соавторство
+            # (у файла с неполными метаданными proposed_author уже мог
+            # остаться узким — только имя файла/теги в FB2 это видят, папка
+            # физического пути — нет, чтобы вся серия лежала в ОДНОЙ папке).
+            author = (getattr(record, 'author_folder_root', '') or '').strip() \
+                or record.proposed_author or "Неизвестный автор"
             series, subseries = self._split_series(record.proposed_series or "")
             title = record.file_title or Path(record.file_path).stem
             # Баг №109/п.1: display_root — организационная папка-обёртка
