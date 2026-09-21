@@ -72,6 +72,9 @@ def auto_compile_library(
         else:
             fail_cnt += 1
         if on_group:
-            on_group(g.author, g.series, result.success)
+            # Баг №109 (продолжение): с display_root в логе видно "Мир
+            # Вальдиры. Кроу", а не голое "Кроу" без контекста.
+            on_group(g.author, compiler._series_to_display(
+                compiler._group_series_for_naming(g)), result.success)
 
     return {'ok': ok_cnt, 'fail': fail_cnt}

@@ -72,6 +72,13 @@ class CompilationGroup:
     original_books: List[CompilationBook] = None  # Полный список книг группы на момент сканирования
                                                     # (до ручных исключений) — нужен чтобы "вернуть
                                                     # в компиляцию" могло восстановить книгу.
+    # Баг №109 (продолжение): организационная папка-обёртка (напр. "Мир
+    # Вальдиры") из BookRecord.series_display_root — НЕ входит в `series`
+    # (та же причина, что и у самого поля: не путать общее пространство
+    # нумерации независимых подсерий), но нужна для отображения группы и
+    # имени итогового файла, чтобы не терять контекст "чья это подсерия"
+    # (см. docs/quality-roadmap.md). Заполняется в `_emit()` из книг группы.
+    display_root: str = ""
 
     def __post_init__(self):
         if self.duplicate_paths is None:
@@ -161,6 +168,22 @@ class FB2CompilerService:
         if m:
             return f'{root} {m.group(1)}. {m.group(2).strip()}'
         return f'{root}. {sub}'
+
+    @staticmethod
+    def _group_series_for_naming(group) -> str:
+        """Серия группы для отображения/именования итогового файла.
+
+        Баг №109 (продолжение): `group.series` намеренно НЕ содержит
+        организационный корень ("Мир Вальдиры") — только он безопасен
+        для нумерации/дедупликации. Но для человека, глядящего на превью
+        или на итоговое имя файла, "Кроу" без контекста "чья это
+        подсерия" — потерянная информация (реальный случай, замечено
+        пользователем). Подставляем display_root ТОЛЬКО в текст, что
+        идёт в `_clean_series_name`/`_series_to_display` дальше — ни на
+        группировку, ни на поиск precompiled-диапазонов это не влияет.
+        """
+        display_root = getattr(group, 'display_root', '') or ''
+        return f"{display_root}\\{group.series}" if display_root else group.series
 
     @classmethod
     def _clean_series_name(cls, series: str) -> str:
@@ -917,6 +940,16 @@ class FB2CompilerService:
         groups: List[CompilationGroup] = []
 
         def _emit(g: CompilationGroup) -> None:
+            # Баг №109 (продолжение): подхватываем display_root из первой
+            # книги группы, у которой он задан — все книги ОДНОЙ группы
+            # физически лежат в одной организационной папке, значение
+            # должно быть одинаковым у всех (и обычно пустым).
+            if not g.display_root:
+                for _b in g.books:
+                    _dr = getattr(_b.record, 'series_display_root', '') or ''
+                    if _dr:
+                        g.display_root = _dr
+                        break
             # Дедупликация по имени файла (case-insensitive): из пары с одинаковым
             # именем оставляем больший файл в books, меньший → duplicate_paths.
             if not g.cleanup_only and g.books:
@@ -4149,7 +4182,9 @@ class FB2CompilerService:
         Returns:
             CompilationResult с результатами.
         """
-        self._log(f"Компиляция: {group.author} / {group.series} ({len(group.books)} книг)")
+        self._log(f"Компиляция: {group.author} / "
+                  f"{self._series_to_display(self._group_series_for_naming(group))} "
+                  f"({len(group.books)} книг)")
 
         # Cleanup-only: новая компиляция не нужна, только удалить устаревшие файлы
         # + переименовать файл-компиляцию по нашей схеме именования (если нужно).
@@ -4169,7 +4204,7 @@ class FB2CompilerService:
                         n_volumes, lo, hi, 0,
                         series_complete=getattr(group, 'series_complete', True),
                     )
-                    clean_series = self._clean_series_name(group.series)
+                    clean_series = self._clean_series_name(self._group_series_for_naming(group))
                     safe_author = re.sub(r'[\\/:*?"<>|]', '_', group.author)
                     safe_series = re.sub(r'[/:*?"<>|]', '_',
                                         self._series_to_display(clean_series))
@@ -4337,7 +4372,10 @@ class FB2CompilerService:
             meta = self._extract_metadata(group.books[0])
 
             # --- Статистика run'а и именование ---
-            clean_series = self._clean_series_name(group.series)
+            # Баг №109 (продолжение): clean_series здесь идёт и в
+            # <sequence name="…"> метаданных (_build_fb2 ниже), и в имя
+            # файла — display_root подставляется в оба места сразу.
+            clean_series = self._clean_series_name(self._group_series_for_naming(group))
             safe_author = re.sub(r'[\\/:*?"<>|]', '_', group.author)
             safe_series = re.sub(r'[/:*?"<>|]', '_', self._series_to_display(clean_series))
 
@@ -4416,7 +4454,8 @@ class FB2CompilerService:
             )
 
         except Exception as e:
-            self._log(f"  ✗ Ошибка компиляции {group.series}: {e}")
+            self._log(f"  ✗ Ошибка компиляции "
+                      f"{self._series_to_display(self._group_series_for_naming(group))}: {e}")
             return CompilationResult(
                 group=group,
                 output_path=Path(''),

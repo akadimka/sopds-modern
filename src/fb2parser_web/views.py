@@ -1337,6 +1337,34 @@ def _norm_restore_from_cache(folder_path):
     return True
 
 
+def _bookrecord_to_norm_dict(r) -> dict:
+    """Сериализовать BookRecord в plain dict для JSON-кэша norm_job
+    (переживает перезапуск сервера — см. `_norm_cache_save`).
+
+    Явный whitelist полей: любое новое поле BookRecord (напр.
+    `series_display_root` — баг №109, продолжение) молча выпадало бы
+    из кэша, не будучи здесь перечислено, и `compiler_scan()` (через
+    `_rec_to_ns`) никогда бы его не увидело — хотя `regen_csv.py` сам
+    поле давно заполняет корректно. Реальный случай: пользователь видел
+    старую компиляцию без организационного корня даже после фикса и
+    перезапуска сервера — причина была здесь, не в стейле сервера.
+    """
+    return {
+        "file_path":        getattr(r, "file_path", ""),
+        "metadata_authors": getattr(r, "metadata_authors", ""),
+        "proposed_author":  getattr(r, "proposed_author", ""),
+        "author_source":    getattr(r, "author_source", ""),
+        "metadata_series":  getattr(r, "metadata_series", ""),
+        "proposed_series":  getattr(r, "proposed_series", ""),
+        "series_number":    getattr(r, "series_number", ""),
+        "series_number_source": getattr(r, "series_number_source", ""),
+        "series_source":    getattr(r, "series_source", ""),
+        "book_title":       getattr(r, "file_title", ""),
+        "metadata_genre":   getattr(r, "metadata_genre", ""),
+        "series_display_root": getattr(r, "series_display_root", ""),
+    }
+
+
 def _run_normalize_thread(folder_path, filter_subfolders=None):
     from django import db
     db.connections.close_all()
@@ -1378,21 +1406,7 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
             progress_callback=_progress, filter_paths=filter_paths,
         ) or []
 
-        recs_dicts = []
-        for r in records:
-            recs_dicts.append({
-                "file_path":        getattr(r, "file_path", ""),
-                "metadata_authors": getattr(r, "metadata_authors", ""),
-                "proposed_author":  getattr(r, "proposed_author", ""),
-                "author_source":    getattr(r, "author_source", ""),
-                "metadata_series":  getattr(r, "metadata_series", ""),
-                "proposed_series":  getattr(r, "proposed_series", ""),
-                "series_number":    getattr(r, "series_number", ""),
-                "series_number_source": getattr(r, "series_number_source", ""),
-                "series_source":    getattr(r, "series_source", ""),
-                "book_title":       getattr(r, "file_title", ""),
-                "metadata_genre":   getattr(r, "metadata_genre", ""),
-            })
+        recs_dicts = [_bookrecord_to_norm_dict(r) for r in records]
 
         norm_job.update(
             done=True, running=False,
@@ -2304,6 +2318,7 @@ def _rec_to_ns(rec):
             'proposed_series': '', 'series_source': '', 'metadata_genre': '',
             'series_number': '', 'series_number_source': '', 'content_hash': '',
             'needs_filename_fallback': False, 'delete_flag': False,
+            'series_display_root': '',
         }
         for k, v in _defaults.items():
             d.setdefault(k, v)
@@ -2379,7 +2394,12 @@ def _serialize_compiler_group(svc, g):
             # "Автор - Серия.fb2" по шаблону.
             out_name = Path(g.kept_paths[0]).name
         else:
-            clean_s = FB2CompilerService._clean_series_name(g.series)
+            # Баг №109 (продолжение): display_root ("Мир Вальдиры") не
+            # входит в g.series (не путать нумерацию), но должен быть виден
+            # в превью — иначе "Кроу" выглядит как самостоятельная серия,
+            # а не подсерия своего мира.
+            clean_s = FB2CompilerService._clean_series_name(
+                FB2CompilerService._group_series_for_naming(g))
             safe_a = re.sub(r'[\\/:*?"<>|]', '_', g.author)
             safe_s = re.sub(r'[/:*?"<>|]', '_', FB2CompilerService._series_to_display(clean_s))
             if suffix:
@@ -2388,7 +2408,8 @@ def _serialize_compiler_group(svc, g):
     except Exception:
         out_name = ""
 
-    series_disp = FB2CompilerService._series_to_display(g.series)
+    series_disp = FB2CompilerService._series_to_display(
+        FB2CompilerService._group_series_for_naming(g))
     row = {
         "author": g.author,
         "series": series_disp,
@@ -2540,9 +2561,11 @@ def _run_compiler_thread(indices, delete_sources):
         log = []
 
         for n, group in enumerate(groups_to_run, 1):
+            _series_disp = FB2CompilerService._series_to_display(
+                FB2CompilerService._group_series_for_naming(group))
             compiler_job.update(
                 progress=n - 1, total=total,
-                current=f"{group.author} / {FB2CompilerService._series_to_display(group.series)}",
+                current=f"{group.author} / {_series_disp}",
             )
 
             try:
@@ -2551,11 +2574,11 @@ def _run_compiler_thread(indices, delete_sources):
                     if result.output_path:
                         log.append({"ok": True, "msg": f"✓ {result.output_path.name}"})
                     else:
-                        log.append({"ok": True, "msg": f"♻ Очищено: {group.author} / {group.series}"})
+                        log.append({"ok": True, "msg": f"♻ Очищено: {group.author} / {_series_disp}"})
                 else:
-                    log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {result.error}"})
+                    log.append({"ok": False, "msg": f"✗ {group.author} / {_series_disp}: {result.error}"})
             except Exception as exc:
-                log.append({"ok": False, "msg": f"✗ {group.author} / {group.series}: {exc}"})
+                log.append({"ok": False, "msg": f"✗ {group.author} / {_series_disp}: {exc}"})
 
             compiler_job.update(log=log[:])
 
