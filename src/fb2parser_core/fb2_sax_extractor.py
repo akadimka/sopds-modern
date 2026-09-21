@@ -78,6 +78,17 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
                     if not self.series_number:
                         self.series_name = seq_name
                         self.series_number = seq_num
+                    elif self.series_number == '0' and seq_num != '0':
+                        # Баг №110: первый пронумерованный тег был number="0" —
+                        # почти всегда организационный корень/вселенная автора
+                        # (см. коммент про баг №81 выше), а не настоящая
+                        # позиция в серии. Раз у соседнего тега номер НЕ
+                        # нулевой — это и есть настоящая пронумерованная
+                        # подсерия, ей и доверяем больше независимо от
+                        # порядка тегов в файле. Если оба нулевые — сравнивать
+                        # нечего, оставляем прежнее поведение (первый победил).
+                        self.series_name = seq_name
+                        self.series_number = seq_num
                 elif not self.series_name:
                     self.series_name = seq_name
             self._all_sequences.append((seq_name, seq_num))

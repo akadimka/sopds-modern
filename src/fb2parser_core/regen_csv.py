@@ -2375,6 +2375,17 @@ class RegenCSVService:
                 continue
 
             parent_name_norm = parent.name.lower().replace('ё', 'е').strip()
+            # Для series_display_root (не для построения самой иерархии —
+            # см. ниже) сравниваем ЕЩЁ и без скобочного суффикса папки:
+            # "Кроу (КРОУ)" / "Сточные Воды Альгоры (СВА)" — proposed_series
+            # уже давно нормализован до "Кроу"/"Сточные Воды Альгоры" ДРУГИМ,
+            # более ранним проходом (folder_dataset), а не этим постчеком, —
+            # без снятия скобок здесь их совпадение с ps_norm не находится
+            # вовсе, и они остаются без display_root, хотя физически лежат
+            # в той же организационной папке, что и ГКР/Цикл Люца.
+            parent_name_stripped_norm = re.sub(
+                r'\s*\([^)]*\)\s*$', '', parent.name
+            ).strip().lower().replace('ё', 'е')
             ps_norm = record.proposed_series.lower().replace('ё', 'е').strip()
             gp_norm = gp_name.lower().replace('ё', 'е').strip()
             gp_clean = re.sub(r'\s*\([^)]*\)\s*$', '', gp_name).strip()
@@ -2391,7 +2402,16 @@ class RegenCSVService:
             # См. комментарий про _ARC_ORDINAL_RE выше: без собственного
             # порядкового маркера у подпапки-подсерии не строим иерархию —
             # это, скорее всего, самостоятельная серия, а не дуга корня.
+            # Случай А (parent.name == текущая серия) физически всё равно
+            # лежит внутри организационной папки-обёртки (gp_clean) на
+            # диске — сохраняем её отдельно в series_display_root, чтобы
+            # синхронизация (synchronization.py) не потеряла эту папку
+            # при переносе в библиотеку, не смешивая её с полем, отвечающим
+            # за общее пространство нумерации позиций (proposed_series).
             if not _ARC_ORDINAL_RE.match(parent.name):
+                if ((parent_name_norm == ps_norm or parent_name_stripped_norm == ps_norm)
+                        and not record.series_display_root):
+                    record.series_display_root = gp_clean
                 continue
 
             if parent_name_norm == ps_norm:

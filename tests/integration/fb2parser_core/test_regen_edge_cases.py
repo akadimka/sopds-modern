@@ -564,12 +564,20 @@ class TestAbbreviatedSubseriesArcNumberNotSwallowedByPartTitle:
     третий компонент sort_key ("тип тома внутри позиции"), а не всегда
     даёт чистый (0,N,0,0). Учитывая номер основной позиции (sort_key[1])
     — том не теряется и не путается, что и есть суть бага №107.
+
+    Баг №111 (ещё более позднее продолжение) добавил Правило 6c
+    (`_correct_series_number_from_filename`, pass2_series_filename.py) —
+    ГКР-1/3/4 не имеют `<sequence>` в метаданных вообще, а голая
+    аббревиатура "ГКР-N." не подходила ни под одно из правил 1-6, так
+    что `series_number` оставался пустым, хотя номер прямо виден в
+    имени файла. Теперь распознаётся, если аббревиатура совпадает с
+    инициалами уже определённой (folder_dataset) серии.
     """
 
     FOLDER = ("Михайлов Руслан - Сборник", "Мир Вальдиры", "Герой крайних рубежей")
 
     @pytest.mark.parametrize("filename, expected_number", [
-        ("ГКР-1. Герой озёрного края .fb2", ""),
+        ("ГКР-1. Герой озёрного края .fb2", "1"),
         ("ГКР-5. Аньгора. Часть 1.fb2", "5"),
         ("ГКР-6. Аньгора. Часть 2.fb2", "6"),
         ("ГКР-9. Сердце Забытых Земель.fb2", "9"),
@@ -617,6 +625,13 @@ class TestSubfolderHierarchyRequiresOwnOrdinal:
     Тест проверяет оба случая на одних и тех же фикстурах, что уже
     покрывают баги №106/№107 — здесь смотрим именно на `proposed_series`,
     т.е. на результат самого постчека, а не на дальнейший find_groups().
+
+    Продолжение (по просьбе пользователя): плоский `proposed_series` не
+    должен означать, что папка-обёртка "Мир Вальдиры" вообще пропадает —
+    для НУМЕРАЦИИ (fb2_compiler.py) она не нужна, но для организации
+    файлов на диске (synchronization.py) пользователь хочет её сохранить.
+    Отброшенный корень пишется в `series_display_root`, отдельно от
+    `proposed_series` — тест проверяет и это.
     """
 
     def test_arc_subfolder_with_own_ordinal_still_merges_root(self, records):
@@ -625,6 +640,9 @@ class TestSubfolderHierarchyRequiresOwnOrdinal:
             "1. Нортис Вертинский", "1. Без пощады.fb2",
         )
         assert rec.proposed_series == "Мир Астероид-Сити\\1. Нортис Вертинский"
+        # Настоящая дуга — корень и так уже часть proposed_series, отдельно
+        # хранить его в series_display_root не нужно.
+        assert rec.series_display_root == ""
 
     def test_independent_series_without_ordinal_stays_flat(self, records):
         rec_gkr = _by_suffix(
@@ -637,3 +655,15 @@ class TestSubfolderHierarchyRequiresOwnOrdinal:
         )
         assert rec_gkr.proposed_series == "Герой крайних рубежей"
         assert rec_luts.proposed_series == "Цикл Люца"
+
+    def test_independent_series_keeps_display_root_for_sync(self, records):
+        rec_gkr = _by_suffix(
+            records, "Михайлов Руслан - Сборник", "Мир Вальдиры",
+            "Герой крайних рубежей", "ГКР-1. Герой озёрного края .fb2",
+        )
+        rec_luts = _by_suffix(
+            records, "Михайлов Руслан - Сборник", "Мир Вальдиры",
+            "Цикл Люца", "1. Маньяк отмели, или Песочница для короля.fb2",
+        )
+        assert rec_gkr.series_display_root == "Мир Вальдиры"
+        assert rec_luts.series_display_root == "Мир Вальдиры"

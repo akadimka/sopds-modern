@@ -496,8 +496,10 @@ class SynchronizationService:
 
         Returns:
             Tuple (folder_structure, reconciliation_notes):
-            - folder_structure: file_path -> (genre, author, series, subseries)
-              для файлов, которые нужно переместить как обычно.
+            - folder_structure: file_path -> (genre, author, display_root, series, subseries)
+              для файлов, которые нужно переместить как обычно. display_root —
+              организационная папка-обёртка (баг №109/п.1, record.series_display_root),
+              обычно пустая.
             - reconciliation_notes: список записей (баг №72 доп.), для
               которых найдено совпадение по (серия, title) с УЖЕ лежащей
               в библиотеке книгой другого, но пересекающегося по токенам
@@ -549,6 +551,12 @@ class SynchronizationService:
             author = record.proposed_author or "Неизвестный автор"
             series, subseries = self._split_series(record.proposed_series or "")
             title = record.file_title or Path(record.file_path).stem
+            # Баг №109/п.1: display_root — организационная папка-обёртка
+            # (напр. "Мир Вальдиры"), которую regen_csv намеренно не включил
+            # в proposed_series (чтобы не смешать нумерацию независимых
+            # серий внутри неё), но которую нужно сохранить на диске как
+            # физическую группировку при переносе в библиотеку.
+            display_root = (getattr(record, 'series_display_root', '') or '').strip()
 
             # Handle genre with multiple entries
             genres = [g.strip() for g in genre.split(',') if g.strip()]
@@ -560,6 +568,7 @@ class SynchronizationService:
             author = _sanitize_path_component(author, "Неизвестный автор")
             series = _sanitize_path_component(series, "") if series else ""
             subseries = _sanitize_path_component(subseries, "") if subseries else ""
+            display_root = _sanitize_path_component(display_root, "") if display_root else ""
 
             # Защита от превышения лимита ФС на один компонент пути (см.
             # _shorten_path_component) — актуально для автора, где список
@@ -568,6 +577,7 @@ class SynchronizationService:
             author = _shorten_path_component(author)
             series = _shorten_path_component(series) if series else ""
             subseries = _shorten_path_component(subseries) if subseries else ""
+            display_root = _shorten_path_component(display_root) if display_root else ""
             
             # Detect duplicates
             #
@@ -667,6 +677,7 @@ class SynchronizationService:
             folder_structure[record.file_path] = (
                 primary_genre,
                 author,
+                display_root,
                 series,
                 subseries
             )
@@ -1232,10 +1243,12 @@ class SynchronizationService:
             self._log(f"[{i+1}/{len(records)}] ◆ Обработка: {record.file_path}")
             
             try:
-                genre, author, series, subseries = folder_structure[record.file_path]
-                
+                genre, author, display_root, series, subseries = folder_structure[record.file_path]
+
                 # Build target path
                 target_dir = self.library_path / genre / author
+                if display_root:
+                    target_dir = target_dir / display_root
                 if series:
                     target_dir = target_dir / series
                 if subseries:

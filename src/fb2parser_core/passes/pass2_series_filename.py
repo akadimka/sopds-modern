@@ -2360,6 +2360,36 @@ class Pass2SeriesFilename:
             record.series_number = str(fn_numR)
             record.series_number_source = 'filename_word_number'
 
+        # Правило 6c: аббревиатура серии + номер — «ГКР-1.», «СВА-2.» и т.п.
+        # Автор иногда называет файлы по первым буквам уже известной (из
+        # папки, folder_dataset) серии вместо полного имени — «Герой
+        # крайних рубежей» → «ГКР», «Сточные Воды Альгоры» → «СВА» (баг
+        # №111). Голая аббревиатура из 2-6 заглавных букв в начале имени
+        # слишком похожа на случайный паттерн (код издания и т.п.), чтобы
+        # доверять ей без проверки — поэтому требуем совпадения именно с
+        # инициалами уже определённой серии, а не любой набор букв.
+        _ABBREV_PREFIX_RE = re.compile(r'^([А-ЯЁA-Z]{2,6})[-.\s]+(\d{1,3})[.\s]', re.UNICODE)
+
+        def _series_initials(series_root: str) -> str:
+            words = re.findall(r'[А-ЯЁа-яёA-Za-z]+', series_root)
+            return ''.join(w[0] for w in words).upper().replace('Ё', 'Е')
+
+        for record in records:
+            if record.series_number:
+                continue
+            if not record.proposed_series or not record.file_path:
+                continue
+            stem = Path(record.file_path).stem
+            ma = _ABBREV_PREFIX_RE.match(stem)
+            if not ma:
+                continue
+            prefix = ma.group(1).upper().replace('Ё', 'Е')
+            series_root_c = record.proposed_series.split('\\')[-1].strip()
+            if prefix != _series_initials(series_root_c):
+                continue
+            record.series_number = str(int(ma.group(2)))
+            record.series_number_source = 'filename_abbrev_prefix'
+
         # Правило 7: «Пролог» без series_number → sn=0, если в серии нет тома 0.
         _norm6 = lambda s: _nfc_lower_yo(s).strip()
         _has_zero: set = set()

@@ -67,3 +67,64 @@ class TestNumberedSequenceTakesPriorityOverOrder:
         )
         meta = FB2SAXExtractor(_config_path())._extract_all_metadata_at_once(path)
         assert meta["series"] == "Звёздные войны"
+
+
+class TestZeroNumberedRootDoesNotOutrankRealSubseries:
+    """Баг №110: реальный случай (Михайлов Руслан, «Мир Вальдиры\\Ведомости
+    Бульквариуса\\Книга 1...fb2») — `<sequence name="Мир Вальдиры"
+    number="0"/>` (организационный корень/вселенная автора, номер "0" —
+    не настоящая позиция) идёт ПЕРВЫМ, затем `<sequence name="Ведомости
+    Бульквариуса" number="1"/>` (настоящая подсерия с настоящим номером).
+
+    Старая проверка бага №81 (`if seq_num: if not self.series_number:`)
+    смотрит только "есть номер или нет" — и "0" тоже проходит как номер,
+    поэтому первый тег (корень, "0") НАВСЕГДА занимает
+    `self.series_number`, а второй тег (настоящая подсерия, "1") молча
+    отбрасывается, хотя он и есть настоящий ответ. Итог до фикса:
+    metadata_series="Мир Вальдиры", series_number="0" — оба неверны для
+    этой книги.
+    """
+
+    def test_zero_numbered_root_first_real_subseries_second(self, tmp_path):
+        path = _write_fb2(
+            tmp_path,
+            '<sequence name="Мир Вальдиры" number="0"/>'
+            '<sequence name="Ведомости Бульквариуса" number="1"/>',
+        )
+        meta = FB2SAXExtractor(_config_path())._extract_all_metadata_at_once(path)
+        assert meta["series"] == "Ведомости Бульквариуса"
+        assert meta["series_number"] == "1"
+
+    def test_zero_numbered_root_second_real_subseries_first(self, tmp_path):
+        # Порядок тегов не должен иметь значения (как и в баге №81) —
+        # проверяем оба направления.
+        path = _write_fb2(
+            tmp_path,
+            '<sequence name="Ведомости Бульквариуса" number="1"/>'
+            '<sequence name="Мир Вальдиры" number="0"/>',
+        )
+        meta = FB2SAXExtractor(_config_path())._extract_all_metadata_at_once(path)
+        assert meta["series"] == "Ведомости Бульквариуса"
+        assert meta["series_number"] == "1"
+
+    def test_single_zero_numbered_sequence_kept_as_is(self, tmp_path):
+        # Sanity: единственный тег с number="0" (без соседа с ненулевым
+        # номером) — это не наш случай, менять его не нужно (может быть
+        # легитимным "нулевым" томом/прологом).
+        path = _write_fb2(tmp_path, '<sequence name="Мир Вальдиры" number="0"/>')
+        meta = FB2SAXExtractor(_config_path())._extract_all_metadata_at_once(path)
+        assert meta["series"] == "Мир Вальдиры"
+        assert meta["series_number"] == "0"
+
+    def test_two_zero_numbered_sequences_keeps_first(self, tmp_path):
+        # Sanity: если ОБА тега "number=0" — не с чем сравнивать, значит
+        # это не признак "родовой корень против настоящей подсерии".
+        # Оставляем прежнее поведение (первый побеждает).
+        path = _write_fb2(
+            tmp_path,
+            '<sequence name="Мир Вальдиры" number="0"/>'
+            '<sequence name="Другая ветка" number="0"/>',
+        )
+        meta = FB2SAXExtractor(_config_path())._extract_all_metadata_at_once(path)
+        assert meta["series"] == "Мир Вальдиры"
+        assert meta["series_number"] == "0"

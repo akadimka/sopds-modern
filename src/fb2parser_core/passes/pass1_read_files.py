@@ -257,6 +257,13 @@ class BookRecord:
     needs_filename_fallback: bool = False  # True if folder parse found nothing, need filename PASS 2
     delete_flag: bool = False     # True if this is an older duplicate superseded by a newer variant
     content_hash: str = ""        # SHA-256 первых 256 КБ содержимого (для поиска дубликатов)
+    # Баг №109/п.1: организационная папка-обёртка (напр. "Мир Вальдиры"),
+    # под которой физически лежит несколько НЕЗАВИСИМЫХ серий автора — не
+    # входит в proposed_series (иначе их независимая нумерация ложно
+    # сливается в общее пространство позиций компилятора), но сохраняется
+    # отдельно для синхронизации в библиотеку (synchronization.py), чтобы
+    # файлы не выпадали из привычной папки-группировки на диске.
+    series_display_root: str = ""
 
     def to_tuple(self):
         """Convert record to tuple for GUI table display."""
