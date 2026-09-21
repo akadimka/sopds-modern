@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+    <title-info>
+        <book-title>Аньгора. Часть вторая</book-title>
+        <author><first-name>Дем</first-name><last-name>Михайлов</last-name></author>
+        <genre>ЛитРПГ</genre>
+        <genre>игровой мир</genre>
+        <genre>Вальдира</genre>
+        <sequence name="Мир Вальдиры. Герои Крайних Рубежей" number="6"/>
+        <annotation><p>Вторая часть романа "Аньгора" - путешествие к городу Мертвых продолжается. Водная часть пути благополучно преодолена, но перед героями открылись новые мрачные неизведанные тропы. Не каждому удастся пройти по этим тропам и остаться в живых. Здесь другой мир. Здесь другие правила. Здесь другие монстры...</p><empty-line/></annotation>
+        <coverpage><image l:href="#img_0"/></coverpage>
+        <lang>ru</lang>
+        <keywords>Вальдира, игровой мир, ЛитРПГ</keywords>
+        </title-info>
+    <document-info>
+        <author><first-name>Дем</first-name><last-name>Михайлов</last-name></author>
+        <program-used>calibre 5.7.0</program-used>
+        <date>12.12.2020</date>
+        <id>7633a6d4-63a6-463a-a432-fa41329de7bf</id>
+        <version>1.0</version>
+    </document-info>
+    <publish-info>
+        <year>2020</year><publisher>https://forum.dem-mikhailov.ru</publisher></publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+</FictionBook>

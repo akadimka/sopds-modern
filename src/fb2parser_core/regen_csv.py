@@ -35,6 +35,7 @@ from .passes.pass3_series_normalize import Pass3SeriesNormalize
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from .pattern_converter import compile_patterns
 from .folder_classifier import FolderClassifier, FolderType
+from .series_helpers import _bl_matches
 import re
 
 
@@ -818,11 +819,17 @@ class RegenCSVService:
                         # иначе — чистая папка автора, пропускаем
                     # Вариантные папки ("Вариант с СИ", "ЛП" и т.п.) не образуют уровень иерархии.
                     # Файлы внутри них получают серию из ближайшей не-вариантной папки выше.
+                    # Баг №106: голое `_vk in _sf_lower` матчило короткие ключевые слова
+                    # ("си") как ПОДСТРОКУ где угодно — "Мир Астероид-Сити" содержит "си"
+                    # внутри "Сити" и ложно считался вариантной папкой, из-за чего терялся
+                    # весь уровень серии. `_bl_matches` (как и в folder_classifier.py,
+                    # pass2_series_filename.py._is_variant_folder — тот же класс защиты)
+                    # требует границы слова для коротких (<4 симв.) ключевых слов.
                     _vkw = getattr(self, '_variant_kw', [])
                     series_folders_clean = []
                     for _sf in series_folders:
                         _sf_lower = _sf.lower().replace('ё', 'е')
-                        if any(_vk in _sf_lower for _vk in _vkw):
+                        if any(_bl_matches(_vk, _sf_lower) for _vk in _vkw):
                             continue  # вариантная папка — пропускаем
                         series_folders_clean.append(_sf)
                     series_folders = _drop_blacklisted(tuple(series_folders_clean))

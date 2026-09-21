@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>network_literature</genre>
+   <genre>sf_fantasy</genre>
+   <genre>sf_litrpg</genre>
+   <author>
+    <first-name>Руслан</first-name>
+    <middle-name>Алексеевич</middle-name>
+    <last-name>Михайлов</last-name>
+   </author>
+   <book-title>Аньгора</book-title>
+   <annotation>
+    <p>Аньгора… Мистический легендарный город Мертвых, что сокрыт в неведомых землях…</p>
+    <p>По преданиям, в Аньгоре находят приют самые яркие души, достойные посмертия, достойные вечной загробной жизни.</p>
+    <p>Великие маги и воины прошлого, легендарные алхимики, короли древности, страшнейшие злодеи – все они ныне обретаются в сокрытом граде Аньгора.</p>
+    <p>Вот только правда ли это? Или некогда существовавшая Аньгора давным-давно разрушена и ушла в небытие вместе с населяющими ее душами?</p>
+    <p>Это и предстоит выяснить Росгарду, отправившемуся в очередное опаснейшее приключение. И в этот раз цель назначения – Аньгора. Великий Город Мертвых.</p>
+    <p>В этом путешествии Росгард столкнется со многими путниками идущими туда же. Путниками, что преследуют собственные цели, хранят собственные тайны и готовы заплатить любую цену, чтобы добиться желаемого и достичь мистического города Мертвых.</p>
+   </annotation>
+   <keywords>квест,сражения,виртуальная реальность,древние боги,монстры,LitRPG / ЛитРПГ</keywords>
+   <date value="2020-01-01">2020</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Герои крайних рубежей" number="5"/>
+   <sequence name="Господство клана Неспящих" number="13"/>
+   <sequence name="Мир Вальдиры"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>On84ly</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2020-03-09">2020-03-09</date>
+   <src-url>http://www. /pages/biblio_book/?art=51414716</src-url>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>af4eafcc-ac2c-421b-a91f-af1f7e1963b3</id>
+   <version>1.01</version>
+   <history>
+    <p>v 1.0 – создание fb2 – (On84ly)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <year>2020</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

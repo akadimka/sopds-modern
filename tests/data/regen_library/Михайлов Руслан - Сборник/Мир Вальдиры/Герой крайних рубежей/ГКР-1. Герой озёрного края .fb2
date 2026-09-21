@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>dem-mihailov.ru</home-page>
+    <email>dem_279@mail.ru</email>
+   </author>
+   <book-title>ГКР1</book-title>
+   <annotation>
+    <p><strong>ГКР - продолжение приключения героя Росгарда и его друзей. </strong></p>
+    <p>В будущей книге фокус уйдет с клана Неспящих, которые во главе с ЧБ все же сумели достигнуть своих целей. В центре событий окажутся Рос и его друзья решившие сменить тактику и вместо помощи другим (пусть и не даром) самим подняться на пару ступенек по лестнице ведущей к вершинам мира. </p>
+    <p>Приключения на материках старом и новых.</p>
+    <p>Завоевание репутации, приобретение новых союзников и новых врагов.</p>
+    <p><strong>Уже начавшаяся Война Богов набирает размах.</strong></p>
+    <empty-line/>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#_3.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+   </author>
+   <program-used>calibre 1.23.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2016-07-05">5.7.2016</date>
+   <id>01a723ac-98f5-4d39-b2df-854be0879ba4</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <publisher>dem-mihailov.ru</publisher>
+   <year>2017</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

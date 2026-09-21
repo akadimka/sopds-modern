@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>novel</genre>
+   <genre>sf-action</genre>
+   <genre>sf-space</genre>
+   <genre>dystopia</genre>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>https://author.today/u/mikhaylov_d/works</home-page>
+   </author>
+   <book-title>Без пощады 3</book-title>
+   <annotation>
+    <p>Последний роман из трилогии о Нортисе Вертинском - юном мстителе, начавшем собственную кровавую вендетту на улицах мрачного и коррумпированного города Астероид-Сити. <empty-line/>Он один против всех. Он ненавидим всеми. Но он не собирается отступать....</p>
+    <p>***</p>
+    <p>По: "Глава 9"</p>
+   </annotation>
+   <coverpage>
+    <image l:href="#cover.jpg"/>
+   </coverpage>
+   <lang>ru</lang>
+   <sequence name="Астероид Сити" number="3"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>https://author.today/u/mikhaylov_d/works</home-page>
+   </author>
+   <program-used>CopyText ADI</program-used>
+   <date value="2024-06-23">2024-06-23</date>
+   <src-url>https://author.today/work/282997</src-url>
+   <id>CTADI-AT-282997</id>
+   <version>1.00</version>
+   <history>
+     <p>Текст создан программой "CopyText ADI", созданной телеграмм каналом @BooksFine (https://t.me/BooksFine)</p>
+     <p>0c99d30445e51de9d0261ab748777ed2</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

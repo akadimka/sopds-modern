@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>sf_action</genre>
+      <genre>sf_action</genre>
+      <author>
+        <first-name>Руслан</first-name>
+        <middle-name>Алексеевич</middle-name>
+        <last-name>Михайлов</last-name>
+        <nickname>Дем Михайлов</nickname>
+        <home-page>https://www.litmir.me/a/?id=57237</home-page>
+        <email>dem_279@mail.ru</email>
+      </author>
+      <book-title>БП - 2</book-title>
+      <annotation>
+        <p>		Нортис Вертинский, жестоко искалеченный семнадцатилетний парень, продолжает начатое дело - поиск двуногих тварей убивших всю его семью и оставшихся безнаказанными. С каждым днем Нортис становится все сильнее, все злее и все безумней. Он не остановится до тех пор, пока на завершит свою вендетту или пока его кто-нибудь не остановит. Но горе тому, кто встанет у него на пути - безжалостный мститель не знает пощады.</p>
+      </annotation>
+      <date>2019</date>
+      <coverpage>
+        <image l:href="#cover.jpg"/>
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Астероид Сити" number="2"/>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name/>
+        <last-name/>
+      </author>
+      <program-used>FictionBook Editor Release 2.6.7</program-used>
+      <date value="2015-09-17">17.09.2015</date>
+      <src-url>https://www.litmir.me</src-url>
+      <id>B7C32898-761A-45A4-B04C-090777269334</id>
+      <version>1.0</version>
+    </document-info>
+    <publish-info/>
+  </description>
+  <body name="Без пощады 2"><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

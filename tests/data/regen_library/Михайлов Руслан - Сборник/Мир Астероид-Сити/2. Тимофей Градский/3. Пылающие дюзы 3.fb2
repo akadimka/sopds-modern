@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <genre>sf_space</genre>
+   <genre>sf_etc</genre>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+   </author>
+   <book-title>Пылающие Дюзы-3</book-title>
+   <annotation>
+    <p>Продолжение цикла Пылающие Дюзы.</p>
+    <p>Это история о молодом охотнике за головами Тиме Градском, чья задача — находить и уничтожать приговоренных к смерти преступников, что в свое время успели скрыться от правосудия. Космос невероятно велик, тут есть где затеряться, но гроссы сделают все, чтобы найти беглеца и покарать его. </p>
+    <p>Тим Градский еще не успел сделать себе имени в Лиге Гроссов... но он старательно движется по этому пути, изо всех сил стараясь остаться человечным и справедливым. В этом ему помогает верная команда и преданный до последнего бита ИскИн Лео, что всегда найдет повод побрюзжать...</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#405275a7-9efa-47b7-a002-e4978701edd4.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Пылающие Дюзы (Мир Астероид-Сити)" number="03"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>https://author.today/u/mikhaylov_d/works</home-page>
+   </author>
+   <program-used>Elib2Ebook, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-01-28">2023-01-28</date>
+   <src-url>https://author.today/work/231120</src-url>
+   <id>0D0596E2-DAA7-41A2-9101-DF947848AA22</id>
+   <version>1.0</version>
+  </document-info>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

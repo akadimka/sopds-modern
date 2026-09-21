@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>novel</genre>
+   <genre>litrpg</genre>
+   <genre>sci-fi</genre>
+   <genre>sf-humor</genre>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>https://author.today/u/mikhaylov_d/works</home-page>
+   </author>
+   <book-title>ГКР-8: Грань Забытых Земель</book-title>
+   <annotation>
+    <p>Дружная и упорная пятерка игроков, создав боевую группу Братство Тропы, оказавшись в одном из тайных уголков мира Вальдиры, не могли ожидать, что здесь, в Забытых Землях, действуют совсем иные игровые законы и правила. <empty-line/>Здесь царит старый добрый хардкор, что в свое время оказался чрезмерно жестким и сложным для обычных игроков и был заменен куда более гуманной системой. <empty-line/>Здесь собраны и сюда изгнаны те монстры и существа, что не вписались в обычную светлую Вальдиру. <empty-line/>Здесь правит твердой рукой почти всесильный, но справедливый Акмэр, что сделал немало для Вальдиры, а когда оказался не нужен новому миру, был заперт здесь - в темных и мрачных Забытых Землях. <empty-line/>Здесь начинается Тропа, ведущая героев через диковинные и опасные локации туда, куда изо всех сил стремится Орбит Хрустилиано... <empty-line/>И чтобы помочь другу, Росгард, Док, Храбр и Бом готовы преодолеть любые трудности и сразить самого сильного врага, дерзнувшего встать на пути у Братства Тропы. <empty-line/>Их путь через Забытые Земли продолжается...</p>
+    <p>***</p>
+    <p>По: "Глава 10"</p>
+   </annotation>
+   <coverpage>
+    <image l:href="#cover.jpg"/>
+   </coverpage>
+   <lang>ru</lang>
+   <sequence name="Вальдира - ГКР - второй цикл о Росгарде. " number="8"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>https://author.today/u/mikhaylov_d/works</home-page>
+   </author>
+   <program-used>CopyText ADI</program-used>
+   <date value="2024-10-01">2024-10-01</date>
+   <src-url>https://author.today/work/326817</src-url>
+   <id>CTADI-AT-326817</id>
+   <version>1.00</version>
+   <history>
+     <p>Текст создан программой "CopyText ADI", созданной телеграмм каналом @BooksFine (https://t.me/BooksFine)</p>
+     <p>7d940a842c4a5988a4b7ae567b5fde9f</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

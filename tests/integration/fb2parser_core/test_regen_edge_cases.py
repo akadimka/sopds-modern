@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from fb2parser_core import regen_csv
+from fb2parser_core.fb2_compiler import FB2CompilerService
 from fb2parser_web.fb2parser_bridge import _config_path
 
 LIBRARY_ROOT = Path(__file__).resolve().parents[2] / "data" / "regen_library"
@@ -502,3 +503,83 @@ class TestTwoAuthorSurnamesInFilenameNotMistakenForSeries:
         rec = _by_suffix(records, *self.FOLDER, filename)
         assert rec.proposed_series == ""
         assert rec.proposed_author == "Ильф Илья, Петров Евгений"
+
+
+class TestVariantKeywordSubstringFalsePositive:
+    """Баг №106: "Мир Астероид-Сити" (папка-серия без собственного номера,
+    с вложенными нумерованными подпапками-подсериями "1. Нортис
+    Вертинский" / "2. Тимофей Градский") ложно распознавался как
+    ВАРИАНТНАЯ папка ("Вариант с СИ", "ЛП" и т.п., которые серию из папки
+    не образуют) — короткое ключевое слово "си" (маркер самиздата/СИ)
+    матчилось голой подстрокой `_vk in _sf_lower`, а "Сити" ЕГО СОДЕРЖИТ
+    буквально. Из-за этого весь уровень "Мир Астероид-Сити" выпадал из
+    series_folders, а с ним и признак "уровней ≥2" — из-за чего терялся и
+    порядковый номер подсерии ("1."/"2." перед именем).
+
+    Фикс: та же защита через границы слова, что уже используется для
+    короткого варианта-ключевика в `folder_classifier.py` и
+    `passes/pass2_series_filename.py._is_variant_folder()` — переиспользован
+    `series_helpers._bl_matches()`.
+    """
+
+    FOLDER = ("Михайлов Руслан - Сборник", "Мир Астероид-Сити")
+
+    @pytest.mark.parametrize("subfolder, filename, expected_number", [
+        ("1. Нортис Вертинский", "1. Без пощады.fb2", "1"),
+        ("1. Нортис Вертинский", "2. Без пощады 2.fb2", "2"),
+        ("1. Нортис Вертинский", "3. Без пощады 3.fb2", "3"),
+        ("2. Тимофей Градский", "2. Пылающие дюзы 2.fb2", "2"),
+        ("2. Тимофей Градский", "3. Пылающие дюзы 3.fb2", "3"),
+    ])
+    def test_root_series_and_subseries_number_both_preserved(
+        self, records, subfolder, filename, expected_number
+    ):
+        rec = _by_suffix(records, *self.FOLDER, subfolder, filename)
+        assert rec.proposed_series == f"Мир Астероид-Сити\\{subfolder}"
+        assert rec.series_number == expected_number
+
+
+class TestAbbreviatedSubseriesArcNumberNotSwallowedByPartTitle:
+    """Баг №107: "Мир Вальдиры\\Герой крайних рубежей" (ГКР-1..9) — файлы
+    названы АББРЕВИАТУРОЙ подсерии ("ГКР-N."), а не полным именем
+    ("Герой крайних рубежей N"), поэтому `_sort_key_for_subseries()`
+    (fb2_compiler.py) не находит позицию ни через корень, ни через имя
+    подсерии. ГКР-5/6 ("Аньгора. Часть 1"/"Часть 2", series_number=5/6)
+    проваливались в `_extract_inline_volume_number()` — "Часть N" в
+    заголовке ложно принималось за номер тома ВНУТРИ позиции, хотя это
+    просто подзаголовок конкретной, уже однозначно определённой метаданными
+    позиции (5 и 6 — РАЗНЫЕ позиции, не 6.1/6.2 одной). Итог до фикса:
+    компилятор разбивал серию на диапазоны "0-4"/"7-9", ГКР-5 терялся
+    целиком, ГКР-6 получал позицию "0.2".
+
+    "Цикл Люца" — сосед по тому же корню "Мир Вальдиры" с ДРУГИМ именем
+    подсерии, нужен чтобы regen_csv не свернул series_source обратно в
+    'filename_named_arc' побочным эффектом `_resolve_hierarchical_flat_mismatch`
+    (который иначе маскирует эту регрессию при единственной подсерии в корне).
+    """
+
+    FOLDER = ("Михайлов Руслан - Сборник", "Мир Вальдиры", "Герой крайних рубежей")
+
+    @pytest.mark.parametrize("filename, expected_number", [
+        ("ГКР-1. Герой озёрного края .fb2", ""),
+        ("ГКР-5. Аньгора. Часть 1.fb2", "5"),
+        ("ГКР-6. Аньгора. Часть 2.fb2", "6"),
+        ("ГКР-9. Сердце Забытых Земель.fb2", "9"),
+    ])
+    def test_series_number_preserved_per_file(self, records, filename, expected_number):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.series_number == expected_number
+
+    def test_compiler_groups_all_nine_as_one_complete_run(self, records):
+        compiler = FB2CompilerService()
+        groups = compiler.find_groups(records, LIBRARY_ROOT)
+        matches = [
+            g for g in groups
+            if g.author == "Михайлов Руслан"
+            and any(b.abs_path.name.startswith("ГКР-1.") for b in g.books)
+        ]
+        assert len(matches) == 1, f"expected exactly 1 group, got {len(matches)}: {matches}"
+        group = matches[0]
+        assert group.volume_range == "1-9"
+        assert group.series_complete is True
+        assert [b.sort_key for b in group.books] == [(0, n, 0, 0) for n in range(1, 10)]

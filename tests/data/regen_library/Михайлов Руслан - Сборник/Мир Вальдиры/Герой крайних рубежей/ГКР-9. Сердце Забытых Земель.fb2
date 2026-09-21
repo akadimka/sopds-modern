@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_humor</genre>
+    <genre>sf_litrpg</genre>
+    <author>
+      <first-name>Руслан</first-name>
+      <middle-name>Алексеевич</middle-name>
+      <last-name>Михайлов</last-name>
+    </author>
+    <book-title>Сердце Забытых Земель</book-title>
+    <annotation>
+      <p>Дружная и упорная пятерка игроков, создав боевую группу Братство Тропы, оказавшись в одном из тайных уголков мира Вальдиры, не могли ожидать, что здесь, в Забытых Землях, действуют совсем иные игровые законы и правила.</p>
+      <p>Здесь царит старый добрый хардкор, что в свое время оказался чрезмерно жестким и сложным для обычных игроков и был заменен куда более гуманной системой.</p>
+      <p>Здесь собраны и сюда изгнаны те монстры и существа, что не вписались в обычную светлую Вальдиру.</p>
+      <p>Здесь правит твердой рукой почти всесильный, но справедливый Акмэр, что сделал немало для Вальдиры, а когда оказался не нужен новому миру, был заперт здесь - в темных и мрачных Забытых Землях.</p>
+      <p>Здесь начинается Тропа, ведущая героев через диковинные и опасные локации туда, куда изо всех сил стремится Орбит Хрустилиано...</p>
+      <p>И чтобы помочь другу, Росгард, Док, Храбр и Бом готовы преодолеть любые трудности и сразить самого сильного врага, дерзнувшего встать на пути у Братства Тропы.</p>
+      <p>Их путь через Забытые Земли продолжается...</p>
+    </annotation>
+    <date value="2025-05-24 21:23">2025-05-24 21:23</date>
+    <coverpage>
+      <image l:href="#709103ff-71db-44ec-8d82-8680e3f74eb8.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Герои крайних рубежей" number="9"/>
+    <sequence name="Господство клана Неспящих" number="17"/>
+    <sequence name="Мир Вальдиры"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Цокольный этаж</first-name>
+      <home-page>https://searchfloor.org/</home-page>
+    </author>
+    <date value="2025-05-24 21:54">2025-05-24 21:54</date>
+    <src-url>https://author.today/work/383400</src-url>
+    <program-used>Elib2Ebook, PureFB2 4.12</program-used>
+  </document-info>
+  <publish-info/>
+  <custom-info info-type="donated">false</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

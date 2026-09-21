@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <genre>sf_space</genre>
+    <author>
+      <first-name>Руслан</first-name>
+      <middle-name>Алексеевич</middle-name>
+      <last-name>Михайлов</last-name>
+    </author>
+    <book-title>Без пощады</book-title>
+    <annotation>
+      <p>Астероид-Сити — шахтерский город под куполом, город с искусственной атмосферой, замкнутый мирок на самой окраине обитаемого космоса. Повсеместная коррупция. Мафия и уличные банды действуют практически в открытую. Все привыкли ко вседозволенности и наплевательству на законы при полном попустительстве губернатора и полиции. Но еще никто не подозревает, какой ужас обрушится на город с появлением в нем человека (а человека ли?) по прозвищу Гиена. Семнадцатилетний калека лишен всего — семьи, будущего и большей части своего тела. От немедленного самоубийства его удерживает только одно — испепеляющее чувство мести к виновникам всех его бед. К тем, кто остался безнаказанным за совершенные десять лет назад злодеяния. К тем, кто не сделал ничего, чтобы преступники были найдены и наказаны, как того требует закон. Беспощадный мститель не остановится ни перед чем, чтобы достичь своей цели.</p>
+    </annotation>
+    <date>2012</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Мир Астероид-Сити" number="1"/>
+    <sequence name="Нортис Вертинский" number="1"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>крымчанка</nickname>
+    </author>
+    <program-used>doc2fb, FictionBook Editor Release 2.6.5</program-used>
+    <date value="2012-09-21">2012-09-21</date>
+    <src-url>http://huge-library.org</src-url>
+    <src-ocr>Книга подготовлена для библиотеки Huge Library (Scan - pupkin_vasia; OCR, ReadCheck - pip228; Conv - крымчанка)</src-ocr>
+    <id>C238E76F-1F90-45FF-A57B-C53E716F76FF</id>
+    <version>1.01</version>
+    <history>
+      <p>1.0 — создание файла (крымчанка);</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Дем Михайлов "Баз пощады"</book-name>
+    <publisher>Ленинградское издательство</publisher>
+    <city>СПб</city>
+    <year>2012</year>
+    <isbn>978-5-9942-0986-8</isbn>
+    <sequence name="Боевая фантастика"/>
+  </publish-info>
+  <custom-info info-type="">ББК 84.445
+М69
+Без пощады. — СПб.: «Ленинградское 
+издательство», 2012. — 336 с.
+Ответственный редактор А. Сидорович
+Корректор А. Мартынова
+Верстка И. Третьякова
+Подписано в печать 27.12.2011.
+Формат 84x108 1/32. Гарнитура Петербургская.
+Печать офсетная. Усл. печ. л. 17,64. Уч.-изд. л. 12,3
+Тираж 6050 экз. </custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

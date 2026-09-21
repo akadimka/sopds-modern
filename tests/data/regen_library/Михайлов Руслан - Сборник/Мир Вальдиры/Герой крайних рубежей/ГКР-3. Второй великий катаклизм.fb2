@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+    <home-page>dem-mihailov.ru</home-page>
+    <email>dem_279@mail.ru</email>
+   </author>
+   <book-title>ГКР-3</book-title>
+   <date></date>
+    <coverpage>
+    <image l:href="#_0.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Дем</first-name>
+    <last-name>Михайлов</last-name>
+   </author>
+   <program-used>calibre 2.19.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2018-05-24">24.5.2018</date>
+
+   <id>a066a716-d02d-4b24-92bf-262858273603</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <publisher>dem-mihailov.ru</publisher>
+   <year>2017</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

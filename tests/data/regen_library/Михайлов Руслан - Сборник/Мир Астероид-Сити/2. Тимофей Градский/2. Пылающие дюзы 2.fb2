@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <genre>sf_etc</genre>
+    <genre>sf_space</genre>
+    <author>
+      <first-name>Руслан</first-name>
+      <middle-name>Алексеевич</middle-name>
+      <last-name>Михайлов</last-name>
+    </author>
+    <book-title>Пылающие дюзы-2</book-title>
+    <annotation>
+      <p>Ржавая космическая станция на границе обитаемого космоса. Всем все едино. Все живут лишь одним днем. Никто уже давно не смотрит на миллиарды звезд за стеклом обзорного окна. Что нужно, чтобы всколыхнуть серые будни молодого парня, никогда не задумывающегося о будущем? Ответ прост: что-нибудь внезапное и особенное. Например, настоящая карта сокровищ, полученная от умирающего старика! Стоило принять ее — и простой парень Тим оказался вовлечен в калейдоскоп событий, в круговерть происшествий, в смертельно опасную игру с коррумпированной станционной полицией. Ему пришлось сделать необратимый шаг и стать охотником за головами — тем, кого с трепетом и страхом называют "гросс" </p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Пылающие Дюзы (Мир Астероид-Сити)" number="2"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Adherent-GA</nickname>
+    </author>
+    <program-used>Ultimate Copy Manager, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-11-11">11 ноября 2020 г.</date>
+    <src-url>https://author.today/work/92175</src-url>
+    <id>UCM-AT-92175</id>
+    <version>1.00</version>
+    <history>
+      <p>Создание файла [UCM]</p>
+    </history>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
