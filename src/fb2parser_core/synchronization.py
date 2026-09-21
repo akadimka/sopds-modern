@@ -1142,24 +1142,41 @@ class SynchronizationService:
         # будет переименован позже. Раз он один и покрывает диапазон с 1 —
         # это вся серия целиком, полная картина уже известна, строим
         # финальное имя сразу.
+        # Баг №109 (продолжение): организационный корень ("Мир Вальдиры"),
+        # который regen_csv.py намеренно не включил в proposed_series (чтобы
+        # не путать нумерацию независимых серий внутри него — см.
+        # BookRecord.series_display_root), нужно вернуть в текст ДЛЯ ИМЕНИ
+        # ФАЙЛА — иначе одиночные тома одной и той же серии называются
+        # по-разному в зависимости от того, скомпилированы они уже в группу
+        # (см. FB2CompilerService._group_series_for_naming) или синхронизируются
+        # как отдельные, ещё не объединённые файлы (эта функция).
+        _display_root = (getattr(record, 'series_display_root', '') or '').strip()
+
+        def _named_series(raw_series: str) -> str:
+            raw_series = (raw_series or '').strip()
+            if not _display_root or not raw_series:
+                return raw_series
+            from .fb2_compiler import FB2CompilerService
+            return FB2CompilerService._series_to_display(f"{_display_root}\\{raw_series}")
+
         if kind == 'compilation' and covered_volumes:
             if record.file_path in getattr(self, '_sole_full_compilation_paths', ()):
                 lo, hi = min(covered_volumes), max(covered_volumes)
                 try:
                     from .fb2_compiler import FB2CompilerService
                     clean_series = FB2CompilerService._clean_series_name(
-                        (record.proposed_series or '').strip()
+                        _named_series(record.proposed_series)
                     )
                     suffix = FB2CompilerService._series_suffix(len(covered_volumes), lo, hi)
                 except Exception:
-                    clean_series = (record.proposed_series or '').strip()
+                    clean_series = _named_series(record.proposed_series)
                     suffix = f'т. {lo}-{hi}' if lo != hi else f'т. {lo}'
                 return f"{author} - {_safe(clean_series)} ({suffix}).fb2"
             return f"{_safe(Path(record.file_path).name)}"
 
         # ── Одиночные тома и неопределённые (в т.ч. "компиляция" с ────
         # неизвестным диапазоном томов — см. комментарий выше) ─────────
-        series = (record.proposed_series or '').strip()
+        series = _named_series(record.proposed_series)
 
         # series_number: используем только если это число или простой диапазон
         sn = (getattr(record, 'series_number', '') or '').strip()
