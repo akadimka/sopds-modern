@@ -1570,6 +1570,36 @@ class FB2CompilerService:
                     )
                     dominant_vols = folder_vol_sets[dominant_folder]
                     if dominant_vols:
+                        # Баг №109: совпадение номера позиции между доминирующей
+                        # папкой и ДРУГОЙ папкой не обязательно означает, что это
+                        # одна и та же книга — если "другая папка" на деле
+                        # независимая подсерия того же автора внутри общего
+                        # организационного корня (напр. "Мир Вальдиры\Кроу" рядом
+                        # с доминирующей "Мир Вальдиры\Герой крайних рубежей"),
+                        # совпадение позиции случайно. Реальный случай: "Мир
+                        # Вальдиры\Цикл Люца\1. Маньяк отмели..." удалялся как
+                        # "дубликат" ГКР-1, хотя это совершенно другая книга.
+                        # Прежде чем считать это дублем, требуем хотя бы одно общее
+                        # значимое слово (≥4 символа, без ведущего номера) со
+                        # stem книги(-гами) доминирующей папки на той же позиции —
+                        # иначе не удаляем, оставляем обе.
+                        def _significant_words(b: 'CompilationBook') -> set:
+                            s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', b.abs_path.stem)
+                            return {w.lower() for w in re.split(r'\W+', s) if len(w) >= 4}
+
+                        dominant_books_by_vol: Dict[int, List['CompilationBook']] = {}
+                        for db in books:
+                            if str(db.abs_path.parent) != dominant_folder:
+                                continue
+                            rng_dm = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', db.volume_label or '')
+                            if rng_dm:
+                                for v in range(int(rng_dm.group(1)), int(rng_dm.group(2)) + 1):
+                                    dominant_books_by_vol.setdefault(v, []).append(db)
+                            else:
+                                dv = _eff_vol(db)
+                                if dv:
+                                    dominant_books_by_vol.setdefault(dv, []).append(db)
+
                         new_books = []
                         for b in books:
                             folder = str(b.abs_path.parent)
@@ -1581,7 +1611,15 @@ class FB2CompilerService:
                                 v not in dominant_vols
                                 for v in range(int(rng_pre.group(1)), int(rng_pre.group(2)) + 1)
                             )
-                            if folder != dominant_folder and vol and vol in dominant_vols and not has_unique:
+                            is_dup = folder != dominant_folder and vol and vol in dominant_vols and not has_unique
+                            if is_dup:
+                                peers = dominant_books_by_vol.get(vol, [])
+                                shares_words = any(
+                                    _significant_words(b) & _significant_words(p) for p in peers
+                                )
+                                if not shares_words:
+                                    is_dup = False
+                            if is_dup:
                                 duplicate_paths.append(b.abs_path)
                             else:
                                 new_books.append(b)
