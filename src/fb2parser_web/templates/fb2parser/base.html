@@ -24,10 +24,10 @@
 
     <!-- Top bar -->
     <div class="fb2-topbar">
-        <div class="fb2-topbar-title">
+        <a class="fb2-topbar-title" href="{% url 'fb2parser:dashboard' %}">
             <span class="fp-logo-dot"></span>
             FB2PARSER
-        </div>
+        </a>
         <div class="fb2-topbar-links">
             <a href="{% url 'web:main' %}">→ SOPDS</a>
             {% if user.is_superuser %}
