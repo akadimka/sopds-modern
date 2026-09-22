@@ -59,6 +59,13 @@ class RegenCSVService:
         self._genre_category_words = [
             w.lower() for w in (self.settings.get_list('genre_category_words') or [])
         ]
+        # Баг №109 (продолжение): "Демон - завершён" — статус цикла
+        # (окончен/не окончен), а не часть его названия. Список
+        # расширяемый через config для других формулировок ("закончен" и т.п.).
+        self._series_status_words = [
+            w.lower().replace('ё', 'е')
+            for w in (self.settings.get_list('series_status_words') or [])
+        ]
         
         # Load folder patterns for series extraction
         folder_patterns_raw = self.settings.get_author_series_patterns_in_folders()
@@ -303,6 +310,19 @@ class RegenCSVService:
         )
         if _cycle_marker_m:
             return _cycle_marker_m.group(1).strip()
+
+        # ШАГ 0.7: "Серия - завершён"/"Серия - завершена" и т.п. — статус
+        # цикла (окончен/не окончен), не часть его названия. Реальный
+        # случай (docs/quality-roadmap.md, баг №109): "Демон - завершён",
+        # "Артефактор - завершён", "Повелитель - завершён" (Седых
+        # Александр) — папки серий отмечены пометкой завершённости через
+        # дефис. Отличаем от парентезной формы "Серия (завершён)" — та уже
+        # корректно стрипается ниже (всё до открывающей скобки).
+        if ' - ' in folder_name and self._series_status_words:
+            _head, _, _tail = folder_name.rpartition(' - ')
+            _tail_norm = _tail.strip().lower().replace('ё', 'е')
+            if _head.strip() and _tail_norm in self._series_status_words:
+                return _head.strip()
 
         # ШАГ 0.5: Формат "Серия. Хвост" (например "За гранью. Мистические
         # триллеры Альбины Нури") — хвост после точки часто описание/жанр/имя
