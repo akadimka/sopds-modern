@@ -42,6 +42,76 @@ class TestWholeSeriesMarkerResolvedAgainstKnownMax:
         assert (lo, hi) == (0, 0)
 
 
+class TestWholeSeriesMarkerIgnoredWhenBookHasOwnDefinitePosition:
+    """Реальный случай (Панфилов Василий / "Улан") — docs/quality-roadmap.md,
+    баг №109 (продолжение). Том 2 несёт ИСПОРЧЕННЫЙ, похоже скрейпленный с
+    сайта, `file_title`: "Улан. Наследие предков – Василий Панфилов |
+    Альтернативная история, попаданец в XVIII век, военная САГА" — слово
+    "сага" (genre-тег из промо-текста, никак не связан со структурой файла)
+    ложно матчило `_WHOLE_SERIES_MARKERS`, и файл (обычный, единственный
+    том — 5.3 МБ, как и остальные 3 тома по отдельности, НЕ омнибус) считался
+    "уже готовой компиляцией всей серии 1-4" — том 1/3/4 помечались на
+    УДАЛЕНИЕ как "дубликаты", реальная потеря данных при выполнении.
+
+    Различающий признак: у настоящего омнибуса (баг №70, "Далин - Цикл
+    «Город Внизу»") НЕТ собственного, однозначно определённого номера тома
+    — он получает позицию только ЧЕРЕЗ этот самый критерий 1.7. У тома 2
+    "Улан" уже ЕСТЬ собственная, надёжная позиция "2" (найдена по ведущей
+    цифре в имени файла, filename_prefix) — книга с уже известной
+    определённой собственной позицией не может ОДНОВРЕМЕННО быть "всей
+    серией в одном файле".
+    """
+
+    def test_book_with_own_definite_number_not_treated_as_whole_series(self):
+        record = SimpleNamespace(
+            file_title=(
+                'Улан. Наследие предков – Василий Панфилов | Альтернативная '
+                'история, попаданец в XVIII век, военная сага'
+            ),
+            proposed_series="Улан", series_number="2",
+        )
+        book = CompilationBook(
+            record=record, abs_path=Path("2. Улан. Наследие предков.fb2"),
+            sort_key=(0, 2, 0, 0), sort_source="filename", order_ambiguous=False,
+        )
+        svc = FB2CompilerService()
+
+        lo, hi = svc._precompiled_range(book, "Улан", max_known_position=4)
+        assert (lo, hi) == (0, 0)
+
+    def test_real_shape_end_to_end_no_data_loss(self, tmp_path):
+        from fb2parser_core.passes.pass1_read_files import BookRecord
+
+        def _rec(path, num, title):
+            return BookRecord(
+                file_path=path, file_title=title, metadata_authors="Панфилов Василий",
+                proposed_author="Панфилов Василий", author_source="folder_dataset",
+                metadata_series="Улан", proposed_series="Улан",
+                series_source="folder_dataset", series_number=num,
+                series_number_source="filename_prefix",
+            )
+
+        records = [
+            _rec("1. Улан. Танец на лезвии клинка.fb2", "1", "Улан. Танец на лезвии клинка"),
+            _rec("2. Улан. Наследие предков.fb2", "2",
+                 'Улан. Наследие предков – Василий Панфилов | Альтернативная '
+                 'история, попаданец в XVIII век, военная сага'),
+            _rec("3. Улан. Венедская держава.fb2", "3", "Улан. Венедская держава"),
+            _rec("4. Улан. Небо славян.fb2", "4", "Улан. Небо славян"),
+        ]
+
+        svc = FB2CompilerService()
+        groups = svc.find_groups(records, tmp_path)
+        matches = [g for g in groups if g.author == "Панфилов Василий"]
+        assert len(matches) == 1
+        group = matches[0]
+        # НЕ cleanup_only — реальная новая компиляция всех 4 томов,
+        # ни один не должен уйти в duplicate_paths на удаление.
+        assert group.cleanup_only is False
+        assert len(group.books) == 4
+        assert not group.duplicate_paths
+
+
 class TestWholeSeriesGroupCleansUpDuplicateVolumes:
     def test_real_shape_end_to_end(self, tmp_path):
         from fb2parser_core.passes.pass1_read_files import BookRecord
