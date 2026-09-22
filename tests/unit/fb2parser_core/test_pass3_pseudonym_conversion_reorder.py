@@ -50,3 +50,39 @@ class TestPseudonymSurnameConversionStillAllowsReorder:
         pass3 = Pass3Normalize(logger=_NullLogger(), settings=settings)
         pass3.execute([rec])
         assert rec.proposed_author == "Тамоников Александр"
+
+
+class TestUnrelatedOwnMetadataDoesNotBlockFolderDatasetReorder:
+    """Баг №109 (продолжение): "Роман Суржиков - Сборник произведений\\
+    Полари" (folder_dataset даёт "Роман Суржиков", ИФ-порядок) — часть
+    файлов ("6. Небесный корабль и девушка (интерлюдия).fb2", "7.
+    Говорящий с богом (интерлюдия).fb2") несёт в СОБСТВЕННЫХ метаданных
+    <author> псевдоним "Norman" (публикация под другим именем для этих
+    конкретных интерлюдий) — не пустой, не "[unknown]", но НЕ имеющий
+    вообще ничего общего ни с "Роман", ни с "Суржиков". Существующая
+    защита трактовала "есть какая-то metadata_authors" и "метадата
+    подтверждает порядок" как одно и то же — раз "Norman" не подтверждал
+    НИ перестановку, ни исходный порядок, реордер просто откатывался,
+    оставляя неверный ИФ-порядок "Роман Суржиков" вместо "Суржиков
+    Роман" (которое получают ВСЕ остальные файлы серии). Это ломало
+    группировку компиляции (fb2_compiler.find_groups() группирует по
+    proposed_author) — серия разъезжалась на две группы из-за разницы в
+    porядке слов у пары файлов.
+    """
+
+    def test_unrelated_pseudonym_metadata_does_not_block_reorder(self):
+        rec = _rec("Роман Суржиков", "Norman")
+        settings = SettingsManager(_config_path())
+        pass3 = Pass3Normalize(logger=_NullLogger(), settings=settings)
+        pass3.execute([rec])
+        assert rec.proposed_author == "Суржиков Роман"
+
+    def test_metadata_confirming_original_order_still_blocks_reorder(self):
+        # Sanity (Линдквист Йон Айвиде — упомянут в комментарии кода):
+        # метадата явно подтверждает ИСХОДНЫЙ (не переставленный) порядок
+        # — реордер по-прежнему должен откатываться, это не тот случай.
+        rec = _rec("Линдквист Йон Айвиде", "Йон Айвиде Линдквист")
+        settings = SettingsManager(_config_path())
+        pass3 = Pass3Normalize(logger=_NullLogger(), settings=settings)
+        pass3.execute([rec])
+        assert rec.proposed_author == "Линдквист Йон Айвиде"

@@ -357,13 +357,24 @@ class Pass3Normalize:
                         if norm_first and norm_first in _meta_ends:
                             # Metadata confirms the reorder — trust normalization (includes ё→е)
                             normalized = normalized_candidate
-                        elif not _meta_authors_raw and record.author_source == 'folder_dataset':
-                            # No real metadata to check against (empty FB2, or "[unknown]"), and
-                            # this is folder_dataset — unlike the filename block-extractor (which
-                            # parses structured patterns with an explicit author position),
-                            # parse_author_from_folder_name does NOT guarantee "Фамилия Имя" order
-                            # (confirmed: it left "Андрей Васильев" unchanged during Precache).
-                            # There's nothing to confirm against either way — trust normalize_format.
+                        elif record.author_source == 'folder_dataset' and (
+                                not _meta_authors_raw or
+                                (orig_first not in _meta_ends and norm_first not in _meta_ends)
+                        ):
+                            # No real metadata to check against (empty FB2, or "[unknown]"), OR
+                            # metadata IS present but confirms NEITHER order at all — e.g. a
+                            # pseudonym completely unrelated to the folder-derived name (real
+                            # case, docs/quality-roadmap.md баг №109: folder "Роман Суржиков -
+                            # Сборник произведений" gives proposed_author="Роман Суржиков", but
+                            # this record's own metadata is "Norman" — the author's pen name for
+                            # this particular story, sharing zero tokens with either "Роман
+                            # Суржиков" or "Суржиков Роман"). Either way this is folder_dataset —
+                            # unlike the filename block-extractor (which parses structured
+                            # patterns with an explicit author position), parse_author_from_folder_name
+                            # does NOT guarantee "Фамилия Имя" order (confirmed: it left "Андрей
+                            # Васильев" unchanged during Precache). Metadata that doesn't relate
+                            # to either candidate gives no real signal either way — trust
+                            # normalize_format's reorder rather than defaulting to "keep original".
                             normalized = normalized_candidate
                         else:
                             # Keep original ФИ order; still apply ё→е and conversions
