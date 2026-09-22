@@ -1194,6 +1194,17 @@ class SynchronizationService:
         else:
             tome = ''
 
+        # Баг №109 (продолжение, по просьбе пользователя): если исходное
+        # имя файла несёт пометку "(рассказ-приквел)"/"(приквел)" и т.п. —
+        # сохраняем её в итоговом имени. Такие файлы обычно не имеют своей
+        # позиции в серии (см. ту же запись — их больше не сливают с
+        # основной серией), и без этой пометки после переименования
+        # читатель не отличит приквел от обычного, пропущенного по
+        # номеру тома.
+        _orig_stem = Path(record.file_path).stem
+        _prequel_m = re.search(r'\(([^)]*приквел[^)]*)\)', _orig_stem, re.IGNORECASE)
+        _prequel_marker = f' ({_safe(_prequel_m.group(1))})' if _prequel_m else ''
+
         if series:
             def _norm_cmp(s):
                 return s.lower().replace('ё', 'е').strip()
@@ -1203,7 +1214,7 @@ class SynchronizationService:
 
             if title_nc == series_nc:
                 # title полностью совпадает с серией — включать его нет смысла
-                return f"{author} - {_safe(series)}{tome}.fb2"
+                return f"{author} - {_safe(series)}{tome}{_prequel_marker}.fb2"
 
             if title_nc.startswith(series_nc):
                 # title начинается с серии — убираем префикс
@@ -1211,12 +1222,12 @@ class SynchronizationService:
 
             title = _safe(raw_title)
             if title:
-                return f"{author} - {_safe(series)}. {title}{tome}.fb2"
+                return f"{author} - {_safe(series)}. {title}{tome}{_prequel_marker}.fb2"
             else:
-                return f"{author} - {_safe(series)}{tome}.fb2"
+                return f"{author} - {_safe(series)}{tome}{_prequel_marker}.fb2"
         else:
             title = _safe(raw_title)
-            return f"{author} - {title}{tome}.fb2"
+            return f"{author} - {title}{tome}{_prequel_marker}.fb2"
 
     def _move_files(
         self,

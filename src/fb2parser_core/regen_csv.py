@@ -791,8 +791,20 @@ class RegenCSVService:
                         # настоящее название серии, а всё до тире (включая псевдоним через
                         # запятую) — это автор(ы), не серия.
                         if _extracted == _sf and ' - ' in _sf:
-                            _after_dash_ser = _sf.rsplit(' - ', 1)[1].strip()
-                            if _after_dash_ser:
+                            _before_dash_ser, _after_dash_ser = _sf.rsplit(' - ', 1)
+                            _before_dash_ser = _before_dash_ser.strip()
+                            _after_dash_ser = _after_dash_ser.strip()
+                            # Баг №109 (продолжение): формат "Серия - Автор1,Автор2,
+                            # Автор3" (серия ПЕРЕД тире) — обратный порядок
+                            # относительно бага №59 ("Автор(ы) - Серия"). Реальный
+                            # случай: "Киндрэт - Пехов,Бычкова, Турчанинова" — текст
+                            # ПОСЛЕ тире это список соавторов (совпадает с уже
+                            # известным `author`), а не название серии — тогда
+                            # настоящая серия — текст ДО тире.
+                            if _after_dash_ser and self._surnames_match_folder(author, _after_dash_ser):
+                                if _before_dash_ser:
+                                    _extracted = _before_dash_ser
+                            elif _after_dash_ser:
                                 _extracted = _after_dash_ser
                         _auth_norm = self._normalize_name_for_comparison(author)
                         _extr_norm = self._normalize_name_for_comparison(_extracted) if _extracted else ''

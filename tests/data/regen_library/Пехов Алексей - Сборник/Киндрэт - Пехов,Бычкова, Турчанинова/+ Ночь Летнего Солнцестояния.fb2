@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description><title-info>
+<author><first-name>Алексей</first-name><last-name>Пехов</last-name></author>
+<author><first-name>Елена</first-name><last-name>Бычкова</last-name></author>
+<author><first-name>Наталья</first-name><last-name>Турчанинова</last-name></author>
+<book-title>Ночь Летнего Солнцестояния</book-title>
+<sequence name="Киндрэт"/>
+<genre>sf</genre>
+</title-info></description>
+<body><title><p>Ночь Летнего Солнцестояния</p></title><section><p>Текст.</p></section></body></FictionBook>

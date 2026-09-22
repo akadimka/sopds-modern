@@ -370,8 +370,21 @@ class FB2CompilerService:
             # честный счёт книг.
             return 'в 1 книге' if n_books == 1 else f'в {n_books} книгах'
         if lo in (0, 1) and series_complete:
-            if 2 <= n_volumes < len(cls._SERIES_WORDS) and cls._SERIES_WORDS[n_volumes]:
-                word = cls._SERIES_WORDS[n_volumes]
+            # Баг №109 (продолжение, по решению пользователя): если run
+            # начинается с "0" (приквел/пролог — см. Правило 7 в
+            # pass2_series_filename.py, где "Пролог" без номера тоже
+            # получает sn="0") и дальше идёт настоящая последовательность
+            # 1..hi, слово N-логии считаем ТОЛЬКО по главному циклу (hi
+            # томов), не включая приквел в счёт. Реальный случай (Пехов
+            # Алексей / "Хроники Сиалы"): "0. Змейка" (приквел) + уже
+            # готовый омнибус трилогии "1-3" — правильно "Трилогия", а не
+            # вводящая в заблуждение "Тетралогия" (никакого настоящего
+            # четвёртого тома в цикле нет). Содержимое позиции 0 всё
+            # равно попадает в скомпилированный файл — меняется только
+            # подпись.
+            _word_volumes = hi if (lo == 0 and hi > 0) else n_volumes
+            if 2 <= _word_volumes < len(cls._SERIES_WORDS) and cls._SERIES_WORDS[_word_volumes]:
+                word = cls._SERIES_WORDS[_word_volumes]
                 if n_books > n_volumes:
                     return f'{word} в {n_books} книгах'
                 return word
@@ -3449,12 +3462,32 @@ class FB2CompilerService:
                 for kw in self.collection_keywords
             )
 
+        # Баг №109 (продолжение, по решению пользователя: приквелы/рассказы
+        # без собственной позиции просто остаются отдельными файлами, не
+        # сливаются с серией) — если сам stem содержит буквальное имя серии
+        # (proposed_series), число ВНУТРИ этого фрагмента — часть названия
+        # серии (напр. "Миры Крадущегося 2. Ветер и искры" — "2" это номер
+        # МИРА, не позиция книги), а не позиция самой книги. Реальный
+        # случай: файл без своей позиции, переименованный синхронизацией в
+        # "Автор - <Серия>. <Заголовок>.fb2", при повторном скане ложно
+        # получал sort_key из числа, встроенного в САМО имя серии — два
+        # разных приквела получали ОДИНАКОВУЮ ложную позицию и терялись
+        # при дедупликации как "дубликаты". Маскируем текст серии (той же
+        # длины — не сдвигает позиции для секций ниже, использующих
+        # stem[num_m.end():]) перед поиском числа.
+        _series_for_mask = (rec.proposed_series or '').strip()
+        _stem_for_num_search = stem
+        if _series_for_mask and _series_for_mask in stem:
+            _stem_for_num_search = stem.replace(_series_for_mask, '\x00' * len(_series_for_mask))
+
         # Источник Б: число в начале/конце имени файла.
         # При многоуровневой нумерации ("Серия N. Подсерия M. ... Том K") извлекаем
         # secondary и tertiary, чтобы избежать коллизий sort_key между подсериями.
         num_m = None if _is_collection_file else (
-            self._STEM_NUM_RE.match(stem) or self._STEM_NUM_RE.search(stem) or re.search(
-                r'(?:^|[-–\s])(\d{1,4})\.\s+[А-ЯЁA-Z]', stem
+            self._STEM_NUM_RE.match(_stem_for_num_search)
+            or self._STEM_NUM_RE.search(_stem_for_num_search)
+            or re.search(
+                r'(?:^|[-–\s])(\d{1,4})\.\s+[А-ЯЁA-Z]', _stem_for_num_search
             )
         )
         if num_m:

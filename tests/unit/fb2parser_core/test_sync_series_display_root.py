@@ -127,3 +127,54 @@ class TestAuthorFolderRootUsedForFolderPathOnly:
         folder_structure, _ = svc._build_folder_structure(records)
         genre, author, display_root, series, subseries = folder_structure["1.fb2"]
         assert author == "Автор Тест"
+
+
+class TestPrequelMarkerPreservedInTargetFilename:
+    """По просьбе пользователя (баг №109, продолжение): если исходное имя
+    файла несёт пометку "(рассказ-приквел)"/"(приквел)" и т.п. — при
+    переименовании одиночного (ещё не скомпилированного) тома эта
+    пометка должна сохраняться в итоговом имени, иначе читатель не
+    поймёт, что перед ним приквел, а не пропущенный по номеру том
+    основной серии. Реальный случай: "+ Пожиратель душ (рассказ-
+    приквел).fb2" → раньше "Пехов Алексей - Миры Крадущегося 2. Ветер и
+    искры. Пожиратель душ.fb2" (пометка потеряна).
+    """
+
+    def test_prequel_marker_kept_in_renamed_file(self, tmp_path):
+        svc = _make_service(tmp_path)
+        rec = _rec(
+            "+ Пожиратель душ (рассказ-приквел).fb2",
+            "Миры Крадущегося 2. Ветер и искры",
+            proposed_author="Пехов Алексей",
+        )
+        rec.file_title = "Пожиратель душ"
+        kind, vols, _conf = svc._classify_record(rec)
+        name = svc._build_target_filename(rec, kind, vols)
+        assert name == (
+            "Пехов Алексей - Миры Крадущегося 2. Ветер и искры. "
+            "Пожиратель душ (рассказ-приквел).fb2"
+        )
+
+    def test_bare_prequel_marker_variant_also_kept(self, tmp_path):
+        svc = _make_service(tmp_path)
+        rec = _rec(
+            "Цена свободы (приквел).fb2",
+            "Миры Крадущегося 2. Ветер и искры",
+            proposed_author="Пехов Алексей",
+        )
+        rec.file_title = "Цена свободы"
+        kind, vols, _conf = svc._classify_record(rec)
+        name = svc._build_target_filename(rec, kind, vols)
+        assert name.endswith("(приквел).fb2")
+
+    def test_no_prequel_marker_unaffected(self, tmp_path):
+        # Sanity: обычный том без пометки называется как раньше.
+        svc = _make_service(tmp_path)
+        rec = _rec(
+            "Гром небесный.fb2", "Обычная серия",
+            proposed_author="Автор Тест",
+        )
+        rec.file_title = "Гром небесный"
+        kind, vols, _conf = svc._classify_record(rec)
+        name = svc._build_target_filename(rec, kind, vols)
+        assert name == "Автор Тест - Обычная серия. Гром небесный.fb2"

@@ -667,3 +667,33 @@ class TestSubfolderHierarchyRequiresOwnOrdinal:
         )
         assert rec_gkr.series_display_root == "Мир Вальдиры"
         assert rec_luts.series_display_root == "Мир Вальдиры"
+
+
+class TestSeriesBeforeDashNotSwallowedByTrailingAuthorList:
+    """Баг №109 (продолжение): "Киндрэт - Пехов,Бычкова, Турчанинова" —
+    формат "Серия - Автор1,Автор2, Автор3" (серия ПЕРЕД тире, список
+    соавторов ПОСЛЕ) — обратный порядок относительно бага №59
+    ("Автор(ы) - Серия", где после тире всегда серия).
+
+    Существующий фикс бага №59 (`_compute_folder_series()`,
+    `FolderType.PUBLISHER`/`COLLECTION`) предполагает только ЭТОТ,
+    прямой порядок: если `_extract_series_from_folder_name()` не смогла
+    ничего вырезать и в имени папки есть " - ", берёт текст ПОСЛЕ
+    последнего тире как имя серии безусловно — не проверяя, что там на
+    самом деле список авторов, а не название серии. Итог: все файлы
+    получали `proposed_series="Пехов,Бычкова, Турчанинова"` (список
+    соавторов), а настоящее имя серии "Киндрэт" терялось полностью.
+    """
+
+    FOLDER = ("Пехов Алексей - Сборник", "Киндрэт - Пехов,Бычкова, Турчанинова")
+
+    @pytest.mark.parametrize("filename", [
+        "+ Немного покоя во время чумы.fb2",
+        "+ Ночь Летнего Солнцестояния.fb2",
+        "Киндрэт. Тетралогия.fb2",
+    ])
+    def test_series_before_dash_recognized_not_author_list(self, records, filename):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == "Киндрэт"
+        assert "Бычкова" not in rec.proposed_series
+        assert "Турчанинова" not in rec.proposed_series
