@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Пехов</last-name>
+   </author>
+   <book-title>Чудесное приключение</book-title>
+   <annotation>
+    <p>Одному рыцарю вдруг взбрендило спасти из лап дракона принцессу. В итоге он остался без меча и коня. Дальше хуже – рыцарь нашел себе новый меч… (все бы ничего, но меч, как назло, оказался волшебным.) Дальше – ЕЩЕ ХУЖЕ… Вот такое, блин, чудесное приключение.</p>
+   </annotation>
+   <date></date>
+   <lang>ru</lang>
+   <src-lang>ru</src-lang>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname> cTpI/I}I{  </nickname>
+   </author>
+   <program-used>FB Editor v2.0</program-used>
+   <date value="2007-09-09">09.09.2007</date>
+   <src-ocr>http://lib.aldebaran.ru/author/pehov_aleksei/pehov_aleksei_chudesnoe_priklyuchenie/</src-ocr>
+   <id>CB32D7D6-5795-42FB-9F75-635C34EA6256</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

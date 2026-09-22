@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>sf_fantasy</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <last-name>Пехов</last-name>
+      </author>
+      <author>
+        <first-name>Марк</first-name>
+        <last-name>Певзнер</last-name>
+      </author>
+      <book-title>Ночь в Шариньильском лесу</book-title>
+      <lang>ru</lang>
+    </title-info>
+    <document-info>
+      <author>
+        <nickname>cTpI/I}I{</nickname>
+      </author>
+      <program-used>Fiction Book Designer</program-used>
+      <date value="2006-05-16">2006-05-16</date>
+      <id>FBD-9R8T55L6-G2A0-EK62-S5KO-HVOE6NF7W8BU</id>
+      <version>1.01</version>
+    </document-info>
+    <publish-info>
+      <publisher>Не издовалась</publisher>
+    </publish-info>
+    <custom-info info-type="pre-librusec-origin">From collection Aldebaran36163</custom-info>
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+  </description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

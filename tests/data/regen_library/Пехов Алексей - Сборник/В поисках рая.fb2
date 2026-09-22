@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <author>
+    <first-name>Алексей </first-name>
+    <last-name>Пехов</last-name>
+   </author>
+   <book-title>В поисках рая</book-title>
+   <annotation>
+    <p>Приключения путешественника и разумной кошки в мире после ядерной катастрофы. Все штаты Америки представляют собой выжженную пустыню, по которой бродят шайки разбойников, ватаги мутантов и хищников. Мир в котором за человеческую жизнь не дают и ломаного гроша. Мир, земля которого сияет ночами от радиации. Мир, в котором герой ищет Рай, легендарную местность где есть немного зеленой травы и чистого воздуха.<emphasis>»</emphasis></p>
+   </annotation>
+   <date>2010</date>
+   <coverpage>
+    <image l:href="#pz2.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor 2.4</program-used>
+   <date value="2010-04-26">26 April 2010</date>
+   <id>6C1CCB7B-24C0-4BA7-AD72-BBF6E84D76D1</id>
+   <version>2.0</version>
+   <history>
+    <p>v. 1.0 — fb2- из авторского текста</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>...</book-name>
+   <publisher>...</publisher>
+   <city>.</city>
+   <year>2010</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

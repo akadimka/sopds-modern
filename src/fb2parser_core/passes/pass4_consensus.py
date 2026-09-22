@@ -1003,6 +1003,13 @@ class Pass4Consensus:
         # Очищаем proposed_series у тех файлов, где серия совпадает с именем папки.
         import re as _re_ser
         multiauthor_series_cleared = 0
+        # id() записей, у которых серию только что стёрли ниже — ТОЛЬКО они
+        # являются законной целью для FILENAME/METADATA RESCUE далее. Запись,
+        # у которой proposed_series пуст был ИЗНАЧАЛЬНО (нет папочного сигнала
+        # вовсе, напр. одиночный файл прямо в корневой папке автора), не
+        # должна получать серию из голых метаданных — «мета только
+        # подтверждает найденную серию, не придумывает её с нуля».
+        _cleared_by_imprint_cleanup: set = set()
         for folder, group_records in groups.items():
             folder_name_lower = _nfc_lower_yo(folder.name) if folder.name else ''
             if not folder_name_lower or len(folder_name_lower) < 4:
@@ -1061,6 +1068,7 @@ class Pass4Consensus:
                 if rec_series_norm in folder_name_lower:
                     record.proposed_series = ''
                     record.series_source = ''
+                    _cleared_by_imprint_cleanup.add(id(record))
                     multiauthor_series_cleared += 1
 
         self.logger.log(
@@ -1085,6 +1093,8 @@ class Pass4Consensus:
         if self.series_filename_extractor is not None:
             for record in records:
                 if record.proposed_series or not record.metadata_series:
+                    continue
+                if id(record) not in _cleared_by_imprint_cleanup:
                     continue
                 author_norm = _nfc_lower_yo((record.proposed_author or '').strip())
                 if not author_norm:
@@ -1130,6 +1140,8 @@ class Pass4Consensus:
         filename_rescue_count = 0
         for record in records:
             if record.proposed_series or not record.metadata_series:
+                continue
+            if id(record) not in _cleared_by_imprint_cleanup:
                 continue
 
             # Используем именно СОБСТВЕННЫЙ кандидат этой записи — не самый

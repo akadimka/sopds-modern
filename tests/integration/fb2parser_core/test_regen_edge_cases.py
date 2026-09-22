@@ -697,3 +697,79 @@ class TestSeriesBeforeDashNotSwallowedByTrailingAuthorList:
         assert rec.proposed_series == "Киндрэт"
         assert "Бычкова" not in rec.proposed_series
         assert "Турчанинова" not in rec.proposed_series
+
+
+class TestLoneFileWithoutFolderSignalGetsNoSeriesFromMetadata:
+    """Баг №109 (продолжение): "Начинается вьюга.fb2" лежит прямо в корневой
+    папке автора "Пехов Алексей - Сборник" (не в подпапке серии, никакого
+    папочного сигнала о серии вообще нет), но в СОБСТВЕННЫХ FB2-метаданных
+    указано <sequence name="Хроники Сиалы"> — реальная серия, но существующая
+    в ДРУГОМ месте библиотеки (другая подпапка, другой набор файлов).
+
+    METADATA RESCUE в pass4_consensus.py ("после очистки издательских серий
+    восстанавливаем metadata_series") ошибочно применялся ко ВСЕЙ библиотеке
+    целиком (по признаку "proposed_series пуст"), а не только к записям,
+    которые эта же функция ТОЛЬКО ЧТО очистила несколькими строками выше
+    (MULTI-AUTHOR SERIES FOLDER CLEANUP) — так что и файл, у которого
+    папочного сигнала не было ИЗНАЧАЛЬНО (никогда не входил в очистку, т.к.
+    его папка не многоавторская), получал ту же голую метадату. Итог:
+    "мета только подтверждает найденную серию, никогда не придумывает её
+    с нуля" — если папочного сигнала нет, серии быть не должно вообще, файл
+    должен лечь в корень авторской папки при синхронизации.
+
+    На РЕАЛЬНОМ размере этой папки (23 файла) итоговый результат защищён
+    сразу двумя независимыми механизмами — pass4_consensus.py-фикс здесь
+    и singleton-пост-чек в regen_csv.py::_save_csv() (тот срабатывает,
+    только когда ложная серия встречается у автора РОВНО один раз, — см.
+    tests/unit/fb2parser_core/test_pass4_metadata_rescue_requires_prior_clearing.py
+    за прямым fail-before/pass-after тестом именно фикса в
+    pass4_consensus.py, изолированным от singleton-пост-чека).
+
+    ВАЖНО: `SynchronizationService.synchronize()` вызывает
+    `RegenCSVService.generate_csv(..., output_csv_path=None)` — это
+    ПРОПУСКАЕТ `_save_csv()` целиком, а вместе с ним и singleton-пост-чек.
+    На этом пути (используемом реальной синхронизацией в библиотеку) баг
+    реально проявлялся ещё через ДВА независимых механизма, ещё более
+    ранних, чем pass4_consensus.py:
+    `pass2_series_filename.py::_apply_metadata_fallback_single()` /
+    `_postpass_metadata_fallback()` (оба — "последний шанс" fallback на
+    голую metadata_series) и `regen_csv.py::_postcheck_metadata_rescue()`
+    (финальный "последний резерв" перед метаданными). Все три получили
+    одинаковый гейт: серия из голой metadata_series присваивается ТОЛЬКО
+    если хотя бы один файл в ТОЙ ЖЕ папке когда-либо получил папочный
+    сигнал о серии (folder_dataset/folder_hierarchy/.../no_series_folder).
+    `test_no_series_via_sync_path_without_save_csv` ниже — прямой
+    fail-before/pass-after тест именно этого сценария (без `_save_csv()`).
+    """
+
+    FOLDER = ("Пехов Алексей - Сборник",)
+
+    @pytest.mark.parametrize("filename", [
+        "Начинается вьюга.fb2",
+        "Дождь.fb2",
+        "Пес в тени луны.fb2",
+    ])
+    def test_no_series_without_folder_signal(self, records, filename):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == ""
+        assert rec.series_source == ""
+
+    def test_metadata_series_still_present_but_unused(self, records):
+        rec = _by_suffix(records, *self.FOLDER, "Начинается вьюга.fb2")
+        assert rec.metadata_series == "Хроники Сиалы"
+        assert rec.proposed_series == ""
+
+    def test_no_series_via_sync_path_without_save_csv(self):
+        # Точно тот же вызов, что делает SynchronizationService._generate_csv_data():
+        # output_csv_path=None — _save_csv() и её singleton-пост-чек НЕ
+        # выполняются вовсе. Без фиксов в pass2_series_filename.py и
+        # regen_csv.py (см. докстринг класса) этот тест падает — серия
+        # "Хроники Сиалы" просачивается через один из более ранних
+        # "последний шанс" fallback-ов.
+        folder = str(LIBRARY_ROOT / "Пехов Алексей - Сборник")
+        service = regen_csv.RegenCSVService(_config_path())
+        recs = service.generate_csv(folder, output_csv_path=None)
+        rec = _by_suffix(recs, "Начинается вьюга.fb2")
+        assert rec.metadata_series == "Хроники Сиалы"
+        assert rec.proposed_series == ""
+        assert rec.series_source == ""

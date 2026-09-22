@@ -568,6 +568,25 @@ class Pass2SeriesFilename:
         """
         self._prepass_folder_setup(records)
 
+        # Баг №109 (продолжение): карта «папка → был ли хоть у одного файла
+        # папочный сигнал о серии» (folder_dataset/folder_hierarchy/... или
+        # явный no_series_folder). Используется ниже (_apply_metadata_fallback_single,
+        # _postpass_metadata_fallback), чтобы не придумывать серию из голой
+        # metadata_series для файла, чья папка НИКОГДА такого сигнала не
+        # давала (напр. отдельный рассказ прямо в корневой папке автора).
+        # Снэпшот по входному series_source (уже выставлен regen_csv.py до
+        # Pass2) + дополняется по ходу основного цикла ниже, как только
+        # _apply_folder_series находит сигнал у очередной записи.
+        self._folder_has_signal: dict = {}
+        for rec in records:
+            if not rec.file_path:
+                continue
+            folder = str(Path(rec.file_path).parent)
+            if rec.series_source in self._FOLDER_SOURCES:
+                self._folder_has_signal[folder] = True
+            elif folder not in self._folder_has_signal:
+                self._folder_has_signal[folder] = False
+
         # Кэш Path.parts: один и тот же file_path встречается в нескольких проходах
         _parts_cache: dict = {}
         for record in records:
@@ -680,9 +699,33 @@ class Pass2SeriesFilename:
 
         Применяет валидацию как в основном цикле. Также балансирует кавычки
         и убирает завершающий backslash из всех series.
+
+        Баг №109 (продолжение): не придумываем серию из голой metadata_series
+        для файла, чья папка вообще НИКОГДА не давала папочного сигнала о
+        серии (ни положительного — folder_dataset/folder_hierarchy/..., ни
+        явного "здесь серии нет" — no_series_folder). Реальный случай:
+        "Начинается вьюга.fb2" лежит прямо в корневой папке автора "Пехов
+        Алексей - Сборник" (23 самостоятельных рассказа, ни один не в
+        подпапке серии — папка никогда не была "серийной"), но собственные
+        метаданные несут <sequence name="Хроники Сиалы"> — настоящая
+        серия, но существующая в ДРУГОМ месте библиотеки. "Мета только
+        подтверждает уже найденную серию, не придумывает её с нуля".
         """
+        _folder_has_signal: dict = {}
+        for rec in records:
+            if not rec.file_path:
+                continue
+            folder = str(Path(rec.file_path).parent)
+            if rec.series_source in self._FOLDER_SOURCES:
+                _folder_has_signal[folder] = True
+            elif folder not in _folder_has_signal:
+                _folder_has_signal[folder] = False
+
         for record in records:
             if record.proposed_series or not record.metadata_series:
+                continue
+            folder = str(Path(record.file_path).parent) if record.file_path else ''
+            if not _folder_has_signal.get(folder):
                 continue
             meta = record.metadata_series.strip()
             # Серия == автор обычно ошибка конвертера (продублировал имя автора
@@ -1131,6 +1174,8 @@ class Pass2SeriesFilename:
     def _process_single_record(self, record, parts_cache: dict) -> None:
         """Обработать одну запись: определить серию из папки, filename или metadata."""
         self._apply_folder_series(record, parts_cache)
+        if record.series_source in self._FOLDER_SOURCES and record.file_path:
+            self._folder_has_signal[str(Path(record.file_path).parent)] = True
         # Special case: depth==4 without series subfolder
         # Pass 1 wrongly sets folder_dataset for depth==4, allowing Pass 2 to override it
         file_depth = len(Path(record.file_path).parts)
@@ -1517,7 +1562,13 @@ class Pass2SeriesFilename:
                                 record.series_source = "filename+meta_confirmed"
                             # else: подсерия — реальное название («Аспект-Император»);
                             # оставляем proposed_series без изменений (с числом в root)
-        elif record.metadata_series:
+        elif record.metadata_series and self._folder_has_signal.get(
+                str(Path(record.file_path).parent)):
+            # Баг №109 (продолжение): не придумываем серию из голой
+            # metadata_series для файла, чья папка НИКОГДА не давала
+            # папочного сигнала о серии (см. self._folder_has_signal,
+            # заполняется в execute()) — "мета только подтверждает уже
+            # найденную серию, не придумывает её с нуля".
             # ✅ ЗАЩИТА: Перед использованием metadata - проверяем наличие слов из blacklist
             # ТРЕБОВАНИЕ: "если мета содержит слово или слова из BL, полностью ее игнорируем в качестве значения"
             # Пример: "Шедевры фантастики (продолжатели)" содержит "фантастики" → отклоняем целиком

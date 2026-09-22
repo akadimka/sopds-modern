@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>sf_fantasy</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <middle-name>Юрьевич</middle-name>
+        <last-name>Пехов</last-name>
+        <id>fba77c5a-2a80-102a-9ae1-2dfe723fe7c7</id>
+      </author>
+      <book-title>Темный охотник (сборник)</book-title>
+      <annotation>
+        <p>У Гаррета очередные неприятности – Авендум наводнили темные эльфы и все как один хотят его крови. По Льдистым землям идет грозный Пожиратель душ, распугивая живых и мертвых на своем пути, а в дремучих лесах Сандона никак не закончится долгая кровопролитная война между Высокородными и людьми. Неспокойно в Столице – на головы киндрэт, того и гляди, падет призванный из небытия Тёмный Охотник. Но все это мелочи по сравнению с тем, что творится у границы Изнанки, где особый почтовый вертится словно волчок, пытаясь избежать очень больших бед.</p>
+        <p>В этом сборнике Алексей Пехов рассказывает нам неизвестные истории хорошо знакомых миров – Сиалы, Хары и Киндрэт. А также знакомит с совершенно новым миром на границе Изнанки.</p>
+        <empty-line />
+        <p>МИР СИАЛЫ</p>
+        <p>• Змейка</p>
+        <p>МИР ВЕТРА И ИСКР</p>
+        <p>• Пожиратель душ</p>
+        <p>• Цена свободы</p>
+        <p>МИР КИНДРЭТ</p>
+        <p>• Тёмный охотник</p>
+        <p>МИР НА ГРАНИЦЕ ИЗНАНКИ</p>
+        <p>• Особый почтовый</p>
+        <p>ИСТОРИИ РАЗНЫХ МИРОВ</p>
+        <p>• Дождь</p>
+        <p>• Последняя осень</p>
+      </annotation>
+      <coverpage>
+        <image l:href="#cover.jpg" />
+      </coverpage>
+      <lang>ru</lang>
+    </title-info>
+    <document-info>
+      <author>
+        <nickname>Snake</nickname>
+        <email>fenzin@mail.ru</email>
+      </author>
+      <program-used>FB Editor v2.0, Fiction Book Designer</program-used>
+      <date value="2006-10-23">2006-10-23</date>
+      <src-ocr>http://www.fenzin.org</src-ocr>
+      <id>635fffdc-df49-102a-94d5-07de47c81719</id>
+      <version>1.11</version>
+      <history>
+        <p>v 1.1 – изменена аннотация и доп. форматирование – (Faiber)</p>
+      </history>
+    </document-info>
+    <publish-info>
+      <book-name>Темный охотник: Рассказы</book-name>
+      <publisher>АРМАДА: «Издательство Альфа-книга»</publisher>
+      <city>М.</city>
+      <year>2006</year>
+      <isbn>5-93556-785-7</isbn>
+      <sequence name="Фантастический боевик" />
+    </publish-info>
+    <custom-info info-type="pre-librusec-origin">From collection Litres4415</custom-info>
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+  </description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

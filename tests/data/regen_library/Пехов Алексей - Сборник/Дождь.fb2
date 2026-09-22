@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_postapocalyptic</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Юрьевич</middle-name>
+      <last-name>Пехов</last-name>
+    </author>
+    <book-title>Дождь</book-title>
+    <date/>
+    <lang>ru</lang>
+    <sequence name="Сборник «Тёмный охотник»"/>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name/>
+      <nickname>cTpI/I}I{</nickname>
+    </author>
+    <program-used>Fiction Book Designer</program-used>
+    <date value="2006-05-21">21.05.2006</date>
+    <src-url/>
+    <src-ocr/>
+    <id>FBD-690FBTNS-07ME-MHX3-FHV3-S2Smnbhhbnbhbj98O1DJC</id>
+    <version>1</version>
+  </document-info>
+  <publish-info>
+    <publisher>Распостраняется в электроном виде.</publisher>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

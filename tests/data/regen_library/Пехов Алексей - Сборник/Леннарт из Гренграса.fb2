@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Пехов </last-name>
+   </author>
+   <book-title>ЛЁННАРТ ИЗ ГРЕНГРАСА</book-title>
+   <annotation>
+    <p>Что бывает, когда в горах видишь белого тигра, а охотник за головами выходит за порог в самую длинную ночь в году? Почему танцуют скелеты на кладбищах и чем грозит гнев духов во время праздника? Стоит ли любовь жизни русалки? Надо ли общаться с незваным гостем из другого мира, поселившимся в твоей квартире? Почему горит синее пламя и как не упустить свой шанс?</p>
+    <p>Ищите ответы на эти вопросы в сборнике рассказов «Шанс», где авторы знакомят читателей с новыми историями по полюбившимся вселенным Киндрэт и Мантикоры, а также приоткрывают дверь в совершенно иные миры.</p>
+   </annotation>
+   <date>2008</date>
+   <coverpage>
+    <image l:href="#shans_cover1.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Lord KiRon</nickname>
+   </author>
+   <program-used>FB Editor v2.0</program-used>
+   <date value="2009-11-14">14 November 2009</date>
+   <src-url>scan</src-url>
+   <id>85134C7E-14D7-433A-97FC-1DA100CF1C4E</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Шанс</book-name>
+   <publisher>АЛЬФА-КНИГА</publisher>
+   <city>Москва</city>
+   <year>2009</year>
+   <isbn>978-5-9922-0483-4</isbn>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

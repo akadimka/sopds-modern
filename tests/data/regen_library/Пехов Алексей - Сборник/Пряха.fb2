@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Пехов</last-name>
+   </author>
+   <author>
+    <first-name>Анастасия</first-name>
+    <last-name>Парфёнова</last-name>
+   </author>
+   <book-title>Пряха</book-title>
+   <annotation>
+    <p>Когда-то грифон убил мужа и сына ведьмы Шарлиз. Теперь, стремясь отомстить, она присоединяется к отряду охотников на грифонов. Вот только по пути ли ей с ними на самом деле?</p>
+   </annotation>
+   <date>2004</date>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>А.</first-name>
+    <middle-name>С.</middle-name>
+    <last-name>Лякишев</last-name>
+    <nickname>LAn_LorD</nickname>
+    <email>lan2003@list.ru</email>
+   </author>
+   <program-used>FineReader 8.0; FB Tools, FB Editor v2.0, AlReader2</program-used>
+   <date value="2006-03-02">2006-03-02</date>
+   <src-ocr>OCR LAnLorD</src-ocr>
+   <id>9B3C8DDE-D069-4D14-B21B-B747F2774D7B</id>
+   <version>1.1</version>
+   <history>
+    <p>v 1.1 — добавление буквы ё, исправлена проблема с тире и дефисом, исправление ошибок, добавление аннотации by Forcosigan</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Фэнтези-2005: Фантастические произведения.</book-name>
+   <publisher>Изд-во Эксмо</publisher>
+   <city>М.</city>
+   <year>2005</year>
+   <isbn>5-699-08598-Х</isbn>
+  </publish-info>
+ </description>
+ <body name="Содержание"><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

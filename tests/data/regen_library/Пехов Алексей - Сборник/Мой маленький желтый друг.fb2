@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>sf_fantasy</genre>
+      <author>
+        <first-name>Алексей</first-name>
+        <middle-name>Юрьевич</middle-name>
+        <last-name>Пехов</last-name>
+        <id>fba77c5a-2a80-102a-9ae1-2dfe723fe7c7</id>
+      </author>
+      <book-title>Мой маленький желтый друг</book-title>
+      <lang>ru</lang>
+      <sequence name="Рассказы" />
+    </title-info>
+    <document-info>
+      <author>
+        <nickname>cTpI/I}I{</nickname>
+      </author>
+      <program-used>Fiction Book Designer</program-used>
+      <date value="2006-05-20">2006-05-20</date>
+      <id>FBD-5N4P11H2-CWUB-G2WO-1GK7-DRKA3JB74S4Q</id>
+      <version>1.11</version>
+      <history>
+        <p>v. 1.1 – Black Jack – правка форматирования fb2 документа</p>
+      </history>
+    </document-info>
+    <custom-info info-type="pre-librusec-origin">From collection Litres4415</custom-info>
+    <custom-info info-type="fb2fix-status">Passed</custom-info>
+  </description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

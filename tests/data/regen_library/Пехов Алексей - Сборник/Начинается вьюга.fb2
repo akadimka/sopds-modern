@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+<title-info>
+<genre>sf</genre>
+<author><first-name>Алексей</first-name><last-name>Пехов</last-name></author>
+<book-title>Начинается вьюга</book-title>
+<annotation><p>История рассказа происходит за 200 лет до событий описываемых в "Воре" и повествует о том, как появилась Запретная территория Авендума и что заставило совет Ордена похоронить Рог Радуги в могильниках Храд-Спайна.</p></annotation>
+<lang>ru</lang>
+<src-lang>ru</src-lang>
+<sequence number="" name="Хроники Сиалы"/>
+</title-info>
+<document-info>
+<author><nickname>OMu4</nickname><email>phom@mail.ru</email></author>
+<version>1.1</version>
+</document-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

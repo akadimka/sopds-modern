@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>sf_postapocalyptic</genre>
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Юрьевич</middle-name>
+      <last-name>Пехов</last-name>
+    </author>
+    <book-title>Дневник на океанском берегу</book-title>
+    <annotation>
+      <p>Мой дом стоит на берегу океана и о таком жилище я мечтал всю жизнь. Он надежен, крепок, в нем безопасно ночами.</p>
+      <p>Мне не страшно.</p>
+      <p>Почти...</p>
+      <p>До сих пор не знаю, что меня пугает больше. Одиночество или то, что когда-нибудь оно будет нарушено...</p>
+    </annotation>
+    <date value="2021-07-21">2021-07-21 12:45:06</date>
+    <coverpage>
+      <image l:href="#cover.jpg" alt="Обложка"/>
+    </coverpage>
+    <lang>ru</lang>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Алексей</first-name>
+      <last-name>Пехов</last-name>
+      <home-page>https://author.today/u/Alexey_Pehov</home-page>
+      <id>118507</id>
+    </author>
+    <date value="2021-07-21">2021-07-21 12:45:06</date>
+    <id>131576</id>
+    <version>1.00</version>
+  </document-info>
+  <publish-info>
+    <year>2021</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

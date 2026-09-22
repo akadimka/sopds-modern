@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+<title-info>
+<genre>sf_fantasy</genre>
+<author>
+<first-name>Алексей</first-name>
+<last-name>Пехов</last-name>
+</author>
+<book-title>Под ёлкой</book-title>
+<date>2009</date>
+<lang>ru</lang>
+</title-info>
+<document-info>
+<author>
+<first-name></first-name>
+<last-name></last-name>
+<nickname>Snake888</nickname>
+</author>
+<program-used>Fiction Book Designer</program-used>
+<date value="2010-02-26">26.02.2010</date>
+<src-url></src-url>
+<src-ocr></src-ocr>
+<id>FBD-192CD8-1D04-EA46-55A3-3756-085A-AD6BC4</id>
+<version>1.01</version>
+<history>
+<p>v1.01 – создание fb2 документа, spellcheck, скрипты – Snake888 – февр 2010 </p>
+</history>
+</document-info>
+<publish-info>
+</publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

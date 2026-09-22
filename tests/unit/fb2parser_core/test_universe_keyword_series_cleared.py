@@ -93,8 +93,21 @@ class TestClearRunsAfterFinalMetadataRescue:
             author_source="filename+meta_expanded", metadata_series="S-T-I-K-S",
             proposed_series="", series_source="",
         )
+        # Баг №109 (продолжение): _postcheck_metadata_rescue() больше не
+        # придумывает серию из голой metadata_series для папки без
+        # папочного сигнала вовсе. Этот сосед в той же папке (parent=".",
+        # у обоих файлов нет каталога в пути) воспроизводит папочный
+        # сигнал — само это не связано с franchise-keyword клиром,
+        # который тестируется здесь, поэтому не должно мешать проверке
+        # порядка вызовов.
+        sibling = BookRecord(
+            file_path="Иванов - Другой рассказ.fb2", file_title="T",
+            metadata_authors="Иванов", proposed_author="Иванов",
+            author_source="folder_dataset", metadata_series="",
+            proposed_series="S-T-I-K-S", series_source="folder_dataset",
+        )
         service = _service()
-        service.records = [rec]
+        service.records = [rec, sibling]
 
         # Воспроизводим ТОЧНЫЙ порядок вызовов из regenerate(): сначала
         # финальный откат к метаданным, потом клир голой франшизы.

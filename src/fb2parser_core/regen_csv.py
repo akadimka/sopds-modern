@@ -1852,10 +1852,40 @@ class RegenCSVService:
         return re.sub(r'[«»""„"‹›]', '', s)
 
     def _postcheck_metadata_rescue(self) -> None:
-        """Восстанавливает metadata_series для записей без серии после других чеков."""
+        """Восстанавливает metadata_series для записей без серии после других чеков.
+
+        Баг №109 (продолжение): не придумываем серию из голой metadata_series
+        для файла, чья папка вообще НИКОГДА не давала папочного сигнала о
+        серии (ни положительного — folder_dataset/folder_hierarchy/..., ни
+        явного "здесь серии нет" — no_series_folder) — например, отдельный
+        рассказ прямо в корневой папке автора (не в подпапке серии), у
+        которого собственные метаданные указывают на реальную серию,
+        существующую в ДРУГОМ месте библиотеки. "Мета только подтверждает
+        уже найденную серию, не придумывает её с нуля" — см. аналогичный
+        гейт в pass2_series_filename.py::_postpass_metadata_fallback.
+        Пересчитывается при каждом вызове (функция вызывается дважды за
+        regenerate(), а между вызовами другие пост-чеки могут добавить
+        папочный сигнал).
+        """
+        _FOLDER_SOURCES = {
+            'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus',
+            'folder_metadata_confirmed', 'no_series_folder',
+        }
+        _folder_has_signal: dict = {}
+        for _r in self.records:
+            if not _r.file_path:
+                continue
+            _folder = str(Path(_r.file_path).parent)
+            if _r.series_source in _FOLDER_SOURCES:
+                _folder_has_signal[_folder] = True
+            elif _folder not in _folder_has_signal:
+                _folder_has_signal[_folder] = False
+
         _count = 0
         for record in self.records:
             if record.proposed_series or not record.metadata_series:
+                continue
+            if not _folder_has_signal.get(str(Path(record.file_path).parent)):
                 continue
             meta = record.metadata_series.strip()
             if not meta:
