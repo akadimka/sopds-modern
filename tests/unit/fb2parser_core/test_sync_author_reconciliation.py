@@ -109,6 +109,32 @@ class TestLooseAuthorMatchAvoidsSilentDuplication:
         assert reconciliation_notes == []
         assert "incoming/файл.fb2" in folder_structure
 
+    def test_skipped_pair_treated_as_ordinary_new_file(self, tmp_path, monkeypatch):
+        """Регрессия для действия "Пропустить" на панели reconciliation
+        (fb2parser_web.views.sync_reconciliation_resolve) — файл, чью пару
+        (incoming, existing) пользователь уже разобрал, не должен снова
+        попадать в reconciliation_notes на следующей синхронизации: раз
+        skip-лист содержит его incoming_file_path, loose-эвристика
+        пропускается целиком и файл идёт обычным новым путём.
+        """
+        import fb2parser_core.synchronization as sync_module
+        skip_path = tmp_path / ".reconciliation_skip.json"
+        monkeypatch.setattr(sync_module, "_RECONCILIATION_SKIP_PATH", skip_path)
+        sync_module._add_to_reconciliation_skip_set("incoming/03_ОБХСС Финал.fb2")
+
+        service = _make_service(tmp_path, existing_rows=[
+            ("Барчук Павел", "ОБХСС", "", "Финал",
+             "Без жанра/Барчук Павел/ОБХСС/Барчук Павел - ОБХСС Финал.fb2"),
+        ])
+        records = [
+            _rec("incoming/03_ОБХСС Финал.fb2", "Барчук Павел, Ларин Павел", "ОБХСС", "Финал"),
+        ]
+
+        folder_structure, reconciliation_notes = service._build_folder_structure(records, None)
+
+        assert reconciliation_notes == []
+        assert "incoming/03_ОБХСС Финал.fb2" in folder_structure
+
     def test_exact_duplicate_still_deleted_as_before(self, tmp_path):
         # Sanity: точное совпадение (author, series, title) — старое,
         # уже проверенное поведение (файл-дубликат физически удаляется

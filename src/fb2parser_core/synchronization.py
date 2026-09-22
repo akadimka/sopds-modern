@@ -84,6 +84,37 @@ def _shorten_path_component(value: str) -> str:
     return value[:keep].rstrip(' .,') + '…'
 
 
+# Постоянный (не-эфемерный, в отличие от JobState-кэша) список файлов,
+# которые пользователь явно попросил больше не помечать как "требует
+# сверки" (см. reconciliation_notes ниже и fb2parser_web.views
+# sync_reconciliation_resolve, действие "Пропустить"). Ключ — относительный
+# incoming_file_path (тот же, что в reconciliation_notes и что использует
+# _move_files() для сборки source_file = last_scan_path / file_path), так
+# что запись остаётся валидной, пока файл физически не переместили/не
+# удалили — а любое из ЭТИХ действий и так снимает файл с рассмотрения.
+_RECONCILIATION_SKIP_PATH = Path(__file__).parent / '.reconciliation_skip.json'
+
+
+def _load_reconciliation_skip_set() -> set:
+    try:
+        import json
+        with open(_RECONCILIATION_SKIP_PATH, encoding='utf-8') as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+
+def _add_to_reconciliation_skip_set(file_path: str) -> None:
+    import json
+    skip = _load_reconciliation_skip_set()
+    skip.add(file_path)
+    try:
+        with open(_RECONCILIATION_SKIP_PATH, 'w', encoding='utf-8') as f:
+            json.dump(sorted(skip), f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
 class SynchronizationService:
     """Service for synchronizing FB2 library into organized structure."""
     
@@ -530,6 +561,7 @@ class SynchronizationService:
         folder_structure = {}
         duplicates = defaultdict(list)
         reconciliation_notes: List[Dict] = []
+        _reconciliation_skip = _load_reconciliation_skip_set()
 
         # Check database for existing entries
         existing_entries = self._get_existing_entries()
@@ -647,8 +679,18 @@ class SynchronizationService:
             # тоже неверно — библиотека задвоится. Не решаем автоматически
             # (см. docs/quality-roadmap.md) — оставляем файл нетронутым в
             # исходной папке и сообщаем, что нужна ручная сверка.
-            _loose_key = (self._norm_text(series), self._norm_text(title))
-            _loose_candidates = _loose_index.get(_loose_key, [])
+            if record.file_path in _reconciliation_skip:
+                # Пользователь уже разобрал этот конкретный конфликт раньше
+                # (см. sync_reconciliation_resolve, действие "Пропустить") —
+                # не поднимаем его снова, файл идёт обычным новым путём
+                # (как если бы loose-кандидатов не нашлось вовсе).
+                self._log(
+                    f"  [{i+1}] Пропущено из списка ранее разобранных сверок: {record.file_path}"
+                )
+                _loose_candidates = []
+            else:
+                _loose_key = (self._norm_text(series), self._norm_text(title))
+                _loose_candidates = _loose_index.get(_loose_key, [])
             if _loose_candidates:
                 _new_tokens = self._author_tokens(author)
                 _matches = []
@@ -680,6 +722,13 @@ class SynchronizationService:
                         'existing_file_path': _old['file_path'],
                         'series': series,
                         'title': title,
+                        # Дополнительные поля — не для отображения, а чтобы
+                        # действие "Перенести как новую запись" (см.
+                        # fb2parser_web.views.sync_reconciliation_resolve)
+                        # могло собрать целевой путь в библиотеке без
+                        # повторного прогона всего пайплайна анализа.
+                        'genre': primary_genre,
+                        'subseries': subseries,
                     })
                     continue
                 elif len(_matches) > 1:

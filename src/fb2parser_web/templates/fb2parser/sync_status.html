@@ -35,30 +35,95 @@
     </table>
     {% endif %}
     {% if state.reconciliation_notes %}
-    <div class="callout warning" style="font-size:0.85rem; margin-top:0.5rem;">
-        <strong>⚠ {% trans "Requires manual reconciliation" %} ({{ state.reconciliation_notes|length }})</strong>
+    <div class="callout warning" id="recon-panel" style="font-size:0.85rem; margin-top:0.5rem;">
+        <strong>⚠ {% trans "Requires manual reconciliation" %} (<span id="recon-count">{{ state.reconciliation_notes|length }}</span>)</strong>
         <div style="font-size:0.78rem; margin-top:0.3rem;">
-            {% trans "These files were left untouched in the source folder — the library already has an entry for the same series/title under a different (but related) author." %}
+            {% trans "These files were left untouched in the source folder — the library already has an entry for the same series/title under a different (but related) author. Pick one action per row:" %}
         </div>
-        <table class="unstriped" style="font-size:0.78rem; margin-top:0.4rem;">
+        {{ state.reconciliation_notes|json_script:"recon-notes-data" }}
+        <table class="unstriped" id="recon-table" style="font-size:0.78rem; margin-top:0.4rem;">
             <thead>
                 <tr>
                     <th>{% trans "Incoming file" %}</th>
                     <th>{% trans "Computed author" %}</th>
                     <th>{% trans "Existing library entry" %}</th>
+                    <th>{% trans "Action" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for note in state.reconciliation_notes %}
-                <tr>
+                <tr id="recon-row-{{ forloop.counter0 }}">
                     <td>{{ note.incoming_file_path }}</td>
                     <td>{{ note.incoming_author }}</td>
                     <td>{{ note.existing_author }} — {{ note.existing_file_path }}</td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="button alert" style="margin:0 0.2rem 0 0; padding:0.25rem 0.5rem; font-size:0.72rem;"
+                                title="{% trans 'This is the same book already in the library — delete the incoming file as a confirmed duplicate.' %}"
+                                onclick="reconResolve({{ forloop.counter0 }}, 'delete', this)">
+                            🗑️ {% trans "Duplicate — delete" %}
+                        </button>
+                        <button type="button" class="button" style="margin:0 0.2rem 0 0; padding:0.25rem 0.5rem; font-size:0.72rem;"
+                                title="{% trans 'Not the same book — move the incoming file into its own folder under the computed author, as a new separate library entry.' %}"
+                                onclick="reconResolve({{ forloop.counter0 }}, 'move', this)">
+                            ➕ {% trans "Not a duplicate — move" %}
+                        </button>
+                        <button type="button" class="button secondary" style="margin:0; padding:0.25rem 0.5rem; font-size:0.72rem;"
+                                title="{% trans 'Decide later — leave the file where it is for now, but stop flagging this exact pair again: the next sync will treat it as an ordinary new entry.' %}"
+                                onclick="reconResolve({{ forloop.counter0 }}, 'skip', this)">
+                            ➡ {% trans "Skip" %}
+                        </button>
+                        <div id="recon-msg-{{ forloop.counter0 }}" style="font-size:0.72rem; margin-top:0.2rem;"></div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    <script>
+    (function() {
+        var notesEl = document.getElementById('recon-notes-data');
+        var notesData = notesEl ? JSON.parse(notesEl.textContent) : [];
+        window.reconResolve = function(idx, action, btnEl) {
+            var note = notesData[idx];
+            if (!note) return;
+            var row = document.getElementById('recon-row-' + idx);
+            var msgEl = document.getElementById('recon-msg-' + idx);
+            row.querySelectorAll('button').forEach(function(b) { b.disabled = true; });
+            var csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+            fetch("{% url 'fb2parser:sync_reconciliation_resolve' %}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+                body: JSON.stringify({action: action, note: note})
+            })
+            .then(function(r) { return r.json().then(function(data) { return {ok: r.ok, data: data}; }); })
+            .then(function(res) {
+                if (!res.ok) {
+                    msgEl.textContent = '❌ ' + (res.data.error || 'Ошибка');
+                    msgEl.style.color = 'var(--status-error, #c0392b)';
+                    row.querySelectorAll('button').forEach(function(b) { b.disabled = false; });
+                    return;
+                }
+                row.style.opacity = '0.5';
+                msgEl.textContent = res.data.message || 'OK';
+                msgEl.style.color = 'var(--status-ok, #27ae60)';
+                setTimeout(function() {
+                    row.remove();
+                    var countEl = document.getElementById('recon-count');
+                    if (countEl) countEl.textContent = res.data.remaining;
+                    if (res.data.remaining === 0) {
+                        var panel = document.getElementById('recon-panel');
+                        if (panel) panel.remove();
+                    }
+                }, 900);
+            })
+            .catch(function(e) {
+                msgEl.textContent = '❌ ' + e;
+                msgEl.style.color = 'var(--status-error, #c0392b)';
+                row.querySelectorAll('button').forEach(function(b) { b.disabled = false; });
+            });
+        };
+    })();
+    </script>
     {% endif %}
     <script>
     /* Синхронизация успешно завершилась (файлы перенесены/папки удалены) —

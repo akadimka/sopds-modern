@@ -622,8 +622,8 @@ msgstr "✅ Синхронизация завершена"
 msgid "Requires manual reconciliation"
 msgstr "Требует ручной сверки"
 
-msgid "These files were left untouched in the source folder — the library already has an entry for the same series/title under a different (but related) author."
-msgstr "Эти файлы оставлены нетронутыми в исходной папке — в библиотеке уже есть запись для той же серии/названия, но под другим (но связанным) автором."
+msgid "These files were left untouched in the source folder — the library already has an entry for the same series/title under a different (but related) author. Pick one action per row:"
+msgstr "Эти файлы оставлены нетронутыми в исходной папке — в библиотеке уже есть запись для той же серии/названия, но под другим (но связанным) автором. Выберите действие для каждой строки:"
 
 msgid "Incoming file"
 msgstr "Входящий файл"
@@ -633,6 +633,27 @@ msgstr "Вычисленный автор"
 
 msgid "Existing library entry"
 msgstr "Существующая запись в библиотеке"
+
+msgid "Action"
+msgstr "Действие"
+
+msgid "Duplicate — delete"
+msgstr "Дубликат — удалить"
+
+msgid "Not a duplicate — move"
+msgstr "Не дубликат — перенести"
+
+msgid "Skip"
+msgstr "Пропустить"
+
+msgid "This is the same book already in the library — delete the incoming file as a confirmed duplicate."
+msgstr "Это та же книга, что уже есть в библиотеке — удалить входящий файл как подтверждённый дубликат."
+
+msgid "Not the same book — move the incoming file into its own folder under the computed author, as a new separate library entry."
+msgstr "Это другая книга — перенести входящий файл в его собственную папку под вычисленным автором как новую, отдельную запись в библиотеке."
+
+msgid "Decide later — leave the file where it is for now, but stop flagging this exact pair again: the next sync will treat it as an ordinary new entry."
+msgstr "Решить позже — пока не трогать файл, но больше не поднимать именно эту пару при сверке: следующая синхронизация обработает его как обычную новую запись."
 
 msgid "Synchronization not started."
 msgstr "Синхронизация не запущена."

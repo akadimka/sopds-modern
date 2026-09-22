@@ -2728,6 +2728,112 @@ def sync_clear_assignments(request):
     return HttpResponse("ok")
 
 
+@staff_member_required(login_url="/web/login/")
+def sync_reconciliation_resolve(request):
+    """POST — разрешить ОДНУ запись из "Requires manual reconciliation"
+    (см. _build_folder_structure() в synchronization.py). JSON:
+    {action: 'delete'|'move'|'skip', note: {...}} — note берётся как есть
+    из state.reconciliation_notes (несёт genre/incoming_author/series/
+    subseries, посчитанные во время самой синхронизации — повторный
+    прогон анализа не нужен).
+
+    Действия:
+      delete — подтверждённый дубликат: удалить входящий файл (тот же
+               confined-delete, что у duplicates/broken-files).
+      move   — не дубликат: перенести файл в его собственную папку по
+               вычисленному автору (создаёт новую запись в библиотеке).
+      skip   — отложить: не трогать файл, но и не поднимать снова эту
+               конкретную пару (incoming, existing) на будущих синхрони-
+               зациях — см. _add_to_reconciliation_skip_set().
+    """
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data = json.loads(request.body)
+        action = data.get("action")
+        note = data.get("note") or {}
+        incoming_file_path = note["incoming_file_path"]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    if action not in ("delete", "move", "skip"):
+        return JsonResponse({"error": "Неизвестное действие"}, status=400)
+
+    from .fb2parser_bridge import get_sync_service
+    state = sync_job.get()
+    scan_path = state.get("scan_path") or ""
+    if not scan_path:
+        _svc0 = get_sync_service()
+        scan_path = str(_svc0.last_scan_path) if _svc0.last_scan_path else ""
+    if not scan_path:
+        return JsonResponse({"error": "Не известна исходная папка сканирования"}, status=400)
+
+    from pathlib import Path as _Path
+    abs_incoming = str(_Path(scan_path) / incoming_file_path)
+
+    try:
+        if action == "delete":
+            deleted, errors = _delete_paths_confined([abs_incoming], scan_path)
+            if errors:
+                return JsonResponse({"error": "; ".join(errors)}, status=500)
+            if not deleted:
+                return JsonResponse({"error": "Файл не найден в исходной папке"}, status=404)
+            result_msg = "🗑️ Удалён как подтверждённый дубликат"
+
+        elif action == "skip":
+            from fb2parser_core.synchronization import _add_to_reconciliation_skip_set
+            _add_to_reconciliation_skip_set(incoming_file_path)
+            result_msg = "➡ Отложено — при следующей синхронизации будет обработан как новая, независимая запись"
+
+        else:  # move
+            svc = get_sync_service()
+            genre = note.get("genre") or "Без жанра"
+            author = note.get("incoming_author") or "Неизвестный автор"
+            series = note.get("series") or ""
+            subseries = note.get("subseries") or ""
+
+            target_dir = svc.library_path / genre / author
+            if series:
+                target_dir = target_dir / series
+            if subseries:
+                target_dir = target_dir / subseries
+
+            # Та же защита от выхода за пределы библиотеки, что и в
+            # _move_files() — genre/author/series здесь берутся из уже
+            # посчитанных (и просанированных) полей note, но проверяем
+            # ещё раз на всякий случай, раз путь строится заново здесь.
+            resolved_target = target_dir.resolve()
+            resolved_library = svc.library_path.resolve()
+            if not str(resolved_target).startswith(str(resolved_library)):
+                return JsonResponse({"error": "Некорректный целевой путь"}, status=400)
+
+            if not _Path(abs_incoming).exists():
+                return JsonResponse({"error": "Исходный файл не найден"}, status=404)
+
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_name = svc._shorten_filename_for_path_limit(target_dir, _Path(incoming_file_path).name)
+            target_file = target_dir / target_name
+            if target_file.exists():
+                return JsonResponse({"error": f"Файл с таким именем уже есть в целевой папке: {target_file}"}, status=409)
+
+            import shutil
+            shutil.move(abs_incoming, str(target_file))
+            result_msg = f"✓ Перенесено как новая запись: {genre}/{author}" + (f"/{series}" if series else "")
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+    # Убираем разрешённую запись из текущего состояния — панель обновится
+    # без повторного запуска всей синхронизации.
+    notes = [n for n in (state.get("reconciliation_notes") or [])
+             if n.get("incoming_file_path") != incoming_file_path]
+    sync_job.update(reconciliation_notes=notes)
+
+    return JsonResponse({"ok": True, "message": result_msg, "remaining": len(notes)})
+
+
 def _run_compile_pass(target_path, on_log, label, filter_paths=None):
     """Скомпилировать серии, найденные в target_path (папка-источник или библиотека).
 
