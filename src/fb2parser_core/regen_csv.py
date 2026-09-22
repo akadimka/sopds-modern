@@ -884,7 +884,26 @@ class RegenCSVService:
                                 author_folder_index = idx
                                 break
 
-                    if author_folder_index >= 0:
+                    # Сканирование запущено ПРЯМО в папке автора (work_dir сам —
+                    # уже признанная папка автора, см. PRECACHE "Work_dir is
+                    # AUTHOR") — тогда сегмент с именем автора уже "съеден"
+                    # work_dir'ом и никогда не встретится внутри parent_parts,
+                    # хотя вся parent_parts целиком и есть подсерия. Реальный
+                    # случай (Пехов Алексей): Compiler/Normalize, запущенные
+                    # прямо на "Пехов Алексей - Сборник", теряли series для
+                    # КАЖДОЙ однократно вложенной подпапки ("Мантикора",
+                    # "Синее пламя", "Вселенная Изнанки" и т.д.) — та же
+                    # структура, что и сканирование из родительской папки
+                    # библиотеки (где автор — часть пути), давало верный
+                    # результат. author_folder_index остаётся -1 (как и был),
+                    # поэтому parent_parts[author_folder_index + 1:] ниже
+                    # естественно берёт ВЕСЬ parent_parts — именно то, что нужно.
+                    _work_dir_is_author = (
+                        author_folder_index < 0 and author
+                        and self._surnames_match_folder(author, self.work_dir.name)
+                    )
+
+                    if author_folder_index >= 0 or _work_dir_is_author:
                         # Нашли папку автора → всё глубже = серия
                         series_folders = _drop_blacklisted(parent_parts[author_folder_index + 1:])
                         if series_folders:
