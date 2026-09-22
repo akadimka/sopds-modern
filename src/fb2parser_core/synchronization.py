@@ -319,6 +319,21 @@ class SynchronizationService:
             # случай, найденный после того как дедупликация выше стала верно
             # убирать фрагменты/дубликаты). Строим финальное имя здесь же —
             # мы ТОЧНО знаем полный диапазон (это единственный источник).
+            #
+            # Баг №109 (продолжение): не требуем confident=True от
+            # _classify_record здесь. Confident=False означает "диапазон
+            # угадан по ключевому слову (Трилогия/Тетралогия/…), а не по
+            # явному числу" — _classify_record's docstring поясняет, что
+            # это ненадёжно ТОЛЬКО при СРАВНЕНИИ с другим файлом той же
+            # серии (совпадающий угаданный диапазон не доказывает
+            # одинаковый контент). Здесь файл ЕДИНСТВЕННЫЙ в своём (автор,
+            # серия) — сравнивать не с чем, риск неприменим. Реальный
+            # случай: уже готовые скачанные омнибусы "Страж. Тетралогия.fb2"
+            # / "Ветер и искры. Тетралогия.fb2" — их собственный
+            # <sequence> не содержит number=, только слово "Тетралогия" в
+            # названии — без этого послабления они остаются без префикса
+            # автора в имени файла навсегда (auto-compile их тоже никогда
+            # не тронет — группы из одного файла не существует).
             self._sole_full_compilation_paths = set()
             _series_buckets: Dict[Tuple[str, str], List] = {}
             for rec in records:
@@ -330,7 +345,7 @@ class SynchronizationService:
                 if len(bucket_recs) != 1:
                     continue
                 _kind, _vols, _conf = self._classify_record(bucket_recs[0])
-                if _kind == 'compilation' and _vols and _conf and min(_vols) <= 1:
+                if _kind == 'compilation' and _vols and min(_vols) <= 1:
                     self._sole_full_compilation_paths.add(bucket_recs[0].file_path)
 
             # Step 3: Build folder structure and detect duplicates

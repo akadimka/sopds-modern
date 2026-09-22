@@ -98,7 +98,13 @@ class TestGuessedRangeCompilationsNeverConsideredRedundant:
 def _detect_sole_full_compilation_paths(sync, kept):
     """Воспроизводит вычисление `_sole_full_compilation_paths` из
     synchronize() — используется только в тестах, реальный код строит его
-    inline сразу после _deduplicate_by_compilation()."""
+    inline сразу после _deduplicate_by_compilation().
+
+    Баг №109 (продолжение): НЕ требует confident=True — файл, единственный
+    для своей (автор, серия) связки, не с чем сравнивать, поэтому
+    guessed-по-ключевому-слову диапазон здесь так же надёжен, как явный
+    числовой (см. синхронное изменение в synchronization.py).
+    """
     paths = set()
     buckets = {}
     for rec in kept:
@@ -109,8 +115,8 @@ def _detect_sole_full_compilation_paths(sync, kept):
     for recs in buckets.values():
         if len(recs) != 1:
             continue
-        kind, vols, conf = sync._classify_record(recs[0])
-        if kind == 'compilation' and vols and conf and min(vols) <= 1:
+        kind, vols, _conf = sync._classify_record(recs[0])
+        if kind == 'compilation' and vols and min(vols) <= 1:
             paths.add(recs[0].file_path)
     return paths
 
@@ -146,6 +152,42 @@ class TestSoleSurvivingCompilationGetsProperName:
         kind, vols, _conf = sync._classify_record(survivor)
         name = sync._build_target_filename(survivor, kind, vols)
         assert name == "Лисина Александра - Времена (Декалогия).fb2"
+
+
+class TestSoleGuessedRangeCompilationGetsProperName:
+    """Баг №109 (продолжение): "Страж. Тетралогия.fb2" / "Ветер и искры.
+    Тетралогия.fb2" — уже готовые (скачанные) омнибусы, единственные
+    файлы своей (автор, серия) связки. Их собственный <sequence> не
+    содержит number= — единственный признак диапазона это слово
+    "Тетралогия" в имени/заголовке, т.е. `_classify_record` даёт
+    confident=False. Раньше это исключало их из
+    `_sole_full_compilation_paths`, и т.к. auto-compile тоже никогда не
+    трогает группу из одного файла, они оставались под сырым исходным
+    именем без префикса автора НАВСЕГДА. Единственный файл в bucket'е —
+    сравнивать не с чем, поэтому guessed-диапазон здесь безопасен.
+    """
+
+    def _records(self):
+        return [
+            _rec("Страж. Тетралогия.fb2", author="Пехов Алексей",
+                 series="Страж", series_number="",
+                 title="Страж. Тетралогия"),
+        ]
+
+    def test_sole_guessed_compilation_gets_author_prefix(self):
+        sync = _sync()
+        kept, deleted = sync._deduplicate_by_compilation(self._records(), None)
+        assert deleted == []
+        assert len(kept) == 1
+
+        sync._sole_full_compilation_paths = _detect_sole_full_compilation_paths(sync, kept)
+        survivor = kept[0]
+        assert survivor.file_path in sync._sole_full_compilation_paths
+
+        kind, vols, _conf = sync._classify_record(survivor)
+        name = sync._build_target_filename(survivor, kind, vols)
+        assert name.startswith("Пехов Алексей - Страж")
+        assert name != survivor.file_path
 
 
 class TestResolveTargetCollision:
