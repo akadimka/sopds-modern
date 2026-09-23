@@ -26,7 +26,7 @@ high/low), `pass3_series_normalize.py` (своя 6-уровневая шкала
 же цикла.
 """
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 # Тир 3 — папочная структура. Создана человеком вручную (или её явное
 # отсутствие подтверждено — "no_series_folder") — самый надёжный
@@ -137,24 +137,44 @@ def series_source_rank(source: Optional[str]) -> int:
 
 def pick_winner(
     candidates: Sequence[Tuple[object, Optional[str]]],
+    *,
+    rank_fn: Callable[[Optional[str]], int] = source_tier,
+    tie_break: Optional[Callable[[Tuple[object, Optional[str]]], object]] = None,
 ) -> Optional[Tuple[object, Optional[str]]]:
-    """Выбрать «победителя» среди кандидатов (value, source) по тиру
-    источника (см. `source_tier`). Пустые (falsy) value игнорируются.
-    При равенстве тиров побеждает ПЕРВЫЙ по порядку следования (стабильно
-    — porядок задаёт вызывающий код, обычно это порядок павы/приоритет
-    внутри одного тира не различается этим модулем).
+    """Выбрать «победителя» среди кандидатов (value, source) по рангу
+    источника. Пустые (falsy) value игнорируются.
+
+    `rank_fn` — функция ранжирования источника, по умолчанию `source_tier`
+    (грубые 3 тира: папка/файл/мета). Вызывающий код может передать более
+    гранулярную шкалу (напр. `series_source_rank`) для своего домена.
+
+    `tie_break` — необязательная функция для разрешения равенства рангов:
+    среди кандидатов с максимальным (одинаковым) рангом побеждает тот, у
+    которого БОЛЬШЕ `tie_break(candidate)`. Без неё (по умолчанию, `None`)
+    побеждает ПЕРВЫЙ по порядку следования (стабильно — порядок задаёт
+    вызывающий код) — это прежнее, единственное поведение до появления
+    этого параметра, сохранено как дефолт, чтобы не менять существующих
+    (пока не имеющихся в проде) вызывающих.
 
     Возвращает None, если среди кандидатов нет ни одного непустого value.
     """
     best: Optional[Tuple[object, Optional[str]]] = None
     best_tier = -1
+    best_tie_key: object = None
     for value, source in candidates:
         if not value:
             continue
-        tier = source_tier(source)
+        tier = rank_fn(source)
+        candidate = (value, source)
         if tier > best_tier:
-            best = (value, source)
+            best = candidate
             best_tier = tier
+            best_tie_key = tie_break(candidate) if tie_break else None
+        elif tier == best_tier and tie_break is not None:
+            key = tie_break(candidate)
+            if key > best_tie_key:
+                best = candidate
+                best_tie_key = key
     return best
 
 

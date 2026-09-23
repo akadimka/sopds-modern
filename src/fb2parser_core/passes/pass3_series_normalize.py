@@ -30,9 +30,9 @@ except ImportError:
         file_title: str = ""
 
 try:
-    from evidence import series_source_rank
+    from evidence import pick_winner, series_source_rank
 except ImportError:
-    from ..evidence import series_source_rank
+    from ..evidence import pick_winner, series_source_rank
 
 from ..logger import Logger
 from ..settings_manager import SettingsManager
@@ -179,7 +179,7 @@ class Pass3SeriesNormalize:
             s = _nfc_lower_yo(s.strip())
             return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', ' ', s)).strip()
 
-        # Собираем: (author_norm, punct_key) → список (priority, series_value)
+        # Собираем: (author_norm, punct_key) → список (series_value, source)
         from collections import defaultdict
         _key_variants: dict = defaultdict(list)
         for rec in records:
@@ -187,15 +187,22 @@ class Pass3SeriesNormalize:
                 continue
             author_norm = _nfc_lower_yo((rec.proposed_author or '').strip())
             pk = (author_norm, _punct_key(rec.proposed_series))
-            pri = series_source_rank(rec.series_source)
-            _key_variants[pk].append((pri, rec.proposed_series))
+            _key_variants[pk].append((rec.proposed_series, rec.series_source))
 
-        # Для каждого ключа с несколькими вариантами — берём вариант с высшим приоритетом
-        # При равном приоритете — более длинный (с пунктуацией)
+        # Для каждого ключа с несколькими вариантами — берём вариант с
+        # высшим приоритетом источника (series_source_rank); при равном
+        # приоритете — более длинный (с пунктуацией). Использует общую
+        # инфраструктуру evidence.pick_winner() (часть Д, шаг 2 —
+        # docs/quality-roadmap.md, баг №109) вместо локального max(...).
         _canonical: dict = {}
         for pk, variants in _key_variants.items():
-            best = max(variants, key=lambda x: (x[0], len(x[1])))
-            _canonical[pk] = best[1]
+            winner = pick_winner(
+                variants,
+                rank_fn=series_source_rank,
+                tie_break=lambda c: len(c[0] or ''),
+            )
+            if winner:
+                _canonical[pk] = winner[0]
 
         # Применяем канонические имена
         unified = 0

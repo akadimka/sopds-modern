@@ -140,6 +140,39 @@ class TestPickWinner:
     def test_all_empty_returns_none(self):
         assert evidence.pick_winner([("", ""), (None, "metadata")]) is None
 
+    def test_custom_rank_fn(self):
+        # series_source_rank различает filename_prefix и прочий filename_*
+        # (source_tier — нет); с явным rank_fn это различение доступно.
+        candidates = [
+            ("Дуга из имени файла", "filename_named_arc"),
+            ("Ведущий номер", "filename_prefix"),
+        ]
+        assert evidence.pick_winner(
+            candidates, rank_fn=evidence.series_source_rank,
+        ) == ("Ведущий номер", "filename_prefix")
+
+    def test_tie_break_picks_max_key_among_equal_rank(self):
+        candidates = [
+            ("Короткое", "filename"),
+            ("Более длинное имя", "filename_named_arc"),
+        ]
+        # Оба тир 2 по source_tier — без tie_break победил бы первый по
+        # порядку; с tie_break по длине строки побеждает более длинный.
+        assert evidence.pick_winner(
+            candidates, tie_break=lambda c: len(str(c[0])),
+        ) == ("Более длинное имя", "filename_named_arc")
+
+    def test_tie_break_does_not_override_higher_rank(self):
+        candidates = [
+            ("Куда длиннее, но метаданные", "metadata"),
+            ("Папка", "folder_dataset"),
+        ]
+        # tie_break сравнивает только среди РАВНЫХ по рангу — не должен
+        # позволить более длинной metadata-строке обойти папку.
+        assert evidence.pick_winner(
+            candidates, tie_break=lambda c: len(str(c[0])),
+        ) == ("Папка", "folder_dataset")
+
 
 def _rec(file_path, series_source):
     return BookRecord(
