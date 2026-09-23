@@ -14,7 +14,7 @@ from ..series_normalizer import _nfc_lower_yo
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
 from ..series_processor import SeriesProcessor
-from ..evidence import log_decision
+from ..evidence import log_decision, series_source_rank
 from .pass2_series_filename import _TOM_WORD_RE
 
 
@@ -1227,7 +1227,21 @@ class Pass4Consensus:
         #          → вывод: серия "Переписать сценарий", source = "filename+meta_confirmed"
         import re as _re_seq
         LOW_CONFIDENCE = {"consensus", "author-consensus", "author-consensus (metadata-confirmed)"}
-        STRONG_SERIES_SOURCES = {"filename+meta_confirmed", "filename", "folder_dataset", "metadata"}
+
+        def _is_strong_series_source(source: str) -> bool:
+            # Баг №109 (продолжение, "хрупкость каскада" часть 7): раньше
+            # здесь был литеральный набор {'filename+meta_confirmed',
+            # 'filename', 'folder_dataset', 'metadata'} — точное совпадение
+            # молча исключало реальные, не менее надёжные источники
+            # ('filename_named_arc' и т.п.). Прямая замена на
+            # series_source_rank(...) >= 20 здесь НЕВЕРНА: 'metadata' и
+            # 'consensus' делят один и тот же ранг (10) в series_source_
+            # rank() (оба — метаданные/консенсус), а 'consensus' — часть
+            # LOW_CONFIDENCE чуть выше и НЕ должен считаться сильным
+            # источником для этого механизма. Поэтому явно перечисляем
+            # 'metadata' отдельным условием, оставляя ранговую проверку
+            # только для файлового/папочного тира.
+            return series_source_rank(source) >= 20 or source == 'metadata'
 
         # Группируем по автору
         _auth_groups: dict = {}
@@ -1240,7 +1254,7 @@ class Pass4Consensus:
             # Собираем подтверждённые серии: normalized_base → original_name
             confirmed_bases: dict = {}
             for rec in grp:
-                if rec.series_source in STRONG_SERIES_SOURCES and rec.extracted_series_candidate:
+                if _is_strong_series_source(rec.series_source) and rec.extracted_series_candidate:
                     # extracted_series_candidate не должен содержать путь папки (см. docstring
                     # в pass1_read_files.py), но некоторые пути извлечения сохраняют сюда сырой
                     # кандидат до очистки от имени автора-папки (тот же баг, что чинили в
@@ -1303,7 +1317,7 @@ class Pass4Consensus:
                 {
                     rec.proposed_series
                     for rec in grp
-                    if rec.proposed_series and rec.series_source in STRONG_SERIES_SOURCES
+                    if rec.proposed_series and _is_strong_series_source(rec.series_source)
                     and '\\' not in rec.proposed_series
                 },
                 key=len, reverse=True  # длинные первыми

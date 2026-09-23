@@ -7384,3 +7384,56 @@ series_strong_sources.py` (4 теста: `filename_named_arc` расширяет
 `tests/integration/fb2parser_core`+`tests/integration/fb2parser_web`+
 `tests/unit/fb2parser_web` — без регрессий. `python manage.py check`
 пройден.
+
+## Размышление о хрупкости эвристического каскада — часть 7: тот же класс бага в `pass4_consensus.py`'s `STRONG_SERIES_SOURCES`, третий сайт проверен и признан НЕ багом — ✅ Готово
+
+Довёл до конца проверку двух мест, оставленных "не тронутыми" в части 6.
+
+**`pass4_consensus.py`'s `STRONG_SERIES_SOURCES`** (механизм "FILENAME
+SEQUENCE + METADATA DUAL CONFIRMATION") — тот же класс бага: литеральный
+набор `{"filename+meta_confirmed", "filename", "folder_dataset",
+"metadata"}` молча исключал `'filename_named_arc'` и составные значения.
+Прямая замена на `series_source_rank(...) >= 20` здесь была бы
+НЕВЕРНОЙ: `'metadata'` и `'consensus'` делят один ранг (10) в
+`series_source_rank()` (оба — метаданные/консенсус), а `'consensus'` —
+часть `LOW_CONFIDENCE` тут же и не должен считаться сильным источником.
+Починено через `_is_strong_series_source()` — `series_source_rank(...)
+>= 20 or source == 'metadata'` (явное отдельное включение `'metadata'`).
+
+**Реальный эффект бага оказался ТОНЬШЕ, чем в части 6**: не полная
+потеря данных, а НЕВЕРНАЯ атрибуция. Синтетический repro (fail-before/
+pass-after через `git stash`) показал: без фикса другой, более общий
+консенсус-механизм ниже по пайплайну ВСЁ РАВНО чаще всего исправлял сам
+текст серии — но с source `'folder_meta_consensus'` вместо точного
+`'filename+meta_confirmed'`. `series_source` используется downstream
+(приоритет, decision_log, потребители `series_source_rank()`) — неверная
+атрибуция реальна, просто не так драматична, как потеря данных.
+
+**`pass2_series_filename.py`'s `STRONG_SOURCES`** (`{"folder_hierarchy",
+"folder_dataset", "folder_metadata_confirmed"}`, используется для
+голосования канонической серии внутри одной папки) — **проверен и
+признан корректным, НЕ багом**. Не хватает `'folder_meta_consensus'` и
+`'no_series_folder'`, но: (1) `'folder_meta_consensus'` присваивается
+ТОЛЬКО в `pass4_consensus.py:1474` — PASS 4 выполняется значительно
+ПОЗЖЕ этого конкретного метода (PASS 2 SERIES) в пайплайне, так что ни
+одна запись физически не может иметь это значение в момент его работы;
+(2) `'no_series_folder'` по определению означает пустой
+`proposed_series` — метод уже отдельно требует `and r.proposed_series`,
+так что членство в наборе для этого значения — no-op независимо от
+результата. Оба "недостающих" значения — не упущение, а корректное
+отражение порядка пассов. Закрывает начатое в части 6 расследование по
+всем 3 изначально найденным местам.
+
+Закреплено: `tests/unit/fb2parser_core/test_pass4_dual_confirmation_
+recognizes_named_arc_source.py` (2 теста: `filename_named_arc`
+подтверждает LOW_CONFIDENCE соседа с правильной атрибуцией; `'metadata'`
+по-прежнему засчитывается, `'consensus'` — нет, несмотря на равный ранг).
+
+Golden-снапшот — **0 расхождений** (баг не проявляется на текущих 319
+фикстурах: два автора действительно пересекаются по условиям, но не по
+остальным — реальный эффект подтверждён только синтетически).
+
+Прогнан ПОЛНЫЙ набор `tests/unit/fb2parser_core`+
+`tests/integration/fb2parser_core`+`tests/integration/fb2parser_web`+
+`tests/unit/fb2parser_web` — без регрессий. `python manage.py check`
+пройден.
