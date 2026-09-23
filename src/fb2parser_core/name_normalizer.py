@@ -356,8 +356,25 @@ class AuthorName:
         if len(words) == 3 and self._is_patronymic(words[1]) and not self._is_patronymic(words[0]):
             return (words[2], words[0], words[1])
 
-        # Check if last word is patronymic
-        if self._is_patronymic(remaining_words[-1]):
+        # Check if last word is patronymic.
+        #
+        # Исключение (баг №109, продолжение): для РОВНО 2 слов, где ПЕРВОЕ —
+        # известное имя, доверять этой проверке нельзя — многие настоящие
+        # русские фамилии оканчиваются на "-ович"/"-евич" той же морфологией,
+        # что и отчества (Конторович, Рабинович, Абрамович, Юркевич), а
+        # "Имя Отчество" БЕЗ фамилии вообще — крайне редкая, вырожденная
+        # форма записи имени автора в библиотеке. Реальный случай:
+        # "Александр Конторович" (folder_dataset из "«Морской» цикл
+        # (Александр Конторович)") распознавался как Имя=Александр,
+        # Отчество=Конторович (фамилии нет вовсе) — оставался неперевёрнутым
+        # в порядке Имя Фамилия. Уступаем дорогу более точной эвристике
+        # ниже (self._get_known_names()), которая для этого же случая
+        # корректно определяет "Конторович" как фамилию.
+        _skip_2word_patronymic = (
+            len(remaining_words) == 2
+            and remaining_words[0].lower() in self._get_known_names()
+        )
+        if not _skip_2word_patronymic and self._is_patronymic(remaining_words[-1]):
             patronymic = remaining_words[-1]
             remaining_words = remaining_words[:-1]
         
