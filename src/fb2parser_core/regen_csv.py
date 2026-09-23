@@ -19,6 +19,8 @@ from pathlib import Path
 from .settings_manager import SettingsManager
 from .logger import Logger
 from .fb2_author_extractor import FB2AuthorExtractor
+from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
+from .evidence import folder_has_signal as _folder_has_signal_fn
 
 from .precache import Precache
 from .passes import (
@@ -978,10 +980,10 @@ class RegenCSVService:
 
             # Источники по возрастанию приоритета. Папка (3) > файл (2) > мета (1).
             # VARIANT B всегда перезаписывает источники с приоритетом ниже папочного.
-            _FOLDER_SOURCES = {
-                'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus',
-                'folder_metadata_confirmed', 'no_series_folder',
-            }
+            # Единое множество из fb2parser_core.evidence — было продублировано
+            # байт-в-байт в нескольких местах (docs/quality-roadmap.md, баг
+            # №109, "хрупкость каскада").
+            _FOLDER_SOURCES = _SHARED_FOLDER_SOURCES
 
             for record in self.records:
                 # Пропускаем только если уже установлен папочный источник
@@ -1928,19 +1930,7 @@ class RegenCSVService:
         regenerate(), а между вызовами другие пост-чеки могут добавить
         папочный сигнал).
         """
-        _FOLDER_SOURCES = {
-            'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus',
-            'folder_metadata_confirmed', 'no_series_folder',
-        }
-        _folder_has_signal: dict = {}
-        for _r in self.records:
-            if not _r.file_path:
-                continue
-            _folder = str(Path(_r.file_path).parent)
-            if _r.series_source in _FOLDER_SOURCES:
-                _folder_has_signal[_folder] = True
-            elif _folder not in _folder_has_signal:
-                _folder_has_signal[_folder] = False
+        _folder_has_signal: dict = _folder_has_signal_fn(self.records)
 
         _count = 0
         for record in self.records:

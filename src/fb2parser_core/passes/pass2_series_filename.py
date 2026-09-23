@@ -34,6 +34,13 @@ except ImportError:
     from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 
 try:
+    from evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
+    from evidence import folder_has_signal as _folder_has_signal_fn
+except ImportError:
+    from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
+    from ..evidence import folder_has_signal as _folder_has_signal_fn
+
+try:
     from series_normalizer import _nfc_lower_yo
 except ImportError:
     def _nfc_lower_yo(s: str) -> str:  # type: ignore[misc]
@@ -335,11 +342,11 @@ class BlockLevelPatternSelector:
 class Pass2SeriesFilename:
     """Извлечение серий из имён файлов."""
 
-    # Источники серий, которые считаются «папочными» (приоритет над filename/metadata)
-    _FOLDER_SOURCES = frozenset({
-        'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus',
-        'folder_metadata_confirmed', 'no_series_folder',
-    })
+    # Источники серий, которые считаются «папочными» (приоритет над
+    # filename/metadata) — единое множество из fb2parser_core.evidence,
+    # общее с regen_csv.py (было продублировано байт-в-байт в трёх
+    # местах, см. docs/quality-roadmap.md, баг №109, "хрупкость каскада").
+    _FOLDER_SOURCES = _SHARED_FOLDER_SOURCES
 
     # Папочные источники для arc-нумерации (без no_series_folder — там серии нет)
     _FOLDER_SOURCES_ARC = frozenset({
@@ -576,16 +583,10 @@ class Pass2SeriesFilename:
         # давала (напр. отдельный рассказ прямо в корневой папке автора).
         # Снэпшот по входному series_source (уже выставлен regen_csv.py до
         # Pass2) + дополняется по ходу основного цикла ниже, как только
-        # _apply_folder_series находит сигнал у очередной записи.
-        self._folder_has_signal: dict = {}
-        for rec in records:
-            if not rec.file_path:
-                continue
-            folder = str(Path(rec.file_path).parent)
-            if rec.series_source in self._FOLDER_SOURCES:
-                self._folder_has_signal[folder] = True
-            elif folder not in self._folder_has_signal:
-                self._folder_has_signal[folder] = False
+        # _apply_folder_series находит сигнал у очередной записи (см.
+        # прямую запись self._folder_has_signal[...] = True в
+        # _process_single_record).
+        self._folder_has_signal: dict = _folder_has_signal_fn(records)
 
         # Кэш Path.parts: один и тот же file_path встречается в нескольких проходах
         _parts_cache: dict = {}
@@ -711,15 +712,7 @@ class Pass2SeriesFilename:
         серия, но существующая в ДРУГОМ месте библиотеки. "Мета только
         подтверждает уже найденную серию, не придумывает её с нуля".
         """
-        _folder_has_signal: dict = {}
-        for rec in records:
-            if not rec.file_path:
-                continue
-            folder = str(Path(rec.file_path).parent)
-            if rec.series_source in self._FOLDER_SOURCES:
-                _folder_has_signal[folder] = True
-            elif folder not in _folder_has_signal:
-                _folder_has_signal[folder] = False
+        _folder_has_signal: dict = _folder_has_signal_fn(records)
 
         for record in records:
             if record.proposed_series or not record.metadata_series:
