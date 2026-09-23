@@ -2641,6 +2641,7 @@ sync_job = JobState("fb2parser:sync", {
     "running": False, "done": False, "error": None,
     "processed": 0, "total": 0, "current": "",
     "stats": {},
+    "stats_rows": [],
     "reconciliation_notes": [],
     "log": [],
 })
@@ -2969,9 +2970,35 @@ def _run_sync_thread():
             "duplicates_found": "точных совпадений (БД/имя файла)",
             "duplicates_deleted": "всего удалено дублей",
         }
+        # Подсказки (title, при наведении) только для этих двух неочевидных
+        # строк — пользователь путал их местами (см. обсуждение выше).
+        _display_tooltips = {
+            "duplicates_found": (
+                "Файл получил (автор, серия, название, номер тома), точно "
+                "совпадающее с уже существующей записью в базе SOPDS, "
+                "либо итоговое имя файла в библиотеке совпало с уже "
+                "лежащим там файлом (для одиночного тома или готовой "
+                "компиляции)."
+            ),
+            "duplicates_deleted": (
+                "Все файлы, реально удалённые за прогон — включая случаи "
+                "выше, плюс (самое частое) отдельные тома, уже целиком "
+                "покрытые готовой компиляцией среди исходников, и "
+                "«мягкие» совпадения по серии и названию у слегка иначе "
+                "определённого автора."
+            ),
+        }
+        stats_rows = [
+            {
+                "label": _display_labels.get(k, k),
+                "value": v,
+                "tooltip": _display_tooltips.get(k, ""),
+            }
+            for k, v in stats.items()
+        ]
         stats = {_display_labels.get(k, k): v for k, v in stats.items()}
 
-        sync_job.update(done=True, running=False, stats=stats,
+        sync_job.update(done=True, running=False, stats=stats, stats_rows=stats_rows,
                         reconciliation_notes=reconciliation_notes)
 
     except Exception as exc:

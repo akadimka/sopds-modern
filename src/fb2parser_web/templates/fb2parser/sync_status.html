@@ -27,7 +27,16 @@
 {% elif state.done %}
 <div id="sync-status">
     <div class="callout success"><strong>{% trans "✅ Synchronization complete" %}</strong></div>
-    {% if state.stats %}
+    {% if state.stats_rows %}
+    <table class="unstriped" style="font-size:0.85rem; max-width:350px; margin-top:0.5rem;">
+        {% for row in state.stats_rows %}
+        <tr>
+            <td{% if row.tooltip %} title="{{ row.tooltip }}" style="cursor:help; border-bottom:1px dotted var(--text-muted, #999);"{% endif %}>{{ row.label }}</td>
+            <td><strong>{{ row.value }}</strong></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% elif state.stats %}
     <table class="unstriped" style="font-size:0.85rem; max-width:350px; margin-top:0.5rem;">
         {% for k, v in state.stats.items %}
         <tr><td>{{ k }}</td><td><strong>{{ v }}</strong></td></tr>
