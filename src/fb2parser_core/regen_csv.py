@@ -21,6 +21,7 @@ from .logger import Logger
 from .fb2_author_extractor import FB2AuthorExtractor
 from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
 from .evidence import folder_has_signal as _folder_has_signal_fn
+from .evidence import log_decision
 
 from .precache import Precache
 from .passes import (
@@ -1937,6 +1938,12 @@ class RegenCSVService:
             if record.proposed_series or not record.metadata_series:
                 continue
             if not _folder_has_signal.get(str(Path(record.file_path).parent)):
+                log_decision(
+                    record,
+                    "_postcheck_metadata_rescue: НЕ восстановил серию из "
+                    f"metadata_series={record.metadata_series!r} — папка "
+                    "никогда не давала папочного сигнала о серии.",
+                )
                 continue
             meta = record.metadata_series.strip()
             if not meta:
@@ -1948,12 +1955,28 @@ class RegenCSVService:
             # одноимённой с автором серии (псевдоним-серия), не опечатки.
             if (author_norm and meta_norm == author_norm
                     and record.series_number_source != 'metadata'):
+                log_decision(
+                    record,
+                    f"_postcheck_metadata_rescue: НЕ восстановил — "
+                    f"metadata_series={meta!r} совпадает с именем автора, "
+                    "похоже на дублирование имени в поле серии.",
+                )
                 continue
             _meta_l = meta.lower()
             if any(_bl.search(_meta_l) for _bl in self._compiled_blacklist):
+                log_decision(
+                    record,
+                    f"_postcheck_metadata_rescue: НЕ восстановил — "
+                    f"metadata_series={meta!r} содержит слово из filename_blacklist.",
+                )
                 continue
             record.proposed_series = meta
             record.series_source = 'metadata'
+            log_decision(
+                record,
+                f"_postcheck_metadata_rescue: восстановил proposed_series={meta!r} "
+                "из metadata_series — папка дала сигнал, проверки пройдены.",
+            )
             _count += 1
         if _count:
             print(f"[POST-CHECK] Rescued {_count} series from metadata after series==author cleanup")

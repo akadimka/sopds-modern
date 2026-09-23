@@ -9,7 +9,7 @@ import threading
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import concurrent.futures
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import tqdm
@@ -278,6 +278,18 @@ class BookRecord:
     # для имени файла/патчинга тегов <author> в самом FB2 (там продолжает
     # использоваться proposed_author, как и раньше).
     author_folder_root: str = ""
+
+    # Размышление о хрупкости эвристического каскада, часть 2 (docs/
+    # quality-roadmap.md, баг №109): человекочитаемая трассировка решений
+    # rescue/fallback-механизмов — "почему серия НЕ была/была
+    # восстановлена из голой metadata_series" — раньше приходилось
+    # восстанавливать вручную через git stash + разовые scratch-скрипты
+    # (см. историю расследований "Начинается вьюга"/"Демон"/"Хранитель 2
+    # (Защитник тьмы)" в quality-roadmap.md). Заполняется через
+    # evidence.log_decision(record, ...) — необязательно, не участвует в
+    # to_tuple()/CSV (как и series_display_root/author_folder_root выше)
+    # и не сравнивается ни в одном тесте на равенство записей.
+    decision_log: List[str] = field(default_factory=list)
 
     def to_tuple(self):
         """Convert record to tuple for GUI table display."""

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from fb2parser_core import regen_csv
+from fb2parser_core import evidence, regen_csv
 from fb2parser_core.fb2_compiler import FB2CompilerService
 from fb2parser_web.fb2parser_bridge import _config_path
 
@@ -773,3 +773,57 @@ class TestLoneFileWithoutFolderSignalGetsNoSeriesFromMetadata:
         assert rec.metadata_series == "Хроники Сиалы"
         assert rec.proposed_series == ""
         assert rec.series_source == ""
+
+
+class TestDecisionLogTracesRescueMechanisms:
+    """Размышление о хрупкости эвристического каскада, часть 2 (docs/
+    quality-roadmap.md, баг №109) — `fb2parser_core.evidence.log_decision()`
+    заменяет ручную археологию через `git stash`+scratch-скрипты (именно
+    так расследовались "Начинается вьюга"/"Хранитель 2 (Защитник тьмы)"
+    в предыдущих разделах): каждый rescue/fallback-механизм пишет в
+    `record.decision_log`, ПОЧЕМУ он восстановил (или НЕ восстановил)
+    серию из голой metadata_series. Здесь проверяем, что трассировка
+    действительно появляется на реальных, уже известных краевых случаях
+    из тестовой библиотеки (построена из настоящих файлов Test2).
+    """
+
+    def test_negative_case_logs_all_four_mechanisms_declining(self, records):
+        # "Начинается вьюга.fb2" — мотивирующий случай самого бага: ни
+        # один из 4 rescue/fallback-механизмов не должен придумывать
+        # серию, и каждый должен ОБЪЯСНИТЬ почему (папка не давала сигнала).
+        rec = _by_suffix(records, "Пехов Алексей - Сборник", "Начинается вьюга.fb2")
+        log = evidence.format_decision_log(rec)
+        assert rec.proposed_series == ""
+        assert "_postpass_metadata_fallback: НЕ восстановил" in log
+        assert "PASS4 FILENAME RESCUE: пропустил" in log
+        assert "PASS4 METADATA RESCUE: пропустил" in log
+        assert "_postcheck_metadata_rescue: НЕ восстановил" in log
+
+    def test_positive_case_logs_pass4_filename_rescue(self, records):
+        # "Мур Йен - Тайны Валь-де-Фолла" (баг №56): папка-импринт
+        # "Клуб убийств" очищена как многоавторская, но filename-
+        # консенсус (3 файла одного автора) восстанавливает реальную
+        # серию — трассировка должна показать ИМЕННО этот механизм и
+        # число подтвердивших файлов.
+        rec = _by_suffix(
+            records, "Серия - «Коллекция МИФ»", "Клуб убийств",
+            "Мур Йен - Тайны Валь-де-Фолла 1. Смерть и круассаны.fb2",
+        )
+        log = evidence.format_decision_log(rec)
+        assert rec.proposed_series == "Тайны Валь-де-Фолла"
+        assert "PASS4 FILENAME RESCUE: восстановил" in log
+        assert "подтверждён 3 файлами" in log
+
+    def test_empty_log_means_no_rescue_mechanism_was_needed(self, records):
+        # Файл, чья серия определилась СРАЗУ через folder_dataset (папка
+        # "Пасть [=Обманувший смерть] (завершён)"), никогда не доходит
+        # до rescue-каскада вообще — пустая трассировка здесь корректна,
+        # а не признак ошибки.
+        rec = _by_suffix(
+            records, "Романович (Пастырь) Роман - Сборник",
+            "Пасть [=Обманувший смерть] (завершён)", "Пасть 1. Обманувший смерть.fb2",
+        )
+        assert rec.series_source == "folder_dataset"
+        log = evidence.format_decision_log(rec)
+        assert "пуста" in log
+        assert "восстановил" not in log

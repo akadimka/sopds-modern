@@ -133,3 +133,38 @@ def folder_has_signal(
         elif folder not in result:
             result[folder] = False
     return result
+
+
+def log_decision(record: object, message: str) -> None:
+    """Добавить человекочитаемую запись в трассировку решений записи
+    (размышление о хрупкости, часть 2 — docs/quality-roadmap.md, баг
+    №109).
+
+    Заменяет ручную археологию через `git stash` + разовый scratch-скрипт
+    (именно так расследовались "Начинается вьюга"/"Демон"/"Хранитель 2
+    (Защитник тьмы)" — см. историю в quality-roadmap.md): rescue/
+    fallback-механизмы вызывают эту функцию в момент принятия решения
+    ("восстановил серию из meta, потому что папка X дала сигнал" /
+    "НЕ восстановил, потому что папка X сигнала не давала"), и позже
+    можно посмотреть ВЕСЬ путь принятия решения одним вызовом
+    `format_decision_log()`, не переигрывая пайплайн вручную.
+
+    Молча ничего не делает, если у записи нет атрибута `decision_log`
+    (например, лёгкие SimpleNamespace-обёртки для GUI-превью в
+    fb2parser_web/views.py — трассировка для них не обязательна).
+    """
+    log = getattr(record, 'decision_log', None)
+    if log is not None:
+        log.append(message)
+
+
+def format_decision_log(record: object) -> str:
+    """Человекочитаемый дамп `record.decision_log` — одна строка на
+    решение, в порядке накопления. Пустая трассировка — не ошибка, а
+    просто "ни один rescue/fallback-механизм ничего не решал для этой
+    записи" (обычно значит: серия/автор были определены раньше, папкой
+    или именем файла, до того как дошло дело до rescue-каскада)."""
+    log = list(getattr(record, 'decision_log', None) or [])
+    if not log:
+        return "(трассировка пуста — rescue/fallback-механизмы не вызывались для этой записи)"
+    return "\n".join(f"{i + 1}. {entry}" for i, entry in enumerate(log))

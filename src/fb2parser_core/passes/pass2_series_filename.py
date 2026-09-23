@@ -36,9 +36,11 @@ except ImportError:
 try:
     from evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
     from evidence import folder_has_signal as _folder_has_signal_fn
+    from evidence import log_decision
 except ImportError:
     from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
     from ..evidence import folder_has_signal as _folder_has_signal_fn
+    from ..evidence import log_decision
 
 try:
     from series_normalizer import _nfc_lower_yo
@@ -719,6 +721,12 @@ class Pass2SeriesFilename:
                 continue
             folder = str(Path(record.file_path).parent) if record.file_path else ''
             if not _folder_has_signal.get(folder):
+                log_decision(
+                    record,
+                    "_postpass_metadata_fallback: НЕ восстановил серию из "
+                    f"metadata_series={record.metadata_series!r} — папка "
+                    "никогда не давала папочного сигнала о серии.",
+                )
                 continue
             meta = record.metadata_series.strip()
             # Серия == автор обычно ошибка конвертера (продублировал имя автора
@@ -758,6 +766,12 @@ class Pass2SeriesFilename:
                 continue
             record.proposed_series = self._fix_russian_grammar(series)
             record.series_source = "metadata"
+            log_decision(
+                record,
+                f"_postpass_metadata_fallback: восстановил proposed_series="
+                f"{record.proposed_series!r} из metadata_series — папка дала "
+                "сигнал, проверки пройдены.",
+            )
 
         for record in records:
             if record.proposed_series:
@@ -1581,19 +1595,29 @@ class Pass2SeriesFilename:
             
             if has_blacklist_word:
                 # metadata содержит слова из blacklist → игнорируем целиком, не используем как series
-                pass
+                log_decision(
+                    record,
+                    "_apply_metadata_fallback_single: НЕ восстановил — "
+                    f"metadata_series={record.metadata_series!r} содержит "
+                    "слово из filename_blacklist.",
+                )
             else:
                 # ✅ ДОПОЛНИТЕЛЬНО: Проверяем целиком ли она в blacklist
                 # Пример: "Современный фантастический боевик (АСТ)" → без "(АСТ)" = "Современный фантастический боевик"
                 metadata_base = record.metadata_series.replace(' (АСТ)', '').replace('(АСТ)', '').strip()
                 is_pure_blacklist = any(
-                    metadata_base.lower() == bl.lower() 
+                    metadata_base.lower() == bl.lower()
                     for bl in self.filename_blacklist
                 )
-                
+
                 if is_pure_blacklist:
                     # Весь metadata это blacklist → пропускаем (series остаётся пустой)
-                    pass
+                    log_decision(
+                        record,
+                        "_apply_metadata_fallback_single: НЕ восстановил — "
+                        f"metadata_series={record.metadata_series!r} целиком "
+                        "совпадает со словом из filename_blacklist.",
+                    )
                 else:
                     # Fallback к metadata - только если из filename ничего не нашли
                     series = self._extract_series_from_metadata(record.metadata_series.strip())
@@ -1603,15 +1627,21 @@ class Pass2SeriesFilename:
 
                     # ✅ Удалить слова из blacklist также из metadata серии
                     series = self._remove_blacklist_words(series)
-                    
+
                     author_for_validation = record.proposed_author or None
                     if series and self._is_valid_series(series, extracted_author=author_for_validation):
                         # Исправляем грамматику русского языка (добавляем запятую перед "что")
                         series = self._fix_russian_grammar(series)
                         record.proposed_series = series
-                        
+
                         # 🔑 Папка уже была проверена выше. Если мы здесь → это просто metadata series (не совпадает с папкой)
                         record.series_source = "metadata"
+                        log_decision(
+                            record,
+                            f"_apply_metadata_fallback_single: восстановил "
+                            f"proposed_series={series!r} из metadata_series — "
+                            "папка дала сигнал, проверки пройдены.",
+                        )
 
     def _detect_named_arcs(self, records: List[BookRecord]) -> None:
         """Обнаружить именованные дуги в серии и создать подсерии через '\\'.

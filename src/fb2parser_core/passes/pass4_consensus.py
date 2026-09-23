@@ -14,6 +14,7 @@ from ..series_normalizer import _nfc_lower_yo
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
 from ..series_processor import SeriesProcessor
+from ..evidence import log_decision
 from .pass2_series_filename import _TOM_WORD_RE
 
 
@@ -1095,6 +1096,12 @@ class Pass4Consensus:
                 if record.proposed_series or not record.metadata_series:
                     continue
                 if id(record) not in _cleared_by_imprint_cleanup:
+                    log_decision(
+                        record,
+                        "PASS4 FILENAME RESCUE: пропустил — запись не была "
+                        "очищена веткой MULTI-AUTHOR SERIES FOLDER CLEANUP "
+                        "(нет папочного сигнала для восстановления).",
+                    )
                     continue
                 author_norm = _nfc_lower_yo((record.proposed_author or '').strip())
                 if not author_norm:
@@ -1142,6 +1149,12 @@ class Pass4Consensus:
             if record.proposed_series or not record.metadata_series:
                 continue
             if id(record) not in _cleared_by_imprint_cleanup:
+                log_decision(
+                    record,
+                    "PASS4 METADATA RESCUE: пропустил — запись не была "
+                    "очищена веткой MULTI-AUTHOR SERIES FOLDER CLEANUP "
+                    "(нет папочного сигнала для восстановления).",
+                )
                 continue
 
             # Используем именно СОБСТВЕННЫЙ кандидат этой записи — не самый
@@ -1156,6 +1169,12 @@ class Pass4Consensus:
                 if _cnt >= 2:
                     record.proposed_series = _cand_disp
                     record.series_source = 'filename'
+                    log_decision(
+                        record,
+                        f"PASS4 FILENAME RESCUE: восстановил proposed_series="
+                        f"{_cand_disp!r} — кандидат из имени файла подтверждён "
+                        f"{_cnt} файлами того же автора.",
+                    )
                     filename_rescue_count += 1
                     continue
 
@@ -1173,9 +1192,19 @@ class Pass4Consensus:
                 for bl in _blacklist_words if bl.strip()
             )
             if _bl_hit:
+                log_decision(
+                    record,
+                    "PASS4 METADATA RESCUE: НЕ восстановил — "
+                    f"metadata_series={meta!r} содержит слово из filename_blacklist.",
+                )
                 continue
             record.proposed_series = meta
             record.series_source = 'metadata'
+            log_decision(
+                record,
+                f"PASS4 METADATA RESCUE: восстановил proposed_series={meta!r} "
+                "из metadata_series — запись была очищена и подтверждена.",
+            )
             meta_rescue_count += 1
         if filename_rescue_count:
             self.logger.log(f"[PASS 4] Rescued {filename_rescue_count} series from filename (per-author) after publisher-imprint cleanup")

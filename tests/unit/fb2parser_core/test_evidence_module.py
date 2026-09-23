@@ -163,3 +163,36 @@ class TestFolderHasSignalOnRealTest2Data:
         # folder_dataset должен был сработать хотя бы для одного файла.
         result = evidence.folder_has_signal(records)
         assert result.get("Киндрэт - Пехов,Бычкова, Турчанинова") is True
+
+
+class TestDecisionLog:
+    def test_log_decision_appends_to_record(self):
+        rec = _rec(r"Автор\1.fb2", "")
+        evidence.log_decision(rec, "проверка А: условие выполнено")
+        evidence.log_decision(rec, "проверка Б: условие НЕ выполнено")
+        assert rec.decision_log == [
+            "проверка А: условие выполнено",
+            "проверка Б: условие НЕ выполнено",
+        ]
+
+    def test_log_decision_silently_noops_without_decision_log_attr(self):
+        # Лёгкие SimpleNamespace-обёртки (GUI-превью компилятора) не
+        # обязаны нести decision_log — log_decision не должна падать.
+        from types import SimpleNamespace
+        ns = SimpleNamespace(file_path="x.fb2")
+        evidence.log_decision(ns, "что угодно")  # не должно бросить исключение
+        assert not hasattr(ns, "decision_log")
+
+    def test_format_decision_log_joins_entries_numbered(self):
+        rec = _rec(r"Автор\1.fb2", "")
+        evidence.log_decision(rec, "первое решение")
+        evidence.log_decision(rec, "второе решение")
+        assert evidence.format_decision_log(rec) == (
+            "1. первое решение\n2. второе решение"
+        )
+
+    def test_format_decision_log_empty_is_explanatory_not_blank(self):
+        rec = _rec(r"Автор\1.fb2", "")
+        result = evidence.format_decision_log(rec)
+        assert result != ""
+        assert "пуст" in result.lower()
