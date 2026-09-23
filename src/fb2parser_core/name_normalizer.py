@@ -545,15 +545,40 @@ class AuthorName:
                         lastname = unknown_words[0]
                         firstname = ' '.join(w for w in remaining_words if w != lastname)
                     else:
-                        # Ambiguous (0, 2+ unknown words) — fall back to the old
-                        # position-based heuristic: if NEITHER end word is known, assume
-                        # the input is already in ФИ order (Фамилия Имя …), e.g. foreign
-                        # names from filenames: "Линдквист Йон Айвиде", "Толкин Джон Рональд".
+                        # Ambiguous (0, 2+ unknown words). Первым делом проверяем,
+                        # известен ли РОВНО один из краёв — тогда край сам решает
+                        # порядок, а середина (известная или нет) остаётся при
+                        # имени, а не молча теряется (найдено golden-снапшот
+                        # тестом, "хрупкость каскада" часть 3, докс/quality-
+                        # roadmap.md): "Ричард Томас Осман" (наст. Richard
+                        # Osman) — "Ричард" известное имя, "Томас"/"Осман" нет;
+                        # раньше здесь срабатывал только дефолт lastname=
+                        # remaining_words[-1], firstname=remaining_words[0] —
+                        # "Томас" молча пропадал (не входил ни в firstname, ни
+                        # в lastname).
                         first_is_known = remaining_words[0].lower() in known_names
                         last_is_known = remaining_words[-1].lower() in known_names
                         if not first_is_known and not last_is_known:
+                            # Fall back to the old position-based heuristic: assume
+                            # the input is already in ФИ order (Фамилия Имя …), e.g.
+                            # foreign names from filenames: "Линдквист Йон Айвиде",
+                            # "Толкин Джон Рональд".
                             lastname = remaining_words[0]
                             firstname = ' '.join(remaining_words[1:])
+                        elif first_is_known and not last_is_known:
+                            # "Имя [Middle] Фамилия" — известное имя открывает
+                            # запись, значит фамилия на конце, все остальные
+                            # слова (включая непознанную середину) — имя целиком.
+                            lastname = remaining_words[-1]
+                            firstname = ' '.join(remaining_words[:-1])
+                        elif last_is_known and not first_is_known:
+                            # "Фамилия [?] Имя" — известное имя завершает запись,
+                            # значит фамилия в начале, всё остальное — имя целиком.
+                            lastname = remaining_words[0]
+                            firstname = ' '.join(remaining_words[1:])
+                        # else: known_words>=2 c обеих сторон одновременно —
+                        # оставляем дефолт (lastname=последнее, firstname=первое),
+                        # как и раньше.
 
                 return (lastname, firstname, patronymic)
     

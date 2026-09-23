@@ -19,6 +19,7 @@ from pathlib import Path
 from .settings_manager import SettingsManager
 from .logger import Logger
 from .fb2_author_extractor import FB2AuthorExtractor
+from .author_normalizer_extended import AuthorNormalizer
 from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
 from .evidence import folder_has_signal as _folder_has_signal_fn
 from .evidence import log_decision
@@ -55,7 +56,28 @@ class RegenCSVService:
         self.settings = SettingsManager(config_path)
         self.logger = Logger()
         self.extractor = FB2AuthorExtractor(config_path)
-        
+
+        # Размышление о хрупкости эвристического каскада, часть 3
+        # (docs/quality-roadmap.md): AuthorName (name_normalizer.py) держит
+        # class-level кэши (известные имена, частицы...), заполняемые ПРИ
+        # ПЕРВОМ вызове AuthorName.set_config_path() — раньше этот вызов
+        # происходил только внутри AuthorNormalizer.__init__(), который
+        # конструируется впервые лишь в PASS 3 (см. passes/pass3_normalize.py
+        # и др.). Но PASS 2's prebuild_author_cache() уже строит raw
+        # AuthorName(...) РАНЬШЕ — на свежем процессе _config_path ещё None,
+        # _get_known_names() пуст, и разбор Имя/Фамилия для ЛЮБОГО автора,
+        # обработанного на этом шаге, деградирует до менее точной эвристики.
+        # Реальный случай: "Ричард Томас Осман" (наст. автор Richard Osman)
+        # на пустом known_names не переставлялся вовсе, но случайно (через
+        # словарное кэширование по всем 3 словам) давал внешне правильный
+        # "Осман Ричард Томас"; при заранее заполненном known_names тот же
+        # разбор шёл по другой ветке и терял "Томас" (см. соседний фикс в
+        # name_normalizer.py). Конструируем AuthorNormalizer здесь же, сразу
+        # после self.settings, чтобы AuthorName.set_config_path() был вызван
+        # с правильным путём ДО первого использования AuthorName где бы то
+        # ни было в этом прогоне — независимо от порядка PASS'ов.
+        AuthorNormalizer(self.settings)
+
         # Load configuration lists
         self.collection_keywords = self.settings.get_list('collection_keywords')
         self.service_words = self.settings.get_list('service_words')
