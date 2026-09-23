@@ -2237,7 +2237,24 @@ class Pass2SeriesFilename:
                 _stem_n2
             )
             if not m2:
-                continue
+                # Баг №109 (продолжение): "Root N (AltName)" — реальные
+                # файлы физически называются по AltName, не по полному
+                # "Root N (AltName)" (см. _extract_series_from_folder_name()
+                # в regen_csv.py, тот же баг). Реальный случай: серия
+                # "Хранитель 2 (Защитник тьмы)" — имя файла "Защитник тьмы
+                # 2. Тайны мира.fb2" не содержит "Хранитель 2" вовсе,
+                # основной якорь никогда не совпадёт. Пробуем AltName как
+                # альтернативный якорь.
+                _alt_m = re.match(r'^.+\s\d{1,2}\s*\(([^)]+)\)\s*$', series_root)
+                if _alt_m:
+                    _alt_n = _alt_m.group(1).replace('ё', 'е').replace('Ё', 'Е')
+                    m2 = re.search(
+                        r'(?i)' + re.escape(_alt_n)
+                        + r'[\s\-.]+(\d{1,3}(?:\s*[-–—]\s*\d{1,3})?)\s*(?:[\.\s]|$)',
+                        _stem_n2
+                    )
+                if not m2:
+                    continue
             fn_val2 = re.sub(r'\s*[-–—]\s*', '-', m2.group(1).strip())
             fn_lo2 = int(fn_val2.split('-')[0])
             if 1900 <= fn_lo2 <= 2099:
