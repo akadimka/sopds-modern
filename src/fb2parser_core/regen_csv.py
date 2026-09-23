@@ -23,6 +23,7 @@ from .author_normalizer_extended import AuthorNormalizer
 from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
 from .evidence import folder_has_signal as _folder_has_signal_fn
 from .evidence import log_decision
+from .evidence import series_source_rank
 
 from .precache import Precache
 from .passes import (
@@ -3265,11 +3266,26 @@ class RegenCSVService:
         # Случай: metadata_series книги содержит только начало названия ("Режиссер"),
         # а у других книг того же автора есть полное название ("Режиссер Советского Союза").
         # Расширяем усечённые значения до полного.
-        _STRONG = {'filename+meta_confirmed', 'filename', 'folder_dataset',
-                   'folder_hierarchy', 'folder_meta_consensus'}
+        # Баг №109 (продолжение, "хрупкость каскада" часть 6): раньше здесь
+        # был литеральный набор {'filename+meta_confirmed', 'filename',
+        # 'folder_dataset', 'folder_hierarchy', 'folder_meta_consensus'} —
+        # точное совпадение молча исключало РЕАЛЬНЫЕ, не менее надёжные
+        # источники: 'filename_named_arc' (18 записей в fixture-библиотеке),
+        # составные вида 'folder_dataset+subfolder_hierarchy'/'+metadata-
+        # coauthors' (ещё 18) — та же природа бага, что и в pass3_series_
+        # normalize.py (часть 4 этого размышления). series_source_rank()
+        # уже умеет и в префиксное сравнение по базовой части до '+', и в
+        # ранжирование filename_*-вариантов — используем её вместо
+        # литерального набора. Порог >= 20 — файловый тир и выше (папка);
+        # 'folder_metadata_confirmed' (30) теперь тоже проходит — раньше
+        # исключался наравне с остальными, хотя это папочный источник, просто
+        # самый слабый под-уровень; не найдено ни одной fixture-записи с
+        # именно этим значением, так что реального изменения поведения на
+        # golden-снапшоте это не даёт, но и вреда не несёт, будучи логически
+        # последовательным с общим принципом "Папка > Файл > Мета".
         _auth_long: dict = {}  # author → list of (proposed_series_lower, proposed_series_original)
         for _r in self.records:
-            if _r.proposed_author and _r.proposed_series and _r.series_source in _STRONG:
+            if _r.proposed_author and _r.proposed_series and series_source_rank(_r.series_source) >= 20:
                 _auth_long.setdefault(_r.proposed_author, []).append(
                     (_r.proposed_series.lower().replace('ё', 'е').strip(), _r.proposed_series)
                 )

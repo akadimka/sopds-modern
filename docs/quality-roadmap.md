@@ -7323,3 +7323,64 @@ author_still_gets_unified_by_punctuation`). Golden-снапшот на полн�
 `pass4_consensus.py`) на архитектуру "собрать кандидатов → решить один
 раз", по одному месту за раз, каждый раз с полной верификацией через
 golden-снапшот.
+
+## Размышление о хрупкости эвристического каскада — часть 6: тот же класс бага (точное совпадение вместо ранга) найден и починен в `_STRONG` (regen_csv.py) — ✅ Починено
+
+Продолжение частей 4-5. Проверил найденную в плане часть Д рекомендацию:
+ещё 2 места (`regen_csv.py:_STRONG`, `pass4_consensus.py:
+STRONG_SERIES_SOURCES`) той же природы, что и починенный в части 4
+`pass3_series_normalize.py`'s баг — литеральные наборы, а не ранжирующая
+функция. Прежде чем чинить вслепую, посчитал реальное распределение
+`series_source` на golden-снапшоте (319 записей): **18 записей** имеют
+`series_source='filename_named_arc'`, **18** — составные вида
+`'folder_dataset+subfolder_hierarchy'`/`'+metadata-coauthors'` — оба
+класса значений НЕ входят ни в один из литеральных наборов, хотя по
+`docs/series-priority.md` и `evidence.series_source_rank()` являются
+полноценно надёжными источниками (файловый тир и папочный тир
+соответственно).
+
+**Починено**: `regen_csv.py`'s `_STRONG = {'filename+meta_confirmed',
+'filename', 'folder_dataset', 'folder_hierarchy', 'folder_meta_
+consensus'}` (использовался в пост-чеке "expand truncated metadata
+series using longer version from same author", `_save_csv()`) заменён
+на `series_source_rank(...) >= 20` (файловый тир и выше) — теперь
+корректно распознаёт `filename_named_arc` и составные `+`-суффиксные
+значения через уже существующее в `series_source_rank()` сравнение по
+базовой части.
+
+**Проверено на синтетических случаях, fail-before/pass-after через `git
+stash`**: без фикса запись с `series_source='filename_named_arc'` (или
+составным `folder_dataset+...`) НЕ расширяла усечённую `metadata`-запись
+того же автора — и хуже того, следующий, отдельный пост-чек ("singleton
+metadata series not found in file path") затем ПОЛНОСТЬЮ ОЧИЩАЛ эту
+непродвинутую усечённую запись (превращая частичную потерю данных в
+полную). С фиксом — расширение срабатывает корректно.
+
+Golden-снапшот на полной фикстур-библиотеке — **0 расхождений**: ни у
+одного автора в текущих 319 файлах нет ОДНОВРЕМЕННО и "сильной, но ранее
+исключённой" записи, и усечённой `metadata`-записи — баг реален и
+воспроизведён синтетически, но не проявляется на этом конкретном наборе
+фикстур (тот же паттерн, что и у пары более ранних фиксов в этой
+сессии).
+
+`pass4_consensus.py`'s `STRONG_SERIES_SOURCES` (используется в другом,
+более узком механизме — "FILENAME SEQUENCE + METADATA DUAL CONFIRMATION")
+и `pass2_series_filename.py`'s `STRONG_SOURCES` (чисто папочный, 3 из 5
+`FOLDER_SOURCES`) — **не тронуты в этой сессии**: их семантика (что
+именно значит "достаточно сильный источник" в каждом конкретном
+механизме) недостаточно ясна без более глубокого разбора на реальных
+случаях — в отличие от `_STRONG`, где связь с ранее найденным багом и
+влияние были быстро и однозначно подтверждены. Не чинить впрок без
+демонстрации на реальных/синтетических данных — установленная в этой
+сессии дисциплина (см. часть 5 — история с author_source_rank()).
+
+Закреплено: `tests/unit/fb2parser_core/test_save_csv_expand_truncated_
+series_strong_sources.py` (4 теста: `filename_named_arc` расширяет;
+составное `folder_dataset+...` расширяет; обычные `filename`/
+`folder_dataset` по-прежнему работают, как и раньше; сам `'metadata'` не
+становится источником расширения для другой `metadata`-записи).
+
+Прогнан ПОЛНЫЙ набор `tests/unit/fb2parser_core`+
+`tests/integration/fb2parser_core`+`tests/integration/fb2parser_web`+
+`tests/unit/fb2parser_web` — без регрессий. `python manage.py check`
+пройден.
