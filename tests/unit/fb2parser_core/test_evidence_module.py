@@ -58,6 +58,57 @@ class TestSourceTier:
             evidence.source_tier("filename")
 
 
+class TestSeriesSourceRank:
+    """Гранулярная шкала для series_source (docs/quality-roadmap.md,
+    баг №109, "хрупкость каскада" часть 4) — заменяет локальный
+    _SRC_PRIORITY словарь pass3_series_normalize.py, который сравнивал
+    series_source ТОЧНЫМ совпадением с литералом 'filename' и молча
+    ронял приоритет всех реальных 'filename_*' значений до 0."""
+
+    @pytest.mark.parametrize("source, expected_rank", [
+        ("folder_dataset", 33),
+        ("folder_hierarchy", 32),
+        ("no_series_folder", 32),
+        ("folder_meta_consensus", 31),
+        ("folder_metadata_confirmed", 30),
+        ("filename_prefix", 21),
+        ("filename_prefix_pattern", 21),
+        ("filename", 20),
+        ("filename_named_arc", 20),
+        ("filename_series_root_book1", 20),
+        ("filename_phrase_confirmed", 20),
+        ("filename+meta_confirmed", 20),
+        ("filename_abbrev_prefix", 20),  # инфикс, а не префикс "filename_prefix"
+        ("metadata", 10),
+        ("consensus", 10),
+        ("metadata+author_expanded", 10),
+        ("author-consensus", 0),  # намеренно не в этой шкале
+        ("", 0),
+        (None, 0),
+        ("unknown_made_up_source", 0),
+    ])
+    def test_rank_matches_expected(self, source, expected_rank):
+        assert evidence.series_source_rank(source) == expected_rank
+
+    def test_folder_dataset_beats_folder_hierarchy(self):
+        assert evidence.series_source_rank("folder_dataset") > \
+            evidence.series_source_rank("folder_hierarchy")
+
+    def test_filename_prefix_beats_other_filename(self):
+        assert evidence.series_source_rank("filename_prefix") > \
+            evidence.series_source_rank("filename_named_arc")
+
+    def test_any_folder_beats_any_filename_beats_any_metadata(self):
+        assert evidence.series_source_rank("folder_metadata_confirmed") > \
+            evidence.series_source_rank("filename_prefix")
+        assert evidence.series_source_rank("filename_named_arc") > \
+            evidence.series_source_rank("metadata")
+
+    def test_composite_suffix_does_not_change_rank(self):
+        assert evidence.series_source_rank("folder_dataset+series-consensus") == \
+            evidence.series_source_rank("folder_dataset")
+
+
 class TestPickWinner:
     def test_folder_beats_filename_beats_metadata(self):
         candidates = [

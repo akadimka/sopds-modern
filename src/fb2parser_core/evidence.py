@@ -74,6 +74,67 @@ def source_tier(source: Optional[str]) -> int:
     return 0
 
 
+# Гранулярная шкала ИМЕННО для series_source (docs/series-priority.md).
+# source_tier() выше остаётся 3-тировым и НЕ меняется — на его грубую
+# границу "папка(3) > файл(2) > мета(1)" по-прежнему может полагаться
+# будущий author_source-код. Здесь — отдельная, более гранулярная шкала
+# под конкретно найденный баг (docs/quality-roadmap.md, баг №109,
+# "хрупкость каскада" часть 4): pass3_series_normalize.py сравнивал
+# rec.series_source ТОЧНЫМ совпадением с литералом 'filename' в локальном
+# словаре _SRC_PRIORITY, тогда как реальные значения — 'filename_prefix',
+# 'filename_named_arc', 'filename_series_root_book1',
+# 'filename_phrase_confirmed' и т.д. — никогда не совпадали и молча
+# получали приоритет 0, как пустое/неизвестное значение.
+_SERIES_FOLDER_SUB_RANK: Dict[str, int] = {
+    'folder_dataset': 3,
+    'folder_hierarchy': 2,
+    'no_series_folder': 2,
+    'folder_meta_consensus': 1,
+    'folder_metadata_confirmed': 0,
+}
+
+
+def series_source_rank(source: Optional[str]) -> int:
+    """Приоритет series_source по docs/series-priority.md (больше =
+    авторитетнее).
+
+    Папочный уровень разбит на 4 под-уровня (см. `_SERIES_FOLDER_SUB_
+    RANK` — то же относительное упорядочение, что было в старом
+    _SRC_PRIORITY словаре pass3_series_normalize.py: folder_dataset >
+    folder_hierarchy > folder_meta_consensus > folder_metadata_
+    confirmed). filename-уровень разбит на 2 — правило 3 vs 4 в docs/
+    series-priority.md: `filename_prefix` (ведущий номер в имени файла)
+    авторитетнее прочих `filename_*` (арки/дуги из текста).
+
+    Сравнение — по ПРЕФИКСУ базовой части до первого '+' (как в
+    source_tier() — суффикс вида "+meta_expanded" не меняет ранг), а не
+    по точному значению — это и есть исправление бага. Префиксная
+    проверка на 'filename_prefix' безопасна: единственное потенциальное
+    пересечение, 'filename_abbrev_prefix', не имеет 'filename_prefix' в
+    начале строки (у него "prefix" — последнее слово, а не первое).
+
+    Возвращает: 30..33 — папка, 21 — filename_prefix*, 20 — filename*
+    прочее, 10 — metadata*/consensus*, 0 — пусто/неизвестно (в т.ч.
+    'author-consensus'/'author-consensus (metadata-confirmed)' —
+    намеренно НЕ добавлены в эту шкалу: doc их не описывает, а
+    остальной код обращается с ними непоследовательно уже сейчас;
+    оставлены на 0, как и в старом _SRC_PRIORITY, чтобы не расширять
+    blast radius этой правки сверх подтверждённого бага).
+    """
+    if not source:
+        return 0
+    base = source.split('+', 1)[0]
+    if base in FOLDER_SOURCES:
+        return 30 + _SERIES_FOLDER_SUB_RANK.get(base, 0)
+    if base.startswith('filename_prefix'):
+        return 21
+    if base.startswith(_FILENAME_PREFIX):
+        return 20
+    if base.startswith(_METADATA_PREFIXES):
+        return 10
+    return 0
+
+
 def pick_winner(
     candidates: Sequence[Tuple[object, Optional[str]]],
 ) -> Optional[Tuple[object, Optional[str]]]:

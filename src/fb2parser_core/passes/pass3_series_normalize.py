@@ -29,6 +29,11 @@ except ImportError:
         series_source: str = ""
         file_title: str = ""
 
+try:
+    from evidence import series_source_rank
+except ImportError:
+    from ..evidence import series_source_rank
+
 from ..logger import Logger
 from ..settings_manager import SettingsManager
 
@@ -170,12 +175,6 @@ class Pass3SeriesNormalize:
         # "канон", перетирая proposed_series всем им разом. Группировка
         # только внутри одного автора не даёт чужим, случайно совпадающим по
         # пунктуации сеттингам заражать друг друга.
-        _SRC_PRIORITY = {
-            'folder_dataset': 6, 'folder_hierarchy': 5,
-            'folder_meta_consensus': 4, 'folder_metadata_confirmed': 3,
-            'filename': 2, 'metadata': 1,
-        }
-
         def _punct_key(s: str) -> str:
             s = _nfc_lower_yo(s.strip())
             return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', ' ', s)).strip()
@@ -188,7 +187,7 @@ class Pass3SeriesNormalize:
                 continue
             author_norm = _nfc_lower_yo((rec.proposed_author or '').strip())
             pk = (author_norm, _punct_key(rec.proposed_series))
-            pri = _SRC_PRIORITY.get(rec.series_source or '', 0)
+            pri = series_source_rank(rec.series_source)
             _key_variants[pk].append((pri, rec.proposed_series))
 
         # Для каждого ключа с несколькими вариантами — берём вариант с высшим приоритетом
