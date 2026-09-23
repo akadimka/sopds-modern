@@ -93,7 +93,19 @@ class AuthorName:
         cls._filename_blacklist_cache = None
         cls._known_initials_and_suffixes = None
         cls._known_names_cache = None
-    
+        # Баг №109 (продолжение, "хрупкость каскада" часть 3): этот кэш не
+        # чистился здесь вместе с остальными тремя. Если что-то строит его
+        # ДО первого set_config_path() (напр. прямой вызов AuthorName(...)
+        # раньше первого AuthorNormalizer/RegenCSVService в процессе) —
+        # он навсегда остаётся пустым (fallback-путь без name_particles),
+        # даже после корректного set_config_path(): "де ла Мотт" перестаёт
+        # распознаваться как фамилия с частицей на весь остаток жизни
+        # процесса. Найдено golden-снапшот тестом (см.
+        # test_golden_snapshot_full_library.py) — расхождение проявлялось
+        # только при определённом порядке запуска тестов в одном pytest-
+        # процессе, не воспроизводилось при изолированном прогоне.
+        cls._name_particles_cache = None
+
     @classmethod
     def _get_config_path(cls) -> Optional[Path]:
         """Get config file path.
