@@ -68,7 +68,11 @@
 
     <div class="cell medium-4">
         <div class="card" style="height:72vh; display:flex; flex-direction:column;">
-            <div class="card-divider"><strong>{% trans "Associated Genre Strings" %}</strong></div>
+            <div class="card-divider" style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">
+                <strong>{% trans "Associated Genre Strings" %}</strong>
+                <button type="button" class="button alert" style="margin:0; padding:0.15rem 0.5rem; font-size:0.7rem; white-space:nowrap;"
+                        onclick="genreClearAllAssigned()">{% trans "Reset all exact associations" %}</button>
+            </div>
             <div style="flex:1; overflow-y:auto; padding:0.5rem;" id="assigned-panel">
                 <div style="color:var(--text-muted); font-size:0.85rem;">{% trans "Select a genre on the left" %}</div>
             </div>
@@ -93,6 +97,73 @@
     </div>
 </div>
 
+<div class="grid-x grid-margin-x" style="margin-top:1rem;">
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>{% trans "FB2 Genre Reference" %}</strong></div>
+            <div class="card-section" style="max-height:40vh; overflow-y:auto;">
+                <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
+                    {% trans "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json) — map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations." %}
+                </p>
+                <table class="unstriped" style="font-size:0.8rem; margin:0;">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Section" %}</th>
+                            <th>{% trans "Codes" %}</th>
+                            <th>{% trans "Genre" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sections %}
+                        <tr>
+                            <td>{{ s.section }}</td>
+                            <td style="color:var(--text-muted);">{{ s.count }}</td>
+                            <td>
+                                <select style="margin:0; font-size:0.78rem;"
+                                        onchange="genreSectionMapSet('{{ s.section|escapejs }}', this.value)">
+                                    <option value="">{% trans "— not mapped —" %}</option>
+                                    {% for g in genre_list %}
+                                    <option value="{{ g.name|escapejs }}" {% if g.name == s.genre %}selected{% endif %}>{{ g.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="cell medium-6">
+        <div class="card">
+            <div class="card-divider"><strong>{% trans "Excluded Codes (never a genre signal)" %}</strong></div>
+            <div class="card-section">
+                <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
+                    {% trans "Codes describing publication format, not genre (e.g. \"compilation\", \"collection\") — never learned as an exact association, no matter what genre is applied to a combination containing them." %}
+                </p>
+                <div style="display:flex; gap:0.4rem; margin-bottom:0.6rem;">
+                    <input id="excluded-code-input" type="text" placeholder="{% trans "e.g. compilation" %}"
+                           style="margin:0; font-size:0.82rem; flex:1;">
+                    <button type="button" class="button secondary" style="margin:0; font-size:0.78rem; white-space:nowrap;"
+                            onclick="genreExcludedAdd()">+ {% trans "Add" %}</button>
+                </div>
+                <ul class="no-bullet" style="margin:0; font-size:0.82rem; max-height:26vh; overflow-y:auto;">
+                    {% for code in excluded_codes %}
+                    <li style="display:flex; justify-content:space-between; align-items:center; padding:0.15rem 0; border-bottom:1px solid var(--border);">
+                        <span style="font-family:monospace;">{{ code }}</span>
+                        <button type="button" class="button alert" style="margin:0; padding:0 0.4rem; font-size:0.72rem;"
+                                onclick="genreExcludedRemove('{{ code|escapejs }}')">✕</button>
+                    </li>
+                    {% empty %}
+                    <li style="color:var(--text-muted);">{% trans "No excluded codes" %}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endif %}
 
 <script>
@@ -105,6 +176,15 @@ const GENRES_ADD_URL = "{% url 'fb2parser:genres_add' %}";
 const GENRES_RENAME_URL = "{% url 'fb2parser:genres_rename' %}";
 const GENRES_DELETE_URL = "{% url 'fb2parser:genres_delete' %}";
 const GENRES_MOVE_URL = "{% url 'fb2parser:genres_move' %}";
+const GENRES_ASSOCIATE_ADD_URL = "{% url 'fb2parser:genres_associate_add' %}";
+const GENRES_ASSOCIATE_REMOVE_URL = "{% url 'fb2parser:genres_associate_remove' %}";
+const GENRES_PATTERN_ADD_URL = "{% url 'fb2parser:genres_pattern_add' %}";
+const GENRES_PATTERN_REMOVE_URL = "{% url 'fb2parser:genres_pattern_remove' %}";
+const GENRES_SECTION_MAP_SET_URL = "{% url 'fb2parser:genres_section_map_set' %}";
+const GENRES_EXCLUDED_ADD_URL = "{% url 'fb2parser:genres_excluded_code_add' %}";
+const GENRES_EXCLUDED_REMOVE_URL = "{% url 'fb2parser:genres_excluded_code_remove' %}";
+const GENRES_CLEAR_ASSIGNED_URL = "{% url 'fb2parser:genres_clear_assigned' %}";
+const i18n_clearAssignedConfirm = "{% trans 'Reset ALL exact associations for ALL genres? This cannot be undone (section mapping and code-family patterns are kept).' %}";
 
 function _genreCsrf() {
     var el = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -155,20 +235,96 @@ function genreMove(name, direction) {
 }
 
 const GENRE_DATA = {
-{% for g in genre_list %}"{{ g.name|escapejs }}": [{% for a in g.assigned %}"{{ a|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+{% for g in genre_list %}"{{ g.name|escapejs }}": {
+    assigned: [{% for a in g.assigned %}"{{ a|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    patterns: [{% for p in g.patterns %}"{{ p|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
+},
 {% endfor %}};
+
+let _selectedGenre = null;
+
+function _genreListHtml(items, removeFn) {
+    if (items.length === 0) {
+        return '<div style="color:var(--text-muted); font-size:0.82rem; padding:0.2rem 0;">' + i18n_noAssociations + '</div>';
+    }
+    return '<ul class="no-bullet" style="font-size:0.82rem; margin:0;">' +
+        items.map(a => '<li style="display:flex; justify-content:space-between; align-items:center; padding:0.15rem 0; border-bottom:1px solid var(--border);">' +
+            '<span style="font-family:monospace;">' + a + '</span>' +
+            '<button type="button" class="button alert" style="margin:0; padding:0 0.4rem; font-size:0.7rem;" onclick="' + removeFn + "('" + a.replace(/'/g, "\\'") + '\')">✕</button></li>').join('') +
+        '</ul>';
+}
 
 function selectGenre(name, el) {
     document.querySelectorAll('.genre-node').forEach(n => n.style.background = '');
     el.style.background = 'var(--status-warn-bg)';
     document.getElementById('selected-genre').value = name;
-    const assigned = GENRE_DATA[name] || [];
+    _selectedGenre = name;
+    renderAssignedPanel();
+}
+
+function renderAssignedPanel() {
+    const name = _selectedGenre;
+    const data = GENRE_DATA[name] || {assigned: [], patterns: []};
     const panel = document.getElementById('assigned-panel');
-    panel.innerHTML = assigned.length === 0
-        ? '<div style="color:var(--text-muted); font-size:0.85rem;">' + i18n_noAssociations + '</div>'
-        : '<ul class="no-bullet" style="font-size:0.82rem; margin:0;">' +
-          assigned.map(a => `<li style="padding:0.15rem 0; border-bottom:1px solid var(--border);">${a}</li>`).join('') +
-          '</ul>';
+    panel.innerHTML =
+        '<div style="font-size:0.8rem; font-weight:600; margin-bottom:0.2rem;">{% trans "Exact associations" %}</div>' +
+        '<div style="display:flex; gap:0.3rem; margin-bottom:0.4rem;">' +
+        '<input id="assoc-code-input" type="text" placeholder="{% trans "code" %}" style="margin:0; font-size:0.78rem; flex:1;">' +
+        '<button type="button" class="button secondary" style="margin:0; font-size:0.75rem;" onclick="genreAssocAdd()">+</button>' +
+        '</div>' +
+        _genreListHtml(data.assigned, 'genreAssocRemove') +
+        '<div style="font-size:0.8rem; font-weight:600; margin:0.6rem 0 0.2rem;">{% trans "Code-family patterns" %}</div>' +
+        '<div style="display:flex; gap:0.3rem; margin-bottom:0.4rem;">' +
+        '<input id="pattern-code-input" type="text" placeholder="{% trans "family, e.g. sf" %}" style="margin:0; font-size:0.78rem; flex:1;">' +
+        '<button type="button" class="button secondary" style="margin:0; font-size:0.75rem;" onclick="genrePatternAdd()">+</button>' +
+        '</div>' +
+        _genreListHtml(data.patterns, 'genrePatternRemove');
+}
+
+function genreAssocAdd() {
+    if (!_selectedGenre) return;
+    const inp = document.getElementById('assoc-code-input');
+    const code = inp.value.trim();
+    if (!code) return;
+    _genrePost(GENRES_ASSOCIATE_ADD_URL, {name: _selectedGenre, code: code});
+}
+
+function genreAssocRemove(code) {
+    if (!_selectedGenre) return;
+    _genrePost(GENRES_ASSOCIATE_REMOVE_URL, {name: _selectedGenre, code: code});
+}
+
+function genrePatternAdd() {
+    if (!_selectedGenre) return;
+    const inp = document.getElementById('pattern-code-input');
+    const pattern = inp.value.trim();
+    if (!pattern) return;
+    _genrePost(GENRES_PATTERN_ADD_URL, {name: _selectedGenre, pattern: pattern});
+}
+
+function genrePatternRemove(pattern) {
+    if (!_selectedGenre) return;
+    _genrePost(GENRES_PATTERN_REMOVE_URL, {name: _selectedGenre, pattern: pattern});
+}
+
+function genreSectionMapSet(section, genreName) {
+    _genrePost(GENRES_SECTION_MAP_SET_URL, {section: section, genre: genreName});
+}
+
+function genreExcludedAdd() {
+    const inp = document.getElementById('excluded-code-input');
+    const code = inp.value.trim();
+    if (!code) return;
+    _genrePost(GENRES_EXCLUDED_ADD_URL, {code: code});
+}
+
+function genreExcludedRemove(code) {
+    _genrePost(GENRES_EXCLUDED_REMOVE_URL, {code: code});
+}
+
+function genreClearAllAssigned() {
+    if (!confirm(i18n_clearAssignedConfirm)) return;
+    _genrePost(GENRES_CLEAR_ASSIGNED_URL, {});
 }
 
 document.getElementById('genre-filter').addEventListener('input', function() {
