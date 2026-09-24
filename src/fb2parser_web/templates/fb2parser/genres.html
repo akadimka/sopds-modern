@@ -106,7 +106,7 @@
                     <span id="genre-ref-mode-label" style="font-weight:normal; font-size:0.78rem; color:var(--text-muted);">({% trans "by section" %})</span>
                 </strong>
             </div>
-            <div class="card-section" style="max-height:40vh; overflow-y:auto;">
+            <div id="genre-ref-scroll" class="card-section" style="max-height:40vh; overflow-y:auto;">
                 <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
                     {% trans "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json)." %}
                     {% trans "Click the card title to switch between mapping whole sections and mapping individual codes." %}
@@ -116,12 +116,12 @@
                     <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
                         {% trans "Map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations. Hover over the code count to see the actual codes." %}
                     </p>
-                    <table class="unstriped" style="font-size:0.8rem; margin:0;">
+                    <table id="genre-ref-section-table" class="unstriped" style="font-size:0.8rem; margin:0;">
                         <thead>
                             <tr>
-                                <th>{% trans "Section" %}</th>
-                                <th>{% trans "Codes" %}</th>
-                                <th>{% trans "Genre" %}</th>
+                                <th style="cursor:pointer; user-select:none;" onclick="sortGenreRefTable(this)" title="{% trans "Click to sort" %}">{% trans "Section" %}</th>
+                                <th style="cursor:pointer; user-select:none;" onclick="sortGenreRefTable(this)" title="{% trans "Click to sort" %}">{% trans "Codes" %}</th>
+                                <th style="cursor:pointer; user-select:none;" onclick="sortGenreRefTable(this)" title="{% trans "Click to sort" %}">{% trans "Genre" %}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,12 +149,12 @@
                     <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
                         {% trans "Assign a genre directly to an individual code — useful for mixed sections (e.g. \"Unknown genre\") where different codes really belong to different genres." %}
                     </p>
-                    <table class="unstriped" style="font-size:0.8rem; margin:0;">
+                    <table id="genre-ref-code-table" class="unstriped" style="font-size:0.8rem; margin:0;">
                         <thead>
                             <tr>
-                                <th>{% trans "Code" %}</th>
-                                <th>{% trans "Section" %}</th>
-                                <th>{% trans "Genre" %}</th>
+                                <th style="cursor:pointer; user-select:none;" onclick="sortGenreRefTable(this)" title="{% trans "Click to sort" %}">{% trans "Code" %}</th>
+                                <th style="cursor:pointer; user-select:none;" onclick="sortGenreRefTable(this)" title="{% trans "Click to sort" %}">{% trans "Section" %}</th>
+                                <th style="cursor:pointer; user-select:none;" onclick="sortGenreRefTable(this)" title="{% trans "Click to sort" %}">{% trans "Genre" %}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -239,7 +239,21 @@ function _genreCsrf() {
     return el ? el.value : '';
 }
 
+function _genreSaveScrollPositions() {
+    // Любое действие на этой странице перезагружает её целиком
+    // (location.reload() ниже) — без этого прокрутка списка (напр. 245
+    // строк "по кодам") каждый раз откатывалась на начало после
+    // назначения жанра ОДНОМУ коду, что мучительно при массовом
+    // редактировании. Per-viewer удобство — sessionStorage.
+    try {
+        sessionStorage.setItem('fb2parser:pageScrollY', String(window.scrollY));
+        var refScroll = document.getElementById('genre-ref-scroll');
+        if (refScroll) sessionStorage.setItem('fb2parser:genreRefScrollTop', String(refScroll.scrollTop));
+    } catch (e) {}
+}
+
 function _genrePost(url, data) {
+    _genreSaveScrollPositions();
     var fd = new FormData();
     for (var k in data) fd.append(k, data[k]);
     fetch(url, {method: 'POST', headers: {'X-CSRFToken': _genreCsrf()}, body: fd})
@@ -387,6 +401,89 @@ function toggleGenreRefMode() {
     var saved = null;
     try { saved = sessionStorage.getItem('fb2parser:genreRefMode'); } catch (e) {}
     if (saved === 'code') _genreRefSetMode('code');
+})();
+
+// Клик на заголовок столбца — сортировка таблицы (обе таблицы блока
+// "FB2 Genre Reference") по этому столбцу, повторный клик — в обратную
+// сторону. Значение из <select> (столбец "Genre") берётся по выбранному
+// option, а не по value — сравнивать нужно то, что видит пользователь.
+function _grCellSortValue(cell) {
+    var select = cell.querySelector('select');
+    if (select) {
+        return select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : '';
+    }
+    return cell.textContent.trim();
+}
+
+function _grApplySort(table, colIndex, dir) {
+    var headerRow = table.querySelector('thead tr');
+    var tbody = table.querySelector('tbody');
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+
+    Array.prototype.forEach.call(headerRow.children, function (h) {
+        h.dataset.sortDir = '';
+        var arrow = h.querySelector('.gr-sort-arrow');
+        if (arrow) arrow.remove();
+    });
+    var th = headerRow.children[colIndex];
+    if (!th) return;
+    th.dataset.sortDir = dir;
+    var arrow = document.createElement('span');
+    arrow.className = 'gr-sort-arrow';
+    arrow.textContent = dir === 'asc' ? ' ▲' : ' ▼';
+    th.appendChild(arrow);
+
+    var values = rows.map(function (r) { return _grCellSortValue(r.children[colIndex]); });
+    var allNumeric = values.length > 0 && values.every(function (v) { return v !== '' && !isNaN(v); });
+
+    rows.sort(function (a, b) {
+        var va = _grCellSortValue(a.children[colIndex]);
+        var vb = _grCellSortValue(b.children[colIndex]);
+        var cmp = allNumeric ? (parseFloat(va) - parseFloat(vb)) : va.localeCompare(vb, 'ru');
+        return dir === 'asc' ? cmp : -cmp;
+    });
+    rows.forEach(function (r) { tbody.appendChild(r); });
+
+    // Переживает location.reload() (баг: переназначение жанра коду сбрасывало
+    // сортировку на дефолтную — страница целиком перезагружается после
+    // каждого select'а). Per-viewer удобство — sessionStorage, не общее
+    // состояние; ключ по id таблицы — у "по разделам" и "по кодам" сортировка
+    // независимая.
+    if (table.id) {
+        try {
+            sessionStorage.setItem('fb2parser:genreRefSort:' + table.id, JSON.stringify({col: colIndex, dir: dir}));
+        } catch (e) {}
+    }
+}
+
+function sortGenreRefTable(th) {
+    var headerRow = th.parentElement;
+    var table = th.closest('table');
+    var colIndex = Array.prototype.indexOf.call(headerRow.children, th);
+    var dir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+    _grApplySort(table, colIndex, dir);
+}
+
+['genre-ref-section-table', 'genre-ref-code-table'].forEach(function (tableId) {
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    var saved = null;
+    try { saved = sessionStorage.getItem('fb2parser:genreRefSort:' + tableId); } catch (e) {}
+    if (!saved) return;
+    try {
+        var state = JSON.parse(saved);
+        _grApplySort(table, state.col, state.dir);
+    } catch (e) {}
+});
+
+(function () {
+    try {
+        var pageY = sessionStorage.getItem('fb2parser:pageScrollY');
+        if (pageY !== null) window.scrollTo(0, parseInt(pageY, 10));
+        var refScroll = document.getElementById('genre-ref-scroll');
+        var refTop = sessionStorage.getItem('fb2parser:genreRefScrollTop');
+        if (refScroll && refTop !== null) refScroll.scrollTop = parseInt(refTop, 10);
+    } catch (e) {}
 })();
 
 function genreExcludedAdd() {
