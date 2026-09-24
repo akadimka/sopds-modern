@@ -1109,6 +1109,9 @@ msgstr "Сопоставьте каждый раздел одному из ва�
 msgid "Assign a genre directly to an individual code — useful for mixed sections (e.g. \"Unknown genre\") where different codes really belong to different genres."
 msgstr "Назначьте жанр напрямую отдельному коду — полезно для смешанных разделов (напр. «Unknown genre»), где разные коды на самом деле относятся к разным жанрам."
 
+msgid "Click to sort"
+msgstr "Клик для сортировки"
+
 msgid "Code"
 msgstr "Код"
 
