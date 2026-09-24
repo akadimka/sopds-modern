@@ -5,6 +5,7 @@ Manages genre hierarchy, associations, and genres.xml file.
 
 / Управление иерархией жанров, ассоциациями, genres.xml.
 """
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -56,11 +57,45 @@ class GenresManager:
     / Управляет иерархией жанров и ассоциациями.
     """
     
-    def __init__(self, xml_path):
-        """Initialize genres manager / Инициализация менеджера жанров."""
+    def __init__(self, xml_path, reference_path=None):
+        """Initialize genres manager / Инициализация менеджера жанров.
+
+        `reference_path` — официальный справочник FB2-кодов (Django-
+        фикстура `opds_catalog/fixtures/mygenres.json`, код → секция/
+        подсекция таксономии) — статичен, не хранится в genres.xml,
+        поэтому грузится один раз здесь, а не в `load()`. По умолчанию
+        вычисляется относительно расположения этого файла (fb2parser
+        полностью вендорен в этом репозитории, путь до соседнего
+        `opds_catalog` стабилен). Явный параметр — для тестов (свой,
+        маленький справочник) или отсутствия файла (пустой `{}` —
+        резолвер просто не получает эту ступень, не падает).
+        """
         self.xml_path = Path(xml_path)
         self.root_nodes = []
+        self.section_map = {}
+        self.excluded_codes = set()
+        self.reference_path = Path(reference_path) if reference_path else self._default_reference_path()
+        self._reference = self._load_reference(self.reference_path)
         self.load()
+
+    @staticmethod
+    def _default_reference_path():
+        return Path(__file__).resolve().parent.parent / 'opds_catalog' / 'fixtures' / 'mygenres.json'
+
+    @staticmethod
+    def _load_reference(path):
+        """код(lower) -> (section, subsection) из Django-фикстуры справочника."""
+        try:
+            data = json.loads(Path(path).read_text(encoding='utf-8'))
+        except Exception:
+            return {}
+        reference = {}
+        for item in data:
+            fields = item.get('fields', {}) if isinstance(item, dict) else {}
+            code = (fields.get('genre') or '').strip().lower()
+            if code:
+                reference[code] = (fields.get('section') or '', fields.get('subsection') or '')
+        return reference
 
     def set_xml_path(self, xml_path):
         """Set XML file path / Установить путь к файлу XML."""
@@ -70,10 +105,24 @@ class GenresManager:
     def load(self):
         """Load genres from XML file / Загрузить жанры из файла XML."""
         self.root_nodes.clear()
+        self.section_map = {}
+        self.excluded_codes = set()
         if not self.xml_path.exists():
             return
         tree = ET.parse(self.xml_path)
         root = tree.getroot()
+        section_map_elem = root.find('section_map')
+        if section_map_elem is not None:
+            for m in section_map_elem.findall('map'):
+                section = m.attrib.get('section')
+                genre = m.attrib.get('genre')
+                if section and genre:
+                    self.section_map[section] = genre
+        excluded_elem = root.find('excluded_codes')
+        if excluded_elem is not None:
+            self.excluded_codes = set(
+                c.text.strip().lower() for c in excluded_elem.findall('code') if c.text and c.text.strip()
+            )
         def parse_node(elem, parent=None):
             node = GenreNode(elem.attrib['name'], parent)
             assigned = elem.find('assigned')
@@ -106,6 +155,15 @@ class GenresManager:
                 elem.append(node_to_elem(child))
             return elem
         root = ET.Element('genres')
+        if self.section_map:
+            section_map_elem = ET.SubElement(root, 'section_map')
+            for section in sorted(self.section_map):
+                ET.SubElement(section_map_elem, 'map', {'section': section, 'genre': self.section_map[section]})
+        if self.excluded_codes:
+            excluded_elem = ET.SubElement(root, 'excluded_codes')
+            for code in sorted(self.excluded_codes):
+                c = ET.SubElement(excluded_elem, 'code')
+                c.text = code
         for node in self.root_nodes:
             root.append(node_to_elem(node))
         tree = ET.ElementTree(root)
@@ -202,22 +260,28 @@ class GenresManager:
     def resolve_code(self, code, priority_order=None):
         """Разрешить ОДИН сырой код жанра (`<genre>` из FB2) в корневой жанр.
 
-        Баг №82 (docs/quality-roadmap.md): двухуровневое правило —
+        Баг №82 (docs/quality-roadmap.md): трёхуровневое правило —
         1) точная ассоциация (`assigned`) побеждает всегда, если есть;
-        2) иначе — грубое совпадение по семейству кода (часть до первого
+        2) иначе — код есть в официальном справочнике FB2-таксономии
+           (`opds_catalog/fixtures/mygenres.json`) и его секция
+           сопоставлена жанру через `section_map` (баг №113: объективный
+           источник вместо слепо накопленных вручную ассоциаций);
+        3) иначе — грубое совпадение по семейству кода (часть до первого
            `_`, например "sf" для "sf_cyberpunk") с `patterns` узла.
-        При конфликте между несколькими узлами (редкий случай — код
-        ассоциирован/подпадает под правило сразу нескольких корневых
-        жанров) побеждает узел, который раньше встречается в
-        `priority_order`.
+        При конфликте между несколькими узлами на ступени 1/3 (редкий
+        случай — код ассоциирован/подпадает под правило сразу нескольких
+        корневых жанров) побеждает узел, который раньше встречается в
+        `priority_order`; ступень 2 сама по себе однозначна (одна секция
+        мапится максимум на один жанр), приоритет тут не участвует.
 
         Returns:
             Tuple[Optional[str], Optional[bool]]: (имя корневого жанра, был
-            ли это ТОЧНОЙ ассоциацией — баг №84). `(None, None)`, если код
-            не разрешился вообще. Различие важно для UI: точная ассоциация
-            означает "пользователь уже подтверждал именно этот код раньше" —
-            это НЕ то же самое, что грубое совпадение по семейству кода
-            (предположение, которое ещё стоит проверить).
+            ли результат НАДЁЖНЫМ — точная ассоциация или справочник,
+            баг №84/№113) — в обоих случаях `True`, поскольку это не
+            гадание. `(None, None)`, если код не разрешился вообще.
+            Различие с `False` (ступень 3) важно для UI: там результат —
+            лишь предположение по семейству кода, которое ещё стоит
+            проверить.
         """
         code_l = (code or '').strip().lower()
         if not code_l:
@@ -226,11 +290,99 @@ class GenresManager:
         for node in nodes:
             if code_l in node.assigned:
                 return node.name, True
+        section, _ = self._reference.get(code_l, (None, None))
+        if section:
+            mapped_genre = self.section_map.get(section)
+            if mapped_genre and self.find_node(mapped_genre):
+                return mapped_genre, True
         family = code_l.split('_', 1)[0]
         for node in nodes:
             if family in node.patterns:
                 return node.name, False
         return None, None
+
+    def is_discriminating_code(self, code):
+        """Стоит ли код доверять как жанровый сигнал вообще (баг №113).
+
+        Используется вызывающими перед тем, как ЗАПОМИНАТЬ код как новую
+        точную ассоциацию (`genre_scan_assign()`) — не самим `resolve_code()`.
+        `False` для кода из `excluded_codes` (заведомо не жанр, а формат
+        публикации — "compilation", "collection" и т.п., которых часто и
+        в справочнике-то нет) и для кода, чья секция в справочнике
+        известна, но НЕ сопоставлена ни одному жанру через `section_map`
+        (например "Прочее"/"Unknown genre" — пока не размечено).
+        Неизвестный справочнику код по умолчанию `True` (не в чём
+        разубеждать — раньше именно так и работало).
+        """
+        code_l = (code or '').strip().lower()
+        if not code_l:
+            return False
+        if code_l in self.excluded_codes:
+            return False
+        section, _ = self._reference.get(code_l, (None, None))
+        if section:
+            return bool(self.section_map.get(section))
+        return True
+
+    def list_sections(self):
+        """Все секции официального справочника с числом кодов и текущим
+        сопоставленным жанром — для UI-таблицы `section_map`."""
+        counts = {}
+        for _, (section, _sub) in self._reference.items():
+            if section:
+                counts[section] = counts.get(section, 0) + 1
+        return [
+            {"section": section, "count": count, "genre": self.section_map.get(section)}
+            for section, count in sorted(counts.items())
+        ]
+
+    def get_section_map(self):
+        return dict(self.section_map)
+
+    def set_section_mapping(self, section, genre_name):
+        """Сопоставить (или убрать сопоставление, если `genre_name` пусто)
+        официальную секцию справочника с жанром пользователя."""
+        section = (section or '').strip()
+        if not section:
+            return
+        self.load()
+        genre_name = (genre_name or '').strip()
+        if genre_name:
+            self.section_map[section] = genre_name
+        else:
+            self.section_map.pop(section, None)
+        self.save()
+
+    def get_excluded_codes(self):
+        return set(self.excluded_codes)
+
+    def add_excluded_code(self, code):
+        code = (code or '').strip().lower()
+        if not code:
+            return
+        self.load()
+        if code not in self.excluded_codes:
+            self.excluded_codes.add(code)
+            self.save()
+
+    def remove_excluded_code(self, code):
+        code = (code or '').strip().lower()
+        self.load()
+        if code in self.excluded_codes:
+            self.excluded_codes.discard(code)
+            self.save()
+
+    def clear_all_assigned(self):
+        """Обнулить точные ассоциации (`assigned`) у ВСЕХ узлов дерева —
+        баг №113 (полный сброс накопленного слепым обучением шума).
+        `patterns`/`section_map`/`excluded_codes` не трогает."""
+        self.load()
+        def _walk(nodes):
+            for n in nodes:
+                n.assigned = set()
+                _walk(n.children)
+        _walk(self.root_nodes)
+        self.save()
 
     def resolve_combo(self, combo, priority_order=None):
         """Разрешить КОМБИНАЦИЮ жанров (строку через запятую, как её
@@ -318,6 +470,12 @@ class GenresManager:
         if new_name != node.name and self.find_node(new_name):
             return False
         node.name = new_name
+        # section_map хранит ИМЯ жанра как строку (баг №113) — без этого
+        # переименование узла молча "отвязало" бы от него уже настроенные
+        # сопоставления секций справочника.
+        for section, genre in list(self.section_map.items()):
+            if genre == old_name:
+                self.section_map[section] = new_name
         self.save()
         return True
 
@@ -326,6 +484,12 @@ class GenresManager:
         node = self.find_node(name)
         if not node:
             return False
+        # Убираем сопоставления section_map на удаляемый узел — иначе они
+        # тихо "протухают" (resolve_code() и так защищён find_node()-
+        # проверкой, но лучше не копить мёртвые записи).
+        for section, genre in list(self.section_map.items()):
+            if genre == name:
+                del self.section_map[section]
         self._siblings_of(node).remove(node)
         self.save()
         return True

@@ -1080,3 +1080,49 @@ msgstr "Автоматический перезапуск недоступен �
 # --- broken_files_status.html ---
 msgid "⏳ Scanning for broken files..."
 msgstr "⏳ Поиск битых файлов..."
+
+# --- genres.html: справочник FB2-таксономии, интерактивные ассоциации (баг №113) ---
+msgid "Reset all exact associations"
+msgstr "Сбросить все точные ассоциации"
+
+msgid "FB2 Genre Reference"
+msgstr "Справочник FB2-жанров"
+
+msgid "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json) — map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations."
+msgstr "Официальная таксономия FB2-кодов (opds_catalog/fixtures/mygenres.json) — сопоставьте каждый раздел одному из ваших жанров, чтобы сырые коды разрешались объективно, а не только через вручную накопленные ассоциации."
+
+msgid "Section"
+msgstr "Раздел"
+
+msgid "Codes"
+msgstr "Кодов"
+
+msgid "— not mapped —"
+msgstr "— не назначено —"
+
+msgid "Excluded Codes (never a genre signal)"
+msgstr "Исключённые коды (никогда не жанр)"
+
+msgid "Codes describing publication format, not genre (e.g. \"compilation\", \"collection\") — never learned as an exact association, no matter what genre is applied to a combination containing them."
+msgstr "Коды, описывающие формат публикации, а не жанр (напр. «compilation», «collection») — никогда не запоминаются как точная ассоциация, какой бы жанр ни применили к содержащей их комбинации."
+
+msgid "e.g. compilation"
+msgstr "напр. compilation"
+
+msgid "No excluded codes"
+msgstr "Нет исключённых кодов"
+
+msgid "Exact associations"
+msgstr "Точные ассоциации"
+
+msgid "code"
+msgstr "код"
+
+msgid "Code-family patterns"
+msgstr "Правила по семейству кода"
+
+msgid "family, e.g. sf"
+msgstr "семейство, напр. sf"
+
+msgid "Reset ALL exact associations for ALL genres? This cannot be undone (section mapping and code-family patterns are kept)."
+msgstr "Сбросить ВСЕ точные ассоциации у ВСЕХ жанров? Отменить нельзя (сопоставление разделов и правила по семейству кода сохранятся)."

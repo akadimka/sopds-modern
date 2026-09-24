@@ -560,11 +560,22 @@ def genre_scan_assign(request):
     # запоминается как точная ассоциация код→корневой жанр — следующий скан
     # (эта же или любая другая папка) разрешит такой код автоматически, без
     # повторного ручного решения.
-    from .fb2parser_bridge import get_genres_manager
+    #
+    # Баг №113: но НЕ безусловно — раньше запоминался КАЖДЫЙ код
+    # применённой комбинации, включая коды совсем других произведений,
+    # случайно оказавшихся в одном сборнике, и коды-форматы публикации
+    # ("compilation" и т.п.), которые вообще не жанровый сигнал. Учим
+    # только когда это РЕАЛЬНАЯ коррекция/заполнение пробела — код
+    # дискриминирующий (`is_discriminating_code`) И его текущее
+    # разрешение расходится с применяемым жанром.
+    from .fb2parser_bridge import get_genres_manager, _config_path
+    from fb2parser_core.settings_manager import SettingsManager
     try:
         gm = get_genres_manager()
+        priority_order = SettingsManager(_config_path()).get_genre_priority_order()
     except Exception:
         gm = None
+        priority_order = []
 
     assignments = genre_assignments.get()
     times = genre_assignment_times.get()
@@ -596,7 +607,10 @@ def genre_scan_assign(request):
             if gm is not None:
                 for code in combo.split(','):
                     code = code.strip()
-                    if code:
+                    if not code or not gm.is_discriminating_code(code):
+                        continue
+                    existing_genre, _ = gm.resolve_code(code, priority_order)
+                    if existing_genre != genre:
                         pending_associations.append((code, genre))
         for abs_path, ok in per_file.items():
             if not ok:
@@ -1166,6 +1180,7 @@ def _genre_tree_to_list(nodes, depth=0, parent_name=None):
             "name": node.name,
             "depth": depth,
             "assigned": sorted(node.assigned),
+            "patterns": list(node.patterns),
             "has_children": bool(node.children),
             "parent": parent_name,
             "is_first": i == 0,
@@ -1180,14 +1195,20 @@ def genres(request):
     from .fb2parser_bridge import get_genres_manager
     error = None
     genre_list = []
+    sections = []
+    excluded_codes = []
     try:
         gm = get_genres_manager()
         genre_list = _genre_tree_to_list(gm.root_nodes)
+        sections = gm.list_sections()
+        excluded_codes = sorted(gm.get_excluded_codes())
     except Exception as e:
         error = str(e)
     return render(request, "fb2parser/genres.html", _ctx(
         "genres", "Менеджер жанров",
         genre_list=genre_list,
+        sections=sections,
+        excluded_codes=excluded_codes,
         error=error,
     ))
 
@@ -1233,6 +1254,101 @@ def genres_move(request):
     gm = get_genres_manager()
     ok = gm.move_node(name, direction)
     return JsonResponse({"ok": ok})
+
+
+# ── Менеджер жанров: интерактивная работа со справочником и ассоциациями
+#    (баг №113) ────────────────────────────────────────────────────────────────
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_associate_add(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    code = request.POST.get("code", "").strip()
+    if not name or not code:
+        return JsonResponse({"ok": False})
+    gm = get_genres_manager()
+    gm.associate(code, name)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_associate_remove(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    code = request.POST.get("code", "").strip()
+    gm = get_genres_manager()
+    gm.remove_association(code, name)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_pattern_add(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    pattern = request.POST.get("pattern", "").strip()
+    if not name or not pattern:
+        return JsonResponse({"ok": False})
+    gm = get_genres_manager()
+    gm.associate_pattern(pattern, name)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_pattern_remove(request):
+    from .fb2parser_bridge import get_genres_manager
+    name = request.POST.get("name", "").strip()
+    pattern = request.POST.get("pattern", "").strip()
+    gm = get_genres_manager()
+    gm.remove_pattern_association(pattern, name)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_section_map_set(request):
+    from .fb2parser_bridge import get_genres_manager
+    section = request.POST.get("section", "").strip()
+    genre_name = request.POST.get("genre", "").strip()
+    if not section:
+        return JsonResponse({"ok": False})
+    gm = get_genres_manager()
+    gm.set_section_mapping(section, genre_name)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_excluded_code_add(request):
+    from .fb2parser_bridge import get_genres_manager
+    code = request.POST.get("code", "").strip()
+    if not code:
+        return JsonResponse({"ok": False})
+    gm = get_genres_manager()
+    gm.add_excluded_code(code)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_excluded_code_remove(request):
+    from .fb2parser_bridge import get_genres_manager
+    code = request.POST.get("code", "").strip()
+    gm = get_genres_manager()
+    gm.remove_excluded_code(code)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_clear_assigned(request):
+    from .fb2parser_bridge import get_genres_manager
+    gm = get_genres_manager()
+    gm.clear_all_assigned()
+    return JsonResponse({"ok": True})
 
 
 # ── Нормализация ──────────────────────────────────────────────────────────────
