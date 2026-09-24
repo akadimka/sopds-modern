@@ -6,6 +6,7 @@ Manages genre hierarchy, associations, and genres.xml file.
 / Управление иерархией жанров, ассоциациями, genres.xml.
 """
 import json
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -53,10 +54,19 @@ class GenreNode:
 class GenresManager:
     """
     Manages genre hierarchy and associations.
-    
+
     / Управляет иерархией жанров и ассоциациями.
     """
-    
+
+    # Баг №114: раздел-маркер для кодов, дописанных в справочник
+    # автоматически при скане (а не вручную куратором справочника) —
+    # виден в Менеджере жанров как обычная секция, ждёт разметки.
+    NEW_CODES_SECTION = 'Новые (не классифицировано)'
+    # Есть хотя бы один кириллический символ — это не код жанра, а
+    # ошибка/мусор метаданных (напр. русский текст в теге <genre> вместо
+    # положенного латинского кода) — такое в справочник не заносим.
+    _CYRILLIC_RE = re.compile(r'[Ѐ-ӿ]')
+
     def __init__(self, xml_path, reference_path=None):
         """Initialize genres manager / Инициализация менеджера жанров.
 
@@ -101,6 +111,66 @@ class GenresManager:
         """Set XML file path / Установить путь к файлу XML."""
         self.xml_path = Path(xml_path)
         self.load()
+
+    def register_discovered_codes(self, codes):
+        """При каждом скане жанров (кнопки "Scan genres"/"Start scan") —
+        ранее неизвестные справочнику коды дописываются прямо в
+        `mygenres.json` под служебным разделом `NEW_CODES_SECTION`, чтобы
+        сразу попасть в Менеджер жанров для разметки, а не потеряться.
+        Баг №114.
+
+        Пропускает: уже известные коды (есть в справочнике — неважно,
+        официальный раздел или ранее сюда же дописанный); коды с
+        кириллицей (это не код жанра, а мусор/ошибка метаданных, а не
+        новый жанровый код — раз он не на латинице, значит вообще не по
+        правилам FB2-таксономии).
+        """
+        new_codes = []
+        seen = set()
+        for code in codes:
+            code = (code or '').strip()
+            if not code:
+                continue
+            code_l = code.lower()
+            if code_l in self._reference or code_l in seen:
+                continue
+            if self._CYRILLIC_RE.search(code):
+                continue
+            seen.add(code_l)
+            new_codes.append(code_l)
+        if not new_codes:
+            return
+        self._append_to_reference_file(new_codes)
+        for code_l in new_codes:
+            self._reference[code_l] = (self.NEW_CODES_SECTION, '')
+
+    def _append_to_reference_file(self, codes):
+        """Дописать новые записи в Django-фикстуру справочника (тот же
+        JSON-формат, что уже читает `_load_reference()`) — атомарно,
+        через временный файл, как и `save()` делает для genres.xml."""
+        try:
+            data = json.loads(Path(self.reference_path).read_text(encoding='utf-8'))
+        except Exception:
+            data = []
+        max_pk = 0
+        for item in data:
+            if isinstance(item, dict):
+                try:
+                    max_pk = max(max_pk, int(item.get('pk', 0)))
+                except (TypeError, ValueError):
+                    pass
+        for code in codes:
+            max_pk += 1
+            data.append({
+                'model': 'opds_catalog.genre',
+                'pk': max_pk,
+                'fields': {'genre': code, 'section': self.NEW_CODES_SECTION, 'subsection': ''},
+            })
+        tmp_path = Path(str(self.reference_path) + '.tmp')
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write('\n')
+        tmp_path.replace(self.reference_path)
 
     def load(self):
         """Load genres from XML file / Загрузить жанры из файла XML."""
