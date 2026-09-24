@@ -137,6 +137,48 @@ class TestListSections:
         assert sections["Фольклор"]["genre"] is None
 
 
+class TestListReferenceCodes:
+    """Гранулярность на уровне отдельного кода (в дополнение к
+    `list_sections()`) — нужна для смешанных разделов вроде "Unknown
+    genre" (реальный случай: 17 разнородных английских тегов, где
+    один жанр на весь раздел был бы неверен для большинства кодов)."""
+
+    def test_reflects_effective_resolution_per_code(self, gm):
+        gm.set_section_mapping("Приключения", "Приключения")
+        by_code = {c["code"]: c for c in gm.list_reference_codes()}
+        assert by_code["adv_indian"]["genre"] == "Приключения"
+        assert by_code["adv_indian"]["section"] == "Приключения"
+        assert by_code["antique_myths"]["genre"] is None
+
+    def test_exact_association_overrides_section_map_in_listing(self, gm):
+        gm.set_section_mapping("Приключения", "Приключения")
+        gm.associate("adv_indian", "Фантастика")
+        by_code = {c["code"]: c for c in gm.list_reference_codes()}
+        assert by_code["adv_indian"]["genre"] == "Фантастика"
+
+
+class TestSetCodeAssociation:
+    def test_assigns_code_to_genre(self, gm):
+        gm.set_code_association("antique_myths", "Фантастика")
+        assert "antique_myths" in gm.find_node("Фантастика").assigned
+
+    def test_moves_code_from_previous_genre(self, gm):
+        gm.set_code_association("antique_myths", "Фантастика")
+        gm.set_code_association("antique_myths", "Приключения")
+        assert "antique_myths" not in gm.find_node("Фантастика").assigned
+        assert "antique_myths" in gm.find_node("Приключения").assigned
+
+    def test_empty_genre_name_just_unassigns(self, gm):
+        gm.set_code_association("antique_myths", "Фантастика")
+        gm.set_code_association("antique_myths", "")
+        assert "antique_myths" not in gm.find_node("Фантастика").assigned
+
+    def test_persisted_across_new_instance(self, gm, tmp_path, reference_path):
+        gm.set_code_association("antique_myths", "Приключения")
+        gm2 = GenresManager(str(tmp_path / "genres.xml"), reference_path=str(reference_path))
+        assert "antique_myths" in gm2.find_node("Приключения").assigned
+
+
 class TestClearAllAssigned:
     def test_wipes_assigned_but_keeps_patterns_and_section_map(self, gm):
         gm.associate("adv_indian", "Фантастика")

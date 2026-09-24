@@ -72,6 +72,7 @@ urlpatterns = [
     path("genres/pattern/add/",      views.genres_pattern_add,      name="genres_pattern_add"),
     path("genres/pattern/remove/",   views.genres_pattern_remove,   name="genres_pattern_remove"),
     path("genres/section-map/set/",  views.genres_section_map_set,  name="genres_section_map_set"),
+    path("genres/code-assign/set/",  views.genres_code_assign_set,  name="genres_code_assign_set"),
     path("genres/excluded/add/",     views.genres_excluded_code_add,    name="genres_excluded_code_add"),
     path("genres/excluded/remove/",  views.genres_excluded_code_remove, name="genres_excluded_code_remove"),
     path("genres/clear-assigned/",   views.genres_clear_assigned,   name="genres_clear_assigned"),

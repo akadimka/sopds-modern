@@ -1197,11 +1197,13 @@ def genres(request):
     genre_list = []
     sections = []
     excluded_codes = []
+    reference_codes = []
     try:
         gm = get_genres_manager()
         genre_list = _genre_tree_to_list(gm.root_nodes)
         sections = gm.list_sections()
         excluded_codes = sorted(gm.get_excluded_codes())
+        reference_codes = gm.list_reference_codes()
     except Exception as e:
         error = str(e)
     return render(request, "fb2parser/genres.html", _ctx(
@@ -1209,6 +1211,7 @@ def genres(request):
         genre_list=genre_list,
         sections=sections,
         excluded_codes=excluded_codes,
+        reference_codes=reference_codes,
         error=error,
     ))
 
@@ -1317,6 +1320,19 @@ def genres_section_map_set(request):
         return JsonResponse({"ok": False})
     gm = get_genres_manager()
     gm.set_section_mapping(section, genre_name)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_code_assign_set(request):
+    from .fb2parser_bridge import get_genres_manager
+    code = request.POST.get("code", "").strip()
+    genre_name = request.POST.get("genre", "").strip()
+    if not code:
+        return JsonResponse({"ok": False})
+    gm = get_genres_manager()
+    gm.set_code_association(code, genre_name)
     return JsonResponse({"ok": True})
 
 

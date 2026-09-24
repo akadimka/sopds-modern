@@ -100,39 +100,82 @@
 <div class="grid-x grid-margin-x" style="margin-top:1rem;">
     <div class="cell medium-6">
         <div class="card">
-            <div class="card-divider"><strong>{% trans "FB2 Genre Reference" %}</strong></div>
+            <div class="card-divider">
+                <strong style="cursor:pointer;" onclick="toggleGenreRefMode()" title="{% trans "Click to switch between by-section and by-code view" %}">
+                    {% trans "FB2 Genre Reference" %}
+                    <span id="genre-ref-mode-label" style="font-weight:normal; font-size:0.78rem; color:var(--text-muted);">({% trans "by section" %})</span>
+                </strong>
+            </div>
             <div class="card-section" style="max-height:40vh; overflow-y:auto;">
                 <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
-                    {% trans "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json) — map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations." %}
-                    {% trans "Hover over the code count to see the actual codes." %}
+                    {% trans "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json)." %}
+                    {% trans "Click the card title to switch between mapping whole sections and mapping individual codes." %}
                 </p>
-                <table class="unstriped" style="font-size:0.8rem; margin:0;">
-                    <thead>
-                        <tr>
-                            <th>{% trans "Section" %}</th>
-                            <th>{% trans "Codes" %}</th>
-                            <th>{% trans "Genre" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for s in sections %}
-                        <tr>
-                            <td>{{ s.section }}</td>
-                            <td style="color:var(--text-muted); cursor:help; border-bottom:1px dotted var(--text-muted); white-space:nowrap;"
-                                title="{{ s.codes_tooltip }}">{{ s.count }}</td>
-                            <td>
-                                <select style="margin:0; font-size:0.78rem;"
-                                        onchange="genreSectionMapSet('{{ s.section|escapejs }}', this.value)">
-                                    <option value="">{% trans "— not mapped —" %}</option>
-                                    {% for g in genre_list %}
-                                    <option value="{{ g.name|escapejs }}" {% if g.name == s.genre %}selected{% endif %}>{{ g.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+                <div id="genre-ref-by-section">
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
+                        {% trans "Map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations. Hover over the code count to see the actual codes." %}
+                    </p>
+                    <table class="unstriped" style="font-size:0.8rem; margin:0;">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Section" %}</th>
+                                <th>{% trans "Codes" %}</th>
+                                <th>{% trans "Genre" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sections %}
+                            <tr>
+                                <td>{{ s.section }}</td>
+                                <td style="color:var(--text-muted); cursor:help; border-bottom:1px dotted var(--text-muted); white-space:nowrap;"
+                                    title="{{ s.codes_tooltip }}">{{ s.count }}</td>
+                                <td>
+                                    <select style="margin:0; font-size:0.78rem;"
+                                            onchange="genreSectionMapSet('{{ s.section|escapejs }}', this.value)">
+                                        <option value="">{% trans "— not mapped —" %}</option>
+                                        {% for g in genre_list %}
+                                        <option value="{{ g.name|escapejs }}" {% if g.name == s.genre %}selected{% endif %}>{{ g.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="genre-ref-by-code" style="display:none;">
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
+                        {% trans "Assign a genre directly to an individual code — useful for mixed sections (e.g. \"Unknown genre\") where different codes really belong to different genres." %}
+                    </p>
+                    <table class="unstriped" style="font-size:0.8rem; margin:0;">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Code" %}</th>
+                                <th>{% trans "Section" %}</th>
+                                <th>{% trans "Genre" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in reference_codes %}
+                            <tr>
+                                <td style="font-family:monospace;" title="{{ c.subsection }}">{{ c.code }}</td>
+                                <td style="color:var(--text-muted);">{{ c.section }}</td>
+                                <td>
+                                    <select style="margin:0; font-size:0.78rem;"
+                                            onchange="genreCodeAssignSet('{{ c.code|escapejs }}', this.value)">
+                                        <option value="">{% trans "— not mapped —" %}</option>
+                                        {% for g in genre_list %}
+                                        <option value="{{ g.name|escapejs }}" {% if g.name == c.genre %}selected{% endif %}>{{ g.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -183,6 +226,9 @@ const GENRES_ASSOCIATE_REMOVE_URL = "{% url 'fb2parser:genres_associate_remove' 
 const GENRES_PATTERN_ADD_URL = "{% url 'fb2parser:genres_pattern_add' %}";
 const GENRES_PATTERN_REMOVE_URL = "{% url 'fb2parser:genres_pattern_remove' %}";
 const GENRES_SECTION_MAP_SET_URL = "{% url 'fb2parser:genres_section_map_set' %}";
+const GENRES_CODE_ASSIGN_SET_URL = "{% url 'fb2parser:genres_code_assign_set' %}";
+const i18n_bySection = "{% trans 'by section' %}";
+const i18n_byCode = "{% trans 'by code' %}";
 const GENRES_EXCLUDED_ADD_URL = "{% url 'fb2parser:genres_excluded_code_add' %}";
 const GENRES_EXCLUDED_REMOVE_URL = "{% url 'fb2parser:genres_excluded_code_remove' %}";
 const GENRES_CLEAR_ASSIGNED_URL = "{% url 'fb2parser:genres_clear_assigned' %}";
@@ -312,6 +358,36 @@ function genrePatternRemove(pattern) {
 function genreSectionMapSet(section, genreName) {
     _genrePost(GENRES_SECTION_MAP_SET_URL, {section: section, genre: genreName});
 }
+
+function genreCodeAssignSet(code, genreName) {
+    _genrePost(GENRES_CODE_ASSIGN_SET_URL, {code: code, genre: genreName});
+}
+
+function _genreRefSetMode(mode) {
+    const bySection = document.getElementById('genre-ref-by-section');
+    const byCode = document.getElementById('genre-ref-by-code');
+    const label = document.getElementById('genre-ref-mode-label');
+    bySection.style.display = mode === 'code' ? 'none' : '';
+    byCode.style.display = mode === 'code' ? '' : 'none';
+    label.textContent = '(' + (mode === 'code' ? i18n_byCode : i18n_bySection) + ')';
+    try { sessionStorage.setItem('fb2parser:genreRefMode', mode); } catch (e) {}
+}
+
+function toggleGenreRefMode() {
+    const byCode = document.getElementById('genre-ref-by-code');
+    const showingCode = byCode.style.display !== 'none';
+    _genreRefSetMode(showingCode ? 'section' : 'code');
+}
+
+(function () {
+    // Режим переживает location.reload() (баг: после каждого изменения в
+    // режиме "по кодам" страница откатывалась на "по разделам" — мешает
+    // массовому редактированию многих кодов подряд). Per-viewer удобство,
+    // не общее состояние — sessionStorage к месту.
+    var saved = null;
+    try { saved = sessionStorage.getItem('fb2parser:genreRefMode'); } catch (e) {}
+    if (saved === 'code') _genreRefSetMode('code');
+})();
 
 function genreExcludedAdd() {
     const inp = document.getElementById('excluded-code-input');

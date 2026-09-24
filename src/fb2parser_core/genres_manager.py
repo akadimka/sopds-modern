@@ -351,6 +351,47 @@ class GenresManager:
             })
         return result
 
+    def list_reference_codes(self):
+        """Все отдельные коды официального справочника с их секцией и
+        ТЕКУЩИМ эффективным жанром (`resolve_code()` — точная ассоциация
+        или section_map, что бы ни сработало) — для UI-таблицы
+        «по кодам» (баг №113, продолжение: раздел-целиком слишком грубая
+        гранулярность для смешанных разделов вроде "Unknown genre")."""
+        result = []
+        for code in sorted(self._reference):
+            section, subsection = self._reference[code]
+            genre, _is_exact = self.resolve_code(code)
+            result.append({
+                "code": code,
+                "section": section,
+                "subsection": subsection,
+                "genre": genre,
+            })
+        return result
+
+    def set_code_association(self, code, genre_name):
+        """Назначить (или снять, если `genre_name` пусто) точную
+        ассоциацию код→жанр — в отличие от `associate()`/
+        `remove_association()`, сама находит и убирает код из ЛЮБОГО
+        узла, где он мог быть назначен раньше (используется UI-таблицей
+        «по кодам», где один select задаёт итоговый жанр целиком, а не
+        отдельно добавляет/убирает)."""
+        code = (code or '').strip()
+        if not code:
+            return
+        self.load()
+        def _walk(nodes):
+            for n in nodes:
+                n.assigned.discard(code)
+                _walk(n.children)
+        _walk(self.root_nodes)
+        genre_name = (genre_name or '').strip()
+        if genre_name:
+            node = self.find_node(genre_name)
+            if node:
+                node.assigned.add(code)
+        self.save()
+
     def get_section_map(self):
         return dict(self.section_map)
 
