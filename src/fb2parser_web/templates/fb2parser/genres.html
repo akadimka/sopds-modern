@@ -134,8 +134,8 @@
                                     <select style="margin:0; font-size:0.78rem;"
                                             onchange="genreSectionMapSet('{{ s.section|escapejs }}', this.value)">
                                         <option value="">{% trans "— not mapped —" %}</option>
-                                        {% for g in genre_list %}
-                                        <option value="{{ g.name|escapejs }}" {% if g.name == s.genre %}selected{% endif %}>{{ g.name }}</option>
+                                        {% for name in genre_names_sorted %}
+                                        <option value="{{ name|escapejs }}" {% if name == s.genre %}selected{% endif %}>{{ name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
@@ -166,8 +166,8 @@
                                     <select style="margin:0; font-size:0.78rem;"
                                             onchange="genreCodeAssignSet('{{ c.code|escapejs }}', this.value)">
                                         <option value="">{% trans "— not mapped —" %}</option>
-                                        {% for g in genre_list %}
-                                        <option value="{{ g.name|escapejs }}" {% if g.name == c.genre %}selected{% endif %}>{{ g.name }}</option>
+                                        {% for name in genre_names_sorted %}
+                                        <option value="{{ name|escapejs }}" {% if name == c.genre %}selected{% endif %}>{{ name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
