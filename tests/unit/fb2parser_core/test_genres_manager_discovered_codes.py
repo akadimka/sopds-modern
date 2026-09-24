@@ -46,6 +46,16 @@ class TestRegisterDiscoveredCodes:
         assert "totally_new_code" in genres
         assert genres["totally_new_code"]["section"] == GenresManager.NEW_CODES_SECTION
 
+    def test_returns_count_of_actually_added_codes(self, gm):
+        # Баг №114, продолжение: показывается в UI статуса скана
+        # ("Codes added to reference:") — должно быть числом РЕАЛЬНО
+        # добавленных кодов, не длиной входного списка.
+        count = gm.register_discovered_codes(["new_one", "sf_action", "Кириллица", "new_two"])
+        assert count == 2
+
+    def test_returns_zero_when_nothing_added(self, gm):
+        assert gm.register_discovered_codes(["sf_action", "Кириллица"]) == 0
+
     def test_new_pk_continues_from_max_existing(self, gm, reference_path):
         gm.register_discovered_codes(["totally_new_code"])
 

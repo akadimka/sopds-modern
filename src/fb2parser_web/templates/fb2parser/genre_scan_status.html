@@ -34,6 +34,7 @@
     <table class="unstriped" style="max-width:400px; font-size:0.9rem;">
         <tr><td>{% trans "Files processed:" %}</td><td><strong>{{ state.processed }}</strong>{% if state.total and state.total != state.processed %} / {{ state.total }}{% endif %}</td></tr>
         <tr><td>{% trans "Unique genre combinations:" %}</td><td>{{ state.results|length }}</td></tr>
+        <tr><td>{% trans "Codes added to reference:" %}</td><td>{{ state.discovered_codes_count|default:0 }}</td></tr>
         <tr><td>{% trans "Errors:" %}</td><td style="color:{% if state.errors %}#c0392b{% else %}inherit{% endif %}">{{ state.errors|length }}</td></tr>
     </table>
 
