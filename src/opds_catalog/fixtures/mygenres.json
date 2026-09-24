@@ -1,1 +1,2207 @@
-[{"model": "opds_catalog.genre", "pk": 1, "fields": {"genre": "economics_ref", "section": "\u0414\u0435\u043b\u043e\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0414\u0435\u043b\u043e\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 2, "fields": {"genre": "popular_business", "section": "\u0414\u0435\u043b\u043e\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u041a\u0430\u0440\u044c\u0435\u0440\u0430, \u043a\u0430\u0434\u0440\u044b"}}, {"model": "opds_catalog.genre", "pk": 3, "fields": {"genre": "org_behavior", "section": "\u0414\u0435\u043b\u043e\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u041c\u0430\u0440\u043a\u0435\u0442\u0438\u043d\u0433, PR"}}, {"model": "opds_catalog.genre", "pk": 4, "fields": {"genre": "banking", "section": "\u0414\u0435\u043b\u043e\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0424\u0438\u043d\u0430\u043d\u0441\u044b"}}, {"model": "opds_catalog.genre", "pk": 5, "fields": {"genre": "economics", "section": "\u0414\u0435\u043b\u043e\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u042d\u043a\u043e\u043d\u043e\u043c\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 6, "fields": {"genre": "det_action", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0411\u043e\u0435\u0432\u0438\u043a"}}, {"model": "opds_catalog.genre", "pk": 7, "fields": {"genre": "detective", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b"}}, {"model": "opds_catalog.genre", "pk": 8, "fields": {"genre": "det_irony", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0418\u0440\u043e\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432, \u0434\u0430\u043c\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u043d\u044b\u0439 \u0440\u043e\u043c\u0430\u043d"}}, {"model": "opds_catalog.genre", "pk": 9, "fields": {"genre": "det_history", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0418\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 10, "fields": {"genre": "det_classic", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 11, "fields": {"genre": "det_crime", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u041a\u0440\u0438\u043c\u0438\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 12, "fields": {"genre": "det_hard", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u041a\u0440\u0443\u0442\u043e\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 13, "fields": {"genre": "det_political", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u041f\u043e\u043b\u0438\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 14, "fields": {"genre": "det_police", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u041f\u043e\u043b\u0438\u0446\u0435\u0439\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 15, "fields": {"genre": "det_maniac", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u041f\u0440\u043e \u043c\u0430\u043d\u044c\u044f\u043a\u043e\u0432"}}, {"model": "opds_catalog.genre", "pk": 16, "fields": {"genre": "det_su", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0421\u043e\u0432\u0435\u0442\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 17, "fields": {"genre": "thriller", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0422\u0440\u0438\u043b\u043b\u0435\u0440"}}, {"model": "opds_catalog.genre", "pk": 18, "fields": {"genre": "det_espionage", "section": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u044b \u0438 \u0422\u0440\u0438\u043b\u043b\u0435\u0440\u044b", "subsection": "\u0428\u043f\u0438\u043e\u043d\u0441\u043a\u0438\u0439 \u0434\u0435\u0442\u0435\u043a\u0442\u0438\u0432"}}, {"model": "opds_catalog.genre", "pk": 19, "fields": {"genre": "nonf_biography", "section": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0411\u0438\u043e\u0433\u0440\u0430\u0444\u0438\u0438 \u0438 \u041c\u0435\u043c\u0443\u0430\u0440\u044b"}}, {"model": "opds_catalog.genre", "pk": 20, "fields": {"genre": "nonf_military", "section": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0412\u043e\u0435\u043d\u043d\u0430\u044f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u0438\u0441\u0442\u0438\u043a\u0430 \u0438 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 21, "fields": {"genre": "military_special", "section": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0412\u043e\u0435\u043d\u043d\u043e\u0435 \u0434\u0435\u043b\u043e"}}, {"model": "opds_catalog.genre", "pk": 22, "fields": {"genre": "travel_notes", "section": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0413\u0435\u043e\u0433\u0440\u0430\u0444\u0438\u044f, \u043f\u0443\u0442\u0435\u0432\u044b\u0435 \u0437\u0430\u043c\u0435\u0442\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 23, "fields": {"genre": "nonfiction", "section": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 24, "fields": {"genre": "nonf_publicism", "section": "\u0414\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u041f\u0443\u0431\u043b\u0438\u0446\u0438\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 25, "fields": {"genre": "auto_regulations", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0410\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u0438 \u0438 \u041f\u0414\u0414"}}, {"model": "opds_catalog.genre", "pk": 26, "fields": {"genre": "home_sport", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0411\u043e\u0435\u0432\u044b\u0435 \u0438\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u0430, \u0441\u043f\u043e\u0440\u0442"}}, {"model": "opds_catalog.genre", "pk": 27, "fields": {"genre": "home_pets", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0414\u043e\u043c\u0430\u0448\u043d\u0438\u0435 \u0436\u0438\u0432\u043e\u0442\u043d\u044b\u0435"}}, {"model": "opds_catalog.genre", "pk": 28, "fields": {"genre": "home", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0414\u043e\u043c\u043e\u0432\u043e\u0434\u0441\u0442\u0432\u043e"}}, {"model": "opds_catalog.genre", "pk": 29, "fields": {"genre": "home_health", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0417\u0434\u043e\u0440\u043e\u0432\u044c\u0435"}}, {"model": "opds_catalog.genre", "pk": 30, "fields": {"genre": "home_collecting", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u041a\u043e\u043b\u043b\u0435\u043a\u0446\u0438\u043e\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 31, "fields": {"genre": "home_cooking", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u041a\u0443\u043b\u0438\u043d\u0430\u0440\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 32, "fields": {"genre": "sci_pedagogy", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u041f\u0435\u0434\u0430\u0433\u043e\u0433\u0438\u043a\u0430, \u0432\u043e\u0441\u043f\u0438\u0442\u0430\u043d\u0438\u0435 \u0434\u0435\u0442\u0435\u0439, \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0440\u043e\u0434\u0438\u0442\u0435\u043b\u0435\u0439"}}, {"model": "opds_catalog.genre", "pk": 33, "fields": {"genre": "home_entertain", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0420\u0430\u0437\u0432\u043b\u0435\u0447\u0435\u043d\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 34, "fields": {"genre": "home_garden", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0421\u0430\u0434 \u0438 \u043e\u0433\u043e\u0440\u043e\u0434"}}, {"model": "opds_catalog.genre", "pk": 35, "fields": {"genre": "home_diy", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0421\u0434\u0435\u043b\u0430\u0439 \u0441\u0430\u043c"}}, {"model": "opds_catalog.genre", "pk": 36, "fields": {"genre": "family", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0421\u0435\u043c\u0435\u0439\u043d\u044b\u0435 \u043e\u0442\u043d\u043e\u0448\u0435\u043d\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 37, "fields": {"genre": "home_sex", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0421\u0435\u043c\u0435\u0439\u043d\u044b\u0435 \u043e\u0442\u043d\u043e\u0448\u0435\u043d\u0438\u044f, \u0441\u0435\u043a\u0441"}}, {"model": "opds_catalog.genre", "pk": 38, "fields": {"genre": "home_crafts", "section": "\u0414\u043e\u043c \u0438 \u0441\u0435\u043c\u044c\u044f", "subsection": "\u0425\u043e\u0431\u0431\u0438 \u0438 \u0440\u0435\u043c\u0435\u0441\u043b\u0430"}}, {"model": "opds_catalog.genre", "pk": 39, "fields": {"genre": "drama_antique", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u0410\u043d\u0442\u0438\u0447\u043d\u0430\u044f \u0434\u0440\u0430\u043c\u0430"}}, {"model": "opds_catalog.genre", "pk": 40, "fields": {"genre": "drama", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u0414\u0440\u0430\u043c\u0430"}}, {"model": "opds_catalog.genre", "pk": 41, "fields": {"genre": "dramaturgy", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 42, "fields": {"genre": "comedy", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u041a\u043e\u043c\u0435\u0434\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 43, "fields": {"genre": "vaudeville", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u041c\u0438\u0441\u0442\u0435\u0440\u0438\u044f, \u0431\u0443\u0444\u0444\u043e\u043d\u0430\u0434\u0430, \u0432\u043e\u0434\u0435\u0432\u0438\u043b\u044c"}}, {"model": "opds_catalog.genre", "pk": 44, "fields": {"genre": "screenplays", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u0421\u0446\u0435\u043d\u0430\u0440\u0438\u0439"}}, {"model": "opds_catalog.genre", "pk": 45, "fields": {"genre": "tragedy", "section": "\u0414\u0440\u0430\u043c\u0430\u0442\u0443\u0440\u0433\u0438\u044f", "subsection": "\u0422\u0440\u0430\u0433\u0435\u0434\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 46, "fields": {"genre": "painting", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u0416\u0438\u0432\u043e\u043f\u0438\u0441\u044c, \u0430\u043b\u044c\u0431\u043e\u043c\u044b, \u0438\u043b\u043b\u044e\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0438"}}, {"model": "opds_catalog.genre", "pk": 47, "fields": {"genre": "design", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e \u0438 \u0414\u0438\u0437\u0430\u0439\u043d"}}, {"model": "opds_catalog.genre", "pk": 48, "fields": {"genre": "art_criticism", "section": "\u0418\u0441\u043a\u0443\u0441\u0442\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 49, "fields": {"genre": "cine", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u041a\u0438\u043d\u043e"}}, {"model": "opds_catalog.genre", "pk": 50, "fields": {"genre": "nonf_criticism", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u041a\u0440\u0438\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 51, "fields": {"genre": "sci_culture", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u041a\u0443\u043b\u044c\u0442\u0443\u0440\u043e\u043b\u043e\u0433\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 52, "fields": {"genre": "art_world_culture", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u0445\u0443\u0434\u043e\u0436\u0435\u0441\u0442\u0432\u0435\u043d\u043d\u0430\u044f \u043a\u0443\u043b\u044c\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 53, "fields": {"genre": "music", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u041c\u0443\u0437\u044b\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 54, "fields": {"genre": "notes", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u041f\u0430\u0440\u0442\u0438\u0442\u0443\u0440\u044b"}}, {"model": "opds_catalog.genre", "pk": 55, "fields": {"genre": "architecture_book", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u0421\u043a\u0443\u043b\u044c\u043f\u0442\u0443\u0440\u0430 \u0438 \u0430\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 56, "fields": {"genre": "theatre", "section": "\u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e, \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435, \u0414\u0438\u0437\u0430\u0439\u043d", "subsection": "\u0422\u0435\u0430\u0442\u0440"}}, {"model": "opds_catalog.genre", "pk": 57, "fields": {"genre": "computers", "section": "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u044b \u0438 \u0418\u043d\u0442\u0435\u0440\u043d\u0435\u0442", "subsection": "\u0417\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u043d\u0430\u044f, \u043e\u043a\u043e\u043b\u043e\u043a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 58, "fields": {"genre": "comp_hard", "section": "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u044b \u0438 \u0418\u043d\u0442\u0435\u0440\u043d\u0435\u0442", "subsection": "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u043d\u043e\u0435 '\u0436\u0435\u043b\u0435\u0437\u043e'"}}, {"model": "opds_catalog.genre", "pk": 59, "fields": {"genre": "comp_www", "section": "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u044b \u0438 \u0418\u043d\u0442\u0435\u0440\u043d\u0435\u0442", "subsection": "\u041e\u0421 \u0438 \u0421\u0435\u0442\u0438, \u0438\u043d\u0442\u0435\u0440\u043d\u0435\u0442"}}, {"model": "opds_catalog.genre", "pk": 60, "fields": {"genre": "comp_db", "section": "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u044b \u0438 \u0418\u043d\u0442\u0435\u0440\u043d\u0435\u0442", "subsection": "\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435, \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u044b, \u0431\u0430\u0437\u044b \u0434\u0430\u043d\u043d\u044b\u0445"}}, {"model": "opds_catalog.genre", "pk": 61, "fields": {"genre": "tbg_computers", "section": "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u044b \u0438 \u0418\u043d\u0442\u0435\u0440\u043d\u0435\u0442", "subsection": "\u0423\u0447\u0435\u0431\u043d\u044b\u0435 \u043f\u043e\u0441\u043e\u0431\u0438\u044f, \u0441\u0430\u043c\u043e\u0443\u0447\u0438\u0442\u0435\u043b\u0438"}}, {"model": "opds_catalog.genre", "pk": 62, "fields": {"genre": "children", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0414\u0435\u0442\u0441\u043a\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 63, "fields": {"genre": "child_education", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0414\u0435\u0442\u0441\u043a\u0430\u044f \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 64, "fields": {"genre": "child_det", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0414\u0435\u0442\u0441\u043a\u0430\u044f \u043e\u0441\u0442\u0440\u043e\u0441\u044e\u0436\u0435\u0442\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 65, "fields": {"genre": "foreign_children", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0417\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439"}}, {"model": "opds_catalog.genre", "pk": 66, "fields": {"genre": "prose_game", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0418\u0433\u0440\u044b, \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439"}}, {"model": "opds_catalog.genre", "pk": 67, "fields": {"genre": "child_classical", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0434\u0435\u0442\u0441\u043a\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 68, "fields": {"genre": "child_prose", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u041f\u0440\u043e\u0437\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439"}}, {"model": "opds_catalog.genre", "pk": 69, "fields": {"genre": "child_tale_rus", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0420\u0443\u0441\u0441\u043a\u0438\u0435 \u0441\u043a\u0430\u0437\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 70, "fields": {"genre": "child_tale", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0421\u043a\u0430\u0437\u043a\u0438 \u043d\u0430\u0440\u043e\u0434\u043e\u0432 \u043c\u0438\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 71, "fields": {"genre": "child_verse", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0421\u0442\u0438\u0445\u0438 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439"}}, {"model": "opds_catalog.genre", "pk": 72, "fields": {"genre": "child_sf", "section": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439", "subsection": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439"}}, {"model": "opds_catalog.genre", "pk": 73, "fields": {"genre": "love_history", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u0418\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u043b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b"}}, {"model": "opds_catalog.genre", "pk": 74, "fields": {"genre": "love_short", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u041a\u043e\u0440\u043e\u0442\u043a\u0438\u0435 \u043b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b"}}, {"model": "opds_catalog.genre", "pk": 75, "fields": {"genre": "love_sf", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u041b\u044e\u0431\u043e\u0432\u043d\u043e\u0435 \u0444\u044d\u043d\u0442\u0435\u0437\u0438, \u043b\u044e\u0431\u043e\u0432\u043d\u043e-\u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0440\u043e\u043c\u0430\u043d\u044b"}}, {"model": "opds_catalog.genre", "pk": 76, "fields": {"genre": "love", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b"}}, {"model": "opds_catalog.genre", "pk": 77, "fields": {"genre": "love_detective", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u041e\u0441\u0442\u0440\u043e\u0441\u044e\u0436\u0435\u0442\u043d\u044b\u0435 \u043b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b"}}, {"model": "opds_catalog.genre", "pk": 78, "fields": {"genre": "love_hard", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u041f\u043e\u0440\u043d\u043e"}}, {"model": "opds_catalog.genre", "pk": 79, "fields": {"genre": "love_contemporary", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0435 \u043b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b"}}, {"model": "opds_catalog.genre", "pk": 80, "fields": {"genre": "love_erotica", "section": "\u041b\u044e\u0431\u043e\u0432\u043d\u044b\u0435 \u0440\u043e\u043c\u0430\u043d\u044b", "subsection": "\u042d\u0440\u043e\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 81, "fields": {"genre": "sci_medicine_alternative", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0410\u043b\u044c\u0442\u0435\u0440\u043d\u0430\u0442\u0438\u0432\u043d\u0430\u044f \u043c\u0435\u0434\u0438\u0446\u0438\u043d\u0430"}}, {"model": "opds_catalog.genre", "pk": 82, "fields": {"genre": "sci_theories", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0410\u043b\u044c\u0442\u0435\u0440\u043d\u0430\u0442\u0438\u0432\u043d\u044b\u0435 \u043d\u0430\u0443\u043a\u0438 \u0438 \u043d\u0430\u0443\u0447\u043d\u044b\u0435 \u0442\u0435\u043e\u0440\u0438\u0438"}}, {"model": "opds_catalog.genre", "pk": 83, "fields": {"genre": "sci_cosmos", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0410\u0441\u0442\u0440\u043e\u043d\u043e\u043c\u0438\u044f \u0438 \u041a\u043e\u0441\u043c\u043e\u0441"}}, {"model": "opds_catalog.genre", "pk": 84, "fields": {"genre": "sci_biology", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0411\u0438\u043e\u043b\u043e\u0433\u0438\u044f, \u0431\u0438\u043e\u0444\u0438\u0437\u0438\u043a\u0430, \u0431\u0438\u043e\u0445\u0438\u043c\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 85, "fields": {"genre": "sci_botany", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0411\u043e\u0442\u0430\u043d\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 86, "fields": {"genre": "sci_veterinary", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0412\u0435\u0442\u0435\u0440\u0438\u043d\u0430\u0440\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 87, "fields": {"genre": "military_history", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0412\u043e\u0435\u043d\u043d\u0430\u044f \u0438\u0441\u0442\u043e\u0440\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 88, "fields": {"genre": "sci_oriental", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0412\u043e\u0441\u0442\u043e\u043a\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 89, "fields": {"genre": "sci_geo", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0413\u0435\u043e\u043b\u043e\u0433\u0438\u044f \u0438 \u0433\u0435\u043e\u0433\u0440\u0430\u0444\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 90, "fields": {"genre": "sci_state", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0413\u043e\u0441\u0443\u0434\u0430\u0440\u0441\u0442\u0432\u043e \u0438 \u043f\u0440\u0430\u0432\u043e"}}, {"model": "opds_catalog.genre", "pk": 91, "fields": {"genre": "sci_popular", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0417\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430, \u0437\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043f\u0440\u0438\u043a\u043b\u0430\u0434\u043d\u0430\u044f, \u043d\u0430\u0443\u0447\u043d\u043e-\u043f\u043e\u043f\u0443\u043b\u044f\u0440\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 92, "fields": {"genre": "sci_zoo", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0417\u043e\u043e\u043b\u043e\u0433\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 93, "fields": {"genre": "sci_history", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0418\u0441\u0442\u043e\u0440\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 94, "fields": {"genre": "sci_philology", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 95, "fields": {"genre": "sci_math", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 96, "fields": {"genre": "sci_medicine", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0430"}}, {"model": "opds_catalog.genre", "pk": 97, "fields": {"genre": "science", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041d\u0430\u0443\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 98, "fields": {"genre": "sci_social_studies", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041e\u0431\u0449\u0435\u0441\u0442\u0432\u043e\u0437\u043d\u0430\u043d\u0438\u0435, \u0441\u043e\u0446\u0438\u043e\u043b\u043e\u0433\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 99, "fields": {"genre": "sci_politics", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041f\u043e\u043b\u0438\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 100, "fields": {"genre": "sci_psychology", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u041f\u0441\u0438\u0445\u043e\u043b\u043e\u0433\u0438\u044f \u0438 \u043f\u0441\u0438\u0445\u043e\u0442\u0435\u0440\u0430\u043f\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 101, "fields": {"genre": "sci_phys", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0424\u0438\u0437\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 102, "fields": {"genre": "sci_philosophy", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0424\u0438\u043b\u043e\u0441\u043e\u0444\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 103, "fields": {"genre": "sci_chem", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u0425\u0438\u043c\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 104, "fields": {"genre": "sci_ecology", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u042d\u043a\u043e\u043b\u043e\u0433\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 105, "fields": {"genre": "sci_economy", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u042d\u043a\u043e\u043d\u043e\u043c\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 106, "fields": {"genre": "sci_juris", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u042e\u0440\u0438\u0441\u043f\u0440\u0443\u0434\u0435\u043d\u0446\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 107, "fields": {"genre": "sci_linguistic", "section": "\u041d\u0430\u0443\u043a\u0430, \u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435", "subsection": "\u042f\u0437\u044b\u043a\u043e\u0437\u043d\u0430\u043d\u0438\u0435, \u0438\u043d\u043e\u0441\u0442\u0440\u0430\u043d\u043d\u044b\u0435 \u044f\u0437\u044b\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 108, "fields": {"genre": "palindromes", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u0412\u0438\u0437\u0443\u0430\u043b\u044c\u043d\u0430\u044f \u0438 \u044d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f, \u0432\u0435\u0440\u043b\u0438\u0431\u0440\u044b, \u043f\u0430\u043b\u0438\u043d\u0434\u0440\u043e\u043c\u044b"}}, {"model": "opds_catalog.genre", "pk": 109, "fields": {"genre": "poetry_for_classical", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0437\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 110, "fields": {"genre": "poetry_classical", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 111, "fields": {"genre": "poetry_rus_classical", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0440\u0443\u0441\u0441\u043a\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 112, "fields": {"genre": "lyrics", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041b\u0438\u0440\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 113, "fields": {"genre": "song_poetry", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041f\u0435\u0441\u0435\u043d\u043d\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 114, "fields": {"genre": "poetry", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 115, "fields": {"genre": "poetry_east", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041f\u043e\u044d\u0437\u0438\u044f \u0412\u043e\u0441\u0442\u043e\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 116, "fields": {"genre": "poem", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u041f\u043e\u044d\u043c\u0430, \u044d\u043f\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 117, "fields": {"genre": "poetry_for_modern", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0437\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 118, "fields": {"genre": "poetry_modern", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 119, "fields": {"genre": "poetry_rus_modern", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0440\u0443\u0441\u0441\u043a\u0430\u044f \u043f\u043e\u044d\u0437\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 120, "fields": {"genre": "humor_verse", "section": "\u041f\u043e\u044d\u0437\u0438\u044f", "subsection": "\u042e\u043c\u043e\u0440\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0442\u0438\u0445\u0438, \u0431\u0430\u0441\u043d\u0438"}}, {"model": "opds_catalog.genre", "pk": 121, "fields": {"genre": "adv_story", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u0410\u0432\u0430\u043d\u0442\u044e\u0440\u043d\u044b\u0439 \u0440\u043e\u043c\u0430\u043d"}}, {"model": "opds_catalog.genre", "pk": 122, "fields": {"genre": "adv_indian", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u0412\u0435\u0441\u0442\u0435\u0440\u043d, \u043f\u0440\u043e \u0438\u043d\u0434\u0435\u0439\u0446\u0435\u0432"}}, {"model": "opds_catalog.genre", "pk": 123, "fields": {"genre": "adv_history", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u0418\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u043f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 124, "fields": {"genre": "adv_maritime", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u041c\u043e\u0440\u0441\u043a\u0438\u0435 \u043f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 125, "fields": {"genre": "adventure", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 126, "fields": {"genre": "adv_modern", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f \u0432 \u0441\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e\u043c \u043c\u0438\u0440\u0435"}}, {"model": "opds_catalog.genre", "pk": 127, "fields": {"genre": "child_adv", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0439 \u0438 \u043f\u043e\u0434\u0440\u043e\u0441\u0442\u043a\u043e\u0432"}}, {"model": "opds_catalog.genre", "pk": 128, "fields": {"genre": "adv_animal", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u041f\u0440\u0438\u0440\u043e\u0434\u0430 \u0438 \u0436\u0438\u0432\u043e\u0442\u043d\u044b\u0435"}}, {"model": "opds_catalog.genre", "pk": 129, "fields": {"genre": "adv_geo", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u041f\u0443\u0442\u0435\u0448\u0435\u0441\u0442\u0432\u0438\u044f \u0438 \u0433\u0435\u043e\u0433\u0440\u0430\u0444\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 130, "fields": {"genre": "tale_chivalry", "section": "\u041f\u0440\u0438\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f", "subsection": "\u0420\u044b\u0446\u0430\u0440\u0441\u043a\u0438\u0439 \u0440\u043e\u043c\u0430\u043d"}}, {"model": "opds_catalog.genre", "pk": 131, "fields": {"genre": "aphorisms", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0410\u0444\u043e\u0440\u0438\u0437\u043c\u044b, \u0446\u0438\u0442\u0430\u0442\u044b"}}, {"model": "opds_catalog.genre", "pk": 132, "fields": {"genre": "gothic_novel", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0413\u043e\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0440\u043e\u043c\u0430\u043d"}}, {"model": "opds_catalog.genre", "pk": 133, "fields": {"genre": "foreign_prose", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0417\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 134, "fields": {"genre": "prose_history", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0418\u0441\u0442\u043e\u0440\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 135, "fields": {"genre": "prose_classic", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 136, "fields": {"genre": "literature_18", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430 XVII-XVIII \u0432\u0435\u043a\u043e\u0432"}}, {"model": "opds_catalog.genre", "pk": 137, "fields": {"genre": "literature_19", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430 \u0425IX \u0432\u0435\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 138, "fields": {"genre": "literature_20", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430 \u0425X \u0432\u0435\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 139, "fields": {"genre": "prose_counter", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041a\u043e\u043d\u0442\u0440\u043a\u0443\u043b\u044c\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 140, "fields": {"genre": "prose_magic", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041c\u0430\u0433\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0440\u0435\u0430\u043b\u0438\u0437\u043c"}}, {"model": "opds_catalog.genre", "pk": 141, "fields": {"genre": "story", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041c\u0430\u043b\u044b\u0435 \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u043d\u044b\u0435 \u0444\u043e\u0440\u043c\u044b \u043f\u0440\u043e\u0437\u044b: \u0440\u0430\u0441\u0441\u043a\u0430\u0437\u044b, \u044d\u0441\u0441\u0435, \u043d\u043e\u0432\u0435\u043b\u043b\u044b, \u0444\u0435\u0435\u0440\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 142, "fields": {"genre": "prose", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 143, "fields": {"genre": "prose_military", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u041f\u0440\u043e\u0437\u0430 \u043e \u0432\u043e\u0439\u043d\u0435"}}, {"model": "opds_catalog.genre", "pk": 144, "fields": {"genre": "great_story", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0420\u043e\u043c\u0430\u043d, \u043f\u043e\u0432\u0435\u0441\u0442\u044c"}}, {"model": "opds_catalog.genre", "pk": 145, "fields": {"genre": "prose_rus_classic", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0420\u0443\u0441\u0441\u043a\u0430\u044f \u043a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 146, "fields": {"genre": "prose_su_classics", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0421\u043e\u0432\u0435\u0442\u0441\u043a\u0430\u044f \u043a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 147, "fields": {"genre": "prose_contemporary", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0440\u0443\u0441\u0441\u043a\u0430\u044f \u0438 \u0437\u0430\u0440\u0443\u0431\u0435\u0436\u043d\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 148, "fields": {"genre": "foreign_antique", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0421\u0440\u0435\u0434\u043d\u0435\u0432\u0435\u043a\u043e\u0432\u0430\u044f \u043a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 149, "fields": {"genre": "prose_abs", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u0424\u0430\u043d\u0442\u0430\u0441\u043c\u0430\u0433\u043e\u0440\u0438\u044f, \u0430\u0431\u0441\u0443\u0440\u0434\u0438\u0441\u0442\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 150, "fields": {"genre": "prose_neformatny", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u042d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442\u0430\u043b\u044c\u043d\u0430\u044f, \u043d\u0435\u0444\u043e\u0440\u043c\u0430\u0442\u043d\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 151, "fields": {"genre": "epistolary_fiction", "section": "\u041f\u0440\u043e\u0437\u0430", "subsection": "\u042d\u043f\u0438\u0441\u0442\u043e\u043b\u044f\u0440\u043d\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 152, "fields": {"genre": "periodic", "section": "\u041f\u0440\u043e\u0447\u0435\u0435", "subsection": "\u0416\u0443\u0440\u043d\u0430\u043b\u044b, \u0433\u0430\u0437\u0435\u0442\u044b"}}, {"model": "opds_catalog.genre", "pk": 153, "fields": {"genre": "comics", "section": "\u041f\u0440\u043e\u0447\u0435\u0435", "subsection": "\u041a\u043e\u043c\u0438\u043a\u0441\u044b"}}, {"model": "opds_catalog.genre", "pk": 154, "fields": {"genre": "unfinished", "section": "\u041f\u0440\u043e\u0447\u0435\u0435", "subsection": "\u041d\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043d\u043e\u0435"}}, {"model": "opds_catalog.genre", "pk": 155, "fields": {"genre": "other", "section": "\u041f\u0440\u043e\u0447\u0435\u0435", "subsection": "\u041d\u0435\u043e\u0442\u0441\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u043e\u0435"}}, {"model": "opds_catalog.genre", "pk": 156, "fields": {"genre": "network_literature", "section": "\u041f\u0440\u043e\u0447\u0435\u0435", "subsection": "\u0421\u0430\u043c\u0438\u0437\u0434\u0430\u0442, \u0441\u0435\u0442\u0435\u0432\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 157, "fields": {"genre": "fanfiction", "section": "\u041f\u0440\u043e\u0447\u0435\u0435", "subsection": "\u0424\u0430\u043d\u0444\u0438\u043a"}}, {"model": "opds_catalog.genre", "pk": 158, "fields": {"genre": "astrology", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0410\u0441\u0442\u0440\u043e\u043b\u043e\u0433\u0438\u044f \u0438 \u0445\u0438\u0440\u043e\u043c\u0430\u043d\u0442\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 159, "fields": {"genre": "religion_budda", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0411\u0443\u0434\u0434\u0438\u0437\u043c"}}, {"model": "opds_catalog.genre", "pk": 160, "fields": {"genre": "religion_hinduism", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0418\u043d\u0434\u0443\u0438\u0437\u043c"}}, {"model": "opds_catalog.genre", "pk": 161, "fields": {"genre": "religion_islam", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0418\u0441\u043b\u0430\u043c"}}, {"model": "opds_catalog.genre", "pk": 162, "fields": {"genre": "religion_judaism", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0418\u0443\u0434\u0430\u0438\u0437\u043c"}}, {"model": "opds_catalog.genre", "pk": 163, "fields": {"genre": "religion_catholicism", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u041a\u0430\u0442\u043e\u043b\u0438\u0446\u0438\u0437\u043c"}}, {"model": "opds_catalog.genre", "pk": 164, "fields": {"genre": "religion_orthodoxy", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u041f\u0440\u0430\u0432\u043e\u0441\u043b\u0430\u0432\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 165, "fields": {"genre": "religion_protestantism", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u041f\u0440\u043e\u0442\u0435\u0441\u0442\u0430\u043d\u0442\u0438\u0437\u043c"}}, {"model": "opds_catalog.genre", "pk": 166, "fields": {"genre": "sci_religion", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0420\u0435\u043b\u0438\u0433\u0438\u043e\u0432\u0435\u0434\u0435\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 167, "fields": {"genre": "religion", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0440\u0435\u043b\u0438\u0433\u0438\u043e\u0437\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 168, "fields": {"genre": "religion_self", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0421\u0430\u043c\u043e\u0441\u043e\u0432\u0435\u0440\u0448\u0435\u043d\u0441\u0442\u0432\u043e\u0432\u0430\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 169, "fields": {"genre": "religion_christianity", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u0425\u0440\u0438\u0441\u0442\u0438\u0430\u043d\u0441\u0442\u0432\u043e"}}, {"model": "opds_catalog.genre", "pk": 170, "fields": {"genre": "religion_esoterics", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u042d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 171, "fields": {"genre": "religion_paganism", "section": "\u0420\u0435\u043b\u0438\u0433\u0438\u044f, \u0434\u0443\u0445\u043e\u0432\u043d\u043e\u0441\u0442\u044c, \u044d\u0437\u043e\u0442\u0435\u0440\u0438\u043a\u0430", "subsection": "\u042f\u0437\u044b\u0447\u0435\u0441\u0442\u0432\u043e"}}, {"model": "opds_catalog.genre", "pk": 172, "fields": {"genre": "geo_guides", "section": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u041f\u0443\u0442\u0435\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u0438, \u043a\u0430\u0440\u0442\u044b, \u0430\u0442\u043b\u0430\u0441\u044b"}}, {"model": "opds_catalog.genre", "pk": 173, "fields": {"genre": "ref_guide", "section": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0441\u0442\u0432\u0430"}}, {"model": "opds_catalog.genre", "pk": 174, "fields": {"genre": "ref_dict", "section": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0421\u043b\u043e\u0432\u0430\u0440\u0438"}}, {"model": "opds_catalog.genre", "pk": 175, "fields": {"genre": "reference", "section": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 176, "fields": {"genre": "ref_ref", "section": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 177, "fields": {"genre": "ref_encyc", "section": "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430", "subsection": "\u042d\u043d\u0446\u0438\u043a\u043b\u043e\u043f\u0435\u0434\u0438\u0438"}}, {"model": "opds_catalog.genre", "pk": 178, "fields": {"genre": "antique", "section": "\u0421\u0442\u0430\u0440\u0438\u043d\u043d\u043e\u0435", "subsection": "antique"}}, {"model": "opds_catalog.genre", "pk": 179, "fields": {"genre": "antique_ant", "section": "\u0421\u0442\u0430\u0440\u0438\u043d\u043d\u043e\u0435", "subsection": "\u0410\u043d\u0442\u0438\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 180, "fields": {"genre": "antique_east", "section": "\u0421\u0442\u0430\u0440\u0438\u043d\u043d\u043e\u0435", "subsection": "\u0414\u0440\u0435\u0432\u043d\u0435\u0432\u043e\u0441\u0442\u043e\u0447\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 181, "fields": {"genre": "antique_russian", "section": "\u0421\u0442\u0430\u0440\u0438\u043d\u043d\u043e\u0435", "subsection": "\u0414\u0440\u0435\u0432\u043d\u0435\u0440\u0443\u0441\u0441\u043a\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 182, "fields": {"genre": "antique_european", "section": "\u0421\u0442\u0430\u0440\u0438\u043d\u043d\u043e\u0435", "subsection": "\u0415\u0432\u0440\u043e\u043f\u0435\u0439\u0441\u043a\u0430\u044f \u0441\u0442\u0430\u0440\u0438\u043d\u043d\u0430\u044f \u043b\u0438\u0442\u0435\u0440\u0430\u0442\u0443\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 183, "fields": {"genre": "auto_business", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0410\u0432\u0442\u043e\u0434\u0435\u043b\u043e"}}, {"model": "opds_catalog.genre", "pk": 184, "fields": {"genre": "military_weapon", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0412\u043e\u0435\u043d\u043d\u043e\u0435 \u0434\u0435\u043b\u043e, \u0432\u043e\u0435\u043d\u043d\u0430\u044f \u0442\u0435\u0445\u043d\u0438\u043a\u0430 \u0438 \u0432\u043e\u043e\u0440\u0443\u0436\u0435\u043d\u0438\u0435"}}, {"model": "opds_catalog.genre", "pk": 185, "fields": {"genre": "equ_history", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0418\u0441\u0442\u043e\u0440\u0438\u044f \u0442\u0435\u0445\u043d\u0438\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 186, "fields": {"genre": "sci_metal", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u041c\u0435\u0442\u0430\u043b\u043b\u0443\u0440\u0433\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 187, "fields": {"genre": "sci_radio", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0420\u0430\u0434\u0438\u043e\u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 188, "fields": {"genre": "sci_build", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0421\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e \u0438 \u0441\u043e\u043f\u0440\u043e\u043c\u0430\u0442"}}, {"model": "opds_catalog.genre", "pk": 189, "fields": {"genre": "sci_tech", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0422\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u043d\u0430\u0443\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 190, "fields": {"genre": "sci_transport", "section": "\u0422\u0435\u0445\u043d\u0438\u043a\u0430", "subsection": "\u0422\u0440\u0430\u043d\u0441\u043f\u043e\u0440\u0442 \u0438 \u0430\u0432\u0438\u0430\u0446\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 191, "fields": {"genre": "sci_textbook", "section": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f", "subsection": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 192, "fields": {"genre": "tbg_higher", "section": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f", "subsection": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f \u0412\u0423\u0417\u043e\u0432"}}, {"model": "opds_catalog.genre", "pk": 193, "fields": {"genre": "tbg_secondary", "section": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f", "subsection": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f \u0434\u043b\u044f \u0441\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0438 \u0441\u043f\u0435\u0446\u0438\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u044f"}}, {"model": "opds_catalog.genre", "pk": 194, "fields": {"genre": "tbg_school", "section": "\u0423\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f", "subsection": "\u0428\u043a\u043e\u043b\u044c\u043d\u044b\u0435 \u0443\u0447\u0435\u0431\u043d\u0438\u043a\u0438 \u0438 \u043f\u043e\u0441\u043e\u0431\u0438\u044f, \u0440\u0435\u0444\u0435\u0440\u0430\u0442\u044b, \u0448\u043f\u0430\u0440\u0433\u0430\u043b\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 195, "fields": {"genre": "sf_history", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0410\u043b\u044c\u0442\u0435\u0440\u043d\u0430\u0442\u0438\u0432\u043d\u0430\u044f \u0438\u0441\u0442\u043e\u0440\u0438\u044f, \u043f\u043e\u043f\u0430\u0434\u0430\u043d\u0446\u044b"}}, {"model": "opds_catalog.genre", "pk": 196, "fields": {"genre": "sf_action", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0411\u043e\u0435\u0432\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 197, "fields": {"genre": "sf_heroic", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0413\u0435\u0440\u043e\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 198, "fields": {"genre": "sf_fantasy_city", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0413\u043e\u0440\u043e\u0434\u0441\u043a\u043e\u0435 \u0444\u044d\u043d\u0442\u0435\u0437\u0438"}}, {"model": "opds_catalog.genre", "pk": 199, "fields": {"genre": "sf_detective", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0414\u0435\u0442\u0435\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 200, "fields": {"genre": "sf_cyberpunk", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u041a\u0438\u0431\u0435\u0440\u043f\u0430\u043d\u043a"}}, {"model": "opds_catalog.genre", "pk": 201, "fields": {"genre": "sf_space", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u041a\u043e\u0441\u043c\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 202, "fields": {"genre": "sf_mystic", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u041c\u0438\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 203, "fields": {"genre": "fairy_fantasy", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u041c\u0438\u0444\u043e\u043b\u043e\u0433\u0438\u0447\u0435\u0441\u043a\u043e\u0435 \u0444\u044d\u043d\u0442\u0435\u0437\u0438"}}, {"model": "opds_catalog.genre", "pk": 204, "fields": {"genre": "sf", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u041d\u0430\u0443\u0447\u043d\u0430\u044f \u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 205, "fields": {"genre": "sf_postapocalyptic", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u041f\u043e\u0441\u0442\u0430\u043f\u043e\u043a\u0430\u043b\u0438\u043f\u0441\u0438\u0441"}}, {"model": "opds_catalog.genre", "pk": 206, "fields": {"genre": "russian_fantasy", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0421\u043b\u0430\u0432\u044f\u043d\u0441\u043a\u043e\u0435 \u0444\u044d\u043d\u0442\u0435\u0437\u0438"}}, {"model": "opds_catalog.genre", "pk": 207, "fields": {"genre": "modern_tale", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u0441\u043a\u0430\u0437\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 208, "fields": {"genre": "sf_social", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0421\u043e\u0446\u0438\u0430\u043b\u044c\u043d\u043e-\u043f\u0441\u0438\u0445\u043e\u043b\u043e\u0433\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 209, "fields": {"genre": "sf_stimpank", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0421\u0442\u0438\u043c\u043f\u0430\u043d\u043a"}}, {"model": "opds_catalog.genre", "pk": 210, "fields": {"genre": "sf_technofantasy", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0422\u0435\u0445\u043d\u043e\u0444\u044d\u043d\u0442\u0435\u0437\u0438"}}, {"model": "opds_catalog.genre", "pk": 211, "fields": {"genre": "sf_horror", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0423\u0436\u0430\u0441\u044b"}}, {"model": "opds_catalog.genre", "pk": 212, "fields": {"genre": "sf_etc", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 213, "fields": {"genre": "sf_fantasy", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0424\u044d\u043d\u0442\u0435\u0437\u0438"}}, {"model": "opds_catalog.genre", "pk": 214, "fields": {"genre": "hronoopera", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u0425\u0440\u043e\u043d\u043e\u043e\u043f\u0435\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 215, "fields": {"genre": "sf_epic", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u042d\u043f\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 216, "fields": {"genre": "sf_humor", "section": "\u0424\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430", "subsection": "\u042e\u043c\u043e\u0440\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0444\u0430\u043d\u0442\u0430\u0441\u0442\u0438\u043a\u0430"}}, {"model": "opds_catalog.genre", "pk": 217, "fields": {"genre": "epic", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u0411\u044b\u043b\u0438\u043d\u044b, \u044d\u043f\u043e\u043f\u0435\u044f"}}, {"model": "opds_catalog.genre", "pk": 218, "fields": {"genre": "child_folklore", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u0414\u0435\u0442\u0441\u043a\u0438\u0439 \u0444\u043e\u043b\u044c\u043a\u043b\u043e\u0440"}}, {"model": "opds_catalog.genre", "pk": 219, "fields": {"genre": "antique_myths", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u041c\u0438\u0444\u044b. \u041b\u0435\u0433\u0435\u043d\u0434\u044b. \u042d\u043f\u043e\u0441"}}, {"model": "opds_catalog.genre", "pk": 220, "fields": {"genre": "folk_songs", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u041d\u0430\u0440\u043e\u0434\u043d\u044b\u0435 \u043f\u0435\u0441\u043d\u0438"}}, {"model": "opds_catalog.genre", "pk": 221, "fields": {"genre": "folk_tale", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u041d\u0430\u0440\u043e\u0434\u043d\u044b\u0435 \u0441\u043a\u0430\u0437\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 222, "fields": {"genre": "proverbs", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u041f\u043e\u0441\u043b\u043e\u0432\u0438\u0446\u044b, \u043f\u043e\u0433\u043e\u0432\u043e\u0440\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 223, "fields": {"genre": "folklore", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440, \u0437\u0430\u0433\u0430\u0434\u043a\u0438 folklore"}}, {"model": "opds_catalog.genre", "pk": 224, "fields": {"genre": "limerick", "section": "\u0424\u043e\u043b\u044c\u043a\u043b\u043e\u0440", "subsection": "\u0427\u0430\u0441\u0442\u0443\u0448\u043a\u0438, \u043f\u0440\u0438\u0431\u0430\u0443\u0442\u043a\u0438, \u043f\u043e\u0442\u0435\u0448\u043a\u0438"}}, {"model": "opds_catalog.genre", "pk": 225, "fields": {"genre": "humor_anecdote", "section": "\u042e\u043c\u043e\u0440", "subsection": "\u0410\u043d\u0435\u043a\u0434\u043e\u0442\u044b"}}, {"model": "opds_catalog.genre", "pk": 226, "fields": {"genre": "humor_satire", "section": "\u042e\u043c\u043e\u0440", "subsection": "\u0421\u0430\u0442\u0438\u0440\u0430"}}, {"model": "opds_catalog.genre", "pk": 227, "fields": {"genre": "humor", "section": "\u042e\u043c\u043e\u0440", "subsection": "\u042e\u043c\u043e\u0440"}}, {"model": "opds_catalog.genre", "pk": 228, "fields": {"genre": "humor_prose", "section": "\u042e\u043c\u043e\u0440", "subsection": "\u042e\u043c\u043e\u0440\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0437\u0430"}}, {"model": "opds_catalog.genre", "pk": 595, "fields": {"genre": "azizex666", "section": "Unknown genre", "subsection": "azizex666"}}, {"model": "opds_catalog.genre", "pk": 596, "fields": {"genre": "mystery", "section": "Unknown genre", "subsection": "mystery"}}, {"model": "opds_catalog.genre", "pk": 597, "fields": {"genre": "suspense", "section": "Unknown genre", "subsection": "suspense"}}, {"model": "opds_catalog.genre", "pk": 598, "fields": {"genre": "fiction", "section": "Unknown genre", "subsection": "fiction"}}, {"model": "opds_catalog.genre", "pk": 599, "fields": {"genre": "general", "section": "Unknown genre", "subsection": "general"}}, {"model": "opds_catalog.genre", "pk": 600, "fields": {"genre": "mystery & detective", "section": "Unknown genre", "subsection": "mystery & detective"}}, {"model": "opds_catalog.genre", "pk": 601, "fields": {"genre": "fiction / mystery & detective", "section": "Unknown genre", "subsection": "fiction / mystery & detective"}}, {"model": "opds_catalog.genre", "pk": 602, "fields": {"genre": "adult", "section": "Unknown genre", "subsection": "adult"}}, {"model": "opds_catalog.genre", "pk": 603, "fields": {"genre": "western", "section": "Unknown genre", "subsection": "western"}}, {"model": "opds_catalog.genre", "pk": 604, "fields": {"genre": "literature & fiction", "section": "Unknown genre", "subsection": "literature & fiction"}}, {"model": "opds_catalog.genre", "pk": 605, "fields": {"genre": "united states", "section": "Unknown genre", "subsection": "united states"}}, {"model": "opds_catalog.genre", "pk": 606, "fields": {"genre": "mystery; thriller & suspense", "section": "Unknown genre", "subsection": "mystery; thriller & suspense"}}, {"model": "opds_catalog.genre", "pk": 607, "fields": {"genre": "thrillers & suspense", "section": "Unknown genre", "subsection": "thrillers & suspense"}}, {"model": "opds_catalog.genre", "pk": 608, "fields": {"genre": "crime", "section": "Unknown genre", "subsection": "crime"}}, {"model": "opds_catalog.genre", "pk": 609, "fields": {"genre": "crime fiction", "section": "Unknown genre", "subsection": "crime fiction"}}, {"model": "opds_catalog.genre", "pk": 610, "fields": {"genre": "thrillers", "section": "Unknown genre", "subsection": "thrillers"}}, {"model": "opds_catalog.genre", "pk": 611, "fields": {"genre": "english", "section": "Unknown genre", "subsection": "english"}}]
+[
+  {
+    "model": "opds_catalog.genre",
+    "pk": 1,
+    "fields": {
+      "genre": "economics_ref",
+      "section": "Деловая литература",
+      "subsection": "Деловая литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 2,
+    "fields": {
+      "genre": "popular_business",
+      "section": "Деловая литература",
+      "subsection": "Карьера, кадры"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 3,
+    "fields": {
+      "genre": "org_behavior",
+      "section": "Деловая литература",
+      "subsection": "Маркетинг, PR"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 4,
+    "fields": {
+      "genre": "banking",
+      "section": "Деловая литература",
+      "subsection": "Финансы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 5,
+    "fields": {
+      "genre": "economics",
+      "section": "Деловая литература",
+      "subsection": "Экономика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 6,
+    "fields": {
+      "genre": "det_action",
+      "section": "Детективы и Триллеры",
+      "subsection": "Боевик"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 7,
+    "fields": {
+      "genre": "detective",
+      "section": "Детективы и Триллеры",
+      "subsection": "Детективы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 8,
+    "fields": {
+      "genre": "det_irony",
+      "section": "Детективы и Триллеры",
+      "subsection": "Иронический детектив, дамский детективный роман"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 9,
+    "fields": {
+      "genre": "det_history",
+      "section": "Детективы и Триллеры",
+      "subsection": "Исторический детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 10,
+    "fields": {
+      "genre": "det_classic",
+      "section": "Детективы и Триллеры",
+      "subsection": "Классический детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 11,
+    "fields": {
+      "genre": "det_crime",
+      "section": "Детективы и Триллеры",
+      "subsection": "Криминальный детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 12,
+    "fields": {
+      "genre": "det_hard",
+      "section": "Детективы и Триллеры",
+      "subsection": "Крутой детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 13,
+    "fields": {
+      "genre": "det_political",
+      "section": "Детективы и Триллеры",
+      "subsection": "Политический детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 14,
+    "fields": {
+      "genre": "det_police",
+      "section": "Детективы и Триллеры",
+      "subsection": "Полицейский детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 15,
+    "fields": {
+      "genre": "det_maniac",
+      "section": "Детективы и Триллеры",
+      "subsection": "Про маньяков"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 16,
+    "fields": {
+      "genre": "det_su",
+      "section": "Детективы и Триллеры",
+      "subsection": "Советский детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 17,
+    "fields": {
+      "genre": "thriller",
+      "section": "Детективы и Триллеры",
+      "subsection": "Триллер"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 18,
+    "fields": {
+      "genre": "det_espionage",
+      "section": "Детективы и Триллеры",
+      "subsection": "Шпионский детектив"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 19,
+    "fields": {
+      "genre": "nonf_biography",
+      "section": "Документальная литература",
+      "subsection": "Биографии и Мемуары"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 20,
+    "fields": {
+      "genre": "nonf_military",
+      "section": "Документальная литература",
+      "subsection": "Военная документалистика и аналитика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 21,
+    "fields": {
+      "genre": "military_special",
+      "section": "Документальная литература",
+      "subsection": "Военное дело"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 22,
+    "fields": {
+      "genre": "travel_notes",
+      "section": "Документальная литература",
+      "subsection": "География, путевые заметки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 23,
+    "fields": {
+      "genre": "nonfiction",
+      "section": "Документальная литература",
+      "subsection": "Документальная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 24,
+    "fields": {
+      "genre": "nonf_publicism",
+      "section": "Документальная литература",
+      "subsection": "Публицистика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 25,
+    "fields": {
+      "genre": "auto_regulations",
+      "section": "Дом и семья",
+      "subsection": "Автомобили и ПДД"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 26,
+    "fields": {
+      "genre": "home_sport",
+      "section": "Дом и семья",
+      "subsection": "Боевые искусства, спорт"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 27,
+    "fields": {
+      "genre": "home_pets",
+      "section": "Дом и семья",
+      "subsection": "Домашние животные"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 28,
+    "fields": {
+      "genre": "home",
+      "section": "Дом и семья",
+      "subsection": "Домоводство"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 29,
+    "fields": {
+      "genre": "home_health",
+      "section": "Дом и семья",
+      "subsection": "Здоровье"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 30,
+    "fields": {
+      "genre": "home_collecting",
+      "section": "Дом и семья",
+      "subsection": "Коллекционирование"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 31,
+    "fields": {
+      "genre": "home_cooking",
+      "section": "Дом и семья",
+      "subsection": "Кулинария"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 32,
+    "fields": {
+      "genre": "sci_pedagogy",
+      "section": "Дом и семья",
+      "subsection": "Педагогика, воспитание детей, литература для родителей"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 33,
+    "fields": {
+      "genre": "home_entertain",
+      "section": "Дом и семья",
+      "subsection": "Развлечения"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 34,
+    "fields": {
+      "genre": "home_garden",
+      "section": "Дом и семья",
+      "subsection": "Сад и огород"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 35,
+    "fields": {
+      "genre": "home_diy",
+      "section": "Дом и семья",
+      "subsection": "Сделай сам"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 36,
+    "fields": {
+      "genre": "family",
+      "section": "Дом и семья",
+      "subsection": "Семейные отношения"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 37,
+    "fields": {
+      "genre": "home_sex",
+      "section": "Дом и семья",
+      "subsection": "Семейные отношения, секс"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 38,
+    "fields": {
+      "genre": "home_crafts",
+      "section": "Дом и семья",
+      "subsection": "Хобби и ремесла"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 39,
+    "fields": {
+      "genre": "drama_antique",
+      "section": "Драматургия",
+      "subsection": "Античная драма"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 40,
+    "fields": {
+      "genre": "drama",
+      "section": "Драматургия",
+      "subsection": "Драма"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 41,
+    "fields": {
+      "genre": "dramaturgy",
+      "section": "Драматургия",
+      "subsection": "Драматургия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 42,
+    "fields": {
+      "genre": "comedy",
+      "section": "Драматургия",
+      "subsection": "Комедия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 43,
+    "fields": {
+      "genre": "vaudeville",
+      "section": "Драматургия",
+      "subsection": "Мистерия, буффонада, водевиль"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 44,
+    "fields": {
+      "genre": "screenplays",
+      "section": "Драматургия",
+      "subsection": "Сценарий"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 45,
+    "fields": {
+      "genre": "tragedy",
+      "section": "Драматургия",
+      "subsection": "Трагедия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 46,
+    "fields": {
+      "genre": "painting",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Живопись, альбомы, иллюстрированные каталоги"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 47,
+    "fields": {
+      "genre": "design",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Искусство и Дизайн"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 48,
+    "fields": {
+      "genre": "art_criticism",
+      "section": "Искусттво, Искусствоведение, Дизайн",
+      "subsection": "Искусствоведение"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 49,
+    "fields": {
+      "genre": "cine",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Кино"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 50,
+    "fields": {
+      "genre": "nonf_criticism",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Критика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 51,
+    "fields": {
+      "genre": "sci_culture",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Культурология"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 52,
+    "fields": {
+      "genre": "art_world_culture",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Мировая художественная культура"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 53,
+    "fields": {
+      "genre": "music",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Музыка"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 54,
+    "fields": {
+      "genre": "notes",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Партитуры"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 55,
+    "fields": {
+      "genre": "architecture_book",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Скульптура и архитектура"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 56,
+    "fields": {
+      "genre": "theatre",
+      "section": "Искусство, Искусствоведение, Дизайн",
+      "subsection": "Театр"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 57,
+    "fields": {
+      "genre": "computers",
+      "section": "Компьютеры и Интернет",
+      "subsection": "Зарубежная компьютерная, околокомпьютерная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 58,
+    "fields": {
+      "genre": "comp_hard",
+      "section": "Компьютеры и Интернет",
+      "subsection": "Компьютерное 'железо'"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 59,
+    "fields": {
+      "genre": "comp_www",
+      "section": "Компьютеры и Интернет",
+      "subsection": "ОС и Сети, интернет"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 60,
+    "fields": {
+      "genre": "comp_db",
+      "section": "Компьютеры и Интернет",
+      "subsection": "Программирование, программы, базы данных"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 61,
+    "fields": {
+      "genre": "tbg_computers",
+      "section": "Компьютеры и Интернет",
+      "subsection": "Учебные пособия, самоучители"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 62,
+    "fields": {
+      "genre": "children",
+      "section": "Литература для детей",
+      "subsection": "Детская литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 63,
+    "fields": {
+      "genre": "child_education",
+      "section": "Литература для детей",
+      "subsection": "Детская образовательная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 64,
+    "fields": {
+      "genre": "child_det",
+      "section": "Литература для детей",
+      "subsection": "Детская остросюжетная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 65,
+    "fields": {
+      "genre": "foreign_children",
+      "section": "Литература для детей",
+      "subsection": "Зарубежная литература для детей"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 66,
+    "fields": {
+      "genre": "prose_game",
+      "section": "Литература для детей",
+      "subsection": "Игры, упражнения для детей"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 67,
+    "fields": {
+      "genre": "child_classical",
+      "section": "Литература для детей",
+      "subsection": "Классическая детская литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 68,
+    "fields": {
+      "genre": "child_prose",
+      "section": "Литература для детей",
+      "subsection": "Проза для детей"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 69,
+    "fields": {
+      "genre": "child_tale_rus",
+      "section": "Литература для детей",
+      "subsection": "Русские сказки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 70,
+    "fields": {
+      "genre": "child_tale",
+      "section": "Литература для детей",
+      "subsection": "Сказки народов мира"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 71,
+    "fields": {
+      "genre": "child_verse",
+      "section": "Литература для детей",
+      "subsection": "Стихи для детей"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 72,
+    "fields": {
+      "genre": "child_sf",
+      "section": "Литература для детей",
+      "subsection": "Фантастика для детей"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 73,
+    "fields": {
+      "genre": "love_history",
+      "section": "Любовные романы",
+      "subsection": "Исторические любовные романы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 74,
+    "fields": {
+      "genre": "love_short",
+      "section": "Любовные романы",
+      "subsection": "Короткие любовные романы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 75,
+    "fields": {
+      "genre": "love_sf",
+      "section": "Любовные романы",
+      "subsection": "Любовное фэнтези, любовно-фантастические романы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 76,
+    "fields": {
+      "genre": "love",
+      "section": "Любовные романы",
+      "subsection": "Любовные романы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 77,
+    "fields": {
+      "genre": "love_detective",
+      "section": "Любовные романы",
+      "subsection": "Остросюжетные любовные романы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 78,
+    "fields": {
+      "genre": "love_hard",
+      "section": "Любовные романы",
+      "subsection": "Порно"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 79,
+    "fields": {
+      "genre": "love_contemporary",
+      "section": "Любовные романы",
+      "subsection": "Современные любовные романы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 80,
+    "fields": {
+      "genre": "love_erotica",
+      "section": "Любовные романы",
+      "subsection": "Эротическая литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 81,
+    "fields": {
+      "genre": "sci_medicine_alternative",
+      "section": "Наука, Образование",
+      "subsection": "Альтернативная медицина"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 82,
+    "fields": {
+      "genre": "sci_theories",
+      "section": "Наука, Образование",
+      "subsection": "Альтернативные науки и научные теории"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 83,
+    "fields": {
+      "genre": "sci_cosmos",
+      "section": "Наука, Образование",
+      "subsection": "Астрономия и Космос"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 84,
+    "fields": {
+      "genre": "sci_biology",
+      "section": "Наука, Образование",
+      "subsection": "Биология, биофизика, биохимия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 85,
+    "fields": {
+      "genre": "sci_botany",
+      "section": "Наука, Образование",
+      "subsection": "Ботаника"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 86,
+    "fields": {
+      "genre": "sci_veterinary",
+      "section": "Наука, Образование",
+      "subsection": "Ветеринария"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 87,
+    "fields": {
+      "genre": "military_history",
+      "section": "Наука, Образование",
+      "subsection": "Военная история"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 88,
+    "fields": {
+      "genre": "sci_oriental",
+      "section": "Наука, Образование",
+      "subsection": "Востоковедение"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 89,
+    "fields": {
+      "genre": "sci_geo",
+      "section": "Наука, Образование",
+      "subsection": "Геология и география"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 90,
+    "fields": {
+      "genre": "sci_state",
+      "section": "Наука, Образование",
+      "subsection": "Государство и право"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 91,
+    "fields": {
+      "genre": "sci_popular",
+      "section": "Наука, Образование",
+      "subsection": "Зарубежная образовательная литература, зарубежная прикладная, научно-популярная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 92,
+    "fields": {
+      "genre": "sci_zoo",
+      "section": "Наука, Образование",
+      "subsection": "Зоология"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 93,
+    "fields": {
+      "genre": "sci_history",
+      "section": "Наука, Образование",
+      "subsection": "История"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 94,
+    "fields": {
+      "genre": "sci_philology",
+      "section": "Наука, Образование",
+      "subsection": "Литературоведение"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 95,
+    "fields": {
+      "genre": "sci_math",
+      "section": "Наука, Образование",
+      "subsection": "Математика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 96,
+    "fields": {
+      "genre": "sci_medicine",
+      "section": "Наука, Образование",
+      "subsection": "Медицина"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 97,
+    "fields": {
+      "genre": "science",
+      "section": "Наука, Образование",
+      "subsection": "Научная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 98,
+    "fields": {
+      "genre": "sci_social_studies",
+      "section": "Наука, Образование",
+      "subsection": "Обществознание, социология"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 99,
+    "fields": {
+      "genre": "sci_politics",
+      "section": "Наука, Образование",
+      "subsection": "Политика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 100,
+    "fields": {
+      "genre": "sci_psychology",
+      "section": "Наука, Образование",
+      "subsection": "Психология и психотерапия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 101,
+    "fields": {
+      "genre": "sci_phys",
+      "section": "Наука, Образование",
+      "subsection": "Физика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 102,
+    "fields": {
+      "genre": "sci_philosophy",
+      "section": "Наука, Образование",
+      "subsection": "Философия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 103,
+    "fields": {
+      "genre": "sci_chem",
+      "section": "Наука, Образование",
+      "subsection": "Химия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 104,
+    "fields": {
+      "genre": "sci_ecology",
+      "section": "Наука, Образование",
+      "subsection": "Экология"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 105,
+    "fields": {
+      "genre": "sci_economy",
+      "section": "Наука, Образование",
+      "subsection": "Экономика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 106,
+    "fields": {
+      "genre": "sci_juris",
+      "section": "Наука, Образование",
+      "subsection": "Юриспруденция"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 107,
+    "fields": {
+      "genre": "sci_linguistic",
+      "section": "Наука, Образование",
+      "subsection": "Языкознание, иностранные языки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 108,
+    "fields": {
+      "genre": "palindromes",
+      "section": "Поэзия",
+      "subsection": "Визуальная и экспериментальная поэзия, верлибры, палиндромы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 109,
+    "fields": {
+      "genre": "poetry_for_classical",
+      "section": "Поэзия",
+      "subsection": "Классическая зарубежная поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 110,
+    "fields": {
+      "genre": "poetry_classical",
+      "section": "Поэзия",
+      "subsection": "Классическая поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 111,
+    "fields": {
+      "genre": "poetry_rus_classical",
+      "section": "Поэзия",
+      "subsection": "Классическая русская поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 112,
+    "fields": {
+      "genre": "lyrics",
+      "section": "Поэзия",
+      "subsection": "Лирика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 113,
+    "fields": {
+      "genre": "song_poetry",
+      "section": "Поэзия",
+      "subsection": "Песенная поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 114,
+    "fields": {
+      "genre": "poetry",
+      "section": "Поэзия",
+      "subsection": "Поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 115,
+    "fields": {
+      "genre": "poetry_east",
+      "section": "Поэзия",
+      "subsection": "Поэзия Востока"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 116,
+    "fields": {
+      "genre": "poem",
+      "section": "Поэзия",
+      "subsection": "Поэма, эпическая поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 117,
+    "fields": {
+      "genre": "poetry_for_modern",
+      "section": "Поэзия",
+      "subsection": "Современная зарубежная поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 118,
+    "fields": {
+      "genre": "poetry_modern",
+      "section": "Поэзия",
+      "subsection": "Современная поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 119,
+    "fields": {
+      "genre": "poetry_rus_modern",
+      "section": "Поэзия",
+      "subsection": "Современная русская поэзия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 120,
+    "fields": {
+      "genre": "humor_verse",
+      "section": "Поэзия",
+      "subsection": "Юмористические стихи, басни"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 121,
+    "fields": {
+      "genre": "adv_story",
+      "section": "Приключения",
+      "subsection": "Авантюрный роман"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 122,
+    "fields": {
+      "genre": "adv_indian",
+      "section": "Приключения",
+      "subsection": "Вестерн, про индейцев"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 123,
+    "fields": {
+      "genre": "adv_history",
+      "section": "Приключения",
+      "subsection": "Исторические приключения"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 124,
+    "fields": {
+      "genre": "adv_maritime",
+      "section": "Приключения",
+      "subsection": "Морские приключения"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 125,
+    "fields": {
+      "genre": "adventure",
+      "section": "Приключения",
+      "subsection": "Приключения"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 126,
+    "fields": {
+      "genre": "adv_modern",
+      "section": "Приключения",
+      "subsection": "Приключения в современном мире"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 127,
+    "fields": {
+      "genre": "child_adv",
+      "section": "Приключения",
+      "subsection": "Приключения для детей и подростков"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 128,
+    "fields": {
+      "genre": "adv_animal",
+      "section": "Приключения",
+      "subsection": "Природа и животные"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 129,
+    "fields": {
+      "genre": "adv_geo",
+      "section": "Приключения",
+      "subsection": "Путешествия и география"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 130,
+    "fields": {
+      "genre": "tale_chivalry",
+      "section": "Приключения",
+      "subsection": "Рыцарский роман"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 131,
+    "fields": {
+      "genre": "aphorisms",
+      "section": "Проза",
+      "subsection": "Афоризмы, цитаты"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 132,
+    "fields": {
+      "genre": "gothic_novel",
+      "section": "Проза",
+      "subsection": "Готический роман"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 133,
+    "fields": {
+      "genre": "foreign_prose",
+      "section": "Проза",
+      "subsection": "Зарубежная классическая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 134,
+    "fields": {
+      "genre": "prose_history",
+      "section": "Проза",
+      "subsection": "Историческая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 135,
+    "fields": {
+      "genre": "prose_classic",
+      "section": "Проза",
+      "subsection": "Классическая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 136,
+    "fields": {
+      "genre": "literature_18",
+      "section": "Проза",
+      "subsection": "Классическая проза XVII-XVIII веков"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 137,
+    "fields": {
+      "genre": "literature_19",
+      "section": "Проза",
+      "subsection": "Классическая проза ХIX века"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 138,
+    "fields": {
+      "genre": "literature_20",
+      "section": "Проза",
+      "subsection": "Классическая проза ХX века"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 139,
+    "fields": {
+      "genre": "prose_counter",
+      "section": "Проза",
+      "subsection": "Контркультура"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 140,
+    "fields": {
+      "genre": "prose_magic",
+      "section": "Проза",
+      "subsection": "Магический реализм"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 141,
+    "fields": {
+      "genre": "story",
+      "section": "Проза",
+      "subsection": "Малые литературные формы прозы: рассказы, эссе, новеллы, феерия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 142,
+    "fields": {
+      "genre": "prose",
+      "section": "Проза",
+      "subsection": "Проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 143,
+    "fields": {
+      "genre": "prose_military",
+      "section": "Проза",
+      "subsection": "Проза о войне"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 144,
+    "fields": {
+      "genre": "great_story",
+      "section": "Проза",
+      "subsection": "Роман, повесть"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 145,
+    "fields": {
+      "genre": "prose_rus_classic",
+      "section": "Проза",
+      "subsection": "Русская классическая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 146,
+    "fields": {
+      "genre": "prose_su_classics",
+      "section": "Проза",
+      "subsection": "Советская классическая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 147,
+    "fields": {
+      "genre": "prose_contemporary",
+      "section": "Проза",
+      "subsection": "Современная русская и зарубежная проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 148,
+    "fields": {
+      "genre": "foreign_antique",
+      "section": "Проза",
+      "subsection": "Средневековая классическая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 149,
+    "fields": {
+      "genre": "prose_abs",
+      "section": "Проза",
+      "subsection": "Фантасмагория, абсурдистская проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 150,
+    "fields": {
+      "genre": "prose_neformatny",
+      "section": "Проза",
+      "subsection": "Экспериментальная, неформатная проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 151,
+    "fields": {
+      "genre": "epistolary_fiction",
+      "section": "Проза",
+      "subsection": "Эпистолярная проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 152,
+    "fields": {
+      "genre": "periodic",
+      "section": "Прочее",
+      "subsection": "Журналы, газеты"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 153,
+    "fields": {
+      "genre": "comics",
+      "section": "Прочее",
+      "subsection": "Комиксы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 154,
+    "fields": {
+      "genre": "unfinished",
+      "section": "Прочее",
+      "subsection": "Незавершенное"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 155,
+    "fields": {
+      "genre": "other",
+      "section": "Прочее",
+      "subsection": "Неотсортированное"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 156,
+    "fields": {
+      "genre": "network_literature",
+      "section": "Прочее",
+      "subsection": "Самиздат, сетевая литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 157,
+    "fields": {
+      "genre": "fanfiction",
+      "section": "Прочее",
+      "subsection": "Фанфик"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 158,
+    "fields": {
+      "genre": "astrology",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Астрология и хиромантия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 159,
+    "fields": {
+      "genre": "religion_budda",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Буддизм"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 160,
+    "fields": {
+      "genre": "religion_hinduism",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Индуизм"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 161,
+    "fields": {
+      "genre": "religion_islam",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Ислам"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 162,
+    "fields": {
+      "genre": "religion_judaism",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Иудаизм"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 163,
+    "fields": {
+      "genre": "religion_catholicism",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Католицизм"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 164,
+    "fields": {
+      "genre": "religion_orthodoxy",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Православие"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 165,
+    "fields": {
+      "genre": "religion_protestantism",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Протестантизм"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 166,
+    "fields": {
+      "genre": "sci_religion",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Религиоведение"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 167,
+    "fields": {
+      "genre": "religion",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Религия, религиозная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 168,
+    "fields": {
+      "genre": "religion_self",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Самосовершенствование"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 169,
+    "fields": {
+      "genre": "religion_christianity",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Христианство"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 170,
+    "fields": {
+      "genre": "religion_esoterics",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Эзотерика, эзотерическая литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 171,
+    "fields": {
+      "genre": "religion_paganism",
+      "section": "Религия, духовность, эзотерика",
+      "subsection": "Язычество"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 172,
+    "fields": {
+      "genre": "geo_guides",
+      "section": "Справочная литература",
+      "subsection": "Путеводители, карты, атласы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 173,
+    "fields": {
+      "genre": "ref_guide",
+      "section": "Справочная литература",
+      "subsection": "Руководства"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 174,
+    "fields": {
+      "genre": "ref_dict",
+      "section": "Справочная литература",
+      "subsection": "Словари"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 175,
+    "fields": {
+      "genre": "reference",
+      "section": "Справочная литература",
+      "subsection": "Справочная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 176,
+    "fields": {
+      "genre": "ref_ref",
+      "section": "Справочная литература",
+      "subsection": "Справочники"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 177,
+    "fields": {
+      "genre": "ref_encyc",
+      "section": "Справочная литература",
+      "subsection": "Энциклопедии"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 178,
+    "fields": {
+      "genre": "antique",
+      "section": "Старинное",
+      "subsection": "antique"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 179,
+    "fields": {
+      "genre": "antique_ant",
+      "section": "Старинное",
+      "subsection": "Античная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 180,
+    "fields": {
+      "genre": "antique_east",
+      "section": "Старинное",
+      "subsection": "Древневосточная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 181,
+    "fields": {
+      "genre": "antique_russian",
+      "section": "Старинное",
+      "subsection": "Древнерусская литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 182,
+    "fields": {
+      "genre": "antique_european",
+      "section": "Старинное",
+      "subsection": "Европейская старинная литература"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 183,
+    "fields": {
+      "genre": "auto_business",
+      "section": "Техника",
+      "subsection": "Автодело"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 184,
+    "fields": {
+      "genre": "military_weapon",
+      "section": "Техника",
+      "subsection": "Военное дело, военная техника и вооружение"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 185,
+    "fields": {
+      "genre": "equ_history",
+      "section": "Техника",
+      "subsection": "История техники"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 186,
+    "fields": {
+      "genre": "sci_metal",
+      "section": "Техника",
+      "subsection": "Металлургия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 187,
+    "fields": {
+      "genre": "sci_radio",
+      "section": "Техника",
+      "subsection": "Радиоэлектроника"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 188,
+    "fields": {
+      "genre": "sci_build",
+      "section": "Техника",
+      "subsection": "Строительство и сопромат"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 189,
+    "fields": {
+      "genre": "sci_tech",
+      "section": "Техника",
+      "subsection": "Технические науки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 190,
+    "fields": {
+      "genre": "sci_transport",
+      "section": "Техника",
+      "subsection": "Транспорт и авиация"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 191,
+    "fields": {
+      "genre": "sci_textbook",
+      "section": "Учебники и пособия",
+      "subsection": "Учебники и пособия"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 192,
+    "fields": {
+      "genre": "tbg_higher",
+      "section": "Учебники и пособия",
+      "subsection": "Учебники и пособия ВУЗов"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 193,
+    "fields": {
+      "genre": "tbg_secondary",
+      "section": "Учебники и пособия",
+      "subsection": "Учебники и пособия для среднего и специального образования"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 194,
+    "fields": {
+      "genre": "tbg_school",
+      "section": "Учебники и пособия",
+      "subsection": "Школьные учебники и пособия, рефераты, шпаргалки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 195,
+    "fields": {
+      "genre": "sf_history",
+      "section": "Фантастика",
+      "subsection": "Альтернативная история, попаданцы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 196,
+    "fields": {
+      "genre": "sf_action",
+      "section": "Фантастика",
+      "subsection": "Боевая фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 197,
+    "fields": {
+      "genre": "sf_heroic",
+      "section": "Фантастика",
+      "subsection": "Героическая фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 198,
+    "fields": {
+      "genre": "sf_fantasy_city",
+      "section": "Фантастика",
+      "subsection": "Городское фэнтези"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 199,
+    "fields": {
+      "genre": "sf_detective",
+      "section": "Фантастика",
+      "subsection": "Детективная фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 200,
+    "fields": {
+      "genre": "sf_cyberpunk",
+      "section": "Фантастика",
+      "subsection": "Киберпанк"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 201,
+    "fields": {
+      "genre": "sf_space",
+      "section": "Фантастика",
+      "subsection": "Космическая фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 202,
+    "fields": {
+      "genre": "sf_mystic",
+      "section": "Фантастика",
+      "subsection": "Мистика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 203,
+    "fields": {
+      "genre": "fairy_fantasy",
+      "section": "Фантастика",
+      "subsection": "Мифологическое фэнтези"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 204,
+    "fields": {
+      "genre": "sf",
+      "section": "Фантастика",
+      "subsection": "Научная Фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 205,
+    "fields": {
+      "genre": "sf_postapocalyptic",
+      "section": "Фантастика",
+      "subsection": "Постапокалипсис"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 206,
+    "fields": {
+      "genre": "russian_fantasy",
+      "section": "Фантастика",
+      "subsection": "Славянское фэнтези"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 207,
+    "fields": {
+      "genre": "modern_tale",
+      "section": "Фантастика",
+      "subsection": "Современная сказка"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 208,
+    "fields": {
+      "genre": "sf_social",
+      "section": "Фантастика",
+      "subsection": "Социально-психологическая фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 209,
+    "fields": {
+      "genre": "sf_stimpank",
+      "section": "Фантастика",
+      "subsection": "Стимпанк"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 210,
+    "fields": {
+      "genre": "sf_technofantasy",
+      "section": "Фантастика",
+      "subsection": "Технофэнтези"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 211,
+    "fields": {
+      "genre": "sf_horror",
+      "section": "Фантастика",
+      "subsection": "Ужасы"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 212,
+    "fields": {
+      "genre": "sf_etc",
+      "section": "Фантастика",
+      "subsection": "Фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 213,
+    "fields": {
+      "genre": "sf_fantasy",
+      "section": "Фантастика",
+      "subsection": "Фэнтези"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 214,
+    "fields": {
+      "genre": "hronoopera",
+      "section": "Фантастика",
+      "subsection": "Хроноопера"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 215,
+    "fields": {
+      "genre": "sf_epic",
+      "section": "Фантастика",
+      "subsection": "Эпическая фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 216,
+    "fields": {
+      "genre": "sf_humor",
+      "section": "Фантастика",
+      "subsection": "Юмористическая фантастика"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 217,
+    "fields": {
+      "genre": "epic",
+      "section": "Фольклор",
+      "subsection": "Былины, эпопея"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 218,
+    "fields": {
+      "genre": "child_folklore",
+      "section": "Фольклор",
+      "subsection": "Детский фольклор"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 219,
+    "fields": {
+      "genre": "antique_myths",
+      "section": "Фольклор",
+      "subsection": "Мифы. Легенды. Эпос"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 220,
+    "fields": {
+      "genre": "folk_songs",
+      "section": "Фольклор",
+      "subsection": "Народные песни"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 221,
+    "fields": {
+      "genre": "folk_tale",
+      "section": "Фольклор",
+      "subsection": "Народные сказки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 222,
+    "fields": {
+      "genre": "proverbs",
+      "section": "Фольклор",
+      "subsection": "Пословицы, поговорки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 223,
+    "fields": {
+      "genre": "folklore",
+      "section": "Фольклор",
+      "subsection": "Фольклор, загадки folklore"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 224,
+    "fields": {
+      "genre": "limerick",
+      "section": "Фольклор",
+      "subsection": "Частушки, прибаутки, потешки"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 225,
+    "fields": {
+      "genre": "humor_anecdote",
+      "section": "Юмор",
+      "subsection": "Анекдоты"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 226,
+    "fields": {
+      "genre": "humor_satire",
+      "section": "Юмор",
+      "subsection": "Сатира"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 227,
+    "fields": {
+      "genre": "humor",
+      "section": "Юмор",
+      "subsection": "Юмор"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 228,
+    "fields": {
+      "genre": "humor_prose",
+      "section": "Юмор",
+      "subsection": "Юмористическая проза"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 595,
+    "fields": {
+      "genre": "azizex666",
+      "section": "Unknown genre",
+      "subsection": "azizex666"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 596,
+    "fields": {
+      "genre": "mystery",
+      "section": "Unknown genre",
+      "subsection": "mystery"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 597,
+    "fields": {
+      "genre": "suspense",
+      "section": "Unknown genre",
+      "subsection": "suspense"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 598,
+    "fields": {
+      "genre": "fiction",
+      "section": "Unknown genre",
+      "subsection": "fiction"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 599,
+    "fields": {
+      "genre": "general",
+      "section": "Unknown genre",
+      "subsection": "general"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 600,
+    "fields": {
+      "genre": "mystery & detective",
+      "section": "Unknown genre",
+      "subsection": "mystery & detective"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 601,
+    "fields": {
+      "genre": "fiction / mystery & detective",
+      "section": "Unknown genre",
+      "subsection": "fiction / mystery & detective"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 602,
+    "fields": {
+      "genre": "adult",
+      "section": "Unknown genre",
+      "subsection": "adult"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 603,
+    "fields": {
+      "genre": "western",
+      "section": "Unknown genre",
+      "subsection": "western"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 604,
+    "fields": {
+      "genre": "literature & fiction",
+      "section": "Unknown genre",
+      "subsection": "literature & fiction"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 605,
+    "fields": {
+      "genre": "united states",
+      "section": "Unknown genre",
+      "subsection": "united states"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 606,
+    "fields": {
+      "genre": "mystery; thriller & suspense",
+      "section": "Unknown genre",
+      "subsection": "mystery; thriller & suspense"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 607,
+    "fields": {
+      "genre": "thrillers & suspense",
+      "section": "Unknown genre",
+      "subsection": "thrillers & suspense"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 608,
+    "fields": {
+      "genre": "crime",
+      "section": "Unknown genre",
+      "subsection": "crime"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 609,
+    "fields": {
+      "genre": "crime fiction",
+      "section": "Unknown genre",
+      "subsection": "crime fiction"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 610,
+    "fields": {
+      "genre": "thrillers",
+      "section": "Unknown genre",
+      "subsection": "thrillers"
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 611,
+    "fields": {
+      "genre": "english",
+      "section": "Unknown genre",
+      "subsection": "english"
+    }
+  }
+]
