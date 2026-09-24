@@ -353,7 +353,18 @@ def _run_genre_scan_thread(folder_paths):
 
 @staff_member_required(login_url="/web/login/")
 def genre_scan(request):
-    root = genre_scan_job.get().get("folder") or config.SOPDS_ROOT_LIB or ""
+    # Рабочая папка страницы должна переживать обновление страницы (и
+    # рестарт процесса — job_folder живёт только в LocMemCache текущего
+    # процесса) — берём из сессии (пишется в genre_scan_start), а не
+    # только из кэша job-состояния. На дефолт (SOPDS_ROOT_LIB) откатываемся
+    # ТОЛЬКО если ни один из сохранённых вариантов уже не существует
+    # (папку удалили/перенесли).
+    job_folder = genre_scan_job.get().get("folder")
+    saved_root = request.session.get("genre_scan_root")
+    root = next(
+        (p for p in (job_folder, saved_root, config.SOPDS_ROOT_LIB) if p and os.path.isdir(p)),
+        "",
+    )
     state = genre_scan_job.get()
     # Если общий кэш пуст (рестарт memcached), но на диске есть результаты
     # прошлого прогона по этому же набору папок — подхватываем их.
@@ -428,6 +439,13 @@ def genre_scan_start(request):
         return HttpResponse(
             f'<div id="genre-scan-status"><div class="callout {css}">{icon} {error}</div></div>'
         )
+
+    # Запоминаем рабочую папку страницы (баг: страница откатывалась на
+    # дефолт после каждого обновления) — только для одиночной папки: набор
+    # из нескольких отмеченных папок нечего показывать в одном текстовом
+    # поле "Books folder".
+    if len(folder_paths) == 1:
+        request.session["genre_scan_root"] = folder_paths[0]
 
     genre_scan_stop_flag.clear()
     folder_key = _genre_scan_folder_key(folder_paths)
