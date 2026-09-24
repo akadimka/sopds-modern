@@ -77,8 +77,8 @@ msgstr "Папка для обработки:"
 msgid "📁 Browse"
 msgstr "📁 Обзор"
 
-msgid "▶ Scan"
-msgstr "▶ Сканировать"
+msgid "▶ Scan genres"
+msgstr "▶ Сканировать жанры"
 
 msgid "Starting..."
 msgstr "Запуск..."
