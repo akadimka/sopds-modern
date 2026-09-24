@@ -821,22 +821,39 @@ def folder_tree(request):
 @staff_member_required(login_url="/web/login/")
 @staff_member_required
 def server_restart(request):
-    """Touch manage.py to trigger Django dev server autoreload.
+    """Touch manage.py to trigger Django dev server autoreload; under
+    gunicorn, actually restart the systemd unit via a narrowly-scoped
+    passwordless sudo rule.
 
     В продакшене (gunicorn, sopds.settings.gunicorn: reload=False)
     касание manage.py ничего не делает — gunicorn-воркеры не следят за
     изменениями файлов. Раньше это тихо игнорировалось и ответ ВСЕГДА
     рапортовал успех перезапуска (баг №90) — определяем реальный сервер
     по SERVER_SOFTWARE и не обещаем то, что физически не выполняем.
+
+    /etc/sudoers.d/sopds-modern-restart даёт www-data ТОЛЬКО одну точную
+    команду без аргументов (NOPASSWD: /usr/bin/systemctl restart
+    sopds-modern) — не общий sudo, только этот один системный юнит.
+    Сам себя вызывающий процесс не может дождаться результата команды,
+    которая его же и убивает — поэтому, как и в dev-ветке ниже, команда
+    запускается из фонового потока ПОСЛЕ того, как ответ уже отправлен
+    браузеру, а не до.
     """
     from django.utils.translation import gettext as _
     if "gunicorn" in request.META.get("SERVER_SOFTWARE", "").lower():
-        message = _(
-            "Automatic restart is unavailable under gunicorn — "
-            "run 'systemctl restart sopds-modern' on the server."
-        )
+        import subprocess, threading, time
+
+        def _restart_service():
+            time.sleep(0.3)
+            subprocess.run(
+                ["sudo", "-n", "systemctl", "restart", "sopds-modern"],
+                check=False,
+            )
+
+        threading.Thread(target=_restart_service, daemon=True).start()
         return HttpResponse(
-            f'<span style="color:#c0392b">✗ {message}</span>',
+            '<script>setTimeout(function(){location.reload();},5000);</script>'
+            '<span style="color:#27ae60">⟳ Перезапуск sopds-modern...</span>',
             content_type="text/html; charset=utf-8",
         )
     import pathlib, threading
