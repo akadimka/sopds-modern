@@ -621,6 +621,7 @@ WorkingDirectory=/opt/sopds-modern/src
 EnvironmentFile=/opt/sopds-modern/src/.env
 Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
 Environment=PYTHONUNBUFFERED=1
+Environment=SOPDS_MANAGED_BY_SYSTEMD=1
 ExecStart=/opt/sopds-modern/.venv/bin/python manage.py sopds_scanner start
 Restart=on-failure
 RestartSec=60
@@ -640,6 +641,14 @@ systemctl status sopds-scan
 > отслеживает PID сервиса. systemd и так держит процесс в фоне и
 > перезапускает его при падении (`Restart=on-failure`) — собственный
 > daemonize здесь не нужен, только мешает.
+
+> **`SOPDS_MANAGED_BY_SYSTEMD=1` обязателен и здесь**, по той же причине,
+> что и в шаге 11 для gunicorn: `sopds-scan` тоже находит новые книги и
+> будит фетчеры рейтингов (`poke_fetchers_for_new_books()`) — без этой
+> переменной он запустит для них ещё и собственные потоки внутри своего
+> процесса, поверх уже работающих `sopds-samlib`/`sopds-authortoday`/
+> `sopds-fantlab`/`sopds-litmarket`, что приводит к `database is locked`
+> при конкурентной записи в SQLite.
 
 ---
 
@@ -676,6 +685,7 @@ WorkingDirectory=/opt/sopds-modern/src
 EnvironmentFile=/opt/sopds-modern/src/.env
 Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
 Environment=PYTHONUNBUFFERED=1
+Environment=SOPDS_MANAGED_BY_SYSTEMD=1
 ExecStart=/opt/sopds-modern/.venv/bin/python manage.py sopds_watch
 Restart=on-failure
 RestartSec=60
@@ -692,6 +702,11 @@ systemctl status sopds-watch
 
 > Как и `sopds-scan`, не передавайте `--daemon` — процесс сам блокируется
 > в foreground, systemd держит его в фоне.
+
+> `SOPDS_MANAGED_BY_SYSTEMD=1` обязателен здесь по той же причине, что и
+> у `sopds-scan` выше — `sopds_watch` тоже вызывает
+> `poke_fetchers_for_new_books()` при каждой пересборке "грязной" папки,
+> которая нашла новые книги.
 
 ---
 
