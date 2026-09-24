@@ -325,16 +325,31 @@ class GenresManager:
         return True
 
     def list_sections(self):
-        """Все секции официального справочника с числом кодов и текущим
-        сопоставленным жанром — для UI-таблицы `section_map`."""
-        counts = {}
-        for _, (section, _sub) in self._reference.items():
+        """Все секции официального справочника с числом кодов, текущим
+        сопоставленным жанром и подсказкой-тултипом (какие именно коды
+        стоят за числом, сгруппированные по подсекции) — для UI-таблицы
+        `section_map`."""
+        by_section: dict = {}
+        for code, (section, subsection) in self._reference.items():
             if section:
-                counts[section] = counts.get(section, 0) + 1
-        return [
-            {"section": section, "count": count, "genre": self.section_map.get(section)}
-            for section, count in sorted(counts.items())
-        ]
+                by_section.setdefault(section, []).append((subsection or '', code))
+        result = []
+        for section in sorted(by_section):
+            items = sorted(by_section[section])
+            by_subsection: dict = {}
+            for subsection, code in items:
+                by_subsection.setdefault(subsection or '—', []).append(code)
+            tooltip = "\n".join(
+                f"{subsection}: {', '.join(codes)}"
+                for subsection, codes in sorted(by_subsection.items())
+            )
+            result.append({
+                "section": section,
+                "count": len(items),
+                "genre": self.section_map.get(section),
+                "codes_tooltip": tooltip,
+            })
+        return result
 
     def get_section_map(self):
         return dict(self.section_map)

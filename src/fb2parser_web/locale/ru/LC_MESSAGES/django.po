@@ -1091,6 +1091,9 @@ msgstr "Справочник FB2-жанров"
 msgid "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json) — map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations."
 msgstr "Официальная таксономия FB2-кодов (opds_catalog/fixtures/mygenres.json) — сопоставьте каждый раздел одному из ваших жанров, чтобы сырые коды разрешались объективно, а не только через вручную накопленные ассоциации."
 
+msgid "Hover over the code count to see the actual codes."
+msgstr "Наведите на число кодов, чтобы увидеть сами коды."
+
 msgid "Section"
 msgstr "Раздел"
 

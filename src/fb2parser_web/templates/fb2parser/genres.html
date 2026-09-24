@@ -104,6 +104,7 @@
             <div class="card-section" style="max-height:40vh; overflow-y:auto;">
                 <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
                     {% trans "Official FB2 genre-code taxonomy (opds_catalog/fixtures/mygenres.json) — map each section to one of your genres so raw codes resolve objectively, instead of relying only on manually taught associations." %}
+                    {% trans "Hover over the code count to see the actual codes." %}
                 </p>
                 <table class="unstriped" style="font-size:0.8rem; margin:0;">
                     <thead>
@@ -117,7 +118,8 @@
                         {% for s in sections %}
                         <tr>
                             <td>{{ s.section }}</td>
-                            <td style="color:var(--text-muted);">{{ s.count }}</td>
+                            <td style="color:var(--text-muted); cursor:help; border-bottom:1px dotted var(--text-muted); white-space:nowrap;"
+                                title="{{ s.codes_tooltip }}">{{ s.count }}</td>
                             <td>
                                 <select style="margin:0; font-size:0.78rem;"
                                         onchange="genreSectionMapSet('{{ s.section|escapejs }}', this.value)">
