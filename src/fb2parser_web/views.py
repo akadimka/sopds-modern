@@ -336,6 +336,23 @@ def _run_genre_scan_thread(folder_paths):
                 break
 
         _genre_scan_cache_save(folder_key, merged_results, merged_errors)
+
+        # Баг №114: новые (ранее неизвестные) латинские коды сразу
+        # дописываются в справочник — не теряются, доступны для разметки
+        # в Менеджере жанров. Не должно валить сам скан, если не удалось.
+        try:
+            from .fb2parser_bridge import get_genres_manager
+            gm = get_genres_manager()
+            all_codes = set()
+            for combo in merged_results:
+                for code in combo.split(','):
+                    code = code.strip()
+                    if code:
+                        all_codes.add(code)
+            gm.register_discovered_codes(all_codes)
+        except Exception:
+            pass
+
         genre_scan_job.update(
             done=True, running=False, folder=folder_key,
             processed=total_processed, total=base_total,
