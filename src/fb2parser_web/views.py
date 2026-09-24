@@ -1195,12 +1195,18 @@ def genres(request):
     from .fb2parser_bridge import get_genres_manager
     error = None
     genre_list = []
+    genre_names_sorted = []
     sections = []
     excluded_codes = []
     reference_codes = []
     try:
         gm = get_genres_manager()
         genre_list = _genre_tree_to_list(gm.root_nodes)
+        # Дерево слева отражает иерархию (порядок задаёт пользователь через
+        # move/indent/outdent) — а вот выпадающие списки жанра в справочнике
+        # должны быть предсказуемо алфавитными, без привязки к структуре
+        # дерева, и не подлежат ручной перестановке пользователем.
+        genre_names_sorted = sorted(g["name"] for g in genre_list)
         sections = gm.list_sections()
         excluded_codes = sorted(gm.get_excluded_codes())
         reference_codes = gm.list_reference_codes()
@@ -1209,6 +1215,7 @@ def genres(request):
     return render(request, "fb2parser/genres.html", _ctx(
         "genres", "Менеджер жанров",
         genre_list=genre_list,
+        genre_names_sorted=genre_names_sorted,
         sections=sections,
         excluded_codes=excluded_codes,
         reference_codes=reference_codes,
