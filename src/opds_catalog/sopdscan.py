@@ -385,11 +385,13 @@ class opdsScanner:
                         self.logger.info(
                             f"Store genres metadata for {name} in database"
                         )
-                        for genre in book_data.tags:
-                            opdsdb.addbgenre(
-                                book,
-                                opdsdb.addgenre(genre.lower().strip(strip_symbols)),
-                            )
+                        # Жанр берётся из папки 1-го уровня (genre/author/...), а не
+                        # из тегов FB2 — папка авторитетнее: библиотека организована
+                        # по жанровым папкам, и переименование папки должно менять
+                        # жанр книг внутри неё даже если теги файла не совпадают.
+                        genre_folder = path_parts[0] if path_parts and path_parts[0] not in ("", ".") else None
+                        genre = opdsdb.addgenre_from_folder(genre_folder)
+                        opdsdb.addbgenre(book, genre)
                         self.logger.info("Genres metadata stored successfully")
 
                         # FIXME: series_info определяется только по наличию названия серии, номер в серии устанавливается в 0 если не указан

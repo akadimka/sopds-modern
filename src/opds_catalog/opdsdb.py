@@ -8,6 +8,7 @@ from django.db.models import Count, Q
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop as _noop
 
+from book_tools.format.util import strip_symbols
 from opds_catalog.models import (
     SIZE_AUTHOR_NAME,
     SIZE_BOOK_ANNOTATION,
@@ -20,7 +21,7 @@ from opds_catalog.models import (
     SIZE_CAT_CATNAME,
     SIZE_CAT_PATH,
     SIZE_GENRE,
-    # SIZE_GENRE_SECTION,
+    SIZE_GENRE_SECTION,
     SIZE_GENRE_SUBSECTION,
     SIZE_SERIES,
     SOPDS_LANG_CODE_OTHER,
@@ -495,6 +496,25 @@ def addgenre(genre):
             "section": unknown_genre,
             "subsection": _sanitize_genre_subsection(genre[:SIZE_GENRE_SUBSECTION]),
         },
+    )
+    return obj
+
+
+def addgenre_from_folder(folder_name: str) -> Genre:
+    """Жанр по имени папки 1-го уровня библиотеки (genre/author/...), а не по
+    внутренним тегам FB2-файла — библиотека организована так, что верхняя
+    папка уже И ЕСТЬ жанр книги, и должна быть источником истины, даже если
+    теги файла отсутствуют, устарели или книгу просто переложили в другую
+    папку. Имя папки используется как есть, без сверки с genres.xml."""
+    folder_name = (folder_name or "").strip(strip_symbols) or str(unknown_genre)
+    genre_code = folder_name[:SIZE_GENRE]
+    try:
+        return Genre.objects.get(genre=genre_code)
+    except Genre.DoesNotExist:
+        pass
+    obj, _ = Genre.objects.get_or_create(
+        genre=genre_code,
+        defaults={"section": folder_name[:SIZE_GENRE_SECTION], "subsection": ""},
     )
     return obj
 
