@@ -67,3 +67,6 @@ class TestGenreScanRegistersDiscoveredCodes:
         genres = [item["fields"]["genre"] for item in data]
         assert "brand_new_latin_code" in genres
         assert not any("рус" in g.lower() for g in genres)
+
+        # Отображается в UI статуса скана ("Codes added to reference:").
+        assert genre_scan_job.get()["discovered_codes_count"] == 1

@@ -355,6 +355,9 @@ msgstr "пропущено"
 msgid "errors"
 msgstr "ошибок"
 
+msgid "new codes"
+msgstr "новых кодов"
+
 msgid "processed"
 msgstr "обработано"
 
@@ -1001,6 +1004,9 @@ msgstr "Обработано файлов:"
 
 msgid "Unique genre combinations:"
 msgstr "Уникальных наборов жанров:"
+
+msgid "Codes added to reference:"
+msgstr "Добавлено кодов в справочник:"
 
 msgid "Errors:"
 msgstr "Ошибок:"

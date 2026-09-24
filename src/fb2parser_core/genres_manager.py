@@ -124,6 +124,10 @@ class GenresManager:
         кириллицей (это не код жанра, а мусор/ошибка метаданных, а не
         новый жанровый код — раз он не на латинице, значит вообще не по
         правилам FB2-таксономии).
+
+        Returns:
+            int: сколько кодов реально добавлено (для отображения в UI
+            статуса скана — баг №114).
         """
         new_codes = []
         seen = set()
@@ -139,10 +143,11 @@ class GenresManager:
             seen.add(code_l)
             new_codes.append(code_l)
         if not new_codes:
-            return
+            return 0
         self._append_to_reference_file(new_codes)
         for code_l in new_codes:
             self._reference[code_l] = (self.NEW_CODES_SECTION, '')
+        return len(new_codes)
 
     def _append_to_reference_file(self, codes):
         """Дописать новые записи в Django-фикстуру справочника (тот же

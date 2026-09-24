@@ -239,6 +239,7 @@ genre_scan_job = JobState("fb2parser:genre_scan", {
     "results": {},     # {genre_combo: [rel_path, ...]}
     "errors": [],
     "stopped": False,
+    "discovered_codes_count": 0,  # баг №114 — новых кодов дописано в справочник за этот скан
 })
 genre_scan_stop_flag = JobFlag("fb2parser:genre_scan_stop")
 
@@ -340,6 +341,7 @@ def _run_genre_scan_thread(folder_paths):
         # Баг №114: новые (ранее неизвестные) латинские коды сразу
         # дописываются в справочник — не теряются, доступны для разметки
         # в Менеджере жанров. Не должно валить сам скан, если не удалось.
+        discovered_codes_count = 0
         try:
             from .fb2parser_bridge import get_genres_manager
             gm = get_genres_manager()
@@ -349,7 +351,7 @@ def _run_genre_scan_thread(folder_paths):
                     code = code.strip()
                     if code:
                         all_codes.add(code)
-            gm.register_discovered_codes(all_codes)
+            discovered_codes_count = gm.register_discovered_codes(all_codes) or 0
         except Exception:
             pass
 
@@ -358,6 +360,7 @@ def _run_genre_scan_thread(folder_paths):
             processed=total_processed, total=base_total,
             results=merged_results, errors=merged_errors,
             stopped=stopped,
+            discovered_codes_count=discovered_codes_count,
         )
     except Exception as exc:
         genre_scan_job.update(error=str(exc), running=False)

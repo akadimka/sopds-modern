@@ -14,7 +14,7 @@
 </div>
 {% elif state.done %}
 <span data-scan-done="1" style="color:#27ae60;">{% trans "✓ Done:" %}</span>
-<span>{% trans "processed" %} <strong>{{ state.processed }}</strong>, {% trans "genre combinations" %} {{ state.results|length }}, {% trans "errors" %} <strong style="color:{% if state.errors %}#c0392b{% else %}inherit{% endif %}">{{ state.errors|length }}</strong></span>
+<span>{% trans "processed" %} <strong>{{ state.processed }}</strong>, {% trans "genre combinations" %} {{ state.results|length }}, {% trans "new codes" %} <strong>{{ state.discovered_codes_count|default:0 }}</strong>, {% trans "errors" %} <strong style="color:{% if state.errors %}#c0392b{% else %}inherit{% endif %}">{{ state.errors|length }}</strong></span>
 {% elif state.error %}
 <span style="color:#c0392b;">❌ {{ state.error }}</span>
 {% else %}
