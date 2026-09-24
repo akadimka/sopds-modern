@@ -17,6 +17,7 @@
 Запуск (аналогично sopds_scanner — под systemd, БЕЗ демонизации):
     python manage.py sopds_watch
 """
+import logging
 import os
 import threading
 import time
@@ -142,7 +143,19 @@ class Command(BaseCommand):
             dirty = tracker.take_ready(quiet_seconds)
             if not dirty:
                 continue
-            self._flush(_dedup_nested(dirty), scanner)
+            try:
+                self._flush(_dedup_nested(dirty), scanner)
+            except Exception:
+                # Ловим здесь любую ошибку, до которой не добрался per-directory
+                # try/except ниже (например саму database is locked, которая
+                # рвёт transaction.atomic() целиком) — демон не должен падать и
+                # терять inotify-подписку из-за одной неудачной пересборки.
+                # Папки, не попавшие в этот батч, останутся "грязными" и будут
+                # подхвачены следующим успешным циклом, а страховкой на случай
+                # если и это не поможет остаётся ночной sopds-scan.service.
+                logging.getLogger(__name__).exception(
+                    "Flush of dirty folders failed, will retry on next change"
+                )
 
     def _flush(self, dirs: list, scanner) -> None:
         self._reconnect_if_needed()
@@ -150,18 +163,27 @@ class Command(BaseCommand):
         books_added_before = scanner.books_added
         with transaction.atomic():
             for d in dirs:
-                if not os.path.isdir(d):
-                    # Папка целиком исчезла (переименована/удалена) — всё
-                    # равно нужно пройти books_del_phisical_scoped ниже,
-                    # scan_path() по несуществующему пути просто ничего не найдёт.
-                    self.stdout.write(f"  {d} (папка больше не существует)")
-                else:
-                    self.stdout.write(f"  {d}")
-                rel_path = os.path.relpath(d, config.SOPDS_ROOT_LIB)
-                opdsdb.avail_check_prepare_scoped(rel_path)
-                if os.path.isdir(d):
-                    scanner.scan_path(d)
-                opdsdb.books_del_phisical_scoped(rel_path)
+                try:
+                    if not os.path.isdir(d):
+                        # Папка целиком исчезла (переименована/удалена) — всё
+                        # равно нужно пройти books_del_phisical_scoped ниже,
+                        # scan_path() по несуществующему пути просто ничего не найдёт.
+                        self.stdout.write(f"  {d} (папка больше не существует)")
+                    else:
+                        self.stdout.write(f"  {d}")
+                    rel_path = os.path.relpath(d, config.SOPDS_ROOT_LIB)
+                    opdsdb.avail_check_prepare_scoped(rel_path)
+                    if os.path.isdir(d):
+                        scanner.scan_path(d)
+                    opdsdb.books_del_phisical_scoped(rel_path)
+                except OSError:
+                    # Файл/папка исчезли между inotify-событием и этим
+                    # пересканом (например их как раз переименовывает
+                    # синхронизация fb2parser) — гонка, не баг; просто
+                    # пропускаем эту папку, её подхватит следующий цикл.
+                    logging.getLogger(__name__).exception(
+                        f"Skipping {d}: race with a concurrent filesystem change"
+                    )
             opdsdb.cleanup_orphan_entities()
         # Та же логика, что при стартовом скане выше — новые книги от точечных
         # inotify-пересканов иначе никогда не анонсируются фетчерам рейтингов.
