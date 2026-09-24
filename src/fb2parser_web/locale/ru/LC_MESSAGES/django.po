@@ -882,6 +882,9 @@ msgstr "скомп."
 msgid "Drag to resize"
 msgstr "Перетащи для изменения высоты"
 
+msgid "Drag to resize columns"
+msgstr "Перетащи для изменения ширины колонок"
+
 msgid "← Select a group"
 msgstr "← Выберите группу"
 

@@ -1,8 +1,12 @@
 {% load i18n %}
+<style>
+    .gs-col-resizer { flex:0 0 5px; cursor:col-resize; background:var(--border); position:relative; }
+    .gs-col-resizer:hover, .gs-col-resizer.gs-dragging { background:var(--fp-accent, #2980b9); }
+</style>
 <div id="genre-scan-results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border); position:relative;">
 
     <!-- Панель 1: Наборы жанров -->
-    <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-width:0;">
+    <div id="gs-col-combos" style="flex:0 0 320px; min-width:160px; max-width:70%; display:flex; flex-direction:column;">
         <div style="background:var(--fp-header-bg); color:var(--fp-header-text); padding:0.3rem 0.6rem; font-size:0.82rem; font-weight:600; flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">
             <span>{% trans "Genre combinations" %} <span style="font-weight:normal; color:#bdc3c7;">({{ combos|length }})</span></span>
             <span style="display:flex; gap:0.4rem;">
@@ -48,6 +52,8 @@
             {% endif %}
         </div>
     </div>
+
+    <div id="gs-col-resizer" class="gs-col-resizer" title="{% trans 'Drag to resize columns' %}"></div>
 
     {% if state.errors %}
     <!-- Панель 2: Ошибки -->
@@ -279,5 +285,52 @@
             btn.innerHTML = "{% trans '✅ Apply' %} (<span id=\"gs-apply-count\">0</span>)";
         }
     };
+})();
+
+// Разделитель "Genre combinations" / "Files" (сделан отдельным IIFE, т.к.
+// перевыполняется при каждой innerHTML-подгрузке этой панели — как и
+// основной скрипт выше).
+(function () {
+    var col = document.getElementById('gs-col-combos');
+    var resizer = document.getElementById('gs-col-resizer');
+    var container = document.getElementById('genre-scan-results-content');
+    if (!col || !resizer || !container) return;
+
+    var STORAGE_KEY = 'fb2parser:genreScanCombosWidth';
+    var dragging = false;
+
+    function applyWidth(px) {
+        var min = 160;
+        var max = container.clientWidth - 200;
+        px = Math.max(min, Math.min(max, px));
+        col.style.flex = '0 0 ' + px + 'px';
+    }
+
+    try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) applyWidth(parseInt(saved, 10));
+    } catch (e) {}
+
+    resizer.addEventListener('mousedown', function (e) {
+        dragging = true;
+        resizer.classList.add('gs-dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        applyWidth(e.clientX - container.getBoundingClientRect().left);
+    });
+    document.addEventListener('mouseup', function () {
+        if (!dragging) return;
+        dragging = false;
+        resizer.classList.remove('gs-dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        try {
+            localStorage.setItem(STORAGE_KEY, parseInt(col.style.flex.replace('0 0 ', ''), 10));
+        } catch (e) {}
+    });
 })();
 </script>
