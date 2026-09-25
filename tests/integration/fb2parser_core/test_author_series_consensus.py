@@ -444,16 +444,22 @@ class TestAuthorSurnamePrefixStrippedFromSeries:
     голую "Фамилия." без инициала — этот, второй, формат добавлен фиксом.
     """
 
+    # Название серии в этих тестах намеренно НЕ "Лучшая криминальная
+    # драма" (реальное имя серии из бага №119/№120) — оно теперь в
+    # реальном series_folder_blacklist (баг №120: пользователь добавил
+    # его туда сам), и тест не должен зависеть от содержимого реального
+    # app_settings.json за пределами того, что он явно проверяет.
+
     def test_bare_surname_dot_prefix_stripped(self):
         service = RegenCSVService(_config_path())
         service.records = [
-            _rec("Серия - «Колычев. Лучшая криминальная драма»\\Колычев - А ты бы ей отказал.fb2",
+            _rec("Серия - «Колычев. Хроники северного края»\\Колычев - А ты бы ей отказал.fb2",
                  "Владимир Колычев", "Колычев Владимир", "filename+meta_expanded",
-                 proposed_series="Колычев. Лучшая криминальная драма",
+                 proposed_series="Колычев. Хроники северного края",
                  series_source="folder_hierarchy"),
         ]
         service._postcheck_strip_author_prefix_from_series()
-        assert service.records[0].proposed_series == "Лучшая криминальная драма"
+        assert service.records[0].proposed_series == "Хроники северного края"
 
     def test_full_pipeline_from_raw_folder_name(self):
         """Обе post-check функции подряд, как в реальном конвейере
@@ -461,14 +467,14 @@ class TestAuthorSurnamePrefixStrippedFromSeries:
         названия серии без фамилии автора."""
         service = RegenCSVService(_config_path())
         service.records = [
-            _rec("Серия - «Колычев. Лучшая криминальная драма»\\Колычев - А ты бы ей отказал.fb2",
+            _rec("Серия - «Колычев. Хроники северного края»\\Колычев - А ты бы ей отказал.fb2",
                  "Владимир Колычев", "Колычев Владимир", "filename+meta_expanded",
-                 proposed_series="Серия - «Колычев. Лучшая криминальная драма»",
+                 proposed_series="Серия - «Колычев. Хроники северного края»",
                  series_source="folder_hierarchy"),
         ]
         service._postcheck_series_folder_blacklist()
         service._postcheck_strip_author_prefix_from_series()
-        assert service.records[0].proposed_series == "Лучшая криминальная драма"
+        assert service.records[0].proposed_series == "Хроники северного края"
 
     def test_unrelated_leading_word_with_dot_not_stripped(self):
         """Слово с точкой в начале серии, НЕ совпадающее с автором записи
@@ -482,3 +488,35 @@ class TestAuthorSurnamePrefixStrippedFromSeries:
         ]
         service._postcheck_strip_author_prefix_from_series()
         assert service.records[0].proposed_series == "Спец. операция"
+
+
+class TestSeriesBlacklistRecheckedAfterAuthorPrefixStrip:
+    """Баг №120: series_folder_blacklist проверяется в
+    _postcheck_series_folder_blacklist(), который выполняется РАНЬШЕ
+    _postcheck_strip_author_prefix_from_series() в конвейере — на
+    момент первой проверки серия ещё несёт авторский префикс
+    ("Колычев. Лучшая криминальная драма"), поэтому точное совпадение с
+    blacklist-значением ("Лучшая криминальная драма") не срабатывает.
+    Только после срезки префикса серия принимает ровно blacklist-
+    значение — организационный ярлык, который пользователь специально
+    занёс в blacklist, просачивался в CSV необрезанным. Настраиваем
+    blacklist локально (не полагаемся на реальный app_settings.json),
+    чтобы тест был детерминирован независимо от того, что там сейчас.
+    """
+
+    def test_value_blacklisted_only_after_stripping_gets_cleared(self):
+        service = RegenCSVService(_config_path())
+        service.settings.settings['series_folder_blacklist'] = ["Лучшая криминальная драма"]
+        service.records = [
+            _rec("Серия - «Колычев. Лучшая криминальная драма»\\Колычев - А ты бы ей отказал.fb2",
+                 "Владимир Колычев", "Колычев Владимир", "filename+meta_expanded",
+                 proposed_series="Серия - «Колычев. Лучшая криминальная драма»",
+                 series_source="folder_hierarchy"),
+        ]
+        service._postcheck_series_folder_blacklist()
+        # На этом шаге ещё НЕ очищено — blacklist пока не совпадает буквально.
+        assert service.records[0].proposed_series == "Колычев. Лучшая криминальная драма"
+
+        service._postcheck_strip_author_prefix_from_series()
+        assert service.records[0].proposed_series == ""
+        assert service.records[0].series_source == ""

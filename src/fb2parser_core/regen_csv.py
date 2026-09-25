@@ -2263,6 +2263,16 @@ class RegenCSVService:
         стоит первой. Та же защита по подстроке в proposed_author, что и
         для основного паттерна — не срезаем случайные слова с точкой,
         не совпадающие с известным автором записи.
+
+        Баг №120: `_postcheck_series_folder_blacklist()` выполняется РАНЬШЕ
+        этой функции в конвейере (см. execute()) — на момент его проверки
+        серия ещё несёт авторский префикс («Колычев. Лучшая криминальная
+        драма»), поэтому точное совпадение со значением blacklist
+        («Лучшая криминальная драма») не срабатывает. Только здесь, после
+        срезки префикса, серия принимает ровно blacklist-значение — но
+        повторной проверки не было, и организационный ярлык (пользователь
+        специально добавил его в blacklist) просачивался в CSV. Повторяем
+        точное сравнение с blacklist здесь же, для уже очищенного значения.
         """
         import re as _re
         # Паттерн: «И.» или «И. И.» перед фамилией в начале строки
@@ -2289,7 +2299,12 @@ class RegenCSVService:
                     return s[m.end():].strip()
             return s
 
+        # Баг №120: значение может стать blacklist-организационным ярлыком
+        # только ПОСЛЕ срезки префикса — см. докстринг выше.
+        _blacklist = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
+
         _count = 0
+        _cleared = 0
         for rec in self.records:
             if not rec.proposed_series or not rec.proposed_author:
                 continue
@@ -2305,10 +2320,17 @@ class RegenCSVService:
                 if new_ps != ps:
                     rec.proposed_series = new_ps
                     _count += 1
+                    if new_ps.lower() in _blacklist:
+                        rec.proposed_series = ''
+                        rec.series_source = ''
+                        _cleared += 1
 
         if _count:
             print(f"[POST-CHECK] Stripped author prefix from series in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Stripped author prefix from series in {_count} records")
+        if _cleared:
+            print(f"[POST-CHECK] Cleared {_cleared} series values that became blacklisted after author-prefix strip")
+            self.logger.log(f"[OK] POST-CHECK: Cleared {_cleared} series values that became blacklisted after author-prefix strip")
 
     def _postcheck_strip_bracket_annotations_from_series(self) -> None:
         """Стрипит квадратно-скобочные аннотации из названия серии.
