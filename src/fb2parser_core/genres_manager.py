@@ -120,7 +120,9 @@ class GenresManager:
         Баг №114.
 
         Пропускает: уже известные коды (есть в справочнике — неважно,
-        официальный раздел или ранее сюда же дописанный); коды с
+        официальный раздел или ранее сюда же дописанный); коды из
+        `excluded_codes` (уже осознанно решено, что это не жанр вообще —
+        не заводить на них повторно запись "требует разметки"); коды с
         кириллицей (это не код жанра, а мусор/ошибка метаданных, а не
         новый жанровый код — раз он не на латинице, значит вообще не по
         правилам FB2-таксономии).
@@ -136,7 +138,7 @@ class GenresManager:
             if not code:
                 continue
             code_l = code.lower()
-            if code_l in self._reference or code_l in seen:
+            if code_l in self._reference or code_l in seen or code_l in self.excluded_codes:
                 continue
             if self._CYRILLIC_RE.search(code):
                 continue

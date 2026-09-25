@@ -2203,5 +2203,95 @@
       "section": "Unknown genre",
       "subsection": "english"
     }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 613,
+    "fields": {
+      "genre": "adv_military",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 614,
+    "fields": {
+      "genre": "child_su",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 616,
+    "fields": {
+      "genre": "foreign_contemporary",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 618,
+    "fields": {
+      "genre": "foreign_sf",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 619,
+    "fields": {
+      "genre": "literature_21",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 620,
+    "fields": {
+      "genre": "literary_fairy_tale",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 621,
+    "fields": {
+      "genre": "sf_su",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 622,
+    "fields": {
+      "genre": "child_rus",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 623,
+    "fields": {
+      "genre": "sf_rus",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 625,
+    "fields": {
+      "genre": "naturalist_notes",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
   }
 ]

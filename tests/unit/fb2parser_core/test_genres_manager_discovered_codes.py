@@ -56,6 +56,20 @@ class TestRegisterDiscoveredCodes:
     def test_returns_zero_when_nothing_added(self, gm):
         assert gm.register_discovered_codes(["sf_action", "Кириллица"]) == 0
 
+    def test_excluded_code_is_not_re_added_to_reference(self, gm, reference_path):
+        # Реальный случай: compilation/collection/... уже осознанно
+        # решены как "не жанр" (excluded_codes, баг №113) — повторное
+        # обнаружение при скане не должно заводить на них дубликат
+        # записи "требует разметки".
+        gm.add_excluded_code("compilation")
+        count = gm.register_discovered_codes(["compilation", "genuinely_new_code"])
+        assert count == 1
+
+        data = json.loads(reference_path.read_text(encoding="utf-8"))
+        genres = [item["fields"]["genre"] for item in data]
+        assert "compilation" not in genres
+        assert "genuinely_new_code" in genres
+
     def test_new_pk_continues_from_max_existing(self, gm, reference_path):
         gm.register_discovered_codes(["totally_new_code"])
 
