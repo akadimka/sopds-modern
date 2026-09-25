@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:l="http://www.w3.org/1999/xlink">
+<stylesheet type="text/css">.body{font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;}.p{margin:0.5em 0 0 0.3em; padding:0.2em; text-align:justify;}</stylesheet>
+<description>
+<title-info>
+<genre>Постапокалипсис</genre>
+<genre>ЛитРПГ</genre>
+<author>
+<first-name>Сергій Гапончук</first-name>
+</author>
+<book-title>Reincarnator/Реинкарнатор . Том 1. Учебная Зона</book-title>
+<lang>ru</lang>
+<annotation>Скучающий Бог решил внести изменения в мир, и в результате этих изменений погибло всё человечество. Эта история о парне по имени Кан Хансу, вернувшемся в прошлое, дабы изменить участь, постигшую людей. Описание английского переводчика: Создав свой новый мир , Бог начал заселять его своими созданиями. И вот уже 50 лет, как человечество начало перемещаться в Бездну, где людям изо дня в день приходилось сражаться за свое существование. Тем не менее, в конце осталось лишь четверо, которые и выбрали одного, отправившегося в прошлое, дабы изменить горькую участь, постигшую людей. Таким образом, Кан Хансу вернулся на 25 лет назад, когда ему было двадцать, и когда пришел его черед отправляться в Бездну. </annotation>
+<coverpage><image l:href="#1482657766_65.jpg"/></coverpage>
+</title-info>
+<document-info>
+<author>
+<first-name>rikud</first-name>
+<last-name>258244</last-name>
+<email>rikud@ukr.net</email>
+</author>
+<date value="2016-12-25">2016-12-25 11:30:24</date>
+<id>//book/reincarnatorreinkarnator-tom-1-uchebnaya-zona-b21348</id>
+</document-info>
+</description>
+
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

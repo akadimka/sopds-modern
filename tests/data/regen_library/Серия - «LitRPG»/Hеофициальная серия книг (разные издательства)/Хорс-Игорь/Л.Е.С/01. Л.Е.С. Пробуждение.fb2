@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Игорь</first-name>
+    <last-name>Хорс</last-name>
+    <id>1147828</id>
+    <home-page>https://author.today/u/ballisto2004</home-page>
+   </author>
+   <book-title>Л.Е.С. Пробуждение.</book-title>
+   <annotation>
+    <p>Будущее после катастрофы. Л.Е.С. – глобальная Система, контролирующая всю Землю. Меня выдернули из моего времени, чтобы спасти Систему от вторжения из другой реальности. Почему меня? Как я связан с Системой? Почему для этого меня не просто лишили памяти о моем прошлом, так еще и условие поставили – пока не спасешь мир Леса, домой не вернешься. Так что выбора у меня нет, будем спасать. Поехали!</p>
+   </annotation>
+   <date value="2022-11-13">2022-11-13 05:51:20</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Л.Е.С." number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Игорь</first-name>
+    <last-name>Хорс</last-name>
+    <home-page>https://author.today/u/ballisto2004</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-11-13">2022-11-13 05:51:20</date>
+   <id>203618</id>
+   <version>1.00</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

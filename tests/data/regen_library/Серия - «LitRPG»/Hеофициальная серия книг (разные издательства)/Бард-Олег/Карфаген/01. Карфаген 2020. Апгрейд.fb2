@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Олег</first-name>
+    <last-name>Бард</last-name>
+    <id>1393370</id>
+    <home-page>https://author.today/u/kultivatorcore</home-page>
+   </author>
+   <book-title>Карфаген 2020. Апгрейд</book-title>
+   <annotation>
+    <p>2020 год. Мир, где победил Карфаген, а не Рим. Бал правит магия кровожадного Ваала: отдай самое дорогое, чтобы получить большее. Каждый сам за себя. Все религии стерты. Жизнь сосредоточена в гигантских муравейниках-зиккуратах, где в подземельях обитают трикстеры – подлежащий истреблению магический народ вне системы, у которого Ваал не в чести.Его зовут Леон. Как и все трикстеры, он – воин, к тому же обладающий даром техно – способностью понимать механизмы. Во время облавы он попадает в плен, и его сознание перепрошивают: устанавливают программу на уничтожение себе подобных. Но вместо того, чтобы стать верным псом системы, Леон открывает в себе новые возможности и бросает вызов миру Карфагена. Сможет ли человек, пусть и не совсем обычный, переломить ход истории и сохранить свою душу?</p>
+   </annotation>
+   <date value="2022-08-16">2022-08-16 06:25:42</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Карфаген" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Олег</first-name>
+    <last-name>Бард</last-name>
+    <home-page>https://author.today/u/kultivatorcore</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2022-08-16">2022-08-16 06:25:42</date>
+   <id>204387</id>
+   <version>1.00</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

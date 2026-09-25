@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Владимир</first-name>
+      <middle-name>Сергеевич</middle-name>
+      <last-name>Синицын</last-name>
+    </author>
+    <book-title>Начать сначала - 2. Тропа к звездам</book-title>
+    <annotation>
+      <p>Повествование о том, что жизнь после смерти, может быть интересней, чем до нее… </p>
+      <p>Повесть о новой жизни ГГ во Фронтире Содружества, приключения продолжаются.</p>
+    </annotation>
+    <keywords>попаданцы</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Вселенная EVE Online (Миры EVE Online)"/>
+  <genre>Приключения</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Dinokok</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-03-20">20 March 2016</date>
+    <src-url>http://www.rulit.me/nachat-snachala-2-tropa-k-zvezdam-download-free-452153.html</src-url>
+    <id>69437A7A-A5CA-4B55-ACC9-407DA7E051C7</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <year>2016</year>
+  </publish-info>
+</description>
+<body name="Тропа к звездам"><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

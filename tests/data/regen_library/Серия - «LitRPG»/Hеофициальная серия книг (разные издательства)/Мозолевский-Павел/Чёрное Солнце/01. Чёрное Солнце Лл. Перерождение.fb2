@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre></genre>
+   <author>
+    <first-name>Павел</first-name>
+    <last-name>Мозолевский</last-name>
+    <home-page>https://author.today/u/OdinVpole/works</home-page>
+   </author>
+   <book-title>Чёрное Солнце Лл: Перерождение.</book-title>
+   <annotation>
+    <p>Накануне праздника Сергей спешит в родительский дом, но волей судьбы трагически погибает в пути. Мужчина с ужасом пробуждается – сердце колотится, голова трещит, глаза судорожно изучают пространство – над телом нависает жуткий незнакомый старик. Он произносит: ''Как горько видеть вас живым.'' Немощное тело дико жаждет крови. Холодный голос в голове водопадом обрушивает информацию и предупреждает о скорой смерти...</p>
+    <p>Смерть оказалась не точкой в его пути, а лишь запятой – его старое имя вычеркнуто, теперь он Айрон Лэгрант, молодой аристократ-вампир! Вот только...</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#665b4e21-b03f-418e-8eed-bc70eda21060.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Чёрное Солнце." number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Павел</first-name>
+    <last-name>Мозолевский</last-name>
+    <home-page>https://author.today/u/OdinVpole/works</home-page>
+   </author>
+   <program-used>Elib2Ebook, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-02-23">2023-02-23</date>
+   <src-url>https://author.today/work/249802</src-url>
+   <id>49AB0DE3-3D0C-4CA0-A6A3-8CE6809F2DE3</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

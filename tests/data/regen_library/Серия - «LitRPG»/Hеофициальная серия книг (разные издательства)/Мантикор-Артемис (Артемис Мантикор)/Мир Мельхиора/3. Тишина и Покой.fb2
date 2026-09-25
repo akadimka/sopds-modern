@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      
+      <author>
+        <first-name>Артемис</first-name>
+        <last-name>Мантикор</last-name>
+        <home-page>https://author.today/u/armanticore</home-page>
+        <id>298763</id>
+      </author>
+      <book-title>Мир Мельхиора 3 - Тишина и Покой</book-title>
+      <annotation>
+        <p>Обретя заступничество забытых дочерей Смерти, целитель и вор заново открывают для себя Мельхиор, в котором прежний мир - лишь точка на карте. Путь домой лежит через локации, о которых никто не слышал в Доминионе. Проклятая стихия все туже сжимает свои смертельные объятья, а путь обещает быть очень долгим.</p>
+        <p>Но все ли вокруг именно то, чем кажется?</p>
+        <p>Перейдем же к стратегии выживания!</p>
+      </annotation>
+      <date value="2020-10-15">2020-10-15 05:29:21</date>
+      <coverpage>
+        <image l:href="#cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Мир Мельхиора" number="3" />
+    <genre>Фантастика</genre>
+  </title-info>
+    <document-info>
+      <author>
+        <first-name>Артемис</first-name>
+        <last-name>Мантикор</last-name>
+        <home-page>https://author.today/u/armanticore</home-page>
+        <id>298763</id>
+      </author>
+      <date value="2020-10-15">2020-10-15 05:29:21</date>
+      <id>73041</id>
+      <version>1.00</version>
+    </document-info>
+    <publish-info />
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

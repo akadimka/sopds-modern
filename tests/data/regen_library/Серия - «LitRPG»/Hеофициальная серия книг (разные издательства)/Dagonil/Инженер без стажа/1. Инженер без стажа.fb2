@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Dagonil</first-name>
+    <last-name></last-name>
+    <id>684677</id>
+    <home-page>https://author.today/u/dagonil1</home-page>
+   </author>
+   <book-title>Инженер без стажа</book-title>
+   <annotation>
+    <p>Желанная магия против проверенных технологий. Огненный снаряд или пистолет, вечная борьба продолжается!</p>
+    <p>Антон, простой холостяк не обладающей никакими выдающими способностями. Предпочитает лень и реальность, при этом попивая пивко. Теперь же ему придётся приспосабливаться и обходиться без любимого напитка.</p>
+   </annotation>
+   <date value="2021-12-30">2021-12-30 05:54:57</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Dagonil</first-name>
+    <last-name></last-name>
+    <home-page>https://author.today/u/dagonil1</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-12-30">2021-12-30 05:54:57</date>
+   <id>148761</id>
+   <version>1.00</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

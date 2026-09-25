@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_action</genre>
+   <genre>sf_space</genre>
+   <genre>popadanec</genre>
+   <author>
+    <first-name>Михаил</first-name>
+    <last-name>Тихонов</last-name>
+    <id>183909</id>
+   </author>
+   <book-title>Дорогой зверя [СИ]</book-title>
+   <annotation><p>Бывший военный, случайно похищенный инопланетянами. Волей случая стал спасителем для нескольких тысяч людей…<br/>
+    Первая редакция цикла</p>
+
+<p>Второй том цикла в первоначальной редакции</p>
+   </annotation>
+   <date value="2019-04-23">2019-04-23 04:20:54</date>
+   <coverpage><image l:href="#eed.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Бег (Тихонов)" number="3"/>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>AlexKust</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2019-09-30">2019-09-30</date>
+   <id>BA83F3B7-4277-451D-91BB-2763CADACDE5</id>
+   <version>1.23</version>
+   <history>
+    <p>v1.2 — создание и редактирование AlexKust</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <year>2019</year>
+  </publish-info>
+  <custom-info info-type="librusec-id">684556</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

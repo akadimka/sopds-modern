@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>NikL</first-name>
+    <last-name></last-name>
+    <id>270640</id>
+    <home-page>https://author.today/u/Generalll1991</home-page>
+   </author>
+   <book-title>Сотня граней. Зарождение легенды.</book-title>
+   <annotation>
+    <p>-------Открыть первую грань в себе, для многих непосильная задача, чего уж говорить о сотне. Но наш герой знает - путь к настоящему величию в сотни тысяч миль, начинается с одного шага...</p>
+    <p>-------Сотня граней - далеко не первая, но новая игра виртуальной реальности, которая моментально завоевала весь мир. </p>
+    <p>-------Сотня граней - это новый мир, в котором необъятное число путей, перемноженные на ваши не ограниченные возможности, откроют вам новую вселенную.</p>
+    <p>-------Сотня граней - это бесконечная вселенная, где нет никаких стандартов, где каждый волен поступать так, как сам посчитает нужным. Где все меняется ежесекундно и кто знает, возможно именно ваши решения и действия приведут к чему то невообразимому.</p>
+   </annotation>
+   <date value="2021-06-30">2021-06-30 08:09:30</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Сотня граней" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>NikL</first-name>
+    <last-name></last-name>
+    <home-page>https://author.today/u/Generalll1991</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-06-30">2021-06-30 08:09:30</date>
+   <id>130603</id>
+   <version>1.00</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      
+      <author>
+        <first-name>Михаил</first-name>
+        <last-name>Тихонов</last-name>
+        <home-page>https://author.today/u/tig35611</home-page>
+        <id>120571</id>
+      </author>
+      <book-title>Бег</book-title>
+      <annotation>
+        <p>Бывший военный. Случайно похищенный инопланетянами. Волей случая стал спасителем для нескольких тысяч людей...</p>
+      </annotation>
+      <date value="2019-04-23">2019-04-23 04:20:38</date>
+      <coverpage>
+        <image l:href="#cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Бег" number="0" />
+    <genre>Фантастика</genre>
+  </title-info>
+    <document-info>
+      <author>
+        <first-name>Михаил</first-name>
+        <last-name>Тихонов</last-name>
+        <home-page>https://author.today/u/tig35611</home-page>
+        <id>120571</id>
+      </author>
+      <date value="2019-04-23">2019-04-23 04:20:38</date>
+      <id>28356</id>
+      <version>1.00</version>
+    </document-info>
+    <publish-info />
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

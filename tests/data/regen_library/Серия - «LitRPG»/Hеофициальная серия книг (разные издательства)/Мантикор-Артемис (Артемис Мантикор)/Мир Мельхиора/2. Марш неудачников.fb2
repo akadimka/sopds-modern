@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      
+      <author>
+        <first-name>Артемис</first-name>
+        <last-name>Мантикор</last-name>
+        <home-page>https://author.today/u/armanticore</home-page>
+        <id>298763</id>
+      </author>
+      <book-title>Мир Мельхиора 2 - Марш неудачников</book-title>
+      <annotation>
+        <p>Даже утратив свой свет, нельзя сдаваться. Пустота следует по пятам, пожирая изнутри душу и разум, а цель кажется практически недостижимой. Мельхиор же показывает свой второй, темный лик - это бесконечно красивый, но и бесконечно ужасный мир.</p>
+        <p>Путь водного целителя по миру Подземья продолжается. </p>
+        <p>Перейдем же к стратегии выживания!</p>
+      </annotation>
+      <date value="2020-04-28">2020-04-28 07:14:58</date>
+      <coverpage>
+        <image l:href="#cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Мир Мельхиора" number="2" />
+    <genre>Фантастика</genre>
+  </title-info>
+    <document-info>
+      <author>
+        <first-name>Артемис</first-name>
+        <last-name>Мантикор</last-name>
+        <home-page>https://author.today/u/armanticore</home-page>
+        <id>298763</id>
+      </author>
+      <date value="2020-04-28">2020-04-28 07:14:58</date>
+      <id>69638</id>
+      <version>1.00</version>
+    </document-info>
+    <publish-info />
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

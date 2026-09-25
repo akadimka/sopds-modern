@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    
+    
+    <author>
+      <first-name>Андрей</first-name>
+      <last-name>Северский</last-name>
+    </author>
+    <book-title>Тринадцатый) Дубль два,</book-title>
+    <annotation>
+      <p>Вторая часть цифровой жизни героя. Роялей гораздо меньше, но залакированы лучше)</p>
+    </annotation>
+    <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+</author>
+    <date value="2019-05-18">18.05.2019</date>
+    <id>215483</id>
+  </document-info>
+  <publish-info>
+    <year>2017</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

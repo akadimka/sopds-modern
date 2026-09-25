@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre></genre>
+   <author>
+    <first-name>Павел</first-name>
+    <last-name>Мозолевский</last-name>
+    <home-page>https://author.today/u/OdinVpole/works</home-page>
+   </author>
+   <book-title>Лорд Акшас.</book-title>
+   <annotation>
+    <p>Сергей истекал кровью под бой курантов, он задыхаясь смотрел на последний падающий снег в своей жизни: снежинки тихо таяли, соприкасаясь с холодными губами, жизнь утекала пещинками сквозь пальцы — лежащий около сердца кулончик засиял алой звездою, что разгоняет ночные тени: всё мертвое тело окутала алая пелена, подобно савану из чистейшего красного света.</p>
+    <p>Как корабль вспоровший борт о рифы морские, так и он, испуганно очнулся: Сергей пришёл в себя, в совершенно непонятном месте, на иной планете, в чуждом теле аристократ вампира! Который умудрился погубить наследство родителей, загубить тело, наделать дел: теперь дворецкий дома жаждет его убить и только клятва останавливает его, а единственная служанка презирает. </p>
+    <p>Новое немощное тело испытывает голод. Холодный голос в голове досаждает, выдаёт тонну информации и подталкивает тушу действовать.</p>
+    <p>Сергею придётся обживаться в новом мире, учиться сражаться, решать чужие проблемы, восстанавливать дом и постигать тайны нового мира.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#7efeea65-0a8c-4567-afcb-7fe4131c16ec.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Павел</first-name>
+    <last-name>Мозолевский</last-name>
+    <home-page>https://author.today/u/OdinVpole/works</home-page>
+   </author>
+   <program-used>Elib2Ebook, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-01-29">2023-01-29</date>
+   <src-url>https://author.today/work/242113</src-url>
+   <id>8A996722-9903-471C-8782-335F1AAEEF6F</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

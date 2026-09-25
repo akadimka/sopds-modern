@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:l="http://www.w3.org/1999/xlink">
+<stylesheet type="text/css">.body{font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;}.p{margin:0.5em 0 0 0.3em; padding:0.2em; text-align:justify;}</stylesheet>
+<description>
+<title-info>
+<genre>Постапокалипсис</genre>
+<genre>ЛитРПГ</genre>
+<author>
+<first-name>Сергій Гапончук</first-name>
+</author>
+<book-title>Reincarnator/Реинкарнатор . Том 3. Оранжевая Зона</book-title>
+<lang>ru</lang>
+<annotation>Том 3. Оранжевая Зона -Укрепление Тела Кан Хансу вернулся на 25 лет назад, когда ему было двадцать, и когда пришел его черед отправляться в Бездну. У него осталось всего пять лет до момента, когда все человечество будет перенесено в этот дикий мир, в котором уже обитают далеко недружественные расы и существа. </annotation>
+<coverpage><image l:href="#1482674461_36.jpg"/></coverpage>
+</title-info>
+<document-info>
+<author>
+<first-name>rikud</first-name>
+<last-name>258244</last-name>
+<email>rikud@ukr.net</email>
+</author>
+<date value="2016-12-25">2016-12-25 16:06:37</date>
+<id>//book/reincarnatorreinkarnator-tom-3-oranzhevaya-zona-b21362</id>
+</document-info>
+</description>
+
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:l="http://www.w3.org/1999/xlink">
+<stylesheet type="text/css">.body{font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;}.p{margin:0.5em 0 0 0.3em; padding:0.2em; text-align:justify;}</stylesheet>
+<description>
+<title-info>
+<genre>Постапокалипсис</genre>
+<genre>ЛитРПГ</genre>
+<author>
+<first-name>Сергій Гапончук</first-name>
+</author>
+<book-title>Reincarnator/Реинкарнатор . Том 2. Красная Зона</book-title>
+<lang>ru</lang>
+<annotation>Том 2. Красная Зона - Мировое Древо .Скучающий Бог решил внести изменения в мир, и в результате этих изменений погибло всё человечество. Эта история о парне по имени Кан Хансу, вернувшемся в прошлое, дабы изменить участь, постигшую людей. </annotation>
+<coverpage><image l:href="#1482667375_46.jpg"/></coverpage>
+</title-info>
+<document-info>
+<author>
+<first-name>rikud</first-name>
+<last-name>258244</last-name>
+<email>rikud@ukr.net</email>
+</author>
+<date value="2016-12-25">2016-12-25 14:13:32</date>
+<id>//book/reincarnatorreinkarnator-tom-2-krasnaya-zona-b21358</id>
+</document-info>
+</description>
+
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>
