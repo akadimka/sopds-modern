@@ -433,3 +433,52 @@ class TestSeriesFolderPrefixTrailingQuote:
         ]
         service._postcheck_series_folder_blacklist()
         assert service.records[0].proposed_series == "Приключения «Икс»"
+
+
+class TestAuthorSurnamePrefixStrippedFromSeries:
+    """Баг №119: «Серия - «Колычев. Лучшая криминальная драма»» — после
+    снятия кавычек/префикса папки (_postcheck_series_folder_blacklist)
+    остаётся "Колычев. Лучшая криминальная драма" — фамилия автора всё
+    ещё приклеена спереди. _postcheck_strip_author_prefix_from_series()
+    уже умел резать префикс вида "И. Фамилия " (инициал+фамилия), но не
+    голую "Фамилия." без инициала — этот, второй, формат добавлен фиксом.
+    """
+
+    def test_bare_surname_dot_prefix_stripped(self):
+        service = RegenCSVService(_config_path())
+        service.records = [
+            _rec("Серия - «Колычев. Лучшая криминальная драма»\\Колычев - А ты бы ей отказал.fb2",
+                 "Владимир Колычев", "Колычев Владимир", "filename+meta_expanded",
+                 proposed_series="Колычев. Лучшая криминальная драма",
+                 series_source="folder_hierarchy"),
+        ]
+        service._postcheck_strip_author_prefix_from_series()
+        assert service.records[0].proposed_series == "Лучшая криминальная драма"
+
+    def test_full_pipeline_from_raw_folder_name(self):
+        """Обе post-check функции подряд, как в реальном конвейере
+        (execute()) — от сырого "Серия - «Колычев. ...»" до чистого
+        названия серии без фамилии автора."""
+        service = RegenCSVService(_config_path())
+        service.records = [
+            _rec("Серия - «Колычев. Лучшая криминальная драма»\\Колычев - А ты бы ей отказал.fb2",
+                 "Владимир Колычев", "Колычев Владимир", "filename+meta_expanded",
+                 proposed_series="Серия - «Колычев. Лучшая криминальная драма»",
+                 series_source="folder_hierarchy"),
+        ]
+        service._postcheck_series_folder_blacklist()
+        service._postcheck_strip_author_prefix_from_series()
+        assert service.records[0].proposed_series == "Лучшая криминальная драма"
+
+    def test_unrelated_leading_word_with_dot_not_stripped(self):
+        """Слово с точкой в начале серии, НЕ совпадающее с автором записи
+        — не режем (та же защита, что и у существующего "И. Фамилия"
+        паттерна: сравниваем с proposed_author, а не режем вслепую)."""
+        service = RegenCSVService(_config_path())
+        service.records = [
+            _rec("Файл.fb2", "Иван Петров", "Петров Иван", "filename",
+                 proposed_series="Спец. операция",
+                 series_source="folder_hierarchy"),
+        ]
+        service._postcheck_strip_author_prefix_from_series()
+        assert service.records[0].proposed_series == "Спец. операция"

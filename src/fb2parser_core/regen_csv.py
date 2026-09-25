@@ -2252,21 +2252,41 @@ class RegenCSVService:
         папка называется «Б. Акунин История Российского государства».
         Стрипим префикс если он совпадает с proposed_author (по фамилии).
         Обрабатывает оба компонента иерархической серии («Корень\\Подсерия»).
+
+        Баг №119: второй, отдельный формат префикса — голая «Фамилия.» без
+        инициала перед ней, разделитель — сама точка, а не пробел/тире.
+        Возникает у папок вида «Серия - «Колычев. Лучшая криминальная
+        драма»» — после снятия кавычек/префикса папки
+        (`_postcheck_series_folder_blacklist`) остаётся «Колычев. Лучшая
+        криминальная драма», и _AUTH_PREFIX выше не матчит: там перед
+        фамилией обязателен ОДИНОЧНЫЙ инициал с точкой, а тут сама фамилия
+        стоит первой. Та же защита по подстроке в proposed_author, что и
+        для основного паттерна — не срезаем случайные слова с точкой,
+        не совпадающие с известным автором записи.
         """
         import re as _re
         # Паттерн: «И.» или «И. И.» перед фамилией в начале строки
         _AUTH_PREFIX = _re.compile(
             r'^(?:[А-ЯЁA-Z]\.\s*){1,2}([А-ЯЁA-Z][а-яёa-z]+)[\s\-–—]+',
         )
+        # Паттерн (баг №119): голая «Фамилия.» в начале строки, без инициала.
+        _AUTH_SURNAME_PREFIX = _re.compile(
+            r'^([А-ЯЁA-Z][а-яёa-z]+)\.\s+',
+        )
 
         def _strip_prefix(s: str, author: str) -> str:
-            m = _AUTH_PREFIX.match(s)
-            if not m:
-                return s
-            surname = m.group(1).lower().replace('ё', 'е')
             au_norm = author.lower().replace('ё', 'е')
-            if surname in au_norm:
-                return s[m.end():].strip()
+            m = _AUTH_PREFIX.match(s)
+            if m:
+                surname = m.group(1).lower().replace('ё', 'е')
+                if surname in au_norm:
+                    return s[m.end():].strip()
+                return s
+            m = _AUTH_SURNAME_PREFIX.match(s)
+            if m:
+                surname = m.group(1).lower().replace('ё', 'е')
+                if surname in au_norm:
+                    return s[m.end():].strip()
             return s
 
         _count = 0
