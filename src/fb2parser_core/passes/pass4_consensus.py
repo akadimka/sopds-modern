@@ -896,24 +896,32 @@ class Pass4Consensus:
             if not record.proposed_series:
                 continue
 
+            # Баг №4/№121: декоративная пунктуация папки (кавычки-«ёлочки» и
+            # т.п.) может быть приклеена к слову без пробела — "«Колычев."
+            # даёт w[:4]="«кол" вместо "колы", так что префикс никогда не
+            # совпадает с author_prefixes даже для настоящей папки-автора.
+            # Обрезаем непарную пунктуацию по краям токена перед сравнением.
+            import re as _re_strip
+            _strip_punct4 = lambda w: _re_strip.sub(r'^[^\w]+|[^\w]+$', '', w, flags=_re_strip.UNICODE)
+
             # Build 4-char prefix sets for fuzzy Russian declension matching
             # e.g. "Браст" → author prefix "Брас" matches series word "Браста"[:4] = "Брас"
             author_prefixes = set(
-                w[:4].lower() for w in (record.proposed_author or '').split()
-                if len(w) >= 4
+                _strip_punct4(w)[:4].lower() for w in (record.proposed_author or '').split()
+                if len(_strip_punct4(w)) >= 4
             )
             series_prefixes = set(
-                w[:4].lower() for w in record.proposed_series.split()
-                if len(w) >= 4
+                _strip_punct4(w)[:4].lower() for w in record.proposed_series.split()
+                if len(_strip_punct4(w)) >= 4
             )
 
             # Also check short author words (< 4 chars, >= 2) via exact match in series
             author_short = set(
-                w.lower() for w in (record.proposed_author or '').split()
-                if 2 <= len(w) < 4
+                _strip_punct4(w).lower() for w in (record.proposed_author or '').split()
+                if 2 <= len(_strip_punct4(w)) < 4
             )
             series_words_lower = set(
-                w.lower().rstrip('аяоеуиёью') for w in record.proposed_series.split()
+                _strip_punct4(w).lower().rstrip('аяоеуиёью') for w in record.proposed_series.split()
             )
 
             # Check 1: long-word prefix match (e.g. "Браста" vs "Браст")

@@ -889,6 +889,19 @@ class Pass2SeriesFilename:
                 continue
             if record.series_source in self._FOLDER_SOURCES_ARC:
                 continue
+            # Баг №122: раньше эта эвристика перезаписывала ЛЮБОЙ уже
+            # установленный series_number (включая надёжный, из metadata)
+            # найденным здесь "вторым числом в стеме" — без проверки, что
+            # это число вообще является номером тома, а не случайным
+            # числом внутри самого заголовка книги. Реальный случай:
+            # "Максим Юрьев 2. Стрела Амура 9-го калибра.fb2" —
+            # series_number=2 из <sequence number> (надёжно), а "9" из
+            # "9-го калибра" — просто часть названия — перезаписывало
+            # верное значение неверным. Заполняем только ПУСТОЙ
+            # series_number — исправление уже установленного значения
+            # (в т.ч. metadata) не входит в задачу этой эвристики.
+            if (record.series_number or '').strip():
+                continue
             ps_norm = _norm_s(record.proposed_series.strip())
             if not re.search(r'\s+\d+$', ps_norm):
                 continue
@@ -899,7 +912,7 @@ class Pass2SeriesFilename:
             _sm = _sn_pat.search(_norm_s(Path(record.file_path).stem))
             if _sm:
                 n = int(_sm.group(1))
-                if n < 1900 and str(n) != (record.series_number or ''):
+                if n < 1900:
                     record.series_number = str(n)
                     record.series_number_source = 'arc_numbering'
 
@@ -1104,6 +1117,18 @@ class Pass2SeriesFilename:
                     _part_last_word = _part_words[-1].lower().replace('ё', 'е') if _part_words else ''
                     _author_name_clean = re.sub(r'\([^)]*\)', '', author_name).strip()
                     _author_words = set(w.lower().replace('ё', 'е') for w in _author_name_clean.split() if len(w) > 2)
+                    # Баг №4/№119-121: декоративная пунктуация папки (кавычки-«ёлочки»,
+                    # тире и т.п.) может быть приклеена к слову без пробела —
+                    # "Серия - «Колычев. Лучшая криминальная драма»" даёт токен
+                    # "«Колычев" (или "драма»" в конце), который не совпадает с
+                    # "колычев" ни через ==, ни через startswith в любую сторону —
+                    # реальная папка-автор ("«Колычев. ...") не распознавалась как
+                    # содержащая автора, и весь текст ошибочно принимался за
+                    # название серии (folder_hierarchy), даже не дав шанс более
+                    # точному имени файла ("Максим Юрьев N. ...", "Мент в законе
+                    # N"). Обрезаем непарную пунктуацию по краям каждого токена
+                    # ПЕРЕД сравнением — это не меняет обычные, "чистые" слова.
+                    _strip_punct = lambda w: re.sub(r'^[^\w]+|[^\w]+$', '', w, flags=re.UNICODE)
                     # Check if ANY word in the folder (>2 chars) matches an author word.
                     # This covers "Таннер А" where the FIRST word "Таннер" is the surname,
                     # not just the last word (the old check only caught endings like "Куанг").
@@ -1113,7 +1138,11 @@ class Pass2SeriesFilename:
                             fw == aw or fw.startswith(aw) or aw.startswith(fw)
                             for aw in _author_words
                         )
-                        for fw in (w.lower().replace('ё', 'е') for w in _part_words if len(w) > 2)
+                        for fw in (
+                            _strip_punct(w.lower().replace('ё', 'е'))
+                            for w in _part_words
+                        )
+                        if len(fw) > 2
                     )
                     # Также проверяем скобочный суффикс папки: если автор совпадает
                     # с тем что в скобках — это папка "Серия (Автор)", не серия.
