@@ -2510,6 +2510,51 @@ class Pass2SeriesFilename:
                 rec.series_number = '0'
                 rec.series_number_source = 'filename_title_prologue'
 
+        # Правило 8 (баг №117): заголовок называет ДИАПАЗОН томов, физически
+        # объединённых в одном файле — «5. Кузнец. Том V-VI.fb2» (Правило 1
+        # выше уже поставило series_number='5' по голой позиции файла в
+        # папке, source='filename_prefix' — вторая половина диапазона,
+        # видная только из заголовка, терялась: компиляция уже показывала
+        # честный "7-8" через volume_label (fb2_compiler.py, баг №116), а
+        # само поле series_number в CSV регена оставалось голой позицией).
+        # Апгрейдим ТОЛЬКО самый слабый, чисто-позиционный источник —
+        # если у записи уже более специфичный source (metadata, диапазон
+        # из скобок/дробь и т.п.), не вмешиваемся.
+        #
+        # Позиция файла и реальный номер тома могут расходиться (см. «6.
+        # Кузнец. Том VII-VIII» — позиция 6, тома VII-VIII=7-8: автор
+        # физически объединил тома 7 и 8 в 6-й по счёту файл) — заголовок
+        # надёжнее сквозной нумерации файлов в папке, берём диапазон из
+        # него целиком, не пытаясь согласовать с уже найденной позицией.
+        #
+        # Тот же паттерн, что FB2CompilerService._VOLUME_ROMAN_RANGE_RE
+        # (fb2_compiler.py) — сознательно самостоятельная копия: та версия
+        # правит только ОТОБРАЖЕНИЕ (volume_label) на этапе компиляции, эта
+        # — сам series_number на этапе регена; разные стадии конвейера с
+        # разным жизненным циклом не должны зависеть друг от друга напрямую.
+        _VOLUME_ROMAN_RANGE_RE = re.compile(
+            r'(?:свиток|том|книга|часть|выпуск|арка|цикл|эпизод|volume|book|part|vol\.?)'
+            r'\s*[.:-]?\s*(M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))'
+            r'\s*[-–—]\s*(M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b',
+            re.IGNORECASE | re.UNICODE,
+        )
+        for record in records:
+            if record.series_number_source != 'filename_prefix' or not record.file_path:
+                continue
+            stem8 = Path(record.file_path).stem
+            for text in (record.file_title or '', stem8):
+                if not text:
+                    continue
+                mrng = _VOLUME_ROMAN_RANGE_RE.search(unicodedata.normalize('NFKC', text))
+                if not mrng:
+                    continue
+                lo8 = _roman_to_int(mrng.group(1))
+                hi8 = _roman_to_int(mrng.group(2))
+                if lo8 and hi8 and lo8 < hi8 <= 500:
+                    record.series_number = f'{lo8}-{hi8}'
+                    record.series_number_source = 'filename_prefix_title_roman_range'
+                break
+
     def _resolve_hierarchical_flat_mismatch(self, records: List[BookRecord]) -> None:
         """Нормализует рассогласование «A\\B» и «A» у одного автора.
 
