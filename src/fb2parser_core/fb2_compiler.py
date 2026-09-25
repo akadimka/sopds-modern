@@ -241,11 +241,15 @@ class FB2CompilerService:
             top_hi_vals = []
             for b in level0:
                 vl = (b.volume_label or '').strip()
-                if b.sort_key[2] != 0:
-                    top_hi_vals.append(b.sort_key[1])
-                else:
-                    m = _RNG.match(vl)
-                    top_hi_vals.append(int(m.group(2)) if m else b.sort_key[1])
+                # Баг №116: «Том V-VI»/«Том VII-VIII» (файл, объединяющий
+                # несколько томов) при sort_source='series_number_inner_tom'
+                # тоже может иметь честный диапазон в volume_label ("7-8") —
+                # matчим ЕГО первым. Старый дробный формат бага №62 ("12.1",
+                # через ТОЧКУ) этим regex (дефис/тире) не матчится в принципе,
+                # так что для него поведение не меняется — падает в тот же
+                # sort_key[1]-фолбэк, что и раньше.
+                m = _RNG.match(vl)
+                top_hi_vals.append(int(m.group(2)) if m else b.sort_key[1])
             top_hi = max(top_hi_vals)
 
         # has_subseries: либо у кого-то sort_key[2]!=0, либо ОДНА и та же
@@ -2139,6 +2143,19 @@ class FB2CompilerService:
         re.IGNORECASE | re.UNICODE,
     )
 
+    # Баг №116: «Том V-VI», «Том VII — VIII» — один файл, содержащий сразу
+    # НЕСКОЛЬКО томов (двойное/тройное издание). Без этого паттерна
+    # _VOLUME_ROMAN_RE выше захватывает только ПЕРВУЮ римскую цифру («V»),
+    # молча теряя «-VI» — в volume_label/группе-диапазоне вторая половина
+    # исчезает бесследно. Тот же набор ключевых слов + дефис/тире + вторая
+    # римская цифра.
+    _VOLUME_ROMAN_RANGE_RE = re.compile(
+        r'(?:свиток|том|книга|часть|выпуск|арка|цикл|эпизод|volume|book|part|vol\.?)'
+        r'\s*[.:-]?\s*(M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))'
+        r'\s*[-–—]\s*(M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b',
+        re.IGNORECASE | re.UNICODE,
+    )
+
     # Паттерн N.M в начале stem или после разделителя — том.часть (например «1.2_Название»)
     _DOT_PART_RE = re.compile(
         r'(?:^|[\s_\-])([1-9]\d{0,1})\.([1-9]\d{0,1})(?:[\s_\-.]|$)',
@@ -2265,6 +2282,28 @@ class FB2CompilerService:
                 n = cls._roman_to_int(m.group(1))
                 if n:
                     return n
+        return None
+
+    @classmethod
+    def _extract_inline_volume_range(cls, title: str, stem: str) -> Optional[Tuple[int, int]]:
+        """Извлечь диапазон томов «Том V-VI», «Том VII — VIII» и т.п. — баг
+        №116: файл-издание, физически объединяющий несколько томов.
+
+        Возвращает (начало, конец) или None. Используется ТОЛЬКО для
+        volume_label (отображаемый диапазон) — sort_key/позиция строится
+        как и раньше от первого числа (`_extract_inline_volume_number`),
+        blast radius сортировки/группировки не расширяем.
+        """
+        for text in (title, stem):
+            if not text:
+                continue
+            text_norm = unicodedata.normalize('NFKC', text)
+            m = cls._VOLUME_ROMAN_RANGE_RE.search(text_norm)
+            if m:
+                lo = cls._roman_to_int(m.group(1))
+                hi = cls._roman_to_int(m.group(2))
+                if lo and hi and lo < hi <= 500:
+                    return lo, hi
         return None
 
     @staticmethod
@@ -3406,6 +3445,18 @@ class FB2CompilerService:
                     roman_inline = self._extract_inline_volume_number(
                         stem if _ft2_is_series else (_ft2 or stem), stem
                     )
+                    # Баг №116: «Том V-VI» / «Том VII — VIII» — файл, физически
+                    # объединяющий НЕСКОЛЬКО томов. roman_inline выше — только
+                    # первое число диапазона (по построению regex); конец
+                    # диапазона используем ТОЛЬКО для отображаемого volume_label
+                    # ниже — sort_key (позиция/группировка) не трогаем.
+                    _roman_range_end = None
+                    if roman_inline is not None:
+                        _rr = self._extract_inline_volume_range(
+                            stem if _ft2_is_series else (_ft2 or stem), stem
+                        )
+                        if _rr is not None and _rr[0] == roman_inline:
+                            _roman_range_end = _rr[1]
                     if roman_inline is not None and roman_inline != meta_num:
                         # Если meta_num явно присутствует в стеме — доверяем метаданным.
                         # Иначе "Аватар Х. Часть 2" с meta_num=7 даёт roman_inline=2 →
@@ -3422,7 +3473,11 @@ class FB2CompilerService:
                             or re.search(r'(?<!\d)0*' + str(meta_num) + r'(?!\d)', stem)
                         )
                         if not _meta_in_stem:
-                            return (0, roman_inline, 0, 0), 'inline_title', False, str(roman_inline)
+                            _label_inline = (
+                                f'{roman_inline}-{_roman_range_end}' if _roman_range_end
+                                else str(roman_inline)
+                            )
+                            return (0, roman_inline, 0, 0), 'inline_title', False, _label_inline
                         else:
                             # Баг №62: meta_num (внешняя позиция серии) подтверждена в
                             # стеме — обычно ведущий числовой префикс файла ("12. Сфера
@@ -3439,11 +3494,20 @@ class FB2CompilerService:
                             # где оба тома НЕ делят одну позицию, а получают разные
                             # sn — там эта ветка не сработает, т.к. meta_num там прямо
                             # совпадает с roman_inline).
+                            # Диапазон отображаем от РЕАЛЬНОГО номера тома
+                            # (roman_inline="VII"=7), а не от позиции файла
+                            # (meta_num=6, она же и так видна как позиция в
+                            # общем списке) — иначе «7-8» превратилось бы в
+                            # вводящее в заблуждение «6-8».
+                            _label_inner = (
+                                f'{roman_inline}-{_roman_range_end}' if _roman_range_end
+                                else f'{meta_num}.{roman_inline}'
+                            )
                             return (
                                 (0, meta_num, roman_inline, 0),
                                 'series_number_inner_tom',
                                 False,
-                                f'{meta_num}.{roman_inline}',
+                                _label_inner,
                             )
                     # «Серия N. Подзаголовок. Том M» — meta_num = позиция в серии,
                     # «Том/Книга M» стоит ПОСЛЕ серийного суффикса «N.» → M как secondary.
@@ -3487,6 +3551,13 @@ class FB2CompilerService:
                             if 0 < _book_n < 1900 and _book_n != meta_num:
                                 return (0, _book_n, 0, 0), 'subseries_number', False, str(_book_n)
 
+                    if _roman_range_end and roman_inline == meta_num:
+                        # Баг №116: диапазон найден, но конфликта нет (первое
+                        # число диапазона совпало с meta_num, ветка выше не
+                        # сработала) — «5. Кузнец. Том V-VI» не должно молча
+                        # терять «VI»/6 только потому, что «V»/5 и без того
+                        # совпало с позицией файла.
+                        return (0, meta_num, 0, 0), 'series_number', False, f'{meta_num}-{_roman_range_end}'
                     return (0, meta_num, 0, 0), 'series_number', False, sn
 
         # When _series_ok is False but series_number was already set by Rule 2 (pass2),
