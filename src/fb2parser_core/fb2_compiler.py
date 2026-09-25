@@ -3580,12 +3580,37 @@ class FB2CompilerService:
                     rec.file_title or stem, stem
                 )
                 if _inline_tom is not None and _inline_tom != fn_num_from_sn:
-                    return (
-                        (0, fn_num_from_sn, _inline_tom, 0),
-                        'series_number_inner_tom',
-                        False,
-                        f'{fn_num_from_sn}.{_inline_tom}',
+                    # Баг №118: приведённый выше комментарий предполагает, что
+                    # fn_num_from_sn ВСЕГДА подтверждён в имени файла ("12.
+                    # Сфера Богов" — ведущий префикс) — но эта ветка достигается
+                    # для ЛЮБОГО sn вида "\d+", включая sn с
+                    # series_number_source='metadata' (а не из имени файла
+                    # вовсе). Реальный случай (Сухов Лео/Тьма): "Тьма. Том
+                    # 3.fb2" — sn=2 взят из <sequence number> (издательский
+                    # счётчик КНИГ — "Том 1 и 2" уже книга №1 — а не номер
+                    # ТОМА), "2" нигде не встречается в имени файла. Слепое
+                    # доверие fn_num_from_sn как "внешней позиции" в этом
+                    # случае даёт вводящий в заблуждение sort_key и ложные
+                    # "покрыт диапазоном" срабатывания ниже по конвейеру
+                    # (find_groups: предкомпиляция «Том 1 и 2» ошибочно считала
+                    # «Том 3» уже покрытым и удаляла его как дубликат).
+                    # Подтверждаем контракт: fn_num_from_sn — «внешняя позиция»
+                    # только если он ДЕЙСТВИТЕЛЬНО присутствует в имени файла
+                    # (как и в ветке _series_ok=True выше, см. _meta_in_stem).
+                    # Если нет — надёжнее заголовочное число, а не бухгалтерия
+                    # издателя, которая может считать что-то совсем другое.
+                    _fn_confirmed_in_stem = bool(
+                        re.search(r'\b' + str(fn_num_from_sn) + r'\b', stem)
+                        or re.search(r'(?<!\d)0*' + str(fn_num_from_sn) + r'(?!\d)', stem)
                     )
+                    if _fn_confirmed_in_stem:
+                        return (
+                            (0, fn_num_from_sn, _inline_tom, 0),
+                            'series_number_inner_tom',
+                            False,
+                            f'{fn_num_from_sn}.{_inline_tom}',
+                        )
+                    return (0, _inline_tom, 0, 0), 'inline_title', False, str(_inline_tom)
                 return (0, fn_num_from_sn, 0, 0), 'series_number', False, sn
 
         if is_subseries:
