@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>network_literature</genre>
+    <genre>sf_action</genre>
+    <author>
+      <first-name></first-name>
+      <last-name>Тайниковский</last-name>
+    </author>
+    <book-title>Кузнец. Том VII — VIII</book-title>
+    <annotation>
+      <p>Артефакториархом, он получил толику своих бывших сил, и благодаря своей магии, может получать особый ресурс, добываемый из монстров — духовную руду. Что такое "духовная руда", какими свойствами она обладает, и какие приключения ждут демона в новом мире — все это мы сможете узнать прочитав цикл "Хроники демонического ремесленника" — Кузнец. </p>
+      <p>Продолжение шестого тома.</p>
+    </annotation>
+    <coverpage>
+      <image xlink:href="#55d83a5a-810f-42ff-b393-830c4d8ea5de.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Хроники демонического ремесленника" number="6"/>
+  </title-info>
+  <document-info>
+    <author>
+</author>
+    <src-url>https://author.today/work/200440</src-url>
+    <date value="2022-11-03">2022-11-03</date>
+    <program-used>Elib2Ebook</program-used>
+  </document-info>
+  <publish-info/>
+  <custom-info info-type="donated">true</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+</FictionBook>
