@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      
+      <author>
+        <first-name>Артемис</first-name>
+        <last-name>Мантикор</last-name>
+        <home-page>https://author.today/u/newlunarcat</home-page>
+        <id>298763</id>
+      </author>
+      <book-title>Мир Мельхиора 1 - Ужасающий рай.</book-title>
+      <annotation>
+        <p>Сон или реальность? Игра с полным погружением или загробный мир? </p>
+        <p>Мельхиор - полон тайн и загадок. Нити судьбы потерянных душ, забытых богов и истинных чувств сплетаются в тугой клубок.</p>
+        <p>Целитель Сион ищет свой путь в мире, где над головой почти никогда не бывает солнца, а города строятся на руинах подземных чудес давно ушедших рас. Где отчаянье стало физически ощущаемой магией, а чудовищные порождения зла прячутся за каждым углом. В мире, что бесконечно красив, и бесконечно ужасен.</p>
+        <p>Перейдем же к стратегии выживания!</p>
+      </annotation>
+      <date value="2020-04-15">2020-04-15 10:02:30</date>
+      <coverpage>
+        <image l:href="#cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+      <sequence name="Мир Мельхиора" number="1" />
+    <genre>Фантастика</genre>
+  </title-info>
+    <document-info>
+      <author>
+        <first-name>Артемис</first-name>
+        <last-name>Мантикор</last-name>
+        <home-page>https://author.today/u/newlunarcat</home-page>
+        <id>298763</id>
+      </author>
+      <date value="2020-04-15">2020-04-15 10:02:30</date>
+      <id>68419</id>
+      <version>1.00</version>
+    </document-info>
+    <publish-info />
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

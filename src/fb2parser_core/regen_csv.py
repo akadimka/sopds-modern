@@ -162,13 +162,13 @@ class RegenCSVService:
     
     def _normalize_name_for_comparison(self, name: str) -> str:
         """Нормализировать имя для сравнения (lowercase, убрать лишние пробелы и пунктуацию).
-        
+
         Заменяет запятые, точки, скобки на пробелы и нормализует пробелы.
         Это позволяет сравнивать "Иван, Петр" с "Иван; Петр" как одинаковые.
-        
+
         Args:
             name: Имя для нормализации
-            
+
         Returns:
             Нормализованное имя
         """
@@ -885,9 +885,27 @@ class RegenCSVService:
                         # и исходный («Имя Фамилия») для западных имён типа «Элин Хильдебранд».
                         _auth_words = set(_auth_norm.split())
                         _extr_words = set(_extr_norm.split())
+                        # Баг №115: папка вида «Мозолевский-Павел» (частый паттерн
+                        # самиздата «Фамилия-Имя») не распознавалась как вариант
+                        # автора «Мозолевский Павел» — _normalize_name_for_
+                        # comparison() не разбивает по дефису, поэтому ни подстрочная
+                        # проверка, ни issubset по словам не срабатывали, и папка
+                        # автора ошибочно попадала в series_folders как будто это
+                        # папка серии (реальный случай: «Мантикор-Артемис (Артемис
+                        # Мантикор)\Мир Мельхиора» → серия «Мантикор-Артемис\Мир
+                        # Мельхиора» вместо чистого «Мир Мельхиора»). Сравниваем ещё
+                        # и hyphen-aware вариант (дефис → пробел) — ТОЛЬКО здесь, не
+                        # в самой _normalize_name_for_comparison(): у неё есть другие
+                        # вызывающие места, и golden-снапшот на реальной библиотеке
+                        # показал, что менять её глобально ломает не связанный
+                        # 3-уровневый кейс в другом месте пайплайна (Бессонов
+                        # Алексей/Мир Алекса Королёва/5. Миры Конфедерации).
+                        _auth_words_h = set(_auth_norm.replace('-', ' ').split())
+                        _extr_words_h = set(_extr_norm.replace('-', ' ').split())
                         _is_author_variant = (_extr_norm and (
                             _extr_norm in _auth_norm or _auth_norm in _extr_norm
                             or (_auth_words and _auth_words.issubset(_extr_words))
+                            or (_auth_words_h and _auth_words_h.issubset(_extr_words_h))
                         ))
                         if _extracted and _extr_norm != _auth_norm and not _is_author_variant:
                             # Используем УЖЕ ОЧИЩЕННОЕ значение (_extracted), а не сырое

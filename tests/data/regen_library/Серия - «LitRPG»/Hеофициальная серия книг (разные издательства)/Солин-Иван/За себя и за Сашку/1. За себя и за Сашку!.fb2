@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <genre>fanfiction</genre>
+      <author>
+        <first-name>IvanSolin</first-name>
+        <last-name />
+        <home-page>https://author.today/u/ivan_solin_gm</home-page>
+        <id>758435</id>
+      </author>
+      <book-title>За себя и за Сашку!</book-title>
+      <annotation>
+        <p>Фокусник Саша теперь вовсе не Саша, а самый что ни на есть Гарри, мамку его за щёчки, Поттер! </p>
+        <p>Попаданец в Поттера, как свежо, не так ли? Но может он удивит? Узнаем? Тогда вперёд!</p>
+        <p>Для всех торопыг: заверяю, ГГ ленивый и трусливый, потому что он такой и должен был быть по задумке. Но это не значит, что таким он и останется. Первые главы идут по канону, но это вполне объяснимо, а после, ГГ получает свою долю приключений. Так что не спешите с выводами. Приятного чтения.</p>
+      </annotation>
+      <date value="2021-01-23">2021-01-23 08:53:46</date>
+      <coverpage>
+        <image l:href="#cover.jpg" alt="Обложка" />
+      </coverpage>
+      <lang>ru</lang>
+    </title-info>
+    <document-info>
+      <author>
+        <first-name>IvanSolin</first-name>
+        <last-name />
+        <home-page>https://author.today/u/ivan_solin_gm</home-page>
+        <id>758435</id>
+      </author>
+      <date value="2021-01-23">2021-01-23 08:53:46</date>
+      <id>106930</id>
+      <version>1.00</version>
+    </document-info>
+    <publish-info />
+  </description>
+  <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+  
+</FictionBook>

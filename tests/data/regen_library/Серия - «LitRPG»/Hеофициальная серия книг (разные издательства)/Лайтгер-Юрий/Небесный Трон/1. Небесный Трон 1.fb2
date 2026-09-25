@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>Wuxia</genre>
+   <genre>ЛитРПГ</genre>
+   <author>
+    <first-name>Юрий</first-name>
+    <middle-name>Николаевич</middle-name>
+    <last-name>Москаленко</last-name>
+   </author>
+   <book-title>Небесный Трон</book-title>
+   <annotation>
+    <p>Он был королем мира подпольных боев у себя на родине. Он был молод, красив и богат. Многие признанные, мировые чемпионы не были ему соперниками. Он любил…</p>
+    <p>Он жил ради неё и сражений…</p>
+    <p>В один момент всё это пропало.</p>
+    <p>Чего захочет человек, получивший шанс на вторую жизнь?</p>
+    <p>Каким путем проследует Кай, очутившись в мире, где правит сила и мастерство?</p>
+    <p>Правят боевые искусства!</p>
+   </annotation>
+   <keywords>боевые искусства, реалрпг, культивация</keywords>
+   <date value="03.10.2019">20.11.2019</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Небесный Трон" number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name>Unknown</last-name>
+   </author>
+   <program-used>calibre 4.3.0, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2019-11-22">22.11.2019</date>
+   <id>038e99b5-3764-4432-8718-ae167bb67823</id>
+   <version>1.0</version>
+   <history>
+    <p>v1.0 - bmr134 для NoNaMe Club</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

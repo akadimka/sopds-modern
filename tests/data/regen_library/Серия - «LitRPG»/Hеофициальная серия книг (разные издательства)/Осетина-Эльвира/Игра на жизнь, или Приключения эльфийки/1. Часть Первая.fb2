@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:l="http://www.w3.org/1999/xlink">
+<stylesheet type="text/css">.body{font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;}.p{margin:0.5em 0 0 0.3em; padding:0.2em; text-align:justify;}</stylesheet>
+<description>
+<title-info>
+<genre>Любовное фэнтези</genre>
+<genre>ЛитРПГ</genre>
+<author>
+<first-name>Эльвира Осетина</first-name>
+</author>
+<book-title>Игра на жизнь, или Приключения эльфийки. Часть Первая</book-title>
+<lang>ru</lang>
+<annotation>ДИЛОГИЯ. ИСТОРИЯ ЗАВЕРШЕНА ПОЛНОСТЬЮ в 2017 году. В тридцать лет, попав в аварию, я стала инвалидом... Два года, провела в лежачем состоянии, и благодаря моему хирургу получила предложение от немецкой компании поработать неигровым персонажем в виртуальной игре "Миры Центуриона", и возможность, наконец, вновь почувствовать себя человеком, а не растением. Кто бы не согласился? Вот и я согласилась... Вот только я не знала, что в игре мне предстоит остаться, возможно навсегда, и более того, даже встретить свою вторую половинку. Вторая часть **группа автора на ВК: https://vk.com/elviraosetina</annotation>
+<coverpage><image l:href="#1514898612_60.jpg"/></coverpage>
+</title-info>
+<document-info>
+<author>
+<first-name>rikud</first-name>
+<last-name>258244</last-name>
+<email>rikud@ukr.net</email>
+</author>
+<date value="2018-01-02">2018-01-02 15:36:24</date>
+<id>//book/igra-na-zhizn-ili-priklyucheniya-elfiiki-chast-pervaya-b53068</id>
+</document-info>
+</description>
+
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

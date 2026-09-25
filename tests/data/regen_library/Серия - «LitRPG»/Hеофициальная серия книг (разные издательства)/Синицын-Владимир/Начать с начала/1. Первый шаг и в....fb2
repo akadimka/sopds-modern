@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_space</genre>
+   <author>
+    <first-name>Владимир</first-name>
+    <middle-name>Сергеевич</middle-name>
+    <last-name>Синицын</last-name>
+   </author>
+   <book-title>Первый шаг и в...</book-title>
+   <annotation>
+    <p>Повествование о первых шагах, уже прожившего долгую и интересную жизнь землянина, в новом молодом теле во фронтире Содружества</p>
+    <empty-line/>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#utcW97uGwEGJjx0wqOgrrH05q1441.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Начать с начала" number="1"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Your</first-name>
+    <last-name>Name</last-name>
+    <nickname>Dinokok</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2016-06-14">14 June 2016</date>
+   <id>14252349-704A-416D-A7EB-BCEF57C42D12</id>
+   <version>1.0</version>
+  </document-info>
+ </description>
+ <body name="Первый шаг и в..."><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
