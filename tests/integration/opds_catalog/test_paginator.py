@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 from django.core.paginator import Paginator
 from django.db import connection
@@ -112,6 +114,31 @@ class TestPaginatedBookContent:
         assert len(items) == 2
         assert paginator["number"] == 3
         assert paginator["has_next"] is False
+
+    # Эти два теста подменяют модульный config напрямую, а не через
+    # @override_config: тот — от django-constance, которую заменил
+    # config.json-прокси sopds_cfg, и на sopds_cfg он не влияет.
+    def test_page_zero_returns_first_page(self, catalog, monkeypatch):
+        """page=0 (так шлёт форма поиска на главной) — первая страница, не EmptyPage."""
+        monkeypatch.setattr(
+            book_services, "config", SimpleNamespace(SOPDS_MAXITEMS=4, SOPDS_DOUBLES_HIDE=True)
+        )
+        _create_unique_books(catalog, 10)
+        books = Book.objects.order_by("search_title")
+        items, paginator = book_services.paginated_book_content(books, 0, False)
+        assert paginator["number"] == 1
+        assert len(items) == 4
+
+    def test_page_beyond_range_returns_last_page(self, catalog, monkeypatch):
+        """Номер страницы больше числа страниц — последняя страница."""
+        monkeypatch.setattr(
+            book_services, "config", SimpleNamespace(SOPDS_MAXITEMS=4, SOPDS_DOUBLES_HIDE=True)
+        )
+        _create_unique_books(catalog, 10)
+        books = Book.objects.order_by("search_title")
+        items, paginator = book_services.paginated_book_content(books, 99, False)
+        assert paginator["number"] == 3
+        assert len(items) == 2
 
     @pytest.mark.override_config(SOPDS_MAXITEMS=4, SOPDS_DOUBLES_HIDE=True)
     def test_doubles_across_page_boundary(self, catalog):

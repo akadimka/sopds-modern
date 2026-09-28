@@ -7,7 +7,7 @@ from typing import Callable, TypeVar
 from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
-from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Count, IntegerField, Prefetch, QuerySet, Value
 from django.db.models.functions import Substr
 from django.utils.html import strip_tags
@@ -262,7 +262,12 @@ def paginated_book_content(
     ).prefetch_related(*prefetch)
 
     django_paginator = Paginator(books, maxitems)
-    page = django_paginator.page(page_num)
+    # Нумерация страниц 1-based; форма поиска на главной шлёт page=0.
+    # Paginator.get_page() не подходит: для номера < 1 он отдаёт ПОСЛЕДНЮЮ страницу.
+    try:
+        page = django_paginator.page(max(page_num, 1))
+    except EmptyPage:
+        page = django_paginator.page(django_paginator.num_pages)
 
     summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE and not search_doubles
 
