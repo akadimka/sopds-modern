@@ -2,6 +2,8 @@
 <style>
     .gs-col-resizer { flex:0 0 5px; cursor:col-resize; background:var(--border); position:relative; }
     .gs-col-resizer:hover, .gs-col-resizer.gs-dragging { background:var(--fp-accent, #2980b9); }
+    /* Цвет бейджа задаётся инлайном (accent/оранжевый) и сливается с фоном выделенной строки (тот же accent). */
+    .gs-row-selected .gs-mapped-badge { color:#fff !important; }
 </style>
 <div id="genre-scan-results-content" style="display:flex; height:100%; gap:0; border-top:1px solid var(--border); position:relative;">
 
