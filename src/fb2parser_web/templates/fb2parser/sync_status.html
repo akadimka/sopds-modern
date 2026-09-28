@@ -134,6 +134,107 @@
     })();
     </script>
     {% endif %}
+    {% if state.genre_conflict_notes %}
+    <div class="callout warning" id="gconf-panel" style="font-size:0.85rem; margin-top:0.5rem;">
+        <strong>⚠ {% trans "Series genre needs a choice" %} (<span id="gconf-count">{{ state.genre_conflict_notes|length }}</span>)</strong>
+        <div style="font-size:0.78rem; margin-top:0.3rem;">
+            {% trans "The volumes of these series have different genres in equal numbers, so it is unclear which one is wrong. They were left untouched in the source folder. Pick a genre for each series: it is written into its files, and the next synchronization moves the whole series into that genre." %}
+        </div>
+        {{ state.genre_conflict_notes|json_script:"gconf-notes-data" }}
+        <table class="unstriped" style="font-size:0.78rem; margin-top:0.4rem;">
+            <thead>
+                <tr>
+                    <th>{% trans "Series" %}</th>
+                    <th>{% trans "Volumes" %}</th>
+                    <th>{% trans "Genre" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in state.genre_conflict_notes %}
+                <tr id="gconf-row-{{ forloop.counter0 }}">
+                    <td>{{ note.author }} — {{ note.series }}</td>
+                    <td>
+                        {% for f in note.files %}<div>{{ f.file_path }} — <em>{{ f.genre }}</em></div>{% endfor %}
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <select id="gconf-genre-{{ forloop.counter0 }}" style="margin:0 0.3rem 0 0; width:auto; font-size:0.78rem; padding:0.1rem 1.4rem 0.1rem 0.3rem; height:auto;">
+                            {% for g in note.genres %}<option value="{{ g }}"{% if g == note.default_genre %} selected{% endif %}>{{ g }}</option>{% endfor %}
+                        </select>
+                        <button type="button" class="button" style="margin:0; padding:0.25rem 0.5rem; font-size:0.72rem;"
+                                onclick="gconfResolve({{ forloop.counter0 }}, this)">
+                            {% trans "Apply to series" %}
+                        </button>
+                        <div id="gconf-msg-{{ forloop.counter0 }}" style="font-size:0.72rem; margin-top:0.2rem; white-space:normal;"></div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script>
+    (function() {
+        var notesEl = document.getElementById('gconf-notes-data');
+        var notesData = notesEl ? JSON.parse(notesEl.textContent) : [];
+        window.gconfResolve = function(idx, btnEl) {
+            var note = notesData[idx];
+            if (!note) return;
+            var row = document.getElementById('gconf-row-' + idx);
+            var msgEl = document.getElementById('gconf-msg-' + idx);
+            var genre = document.getElementById('gconf-genre-' + idx).value;
+            btnEl.disabled = true;
+            var csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+            fetch("{% url 'fb2parser:sync_genre_conflict_resolve' %}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+                body: JSON.stringify({author: note.author, series: note.series, genre: genre})
+            })
+            .then(function(r) { return r.json().then(function(data) { return {ok: r.ok, data: data}; }); })
+            .then(function(res) {
+                if (!res.ok) {
+                    msgEl.textContent = '❌ ' + (res.data.error || 'Ошибка');
+                    msgEl.style.color = 'var(--status-error, #c0392b)';
+                    btnEl.disabled = false;
+                    return;
+                }
+                row.style.opacity = '0.5';
+                row.querySelector('select').disabled = true;
+                msgEl.textContent = res.data.message || 'OK';
+                msgEl.style.color = 'var(--status-ok, #27ae60)';
+                var countEl = document.getElementById('gconf-count');
+                if (countEl) countEl.textContent = res.data.remaining;
+            })
+            .catch(function(e) {
+                msgEl.textContent = '❌ ' + e;
+                msgEl.style.color = 'var(--status-error, #c0392b)';
+                btnEl.disabled = false;
+            });
+        };
+    })();
+    </script>
+    {% endif %}
+    {% if state.genre_unified_notes %}
+    <details style="margin-top:0.5rem; font-size:0.85rem;">
+        <summary style="cursor:pointer;">{% trans "Series genre unified by majority of volumes" %} ({{ state.genre_unified_notes|length }})</summary>
+        <table class="unstriped" style="font-size:0.78rem; margin-top:0.3rem;">
+            <thead>
+                <tr>
+                    <th>{% trans "Series" %}</th>
+                    <th>{% trans "Genre" %}</th>
+                    <th>{% trans "Volumes moved from another genre" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in state.genre_unified_notes %}
+                <tr>
+                    <td>{{ note.author }} — {{ note.series }}</td>
+                    <td>{{ note.genre }}</td>
+                    <td>{% for f in note.overridden %}<div>{{ f.file_path }} — <em>{{ f.genre }}</em></div>{% endfor %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </details>
+    {% endif %}
     <script>
     /* Синхронизация успешно завершилась (файлы перенесены/папки удалены) —
        запоминаем это, чтобы при закрытии модалки обновить дерево папок

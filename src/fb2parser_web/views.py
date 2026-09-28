@@ -2837,6 +2837,8 @@ sync_job = JobState("fb2parser:sync", {
     "stats": {},
     "stats_rows": [],
     "reconciliation_notes": [],
+    "genre_unified_notes": [],
+    "genre_conflict_notes": [],
     "log": [],
 })
 sync_stop_flag = JobFlag("fb2parser:sync:stop")
@@ -3029,6 +3031,85 @@ def sync_reconciliation_resolve(request):
     return JsonResponse({"ok": True, "message": result_msg, "remaining": len(notes)})
 
 
+@staff_member_required(login_url="/web/login/")
+def sync_genre_conflict_resolve(request):
+    """POST {author, series, genre} — выбрать жанр для серии, тома которой
+    получили поровну разные жанры (см. SynchronizationService.
+    _unify_series_genres). Жанр прописывается в FB2-файлы этой серии в
+    исходной папке; перенесёт их в библиотеку следующая синхронизация —
+    обычным путём, с переименованием и записью в БД.
+
+    Файлы берутся из состояния последнего прогона на сервере, а не из
+    запроса, — клиент выбирает только серию и один из её жанров.
+    """
+    if request.method != "POST":
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["POST"])
+    import json
+    try:
+        data = json.loads(request.body)
+        author, series, genre = data["author"], data["series"], data["genre"]
+    except Exception:
+        return JsonResponse({"error": "bad json"}, status=400)
+
+    state = sync_job.get()
+    notes = state.get("genre_conflict_notes") or []
+    note = next((n for n in notes if n["author"] == author and n["series"] == series), None)
+    if note is None:
+        return JsonResponse({"error": "Конфликт не найден — запустите синхронизацию заново"}, status=404)
+    if genre not in note["genres"]:
+        return JsonResponse({"error": "Жанр не из списка вариантов этой серии"}, status=400)
+
+    from .fb2parser_bridge import get_sync_service, get_genre_assignment_service
+    scan_path = state.get("scan_path") or ""
+    if not scan_path:
+        _svc = get_sync_service()
+        scan_path = str(_svc.last_scan_path) if _svc.last_scan_path else ""
+    if not scan_path:
+        return JsonResponse({"error": "Не известна исходная папка сканирования"}, status=400)
+
+    from pathlib import Path as _Path
+    root = _Path(scan_path).resolve()
+    abs_paths = []
+    for f in note["files"]:
+        p = (root / f["file_path"]).resolve()
+        if root not in p.parents:
+            return JsonResponse({"error": "Некорректный путь файла"}, status=400)
+        abs_paths.append(str(p))
+
+    try:
+        per_file = get_genre_assignment_service().assign_genre_to_files(abs_paths, genre)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    failed = [p for p, ok in per_file.items() if not ok]
+    if failed:
+        return JsonResponse({"error": f"Не удалось записать жанр в {len(failed)} из {len(abs_paths)} файлов"}, status=500)
+
+    # Следующая синхронизация берёт только папки из списка назначенных
+    # жанров (с истечением по времени) — обновляем его, как genre_scan_assign.
+    assignments = genre_assignments.get()
+    times = genre_assignment_times.get()
+    now = time.time()
+    for p in abs_paths:
+        folder_key = str(_Path(p).parent)
+        prev = assignments.get(folder_key)
+        if prev is None:
+            assignments[folder_key] = genre
+        elif prev != genre:
+            assignments[folder_key] = "(разные)"
+        times[folder_key] = now
+    genre_assignments.set(assignments)
+    genre_assignment_times.set(times)
+
+    notes = [n for n in notes if n is not note]
+    sync_job.update(genre_conflict_notes=notes)
+    return JsonResponse({
+        "ok": True,
+        "message": f"✓ Жанр «{genre}» прописан в {len(abs_paths)} файлах — они будут перенесены при следующей синхронизации",
+        "remaining": len(notes),
+    })
+
+
 def _run_compile_pass(target_path, on_log, label, filter_paths=None):
     """Скомпилировать серии, найденные в target_path (папка-источник или библиотека).
 
@@ -3148,6 +3229,8 @@ def _run_sync_thread():
         # таблицы "ключ/значение" ниже. Выносим отдельным полем, которое
         # sync_status.html рендерит отдельным блоком.
         reconciliation_notes = stats.pop("reconciliation_notes", None) or []
+        genre_unified_notes = stats.pop("genre_unified_notes", None) or []
+        genre_conflict_notes = stats.pop("genre_conflict_notes", None) or []
 
         # duplicates_found и duplicates_deleted считают РАЗНОЕ (см.
         # SynchronizationService.stats): duplicates_found — только точные
@@ -3193,7 +3276,9 @@ def _run_sync_thread():
         stats = {_display_labels.get(k, k): v for k, v in stats.items()}
 
         sync_job.update(done=True, running=False, stats=stats, stats_rows=stats_rows,
-                        reconciliation_notes=reconciliation_notes)
+                        reconciliation_notes=reconciliation_notes,
+                        genre_unified_notes=genre_unified_notes,
+                        genre_conflict_notes=genre_conflict_notes)
 
     except Exception as exc:
         sync_job.update(error=str(exc), running=False)

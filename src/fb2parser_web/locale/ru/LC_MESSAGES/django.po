@@ -1156,3 +1156,21 @@ msgstr "семейство, напр. sf"
 
 msgid "Reset ALL exact associations for ALL genres? This cannot be undone (section mapping and code-family patterns are kept)."
 msgstr "Сбросить ВСЕ точные ассоциации у ВСЕХ жанров? Отменить нельзя (сопоставление разделов и правила по семейству кода сохранятся)."
+
+msgid "Series genre needs a choice"
+msgstr "Нужно выбрать жанр серии"
+
+msgid "The volumes of these series have different genres in equal numbers, so it is unclear which one is wrong. They were left untouched in the source folder. Pick a genre for each series: it is written into its files, and the next synchronization moves the whole series into that genre."
+msgstr "У томов этих серий поровну разных жанров — по данным не понять, какой из них ошибочный. Файлы оставлены в исходной папке. Выберите жанр для каждой серии: он будет прописан в её файлы, и следующая синхронизация перенесёт всю серию в этот жанр."
+
+msgid "Volumes"
+msgstr "Тома"
+
+msgid "Apply to series"
+msgstr "Применить к серии"
+
+msgid "Series genre unified by majority of volumes"
+msgstr "Жанр серии выровнен по большинству томов"
+
+msgid "Volumes moved from another genre"
+msgstr "Тома, перенесённые из другого жанра"

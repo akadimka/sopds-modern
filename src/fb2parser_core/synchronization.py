@@ -22,7 +22,7 @@ import html as _html_mod
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional, Callable
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 try:
     from settings_manager import SettingsManager
@@ -162,6 +162,9 @@ class SynchronizationService:
             # баг №72 доп., docs/quality-roadmap.md. Не тронуты автоматически,
             # ждут ручной сверки.
             'reconciliation_notes': [],
+            # Серии, у томов которых разные жанры: см. _unify_series_genres().
+            'genre_unified_notes': [],
+            'genre_conflict_notes': [],
         }
     
     def _log(self, msg: str):
@@ -392,15 +395,23 @@ class SynchronizationService:
                     f"в исходной папке, не перемещены и не удалены."
                 )
 
+            genre_unified_notes, genre_conflict_notes = self._unify_series_genres(folder_structure)
+            self.stats['genre_unified_notes'] = genre_unified_notes
+            self.stats['genre_conflict_notes'] = genre_conflict_notes
+
             # Step 4: Move files and track successfully moved
             if progress_callback:
                 progress_callback(50, 100, "Перемещение файлов в библиотеку")
 
-            # Файлы, требующие ручной сверки, не должны попасть в _move_files —
-            # там любая запись без записи в folder_structure трактуется как
-            # "дубликат, уже в БД" и физически УДАЛЯЕТСЯ. Здесь это не так:
-            # мы намеренно не приняли решение, файл должен остаться на месте.
+            # Файлы, требующие ручной сверки или выбора жанра серии, не должны
+            # попасть в _move_files — там любая запись без записи в
+            # folder_structure трактуется как "дубликат, уже в БД" и физически
+            # УДАЛЯЕТСЯ. Здесь это не так: мы намеренно не приняли решение,
+            # файл должен остаться на месте.
             _needs_reconciliation = {n['incoming_file_path'] for n in reconciliation_notes}
+            _needs_reconciliation |= {
+                f['file_path'] for n in genre_conflict_notes for f in n['files']
+            }
             _records_to_move = [r for r in records if r.file_path not in _needs_reconciliation]
 
             moved_records = self._move_files(_records_to_move, folder_structure, progress_callback)
@@ -765,7 +776,78 @@ class SynchronizationService:
         self._log(f"  Итого файлов в структуре: {len(folder_structure)}")
 
         return folder_structure, reconciliation_notes
-    
+
+    def _unify_series_genres(self, folder_structure: Dict) -> Tuple[List, List]:
+        """Не дать томам одной серии разъехаться по разным жанровым папкам.
+
+        Жанр берётся из `metadata_genre` каждого файла отдельно, и один том
+        с ошибочным кодом жанра уводил серию в две папки библиотеки.
+        Жанр — свойство серии, поэтому для группы (автор, папка-обёртка,
+        серия) с разными жанрами:
+        - есть единственный самый частый жанр — все тома получают его
+          (изменяет folder_structure на месте);
+        - самых частых жанров несколько (например, 1 том против 1) — по
+          данным не понять, какой том ошибочный: вся серия убирается из
+          folder_structure, не перемещается и ждёт ручного выбора.
+          `default_genre` — выше по списку приоритета жанров, только как
+          предвыбор в UI.
+
+        Returns:
+            (unified_notes, conflict_notes)
+        """
+        groups: Dict[Tuple[str, str, str], List[str]] = {}
+        for file_path, (genre, author, display_root, series, _sub) in folder_structure.items():
+            if series:
+                key = (author.lower(), display_root.lower(), series.lower())
+                groups.setdefault(key, []).append(file_path)
+
+        priority = self.settings.get_genre_priority_order() or []
+
+        def _priority_key(g: str):
+            return (priority.index(g) if g in priority else len(priority), g)
+
+        unified_notes: List = []
+        conflict_notes: List = []
+        for paths in groups.values():
+            genres = [folder_structure[p][0] for p in paths]
+            counts = Counter(genres)
+            if len(counts) < 2:
+                continue
+            _genre, author, display_root, series, _sub = folder_structure[paths[0]]
+            top = max(counts.values())
+            leaders = [g for g, c in counts.items() if c == top]
+            if len(leaders) == 1:
+                winner = leaders[0]
+                overridden = []
+                for p in paths:
+                    g, a, d, s, sub = folder_structure[p]
+                    if g != winner:
+                        folder_structure[p] = (winner, a, d, s, sub)
+                        overridden.append({'file_path': p, 'genre': g})
+                self._log(
+                    f"  Жанр серии {author} / {series}: {winner} "
+                    f"(по большинству томов; исправлено файлов: {len(overridden)})"
+                )
+                unified_notes.append({
+                    'author': author, 'series': series,
+                    'genre': winner, 'overridden': overridden,
+                })
+            else:
+                options = sorted(counts, key=_priority_key)
+                files = [{'file_path': p, 'genre': folder_structure[p][0]} for p in paths]
+                for p in paths:
+                    del folder_structure[p]
+                self._log(
+                    f"  ⚠ Жанр серии {author} / {series} не определён: "
+                    f"{', '.join(options)} поровну — серия не перемещена, нужен выбор жанра."
+                )
+                conflict_notes.append({
+                    'author': author, 'series': series,
+                    'genres': options, 'default_genre': options[0],
+                    'files': files,
+                })
+        return unified_notes, conflict_notes
+
     @staticmethod
     def _split_series(series_raw: str) -> Tuple[str, str]:
         """Разбить иерархическое имя серии "Зонтик\\Подсерия" на (серия, подсерия).
