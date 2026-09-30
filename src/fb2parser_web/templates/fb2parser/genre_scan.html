@@ -101,7 +101,21 @@ document.addEventListener("DOMContentLoaded", function () {
     htmx.process(document.getElementById("genre-scan-status"));
 });
 document.body.addEventListener('htmx:afterSwap', function(e) {
-    if (e.target.id === 'genre-scan-status' && e.target.querySelector('[data-scan-done]')) {
+    // Не полагаемся на e.target: при hx-swap="outerHTML" (сам элемент
+    // опроса заменяет сам себя каждые 2с) htmx-версии расходятся в том,
+    // на что именно указывает e.target после замены — было замечено, что
+    // проверка "e.target.id === 'genre-scan-status'" молча никогда не
+    // срабатывала, из-за чего подгрузка результатов не запускалась вовсе
+    // (нашли по логам сервера: опрос статуса переставал повторяться после
+    // самого первого срабатывания). Вместо этого: узнаём запрос по URL
+    // (только start/status этого сканера — не реагируем на клики в самой
+    // панели результатов) и читаем ТЕКУЩЕЕ состояние DOM напрямую.
+    var xhr = e.detail && e.detail.xhr;
+    if (!xhr || !/\/genre-scan\/(start|stop|status)\/?(\?|$)/.test(xhr.responseURL || '')) {
+        return;
+    }
+    var statusEl = document.getElementById('genre-scan-status');
+    if (statusEl && statusEl.hasAttribute('data-scan-done')) {
         htmx.ajax('GET', "{% url 'fb2parser:genre_scan_results' %}", {target: '#genre-scan-results-wrap', swap: 'innerHTML'});
     }
 });
