@@ -2293,5 +2293,68 @@
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 626,
+    "fields": {
+      "genre": "non-fiction",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 627,
+    "fields": {
+      "genre": "foreign_publicism",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 628,
+    "fields": {
+      "genre": "foreign_edu",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 629,
+    "fields": {
+      "genre": "foreign_detective",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 630,
+    "fields": {
+      "genre": "foreign_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 631,
+    "fields": {
+      "genre": "foreign_desc",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 632,
+    "fields": {
+      "genre": "entert_humor",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
   }
 ]
