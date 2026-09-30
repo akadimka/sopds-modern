@@ -1,4 +1,4 @@
-"""Регрессия для `main_scan_start`/`scan_results` (главная страница Home) —
+"""Регрессия для `main_scan_start`/`genre_scan_results` (главная страница Home) —
 docs/quality-roadmap.md, баг №79.
 
 Реальный случай: большая кнопка "▶ Scan" на Home раньше всегда запускала
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from django.test import RequestFactory
 
-from fb2parser_web.views import dashboard, genre_scan_job, main_scan_start, scan_results
+from fb2parser_web.views import dashboard, genre_scan_job, genre_scan_results, main_scan_start
 
 _FB2_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 <FictionBook>
@@ -66,6 +66,7 @@ class TestHomeScanButtonExtractsGenres:
 
         request = rf.post("/fb2parser/main-scan/start/", {"root": str(folder)})
         request.user = admin_user
+        request.session = {}
         response = main_scan_start(request)
         assert response.status_code == 200
 
@@ -83,15 +84,16 @@ class TestHomeScanButtonExtractsGenres:
         assert state["done"] is True
         assert set(state["results"].keys()) == {"детектив", "фантастика"}
 
-    def test_scan_results_reflects_genre_scan_job_not_opds_catalog(self, rf, admin_user):
+    def test_results_view_reflects_genre_scan_job_not_opds_catalog(self, rf, admin_user):
         genre_scan_job.update(
             done=True, running=False,
             results={"детектив": ["a.fb2", "b.fb2"]}, errors=["bad.fb2: oops"],
             processed=2, total=2,
         )
-        request = rf.get("/fb2parser/scan-results/")
+        request = rf.get("/fb2parser/genre-scan/results/")
         request.user = admin_user
-        response = scan_results(request)
+        request.session = {}
+        response = genre_scan_results(request)
         content = response.content.decode("utf-8")
         assert "детектив" in content
         assert "oops" in content

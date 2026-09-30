@@ -57,6 +57,7 @@ class TestGenreScanResultsSuggestsRootGenre:
         )
         request = rf.get("/fb2parser/genre-scan/results/")
         request.user = admin_user
+        request.session = {}
         response = genre_scan_results(request)
         content = response.content.decode("utf-8")
         assert 'data-suggested="Фантастика"' in content

@@ -42,8 +42,12 @@ var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
             {% trans "▶ Scan genres" %}
         </button>
         <span id="scan-spinner" class="htmx-indicator" style="font-size:0.82rem; color:var(--text-muted); white-space:nowrap;">{% trans "Starting..." %}</span>
-        <button type="button" class="button secondary" style="margin:0; white-space:nowrap; flex-shrink:0;"
-                onclick="toggleMainView()">{% trans "⇄ View" %}</button>
+        <span style="display:flex; gap:0; flex-shrink:0;">
+            <button type="button" id="view-tree-btn" class="button" style="margin:0; white-space:nowrap; border-radius:4px 0 0 4px;"
+                    onclick="setMainView('tree')">{% trans "📁 By folders" %}</button>
+            <button type="button" id="view-results-btn" class="button secondary" style="margin:0; white-space:nowrap; border-radius:0 4px 4px 0;"
+                    onclick="setMainView('results')">{% trans "🏷️ By genre combinations" %}</button>
+        </span>
     </div>
 
     <!-- Main work area -->
@@ -92,21 +96,10 @@ var NORMALIZE_SETUP_URL = "{% url 'fb2parser:normalize_setup' %}";
             </div>
         </div>
 
-        <!-- Results mode: 3 panels -->
+        <!-- Вид «По наборам жанров»: genre_scan_results.html -->
         <div id="results-view" class="fp-results-view">
-            <div id="results-content" class="fp-results-content">
-                <div class="fp-panel">
-                    <div class="fp-panel-header genres">{% trans "Genres" %}</div>
-                    <div id="genres-panel" class="fp-panel-body"><div class="fp-panel-placeholder">{% trans "Run a scan" %}</div></div>
-                </div>
-                <div class="fp-panel">
-                    <div class="fp-panel-header errors">{% trans "Errors/Notes" %}</div>
-                    <div id="errors-panel" class="fp-panel-body" style="font-size:0.78rem; font-family:var(--font-mono);"><div class="fp-panel-placeholder" style="font-family:var(--font-sans);">{% trans "No data" %}</div></div>
-                </div>
-                <div class="fp-panel">
-                    <div class="fp-panel-header details">{% trans "Details" %}</div>
-                    <div id="details-panel" class="fp-panel-body"><div class="fp-panel-placeholder">{% trans "Select a genre on the left" %}</div></div>
-                </div>
+            <div id="genre-scan-results-wrap" style="flex:1; min-width:0; height:100%;">
+                <div class="fp-panel-placeholder">{% trans "Run a scan" %}</div>
             </div>
         </div>
     </div>
@@ -155,22 +148,23 @@ var ASSIGN_URL = "{% url 'fb2parser:assign_genre_multi' %}";
 var ASSIGN_STATUS_URL = "{% url 'fb2parser:assign_genre_multi_status' %}";
 var GENRE_NAMES_URL = "{% url 'fb2parser:genre_names' %}";
 
-function toggleMainView() {
-    if (_currentView === 'tree') {
-        document.getElementById('tree-view').style.display = 'none';
-        document.getElementById('results-view').style.display = 'flex';
-        _currentView = 'results';
-        htmx.ajax('GET', "{% url 'fb2parser:scan_results' %}", {target: '#results-content', swap: 'outerHTML'});
-    } else {
-        document.getElementById('results-view').style.display = 'none';
-        document.getElementById('tree-view').style.display = '';
-        _currentView = 'tree';
+// Два вида главной: «По папкам» (дерево, жанр целой папке) и «По наборам
+// жанров» (результаты скана с автоподсказками, жанр по набору кодов).
+function setMainView(view) {
+    _currentView = view;
+    var isResults = view === 'results';
+    document.getElementById('tree-view').style.display = isResults ? 'none' : '';
+    document.getElementById('results-view').style.display = isResults ? 'flex' : 'none';
+    document.getElementById('view-tree-btn').className = isResults ? 'button secondary' : 'button';
+    document.getElementById('view-results-btn').className = isResults ? 'button' : 'button secondary';
+    if (isResults) {
+        htmx.ajax('GET', "{% url 'fb2parser:genre_scan_results' %}", {target: '#genre-scan-results-wrap', swap: 'innerHTML'});
     }
 }
 
 document.addEventListener('htmx:afterSwap', function(e) {
-    if (e.target.id === 'main-statusbar' && e.target.querySelector('[data-scan-done]') && _currentView === 'tree') {
-        toggleMainView();
+    if (e.target.id === 'main-statusbar' && e.target.querySelector('[data-scan-done]')) {
+        setMainView('results');
     }
 });
 

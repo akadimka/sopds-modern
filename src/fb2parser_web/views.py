@@ -371,47 +371,12 @@ def _run_genre_scan_thread(folder_paths):
         genre_scan_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
-def genre_scan(request):
-    # Рабочая папка страницы должна переживать обновление страницы (и
-    # рестарт процесса — job_folder живёт только в LocMemCache текущего
-    # процесса) — берём из сессии (пишется в genre_scan_start), а не
-    # только из кэша job-состояния. На дефолт (SOPDS_ROOT_LIB) откатываемся
-    # ТОЛЬКО если ни один из сохранённых вариантов уже не существует
-    # (папку удалили/перенесли).
-    job_folder = genre_scan_job.get().get("folder")
-    saved_root = request.session.get("genre_scan_root")
-    root = next(
-        (p for p in (job_folder, saved_root, config.SOPDS_ROOT_LIB) if p and os.path.isdir(p)),
-        "",
-    )
-    state = genre_scan_job.get()
-    # Если общий кэш пуст (рестарт memcached), но на диске есть результаты
-    # прошлого прогона по этому же набору папок — подхватываем их.
-    if not state["done"] and not state["running"] and root:
-        cached = _genre_scan_cache_load(root)
-        if cached is not None:
-            results, errors = cached
-            total = sum(len(v) for v in results.values())
-            state = genre_scan_job.update(
-                done=True, running=False, folder=root,
-                results=results, errors=errors,
-                processed=total, total=total,
-            )
-    return render(request, "fb2parser/genre_scan.html", _ctx(
-        "genre_scan", "Жанровые наборы", root=root, state=state,
-        assignments=_get_clean_genre_assignments(),
-    ))
-
-
 def _resolve_scan_folders(request):
-    """Набор папок для скана жанров из запроса — общая логика для
-    `genre_scan_start` (баг №78) и `main_scan_start` (баг №79, дашборд
-    Home тоже теперь запускает извлечение жанров, а не OPDS-скан).
+    """Набор папок для скана жанров из запроса (`main_scan_start`).
 
-    Приоритет: отмеченные на дашборде/чеклисте папки (POST "paths", JSON-
-    массив, тот же формат, что и sync_start) — если хотя бы одна валидна,
-    используются они; иначе одиночное текстовое поле "root".
+    Приоритет: отмеченные в дереве папки (POST "paths", JSON-массив, тот
+    же формат, что и sync_start) — если хотя бы одна валидна, используются
+    они; иначе одиночное поле "root".
 
     Returns:
         Tuple[List[str], int, Optional[str]]: (папки, число FB2-файлов в
@@ -445,61 +410,8 @@ def _resolve_scan_folders(request):
 
 
 @staff_member_required(login_url="/web/login/")
-def genre_scan_start(request):
-    if request.method != "POST":
-        from django.http import HttpResponseNotAllowed
-        return HttpResponseNotAllowed(["POST"])
-    if genre_scan_job.get()["running"]:
-        return _render_genre_scan_status(genre_scan_job.get())
-
-    folder_paths, _fb2_total, error = _resolve_scan_folders(request)
-    if error:
-        css = "alert" if "не найдена" in error else "warning"
-        icon = "❌" if css == "alert" else "⚠"
-        return HttpResponse(
-            f'<div id="genre-scan-status"><div class="callout {css}">{icon} {error}</div></div>'
-        )
-
-    # Запоминаем рабочую папку страницы (баг: страница откатывалась на
-    # дефолт после каждого обновления) — только для одиночной папки: набор
-    # из нескольких отмеченных папок нечего показывать в одном текстовом
-    # поле "Books folder".
-    if len(folder_paths) == 1:
-        request.session["genre_scan_root"] = folder_paths[0]
-
-    genre_scan_stop_flag.clear()
-    folder_key = _genre_scan_folder_key(folder_paths)
-    if not genre_scan_job.try_start(folder=folder_key, total=_fb2_total):
-        return _render_genre_scan_status(genre_scan_job.get())
-
-    t = threading.Thread(target=_run_genre_scan_thread, args=(folder_paths,), daemon=True)
-    t.start()
-    return _render_genre_scan_status(genre_scan_job.get())
-
-
-@staff_member_required(login_url="/web/login/")
-def genre_scan_stop(request):
-    genre_scan_stop_flag.set()
-    return _render_genre_scan_status(genre_scan_job.get())
-
-
-@staff_member_required(login_url="/web/login/")
-def genre_scan_status(request):
-    return _render_genre_scan_status(genre_scan_job.get())
-
-
-def _render_genre_scan_status(state):
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    from django.template.loader import render_to_string
-    html = render_to_string("fb2parser/genre_scan_status.html", {"state": state, "pct": pct})
-    return HttpResponse(html)
-
-
-@staff_member_required(login_url="/web/login/")
 def genre_scan_results(request):
-    """3-панельный вид результатов: жанровые наборы / ошибки / детали.
+    """Вид «По наборам жанров» на главной: жанровые наборы / ошибки / файлы.
 
     Баг №82: для каждого набора жанров пытаемся предложить корневой жанр
     автоматически (`GenresManager.resolve_combo()` — точные ассоциации +
@@ -511,6 +423,20 @@ def genre_scan_results(request):
     from fb2parser_core.settings_manager import SettingsManager
 
     state = genre_scan_job.get()
+    # Состояние задачи живёт в памяти процесса и пропадает при рестарте
+    # сервера; результаты последнего скана этого пользователя лежат ещё и на
+    # диске (_run_genre_scan_thread) — подхватываем их.
+    folder_key = request.session.get("genre_scan_key")
+    if not state["done"] and not state["running"] and folder_key:
+        cached = _genre_scan_cache_load(folder_key)
+        if cached is not None:
+            results, errors = cached
+            total = sum(len(v) for v in results.values())
+            state = genre_scan_job.update(
+                done=True, running=False, folder=folder_key,
+                results=results, errors=errors,
+                processed=total, total=total,
+            )
     try:
         gm = get_genres_manager()
         priority_order = SettingsManager(_config_path()).get_genre_priority_order()
@@ -540,8 +466,9 @@ def genre_scan_files(request):
     combo = request.GET.get("combo", "")
     state = genre_scan_job.get()
     files = state["results"].get(combo, [])
+    codes = [c.strip() for c in combo.split(",") if c.strip()]
     from django.template.loader import render_to_string
-    html = render_to_string("fb2parser/genre_scan_files.html", {"files": files, "combo": combo})
+    html = render_to_string("fb2parser/genre_scan_files.html", {"files": files, "combo": combo, "codes": codes})
     return HttpResponse(html)
 
 
@@ -1109,20 +1036,14 @@ def assign_genre_multi_status(request):
 
 @staff_member_required(login_url="/web/login/")
 def main_scan_start(request):
-    """Запускает извлечение жанров с главной страницы (баг №79): большая
-    кнопка "▶ Scan" на Home раньше всегда прогоняла OPDS-каталожный скан
-    (`opdsScanner.scan_all()`) вне зависимости от отмеченных в дереве
-    папок — сама панель результатов при этом показывала статистику по
-    ВСЕЙ БД каталога, а не по конкретной папке, так что выбор папки не
-    мог ни на что повлиять в принципе (см. баг №77/№78 в
-    docs/quality-roadmap.md). OPDS-каталогизация для читалок остаётся
-    доступна независимо — через отдельную кнопку "Scan" в самом SOPDS
-    Modern (`sopds_web_backend.views.sopds_scan_start`, тот же
-    `opdsScanner`, свой собственный job). Эта кнопка теперь — тонкая
-    обёртка над тем же самым инструментом извлечения жанров
-    (`genre_scan_service.scan_fb2_genres`), что и Actions → Genre
-    Combinations, только со своим собственным местом на экране и без
-    привязки к отдельному "Folders to scan"-чеклисту.
+    """Запускает извлечение жанров (`genre_scan_service.scan_fb2_genres`)
+    для папок, отмеченных в дереве на главной. Результаты показывает вид
+    «По наборам жанров» (`genre_scan_results`).
+
+    Баг №79: раньше эта кнопка прогоняла OPDS-каталожный скан
+    (`opdsScanner.scan_all()`) вне зависимости от отмеченных папок.
+    OPDS-каталогизация для читалок — отдельная кнопка "Scan" в самом SOPDS
+    Modern (`sopds_web_backend.views.sopds_scan_start`).
     """
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
@@ -1138,8 +1059,18 @@ def main_scan_start(request):
     folder_key = _genre_scan_folder_key(folder_paths)
     if not genre_scan_job.try_start(folder=folder_key, total=total):
         return _render_main_status(genre_scan_job.get())
+    # Ключ результатов на диске — чтобы genre_scan_results восстановил их
+    # после рестарта сервера.
+    request.session["genre_scan_key"] = folder_key
     t = threading.Thread(target=_run_genre_scan_thread, args=(folder_paths,), daemon=True)
     t.start()
+    return _render_main_status(genre_scan_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def main_scan_stop(request):
+    genre_scan_stop_flag.set()
     return _render_main_status(genre_scan_job.get())
 
 
@@ -1155,23 +1086,6 @@ def _render_main_status(state):
         pct = min(100, int(state["processed"] / state["total"] * 100))
     html = render_to_string("fb2parser/main_scan_statusbar.html", {"state": state, "pct": pct})
     return HttpResponse(html)
-
-
-@staff_member_required(login_url="/web/login/")
-def scan_results(request):
-    """3-панельный вид результатов Home (баг №79): жанровые наборы /
-    ошибки / детали — тот же источник данных, что и Genre Combinations
-    (`genre_scan_job`), а не агрегат по всей БД OPDS-каталога.
-    """
-    state = genre_scan_job.get()
-    genres_list = sorted(
-        ({"subsection": combo, "cnt": len(paths)} for combo, paths in state["results"].items()),
-        key=lambda r: r["subsection"],
-    )
-    return render(request, "fb2parser/main_results.html", {
-        "state": state,
-        "genres_list": genres_list,
-    })
 
 
 @staff_member_required(login_url="/web/login/")
@@ -1233,7 +1147,7 @@ def genres(request):
     except Exception as e:
         error = str(e)
     return render(request, "fb2parser/genres.html", _ctx(
-        "genres", "Менеджер жанров",
+        "genres", "Справочник жанров",
         genre_list=genre_list,
         genre_names_sorted=genre_names_sorted,
         sections=sections,
@@ -2861,9 +2775,7 @@ _GENRE_ASSIGNMENT_MAX_AGE = 3 * 60 * 60  # 3 часа
 def _get_clean_genre_assignments():
     """Отмеченные на дашборде папки с назначенным жанром, без устаревших
     записей (см. комментарии у `genre_assignments`/`_GENRE_ASSIGNMENT_MAX_AGE`
-    выше). Используется и синхронизацией (`sync()`), и сканом жанровых
-    наборов (`genre_scan()`, баг №78) — оба показывают один и тот же список
-    "отмеченных папок" и должны видеть один и тот же, уже вычищенный набор.
+    выше). Используется синхронизацией (`sync()`).
     """
     assignments = genre_assignments.get()
     # Папки, уже перемещённые предыдущим прогоном синхронизации (или удалённые

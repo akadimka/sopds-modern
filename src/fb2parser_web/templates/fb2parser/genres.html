@@ -1,7 +1,7 @@
 {% extends "fb2parser/base.html" %}
 {% load i18n %}
 {% block content %}
-<h2>🎭 {% trans "🎭 Genre Manager" %}</h2>
+<h2>{% trans "📚 Genre Reference" %}</h2>
 
 {% if error %}
 <div class="callout alert">❌ {{ error }}</div>
@@ -159,7 +159,7 @@
                         </thead>
                         <tbody>
                             {% for c in reference_codes %}
-                            <tr>
+                            <tr data-code="{{ c.code }}">
                                 <td style="font-family:monospace;" title="{{ c.subsection }}">{{ c.code }}</td>
                                 <td style="color:var(--text-muted);">{{ c.section }}</td>
                                 <td>
@@ -484,6 +484,27 @@ function sortGenreRefTable(th) {
         var refTop = sessionStorage.getItem('fb2parser:genreRefScrollTop');
         if (refScroll && refTop !== null) refScroll.scrollTop = parseInt(refTop, 10);
     } catch (e) {}
+})();
+
+// ?code=<код> — переход со страницы результатов скана к нужному коду:
+// режим «по кодам», прокрутка, подсветка. Параметр убираем из адреса, чтобы
+// перезагрузки после правок снова держали прокрутку, а не прыгали к коду.
+(function () {
+    var params = new URLSearchParams(location.search);
+    var code = params.get('code');
+    if (!code) return;
+    history.replaceState(null, '', location.pathname);
+    _genreRefSetMode('code');
+    var rows = document.querySelectorAll('#genre-ref-code-table tr[data-code]');
+    for (var i = 0; i < rows.length; i++) {
+        if (rows[i].dataset.code === code) {
+            rows[i].style.outline = '2px solid var(--fp-accent, #2980b9)';
+            rows[i].scrollIntoView({block: 'center'});
+            var select = rows[i].querySelector('select');
+            if (select) select.focus();
+            return;
+        }
+    }
 })();
 
 function genreExcludedAdd() {

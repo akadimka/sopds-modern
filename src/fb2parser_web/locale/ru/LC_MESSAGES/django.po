@@ -1174,3 +1174,21 @@ msgstr "Жанр серии выровнен по большинству том�
 
 msgid "Volumes moved from another genre"
 msgstr "Тома, перенесённые из другого жанра"
+
+msgid "📁 By folders"
+msgstr "📁 По папкам"
+
+msgid "🏷️ By genre combinations"
+msgstr "🏷️ По наборам жанров"
+
+msgid "⏹ Stopped:"
+msgstr "⏹ Остановлено:"
+
+msgid "Fix in the genre reference:"
+msgstr "Исправить в справочнике жанров:"
+
+msgid "📚 Genre Reference"
+msgstr "📚 Справочник жанров"
+
+msgid "Genre Reference"
+msgstr "Справочник жанров"

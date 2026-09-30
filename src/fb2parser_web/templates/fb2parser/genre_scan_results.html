@@ -130,8 +130,7 @@
         btn.style.display = _gsSelected.size > 0 ? 'inline-block' : 'none';
     }
 
-    // Множественный выбор (баг №83) — Shift/Ctrl, как в Genres на Home
-    // (main_results.html, баг №80). preserveSelection=true — для правого
+    // Множественный выбор (баг №83) — Shift/Ctrl. preserveSelection=true — для правого
     // клика: если строка уже в текущем множественном выборе, весь выбор
     // сохраняется (иначе правый клик по одной из уже выбранных строк
     // неожиданно схлопывал бы выбор до одной).
@@ -167,7 +166,7 @@
         document.getElementById('gs-gp-filter').value = '';
         if (!_gsLoaded) {
             _gsLoaded = true;
-            htmx.ajax('GET', GENRE_NAMES_URL, {target: '#gs-gp-list', swap: 'innerHTML'});
+            htmx.ajax('GET', GENRE_NAMES_URL + '?cb=gsSelectGenre', {target: '#gs-gp-list', swap: 'innerHTML'});
         }
         gsFilterPicker('');
     };
@@ -184,9 +183,6 @@
         });
     };
 
-    // genre_picker_list.html calls gpSelectGenre(name, el) on click — reused
-    // as-is (this page defines its own copy, no collision with dashboard.html:
-    // separate page load, separate global scope).
     function _gsFindComboRow(combo) {
         // Combo text is arbitrary raw <genre> tag content (may contain quotes,
         // backslashes, etc.) — comparing dataset values in JS avoids any
@@ -199,7 +195,7 @@
         return null;
     }
 
-    // Баг №82: и ручной выбор через picker (gpSelectGenre), и автоматическая
+    // Баг №82: и ручной выбор через picker (gsSelectGenre), и автоматическая
     // подсказка резолвера (при загрузке страницы) заполняют один и тот же
     // _gsMappings — общая кнопка "Применить" работает одинаково для обоих.
     //
@@ -232,7 +228,9 @@
         };
     }
 
-    window.gpSelectGenre = function (name) {
+    // Своё имя (а не gpSelectGenre из genre_picker_list.html по умолчанию):
+    // панель встроена в dashboard.html, где gpSelectGenre — picker дерева папок.
+    window.gsSelectGenre = function (name) {
         if (_gsCurrentTargets.length === 0) return;
         _gsCurrentTargets.forEach(function (combo) {
             _gsMarkMapped(combo, name, true);
