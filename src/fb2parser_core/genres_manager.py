@@ -259,32 +259,63 @@ class GenresManager:
                 return found
         return None
 
+    def _all_nodes(self):
+        stack = list(reversed(self.root_nodes))
+        while stack:
+            node = stack.pop()
+            yield node
+            stack.extend(reversed(node.children))
+
+    def exact_genres(self, code):
+        """Жанры, к которым код привязан точной ассоциацией, в порядке дерева.
+        Больше одного — противоречие: побеждает первый (см. `resolve_code`)."""
+        return [n.name for n in self._all_nodes() if code in n.assigned]
+
     def associate(self, genre_str, main_genre):
+        """Явная привязка кода к жанру: код переносится, а не дублируется —
+        привязка к нескольким жанрам сразу молча проигрывает первому по дереву."""
         self.load()  # Загрузить актуальные данные из файла
         node = self.find_node(main_genre)
-        if node:
-            # Проверяем, есть ли уже такая ассоциация
-            if genre_str not in node.assigned:
-                node.assigned.add(genre_str)
-                self.save()
+        if not node:
+            return
+        changed = False
+        for other in self._all_nodes():
+            if other is not node and genre_str in other.assigned:
+                other.assigned.discard(genre_str)
+                changed = True
+        if genre_str not in node.assigned:
+            node.assigned.add(genre_str)
+            changed = True
+        if changed:
+            self.save()
 
     def associate_many(self, pairs):
-        """Пакетная версия `associate()` — один `load()`, N мутаций в
-        памяти, один `save()` (только если хоть что-то реально
-        изменилось) — вместо до N полных циклов чтения+перезаписи
-        `genres.xml`, если вызывать `associate()` в цикле (баг №102:
-        `genre_scan_assign()` применяет это к десяткам кодов за один
-        батч).
+        """Пакетное обучение привязкам (`genre_scan_assign()`, баг №102) —
+        один `load()`, N мутаций в памяти, один `save()` (только если хоть
+        что-то реально изменилось).
+
+        В отличие от `associate()`, только заполняет пробелы: код, у
+        которого уже есть точная привязка к любому жанру, пропускается.
+        Иначе применение жанра к набору кодов из сборника добавляло
+        второй, третий жанр тому же коду (коды разных произведений
+        оказываются в одном наборе), а побеждал всё равно первый по
+        дереву — обучение ничего не меняло и копило противоречия.
+        Изменить уже существующую привязку можно только явно (`associate`,
+        `set_code_association`).
 
         Args:
             pairs: итерируемое пар (genre_str, main_genre).
         """
         self.load()
+        already = {code for node in self._all_nodes() for code in node.assigned}
         changed = False
         for genre_str, main_genre in pairs:
+            if genre_str in already:
+                continue
             node = self.find_node(main_genre)
-            if node and genre_str not in node.assigned:
+            if node:
                 node.assigned.add(genre_str)
+                already.add(genre_str)
                 changed = True
         if changed:
             self.save()
@@ -433,7 +464,13 @@ class GenresManager:
         ТЕКУЩИМ эффективным жанром (`resolve_code()` — точная ассоциация
         или section_map, что бы ни сработало) — для UI-таблицы
         «по кодам» (баг №113, продолжение: раздел-целиком слишком грубая
-        гранулярность для смешанных разделов вроде "Unknown genre")."""
+        гранулярность для смешанных разделов вроде "Unknown genre").
+        `exact_genres` — все точные привязки кода: больше одной — противоречие,
+        которое UI показывает для ручного разбора."""
+        exact: dict = {}
+        for node in self._all_nodes():
+            for code in node.assigned:
+                exact.setdefault(code, []).append(node.name)
         result = []
         for code in sorted(self._reference):
             section, subsection = self._reference[code]
@@ -443,6 +480,7 @@ class GenresManager:
                 "section": section,
                 "subsection": subsection,
                 "genre": genre,
+                "exact_genres": exact.get(code, []),
             })
         return result
 

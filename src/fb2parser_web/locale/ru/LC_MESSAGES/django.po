@@ -1192,3 +1192,13 @@ msgstr "📚 Справочник жанров"
 
 msgid "Genre Reference"
 msgstr "Справочник жанров"
+
+msgid "Linked to several genres:"
+msgstr "Привязан к нескольким жанрам:"
+
+msgid "keep only the selected one"
+msgstr "оставить только выбранный"
+
+#, python-format
+msgid "⚠ Codes linked to several genres at once: %(n)s — marked below."
+msgstr "⚠ Кодов, привязанных сразу к нескольким жанрам: %(n)s — отмечены ниже."

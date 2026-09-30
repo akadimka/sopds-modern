@@ -149,6 +149,11 @@
                     <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0;">
                         {% trans "Assign a genre directly to an individual code — useful for mixed sections (e.g. \"Unknown genre\") where different codes really belong to different genres." %}
                     </p>
+                    {% if multi_linked_count %}
+                    <p style="font-size:0.78rem; color:#f39c12; margin:0 0 0.4rem;">
+                        {% blocktrans with n=multi_linked_count %}⚠ Codes linked to several genres at once: {{ n }} — marked below.{% endblocktrans %}
+                    </p>
+                    {% endif %}
                     <table id="genre-ref-code-table" class="unstriped" style="font-size:0.8rem; margin:0;">
                         <thead>
                             <tr>
@@ -170,6 +175,12 @@
                                         <option value="{{ name }}" {% if name == c.genre %}selected{% endif %}>{{ name }}</option>
                                         {% endfor %}
                                     </select>
+                                    {% if c.exact_genres|length > 1 %}
+                                    <div style="font-size:0.72rem; color:#f39c12; margin-top:0.15rem;">
+                                        ⚠ {% trans "Linked to several genres:" %} {{ c.exact_genres|join:", " }}
+                                        <a href="#" onclick="genreCodeAssignSet('{{ c.code|escapejs }}', this.closest('td').querySelector('select').value); return false;">{% trans "keep only the selected one" %}</a>
+                                    </div>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}

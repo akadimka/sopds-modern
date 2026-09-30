@@ -534,7 +534,9 @@ def genre_scan_assign(request):
     # вызывался на каждый код каждого комбо, а он сам делает полный
     # load()+save() genres.xml на каждый вызов (до M циклов чтения+
     # перезаписи вместо одного load, N мутаций, одного save).
-    pending_associations = []
+    # Код → жанры, с которыми он применён в этом батче: код, попавший в
+    # наборы с РАЗНЫМИ жанрами, не учим — неясно, какой из них его.
+    learned_genres: dict = {}
 
     for combo, genre in mappings.items():
         genre = (genre or "").strip()
@@ -558,7 +560,7 @@ def genre_scan_assign(request):
                         continue
                     existing_genre, _ = gm.resolve_code(code, priority_order)
                     if existing_genre != genre:
-                        pending_associations.append((code, genre))
+                        learned_genres.setdefault(code, set()).add(genre)
         for abs_path, ok in per_file.items():
             if not ok:
                 continue
@@ -573,6 +575,9 @@ def genre_scan_assign(request):
     genre_assignments.set(assignments)
     genre_assignment_times.set(times)
 
+    pending_associations = [
+        (code, next(iter(genres))) for code, genres in learned_genres.items() if len(genres) == 1
+    ]
     if gm is not None and pending_associations:
         gm.associate_many(pending_associations)
 
@@ -1153,6 +1158,7 @@ def genres(request):
         sections=sections,
         excluded_codes=excluded_codes,
         reference_codes=reference_codes,
+        multi_linked_count=sum(1 for c in reference_codes if len(c["exact_genres"]) > 1),
         error=error,
     ))
 
