@@ -131,8 +131,22 @@ class TestLoginView:
 class TestLogoutView:
     def test_logout(self, client, django_user, counter_with_books) -> None:
         client.force_login(django_user)
-        response = client.get(reverse("web:logout"))
+        response = client.post(reverse("web:logout"))
         assert response.status_code == 302
+
+    def test_logout_by_get_not_allowed(self, client, django_user, counter_with_books) -> None:
+        client.force_login(django_user)
+        assert client.get(reverse("web:logout")).status_code == 405
+
+    def test_top_bar_logout_is_post_form(self, client, django_user, counter_with_books, settings) -> None:
+        settings.STORAGES = {
+            **settings.STORAGES,
+            "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        }
+        client.force_login(django_user)
+        html = client.get(reverse("web:main")).content.decode()
+        assert f'<form method="post" action="{reverse("web:logout")}" class="sp-logout-form">' in html
+        assert f'href="{reverse("web:logout")}"' not in html
 
 
 # ──────────────────────────────────────────────
@@ -278,8 +292,8 @@ class TestBSDelView:
     ) -> None:
         bookshelf.objects.create(user=django_user, book=book_with_relations)
         client.force_login(django_user)
-        response = client.get(
-            reverse("web:bsdel"), {"book": str(book_with_relations.id)}
+        response = client.delete(
+            f"{reverse('web:bsdel')}?book={book_with_relations.id}"
         )
         assert response.status_code == 302
 
@@ -291,8 +305,17 @@ class TestBSClearView:
     ) -> None:
         bookshelf.objects.create(user=django_user, book=book_with_relations)
         client.force_login(django_user)
-        response = client.get(reverse("web:bsclear"))
+        response = client.post(reverse("web:bsclear"))
         assert response.status_code == 302
+        assert not bookshelf.objects.filter(user=django_user).exists()
+
+    def test_clear_by_get_not_allowed(
+        self, client, django_user, counter_with_books, book_with_relations
+    ) -> None:
+        bookshelf.objects.create(user=django_user, book=book_with_relations)
+        client.force_login(django_user)
+        assert client.get(reverse("web:bsclear")).status_code == 405
+        assert bookshelf.objects.filter(user=django_user).exists()
 
 
 # ──────────────────────────────────────────────

@@ -7,6 +7,8 @@ import re
 import time
 import zipfile
 
+from book_tools.format.util import MAX_BOOK_FILE_SIZE
+
 from opds_catalog.sopds_config import sopds_cfg as config
 
 # from django.db import transaction
@@ -265,6 +267,12 @@ class opdsScanner:
                 for n in filelist:
                     try:
                         file_size = z.getinfo(n).file_size
+                        if file_size > MAX_BOOK_FILE_SIZE:
+                            self.logger.warning(
+                                f"Skip '{n}' in ZIP file '{file}': declares {file_size} "
+                                f"bytes uncompressed (> {MAX_BOOK_FILE_SIZE}), looks like a zip bomb"
+                            )
+                            continue
                         bookfile = z.open(n)
                         self.processfile(
                             n, file, bookfile, cat, opdsdb.CAT_ZIP, file_size

@@ -36,7 +36,7 @@ function openBookCard(bookId) {
 <div id="ConfirmModal" class="reveal tiny text-center" data-reveal>
     <h5>{% trans "Confirm to clear your bookshelf." %}</h5>
     <p class="text-center">
-        <a href="{% url "web:bsclear" %}" class="secondary button">{% trans "Clear" %}</a>
+        <form method="post" action="{% url "web:bsclear" %}" style="display:inline;">{% csrf_token %}<button type="submit" class="secondary button">{% trans "Clear" %}</button></form>
         &nbsp;&nbsp;
         <a class="close button" data-close>{% trans "Cancel" %}</a>
     </p>

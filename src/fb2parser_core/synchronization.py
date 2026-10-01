@@ -1439,7 +1439,8 @@ class SynchronizationService:
                 # Path traversal guard: ensure target stays inside library_path
                 resolved_target = target_dir.resolve()
                 resolved_library = self.library_path.resolve()
-                if not str(resolved_target).startswith(str(resolved_library)):
+                # is_relative_to, не startswith: "C:\Lib2" начинается с "C:\Lib".
+                if not resolved_target.is_relative_to(resolved_library):
                     self._log(f"✖️ Попытка выхода за пределы библиотеки: {target_dir}")
                     self.stats['errors'] += 1
                     continue

@@ -177,3 +177,55 @@ class TestSkipAction:
         assert incoming.exists()  # файл не трогаем
         assert sync_job.get()["reconciliation_notes"] == []
         assert "файл.fb2" in sync_module._load_reconciliation_skip_set()
+
+
+class TestPathConfinement:
+    """note приходит от клиента: путь к входящему файлу не должен выходить
+    за папку сканирования, а целевая папка — за библиотеку (включая
+    соседнюю папку с общим префиксом: "library2" начинается с "library")."""
+
+    def _fake_svc(self, monkeypatch, library_path, scan_path):
+        import fb2parser_web.fb2parser_bridge as bridge_module
+
+        class _FakeSvc:
+            def __init__(self):
+                self.library_path = library_path
+                self.last_scan_path = scan_path
+            _shorten_filename_for_path_limit = staticmethod(lambda target_dir, name: name)
+
+        monkeypatch.setattr(bridge_module, "get_sync_service", lambda: _FakeSvc())
+
+    def test_move_of_file_outside_scan_path_rejected(self, tmp_path, admin_user, monkeypatch):
+        scan_path = tmp_path / "staging"
+        library_path = tmp_path / "library"
+        scan_path.mkdir()
+        library_path.mkdir()
+        outside = tmp_path / "secret.db"
+        outside.write_bytes(b"db")
+        self._fake_svc(monkeypatch, library_path, scan_path)
+
+        for incoming in ("../secret.db", str(outside)):
+            note = _note(incoming=incoming)
+            sync_job.update(scan_path=str(scan_path), reconciliation_notes=[note])
+            response = _post(note, "move", admin_user)
+            assert response.status_code == 400
+            assert outside.exists()
+
+    def test_move_into_sibling_folder_with_common_prefix_rejected(self, tmp_path, admin_user, monkeypatch):
+        scan_path = tmp_path / "staging"
+        library_path = tmp_path / "library"
+        scan_path.mkdir()
+        library_path.mkdir()
+        (tmp_path / "library2").mkdir()
+        incoming = scan_path / "incoming" / "файл.fb2"
+        incoming.parent.mkdir()
+        incoming.write_bytes(b"stub")
+        self._fake_svc(monkeypatch, library_path, scan_path)
+
+        note = _note(genre="../library2")
+        sync_job.update(scan_path=str(scan_path), reconciliation_notes=[note])
+        response = _post(note, "move", admin_user)
+
+        assert response.status_code == 400
+        assert incoming.exists()
+        assert not any((tmp_path / "library2").iterdir())

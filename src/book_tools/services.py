@@ -28,6 +28,7 @@ from .format.epub import EPub as EPubOld
 from .format.mimetype import Mimetype
 from .format.mobi import Mobipocket
 from .format.parsers import FB2
+from .format.util import MAX_FB2_XML_SIZE, ZipMemberTooLarge, read_zip_member
 from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
 
@@ -178,10 +179,10 @@ def parse_fb2_zip(file_obj, original_filename: str) -> BookMetadata:
         if len(z.infolist()) != 1:
             raise FB2StructureException("Incorrect fb2 zip archive!")
         fn = z.namelist()[0]
-        with z.open(fn, "r") as d:
-            content = BytesIO()
-            content.write(d.read())
-    content.seek(0)
+        try:
+            content = BytesIO(read_zip_member(z, fn, MAX_FB2_XML_SIZE))
+        except ZipMemberTooLarge as e:
+            raise FB2StructureException(str(e)) from e
     return parse_fb2(content, fn)
 
 
@@ -331,10 +332,10 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
             if len(z.infolist()) != 1:
                 raise FB2StructureException("Incorrect fb2 zip archive!")
             fn = z.namelist()[0]
-            with z.open(fn, "r") as d:
-                content_data = BytesIO()
-                content_data.write(d.read())
-        content_data.seek(0)
+            try:
+                content_data = BytesIO(read_zip_member(z, fn, MAX_FB2_XML_SIZE))
+            except ZipMemberTooLarge as e:
+                raise FB2StructureException(str(e)) from e
     else:
         content_mimetype = mimetype
         content_data = data

@@ -33,7 +33,7 @@
             {% if user.is_authenticated %}
                 <li>
                     <a href="{% url "web:profile" %}" style="display:inline">{{ user.username }}</a>
-                    (<a href="{% url "web:logout" %}" style="display:inline">{% trans "Logout" %}</a>)
+                    (<form method="post" action="{% url "web:logout" %}" class="sp-logout-form">{% csrf_token %}<button type="submit">{% trans "Logout" %}</button></form>)
                 </li>
             {% else %}
                 <li><a href="{% url "web:login" %}">{% trans "Login" %}</a></li>

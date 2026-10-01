@@ -28,7 +28,7 @@ from fb2parser_web.views import server_restart
 class TestServerRestartHonestAboutGunicorn:
     def test_under_gunicorn_triggers_real_systemctl_restart(self, admin_user):
         rf = RequestFactory()
-        request = rf.get(
+        request = rf.post(
             "/fb2parser/server-restart/",
             SERVER_SOFTWARE="gunicorn/23.0.0",
         )
@@ -61,7 +61,7 @@ class TestServerRestartHonestAboutGunicorn:
 
     def test_under_dev_server_still_reports_success(self, admin_user):
         rf = RequestFactory()
-        request = rf.get(
+        request = rf.post(
             "/fb2parser/server-restart/",
             SERVER_SOFTWARE="WSGIServer/0.2 CPython/3.13.14",
         )

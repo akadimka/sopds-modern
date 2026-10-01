@@ -680,6 +680,7 @@ def compress_start(request):
 
 
 @staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
 def compress_stop(request):
     compress_stop_flag.set()
     return _render_compress_status(compress_job.get())
@@ -808,7 +809,7 @@ def folder_tree(request):
 
 
 @staff_member_required(login_url="/web/login/")
-@staff_member_required
+@require_http_methods(["POST"])
 def server_restart(request):
     """Touch manage.py to trigger Django dev server autoreload; under
     gunicorn, actually restart the systemd unit via a narrowly-scoped
@@ -2891,6 +2892,10 @@ def sync_reconciliation_resolve(request):
 
     from pathlib import Path as _Path
     abs_incoming = str(_Path(scan_path) / incoming_file_path)
+    # note приходит от клиента: абсолютный путь или "..\\" вывели бы
+    # перемещение/удаление за пределы папки сканирования.
+    if not _is_within_folder(abs_incoming, scan_path):
+        return JsonResponse({"error": "Файл вне исходной папки сканирования"}, status=400)
 
     try:
         if action == "delete":
@@ -2919,13 +2924,9 @@ def sync_reconciliation_resolve(request):
             if subseries:
                 target_dir = target_dir / subseries
 
-            # Та же защита от выхода за пределы библиотеки, что и в
-            # _move_files() — genre/author/series здесь берутся из уже
-            # посчитанных (и просанированных) полей note, но проверяем
-            # ещё раз на всякий случай, раз путь строится заново здесь.
-            resolved_target = target_dir.resolve()
-            resolved_library = svc.library_path.resolve()
-            if not str(resolved_target).startswith(str(resolved_library)):
+            # genre/author/series приходят в note от клиента — путь не должен
+            # выйти за пределы библиотеки (в т.ч. в соседнюю "<library>2").
+            if not _is_within_folder(str(target_dir), str(svc.library_path)):
                 return JsonResponse({"error": "Некорректный целевой путь"}, status=400)
 
             if not _Path(abs_incoming).exists():

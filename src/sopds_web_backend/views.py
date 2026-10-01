@@ -619,14 +619,14 @@ def SearchSuggestView(request):
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
-@require_http_methods(["GET", "DELETE"])
+@require_http_methods(["DELETE"])
 def BSDelView(request):
-    if request.GET:
-        book = request.GET.get("book", None)
-    else:
-        book = None
-
-    book = int(book)
+    # Только DELETE (hx-delete, CSRF-заголовок ставит htmx-config.js): GET-ссылка
+    # позволяла стереть полку чужой страницей (<img src=…>).
+    try:
+        book = int(request.GET.get("book", ""))
+    except ValueError:
+        return HttpResponse(status=400)
 
     bookshelf.objects.filter(user=request.user, book=book).delete()
 
@@ -643,6 +643,7 @@ def BSDelView(request):
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
+@require_http_methods(["POST"])
 def BSClearView(request):
     bookshelf.objects.filter(user=request.user).delete()
     return redirect("%s?searchtype=u" % reverse("web:searchbooks"))
@@ -1047,10 +1048,9 @@ def LoginView(request):
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
+@require_http_methods(["POST"])
 def LogoutView(request):
     logout(request)
-    args = {}
-    args["breadcrumbs"] = [_("Logout")]
     return redirect(reverse("web:main"))
 
 

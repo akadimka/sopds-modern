@@ -9,6 +9,7 @@ from lxml import etree
 from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
+from book_tools.format.util import MAX_COVER_SIZE, ZipMemberTooLarge, read_zip_member
 from book_tools.format.util import list_zip_file_infos, normalize_string, safe_xml_parser
 
 
@@ -513,8 +514,10 @@ class EPub(BookFile):
         if len(self.cover_fileinfos) == 0:
             return None
         name = self.cover_fileinfos[-1]["filename"]
-        content = self.__zip_file.open(name).read()
-        return content
+        try:
+            return read_zip_member(self.__zip_file, name, MAX_COVER_SIZE)
+        except ZipMemberTooLarge:
+            return None
 
     def parse_book_data(self, file, original_filename) -> BookFile:
         book_file = BookFile(file, original_filename, Mimetype.EPUB)

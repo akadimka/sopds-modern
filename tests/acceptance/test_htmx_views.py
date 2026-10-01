@@ -90,17 +90,27 @@ class TestBSDelViewHtmx:
     def test_delete_without_hx(
         self, client, django_user, update_counters, book_with_relations
     ) -> None:
-        """Обычный GET-запрос возвращает 302 (редирект)."""
+        """DELETE без HX-Request возвращает 302 (редирект)."""
         from opds_catalog.models import bookshelf
 
         bookshelf.objects.create(user=django_user, book=book_with_relations)
         client.force_login(django_user)
 
-        response = client.get(
-            reverse("web:bsdel"),
-            {"book": str(book_with_relations.id)},
-        )
+        response = client.delete(f"{reverse('web:bsdel')}?book={book_with_relations.id}")
         assert response.status_code == 302
+
+    def test_delete_by_get_not_allowed(
+        self, client, django_user, update_counters, book_with_relations
+    ) -> None:
+        """GET (ссылка/картинка с чужой страницы) не удаляет книгу с полки."""
+        from opds_catalog.models import bookshelf
+
+        bookshelf.objects.create(user=django_user, book=book_with_relations)
+        client.force_login(django_user)
+
+        response = client.get(reverse("web:bsdel"), {"book": str(book_with_relations.id)})
+        assert response.status_code == 405
+        assert bookshelf.objects.filter(user=django_user).exists()
 
     def test_delete_method_not_allowed(
         self, client, django_user, update_counters, book_with_relations

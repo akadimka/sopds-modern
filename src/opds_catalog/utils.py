@@ -6,6 +6,7 @@ from typing import Any
 from zipfile import ZipInfo
 
 import chardet
+from book_tools.format.util import MAX_BOOK_FILE_SIZE, ZipMemberTooLarge, read_zip_member
 from opds_catalog.sopds_config import sopds_cfg as config
 from django.conf import settings
 
@@ -148,13 +149,13 @@ def read_from_zipped_file(zip_path: str, filename: str) -> BytesIO | None:
                     )
                     return None
 
-                with zc.open(candidate, "r") as book:
-                    content = BytesIO(book.read())
-                    content.seek(0)
-                    logger.debug(
-                        f"Readed {len(content.getvalue())} bytes from {zip_path}"
-                    )
-                    return content
+                try:
+                    content = BytesIO(read_zip_member(zc, candidate, MAX_BOOK_FILE_SIZE))
+                except ZipMemberTooLarge as e:
+                    logger.error(f"Refusing to read {filename} from ZIP archive {zip_path}: {e}")
+                    return None
+                logger.debug(f"Readed {len(content.getvalue())} bytes from {zip_path}")
+                return content
     except KeyError as e:
         logger.error(f"Can not read file {filename} from ZIP archive {zip_path}: {e}")
         return None
