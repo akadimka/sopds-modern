@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .fb2_utils import has_fb2_files as _has_fb2_util
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
 from .logger import Logger
+from .path_safety import is_within
 from .regen_csv import RegenCSVService
 from .settings_manager import SettingsManager
 
@@ -1432,10 +1433,7 @@ class SynchronizationService:
                     target_dir = target_dir / subseries
 
                 # Path traversal guard: ensure target stays inside library_path
-                resolved_target = target_dir.resolve()
-                resolved_library = self.library_path.resolve()
-                # is_relative_to, не startswith: "C:\Lib2" начинается с "C:\Lib".
-                if not resolved_target.is_relative_to(resolved_library):
+                if not is_within(target_dir, self.library_path):
                     self._log(f"✖️ Попытка выхода за пределы библиотеки: {target_dir}")
                     self.stats['errors'] += 1
                     continue

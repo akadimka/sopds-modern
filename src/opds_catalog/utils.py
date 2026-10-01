@@ -13,6 +13,7 @@ from book_tools.format.util import (
     ZipMemberTooLarge,
     read_zip_member,
 )
+from fb2parser_core.path_safety import is_within
 from opds_catalog import opdsdb
 from opds_catalog.models import Book
 from opds_catalog.sopds_config import sopds_cfg as config
@@ -176,12 +177,7 @@ def _is_within_root_lib(path: str) -> bool:
     слой ЗА санитизацией на входе, независимо от того, как именно
     небезопасное значение попало в БД.
     """
-    try:
-        real_root = os.path.normcase(os.path.realpath(config.SOPDS_ROOT_LIB))
-        real_path = os.path.normcase(os.path.realpath(path))
-        return os.path.commonpath([real_root, real_path]) == real_root
-    except Exception:
-        return False
+    return is_within(path, config.SOPDS_ROOT_LIB)
 
 
 def getFileData(book: Book) -> BytesIO | None:

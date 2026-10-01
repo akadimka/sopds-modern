@@ -11,6 +11,7 @@ from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_http_methods
 
+from fb2parser_core.path_safety import is_within
 from opds_catalog import opdsdb
 from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
 from opds_catalog.sopds_config import sopds_cfg as config
@@ -1955,14 +1956,7 @@ def _is_within_folder(path, folder):
     использовался только ПОСЛЕ удаления, для чистки пустых папок,
     а не как граница доверия перед самим удалением.
     """
-    if not folder or not path:
-        return False
-    try:
-        real_folder = os.path.normcase(os.path.realpath(folder))
-        real_path = os.path.normcase(os.path.realpath(path))
-        return os.path.commonpath([real_folder, real_path]) == real_folder
-    except Exception:
-        return False
+    return is_within(path, folder)
 
 
 def _delete_paths_confined(paths, folder):
@@ -3036,7 +3030,7 @@ def sync_genre_conflict_resolve(request):
     abs_paths = []
     for f in note["files"]:
         p = (root / f["file_path"]).resolve()
-        if root not in p.parents:
+        if p == root or not _is_within_folder(str(p), str(root)):
             return JsonResponse({"error": "Некорректный путь файла"}, status=400)
         abs_paths.append(str(p))
 
