@@ -541,10 +541,7 @@ class Pass3Normalize:
                             # firstname (e.g. "Брэдбери Рэй Дуглас" → lastname="Брэдбери",
                             # firstname="Рэй Дуглас", patronymic=None) must NOT be chopped
                             # to the first two words — that would silently drop "Дуглас".
-                            try:
-                                from name_normalizer import AuthorName as _AN
-                            except ImportError:
-                                from ..name_normalizer import AuthorName as _AN
+                            from ..name_normalizer import AuthorName as _AN
                             _an = _AN(auth)
                             if _an.is_valid:
                                 _lastname, _firstname, _patronymic = _an.parts

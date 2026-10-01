@@ -28,29 +28,15 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, List
 
-try:
-    from extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
-except ImportError:
-    from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
+from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 
-try:
-    from evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
-    from evidence import folder_has_signal as _folder_has_signal_fn
-    from evidence import log_decision
-except ImportError:
-    from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
-    from ..evidence import folder_has_signal as _folder_has_signal_fn
-    from ..evidence import log_decision
+from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
+from ..evidence import folder_has_signal as _folder_has_signal_fn
+from ..evidence import log_decision
 
-try:
-    from roman_numerals import roman_to_int as _roman_to_int
-except ImportError:
-    from ..roman_numerals import roman_to_int as _roman_to_int
+from ..roman_numerals import roman_to_int as _roman_to_int
 
-try:
-    from series_normalizer import _nfc_lower_yo
-except ImportError:
-    from ..series_normalizer import _nfc_lower_yo
+from ..series_normalizer import _nfc_lower_yo
 
 
 def _norm_s(s: str) -> str:
@@ -130,46 +116,17 @@ def _author_matches_folder(proposed_author: str, folder_part: str) -> bool:
 
     return True
 
-try:
-    from BookRecord import BookRecord
-except ImportError:
-    # Если прямой импорт не работает, попробовать относительный
-    from dataclasses import dataclass
-    @dataclass
-    class BookRecord:
-        file_path: str = ""
-        metadata_authors: str = ""
-        proposed_author: str = ""
-        author_source: str = ""
-        metadata_series: str = ""
-        proposed_series: str = ""
-        series_source: str = ""
-        file_title: str = ""
+from .pass1_read_files import BookRecord
 
-try:
-    from logger import Logger
-except ImportError:
-    from ..logger import Logger
+from ..logger import Logger
 
-try:
-    from settings_manager import SettingsManager
-except ImportError:
-    from ..settings_manager import SettingsManager
+from ..settings_manager import SettingsManager
 
-try:
-    from name_normalizer import AuthorName
-except ImportError:
-    from ..name_normalizer import AuthorName
+from ..name_normalizer import AuthorName
 
-try:
-    from pattern_converter import compile_patterns
-except ImportError:
-    from ..pattern_converter import compile_patterns
+from ..pattern_converter import compile_patterns
 
-try:
-    from block_level_pattern_matcher import BlockLevelPatternMatcher
-except ImportError:
-    from ..block_level_pattern_matcher import BlockLevelPatternMatcher
+from ..block_level_pattern_matcher import BlockLevelPatternMatcher
 
 
 class BlockLevelPatternSelector:
@@ -522,10 +479,7 @@ class Pass2SeriesFilename:
                             continue
 
                         if author_was_series:
-                            try:
-                                from name_normalizer import AuthorName as _AN
-                            except ImportError:
-                                from ..name_normalizer import AuthorName as _AN
+                            from ..name_normalizer import AuthorName as _AN
                             _an = _AN(extracted_author)
                             canonical_author = _an.normalized if (_an.is_valid and _an.normalized) else extracted_author
                             record.proposed_author = canonical_author
@@ -976,10 +930,7 @@ class Pass2SeriesFilename:
                 _surname_lc = record.proposed_author.lower().replace('ё', 'е')
                 if ('(' in _direct_parent
                         and _surname_lc in _direct_parent.lower().replace('ё', 'е')):
-                    try:
-                        from name_normalizer import normalize_author_name as _norm_au
-                    except ImportError:
-                        from ..name_normalizer import normalize_author_name as _norm_au
+                    from ..name_normalizer import normalize_author_name as _norm_au
                     _expanded = None
                     for _raw_au in record.metadata_authors.replace(';', ',').split(','):
                         _raw_au = _raw_au.strip()
@@ -3029,10 +2980,7 @@ class Pass2SeriesFilename:
         - "и др", "et al." и подобные суффиксы из имени автора убираются.
         - Работает для любых вложенных структур (Коллекция / СерияАвтор / Подсерия / Файл).
         """
-        try:
-            from passes.folder_author_parser import parse_author_from_folder_name
-        except ImportError:
-            from .folder_author_parser import parse_author_from_folder_name
+        from .folder_author_parser import parse_author_from_folder_name
 
         # Список суффиксов-заменителей соавторов, которые нужно убирать
         _ET_AL_PATTERN = re.compile(

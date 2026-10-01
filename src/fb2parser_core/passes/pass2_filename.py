@@ -15,10 +15,7 @@ from typing import List, Optional
 from pathlib import Path
 from .file_structural_analysis import analyze_file_structure, score_pattern_match
 
-try:
-    from name_normalizer import validate_author_name
-except ImportError:
-    from ..name_normalizer import validate_author_name
+from ..name_normalizer import validate_author_name
 
 
 class Pass2Filename:
@@ -173,10 +170,7 @@ class Pass2Filename:
                     # This prevents "First Middle Last" metadata (e.g. "Кристофер Джон Сэнсом")
                     # from being stored under the first-name key ("кристофер"), which would
                     # incorrectly expand unrelated single-word authors (e.g. "Кристофер" = Пол Кристофер).
-                    try:
-                        from name_normalizer import AuthorName as _AN2
-                    except ImportError:
-                        from ..name_normalizer import AuthorName as _AN2
+                    from ..name_normalizer import AuthorName as _AN2
                     _an = _AN2(author)
                     normalized_author = _an.normalized if (_an.is_valid and _an.normalized) else author
                     # Only use normalized form if it successfully reordered to "Surname First"
@@ -806,10 +800,7 @@ class Pass2Filename:
                         sep = '; ' if '; ' in record.metadata_authors else ', '
                         meta_parts = [a.strip() for a in record.metadata_authors.split(sep) if a.strip()]
                         if len(meta_parts) == 2:
-                            try:
-                                from author_normalizer_extended import AuthorNormalizer as _AN
-                            except ImportError:
-                                from ..author_normalizer_extended import AuthorNormalizer as _AN
+                            from ..author_normalizer_extended import AuthorNormalizer as _AN
                             _norm = _AN(self.settings)
                             normalized_pair = [
                                 _norm.normalize_format(a) for a in meta_parts
@@ -1015,10 +1006,7 @@ class Pass2Filename:
         
         try:
             # Import block-level matcher
-            try:
-                from block_level_pattern_matcher import BlockLevelPatternMatcher
-            except ImportError:
-                from ..block_level_pattern_matcher import BlockLevelPatternMatcher
+            from ..block_level_pattern_matcher import BlockLevelPatternMatcher
             import re
             
             # CRITICAL: Remove blacklist markers from filename BEFORE pattern matching

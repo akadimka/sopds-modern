@@ -17,14 +17,9 @@ from typing import List, Dict, Set, Optional, Callable, Any
 from collections import Counter
 from dataclasses import dataclass, field
 
-try:
-    from settings_manager import SettingsManager
-    from logger import Logger
-    from name_normalizer import AuthorName
-except ImportError:
-    from .settings_manager import SettingsManager
-    from .logger import Logger
-    from .name_normalizer import AuthorName
+from .settings_manager import SettingsManager
+from .logger import Logger
+from .name_normalizer import AuthorName
 
 
 @dataclass

@@ -76,10 +76,7 @@ def parse_author_from_folder_name(folder_name: str,
     # как "авторов" (проверено вручную на реальном config.json).
     try:
         from pathlib import Path as _Path
-        try:
-            from settings_manager import SettingsManager
-        except ImportError:
-            from ...settings_manager import SettingsManager
+        from ...settings_manager import SettingsManager
         _default_config_path = str(
             _Path(__file__).resolve().parent.parent.parent.parent
             / 'fb2_data' / 'settings' / 'config.json'

@@ -37,15 +37,9 @@ def _detect_optimal_workers(path: Path) -> int:
     except Exception:
         return 4
 
-try:
-    from logger import Logger
-except ImportError:
-    from .logger import Logger
+from .logger import Logger
 
-try:
-    from fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
-except ImportError:
-    from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
+from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
 
 
 class GenreAssignmentService:

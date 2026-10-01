@@ -4,10 +4,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import re
 
-try:
-    from settings_manager import SettingsManager
-except ImportError:
-    from .settings_manager import SettingsManager
+from .settings_manager import SettingsManager
 
 
 class FB2SAXHandler(xml.sax.handler.ContentHandler):

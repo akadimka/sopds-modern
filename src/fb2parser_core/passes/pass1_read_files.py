@@ -14,14 +14,9 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import tqdm
 
-try:
-    from extraction_constants import FILE_EXTENSION_FOLDER_NAMES
-    from fb2_sax_extractor import FB2SAXExtractor
-    from fb2_utils import fb2_rglob
-except ImportError:
-    from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES
-    from ..fb2_sax_extractor import FB2SAXExtractor
-    from ..fb2_utils import fb2_rglob
+from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES
+from ..fb2_sax_extractor import FB2SAXExtractor
+from ..fb2_utils import fb2_rglob
 
 
 def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
@@ -448,10 +443,7 @@ class Pass1ReadFiles:
             # 2-ядерном сервере; но сама гонка по кэшу — независимая, реальная
             # проблема, которую всё равно стоит убрать.)
             try:
-                try:
-                    from metadata_cache import MetadataCache
-                except ImportError:
-                    from ..metadata_cache import MetadataCache
+                from ..metadata_cache import MetadataCache
                 MetadataCache()
             except Exception:
                 pass

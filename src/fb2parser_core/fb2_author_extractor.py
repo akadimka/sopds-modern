@@ -17,10 +17,7 @@ import html
 import re
 from pathlib import Path
 
-try:
-    from settings_manager import SettingsManager
-except ImportError:
-    from .settings_manager import SettingsManager
+from .settings_manager import SettingsManager
 
 # Любой префикс пространства имён (<fb:genre>, <FictionBook:genre>…) и
 # атрибуты у <title-info> — как у SAX-разбора в pass1 (fb2_sax_extractor),

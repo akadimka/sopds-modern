@@ -24,16 +24,10 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional, Callable
 from collections import Counter, defaultdict
 
-try:
-    from settings_manager import SettingsManager
-    from logger import Logger
-    from regen_csv import RegenCSVService
-    from fb2_utils import read_fb2_bytes, write_fb2_bytes, fb2_rglob, has_fb2_files as _has_fb2_util
-except ImportError:
-    from .settings_manager import SettingsManager
-    from .logger import Logger
-    from .regen_csv import RegenCSVService
-    from .fb2_utils import read_fb2_bytes, write_fb2_bytes, fb2_rglob, has_fb2_files as _has_fb2_util
+from .settings_manager import SettingsManager
+from .logger import Logger
+from .regen_csv import RegenCSVService
+from .fb2_utils import read_fb2_bytes, write_fb2_bytes, fb2_rglob, has_fb2_files as _has_fb2_util
 
 
 # Символы, недопустимые в имени файла/папки на Windows.

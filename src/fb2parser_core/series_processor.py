@@ -17,14 +17,9 @@
 from typing import List
 from collections import defaultdict
 
-try:
-    from settings_manager import SettingsManager
-    from series_normalizer import SeriesNormalizer
-    from series_normalizer import _nfc_lower_yo
-except ImportError:
-    from .settings_manager import SettingsManager
-    from .series_normalizer import SeriesNormalizer
-    from .series_normalizer import _nfc_lower_yo
+from .settings_manager import SettingsManager
+from .series_normalizer import SeriesNormalizer
+from .series_normalizer import _nfc_lower_yo
 
 
 class SeriesProcessor:

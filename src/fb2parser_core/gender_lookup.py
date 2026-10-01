@@ -117,10 +117,7 @@ class GenderLookupService:
             # (баг №88). Используем тот же путь по умолчанию, что и
             # fb2_compiler.py — src/fb2_data/settings/config.json.
             try:
-                try:
-                    from settings_manager import SettingsManager
-                except ImportError:
-                    from .settings_manager import SettingsManager
+                from .settings_manager import SettingsManager
                 default_config_path = str(
                     Path(__file__).resolve().parent.parent
                     / 'fb2_data' / 'settings' / 'config.json'

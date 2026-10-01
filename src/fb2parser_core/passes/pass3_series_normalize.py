@@ -6,31 +6,11 @@ PASS 3 для СЕРИЙ: Нормализация названий серий.
 import re
 from typing import List
 
-try:
-    from series_normalizer import _nfc_lower_yo
-except ImportError:
-    from ..series_normalizer import _nfc_lower_yo
+from ..series_normalizer import _nfc_lower_yo
 
-try:
-    from BookRecord import BookRecord
-except ImportError:
-    # Если прямой импорт не работает, попробовать относительный
-    from dataclasses import dataclass
-    @dataclass
-    class BookRecord:
-        file_path: str = ""
-        metadata_authors: str = ""
-        proposed_author: str = ""
-        author_source: str = ""
-        metadata_series: str = ""
-        proposed_series: str = ""
-        series_source: str = ""
-        file_title: str = ""
+from .pass1_read_files import BookRecord
 
-try:
-    from evidence import pick_winner, series_source_rank
-except ImportError:
-    from ..evidence import pick_winner, series_source_rank
+from ..evidence import pick_winner, series_source_rank
 
 from ..logger import Logger
 from ..settings_manager import SettingsManager
