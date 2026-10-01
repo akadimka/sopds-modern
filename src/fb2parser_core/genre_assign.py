@@ -343,31 +343,33 @@ class GenreAssignmentService:
             # с undefined namespace prefixes - это более надежно для malformed FB2 файлов
             has_bom = content.startswith('\ufeff')
             
-            # Проверить наличие title-info раздела
-            if not re.search(r'<(?:fb:)?title-info', content):
+            # Жанры меняются ТОЛЬКО внутри <title-info>: раньше regex вырезал
+            # <genre> по всему документу, включая <src-title-info> (жанры
+            # оригинала у переводной книги). Новый тег встаёт на место первого
+            # старого (по схеме FB2 жанры идут в начале title-info) и с тем же
+            # префиксом пространства имён, что и сам <title-info>.
+            title_info = re.search(
+                r'(<(?:([\w.-]+):)?title-info\b[^>]*>)(.*?)(</(?:[\w.-]+:)?title-info\s*>)',
+                content, re.DOTALL,
+            )
+            if not title_info:
                 self.logger.log(f"ОШИБКА: {fb2_path} - не найден раздел <title-info>")
                 return False
-            
-            # Найти все существующие genre теги с их значениями в title-info и удалить их
-            # Regex ищет <genre ...> ... </genre> с любыми атрибутами и значениями
-            # Это работает независимо от namespace префиксов
 
-            genre_pattern = r'<(?:fb:)?genre[^>]*>.*?</(?:fb:)?genre>'
-            result_text = re.sub(genre_pattern, '', content, flags=re.DOTALL | re.IGNORECASE)
-            
-            # Найти позицию для вставки нового genre тега
-            # Ищем </title-info> и вставляем перед ней
-            title_info_close = re.search(r'</(?:fb:)?title-info>', result_text)
-            
-            if title_info_close:
-                # Вставляем новый genre тег перед </title-info>
-                insert_pos = title_info_close.start()
-                safe_genre = html.escape(genre_name)
-                new_genre_tag = f'<genre>{safe_genre}</genre>\n  '
-                result_text = result_text[:insert_pos] + new_genre_tag + result_text[insert_pos:]
-            else:
-                self.logger.log(f"ОШИБКА: не найден </title-info> в {fb2_path}")
-                return False
+            prefix = f"{title_info.group(2)}:" if title_info.group(2) else ""
+            body = title_info.group(3)
+            genre_re = re.compile(r'[ \t]*<(?:[\w.-]+:)?genre\b[^>]*>.*?</(?:[\w.-]+:)?genre\s*>[ \t]*\r?\n?', re.DOTALL)
+            first = genre_re.search(body)
+            insert_at = first.start() if first else 0
+            body = genre_re.sub('', body[:insert_at]) + genre_re.sub('', body[insert_at:])
+            new_genre_tag = f'<{prefix}genre>{html.escape(genre_name)}</{prefix}genre>'
+            if first:
+                indent = re.match(r'[ \t]*', first.group(0)).group(0)
+                new_genre_tag = f'{indent}{new_genre_tag}\n'
+            body = body[:insert_at] + new_genre_tag + body[insert_at:]
+            result_text = (
+                content[:title_info.start(3)] + body + content[title_info.end(3):]
+            )
             
             # Сохранить файл с ОРИГИНАЛЬНОЙ кодировкой (не меняем ео на UTF-8)
             # Обновляем XML-декларацию если кодировка изменилась
