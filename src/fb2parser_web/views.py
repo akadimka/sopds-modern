@@ -837,7 +837,6 @@ def server_restart(request):
     запускается из фонового потока ПОСЛЕ того, как ответ уже отправлен
     браузеру, а не до.
     """
-    from django.utils.translation import gettext as _
     if "gunicorn" in request.META.get("SERVER_SOFTWARE", "").lower():
         import subprocess, threading, time
 
@@ -2342,7 +2341,6 @@ def duplicates_find(request):
     try:
         all_dups = _find_duplicates(records, folder_path)
     except Exception as exc:
-        import traceback as _tb
         return render(request, "fb2parser/duplicates.html", {
             "rows": [], "groups": [], "error": f"{exc}\n\nDIAG: {diag_str}",
         })
@@ -2595,7 +2593,6 @@ def compiler_scan(request):
         done=False, running=False, error=None, log=[],
     )
 
-    import json as _json
 
     group_data = []
     groups_books_js = {}   # idx → {books, dups, excluded, auto_excluded, output_name}
@@ -3354,7 +3351,6 @@ _SETTINGS_LISTS = {
 
 @staff_member_required(login_url="/web/login/")
 def fb2parser_settings(request):
-    import json as _json
     from fb2parser_core.settings_manager import SettingsManager
     from .fb2parser_bridge import _config_path, _genres_path, _csv_dir
     sm = SettingsManager(_config_path())

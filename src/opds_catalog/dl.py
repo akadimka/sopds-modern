@@ -27,7 +27,7 @@ from PIL import Image
 from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
-from opds_catalog import opdsdb, settings, utils
+from opds_catalog import opdsdb, settings
 from opds_catalog.converters import CONVERT_TIMEOUT_SECONDS
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf

@@ -1610,7 +1610,6 @@ class FB2CompilerService:
 
             if books:
                 # Считаем сколько уникальных позиций томов покрывает каждая папка
-                from collections import Counter as _Counter
                 folder_vol_sets: Dict[str, set] = {}
                 for b in books:
                     folder = str(b.abs_path.parent)

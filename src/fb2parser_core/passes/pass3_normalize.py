@@ -4,7 +4,7 @@ PASS 3: Normalize author names to standard format.
 
 import re
 import unicodedata
-from typing import List, Optional
+from typing import List
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
 
@@ -430,7 +430,6 @@ class Pass3Normalize:
 
         # Удалить двоеточия из имён авторов (в т.ч. китайское «：» U+FF1A).
         # Формат «作者：牛顿不秃顶» содержит метку «Автор:»; берём часть ПОСЛЕ двоеточия.
-        import re as _re_colon
         for record in records:
             if not record.proposed_author:
                 continue

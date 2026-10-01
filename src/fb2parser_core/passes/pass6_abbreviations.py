@@ -2,11 +2,9 @@
 PASS 6: Expand author abbreviations to full names.
 """
 
-from typing import List, Dict, Optional
-import re
+from typing import List, Dict
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
-from ..logger import Logger
 
 
 _APOSTROPHE_VARIANTS = str.maketrans({

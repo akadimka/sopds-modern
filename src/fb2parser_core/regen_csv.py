@@ -1324,7 +1324,6 @@ class RegenCSVService:
         → «Криворотов» не в имени файла → оставляем только «Краснов Петр».
         Применяется только к записям с author_source == 'metadata' и несколькими авторами.
         """
-        import re as _re
         _APPLICABLE_SOURCES = {'metadata', 'metadata+series-consensus'}
         _count = 0
         for record in self.records:

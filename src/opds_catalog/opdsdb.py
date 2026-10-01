@@ -3,7 +3,7 @@ import logging
 import os
 import re
 
-from django.db import connection, transaction
+from django.db import connection
 from django.db.models import Count, Q
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop as _noop

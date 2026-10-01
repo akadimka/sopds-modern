@@ -7,7 +7,6 @@ and scores how well it matches a given pattern template.
 """
 
 from typing import Dict, List, Tuple
-import re
 
 
 def analyze_file_structure(filename: str, service_words: List[str] = None) -> Dict:

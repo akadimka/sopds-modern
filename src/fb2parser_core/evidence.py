@@ -26,7 +26,7 @@ high/low), `pass3_series_normalize.py` (своя 6-уровневая шкала
 же цикла.
 """
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
 
 # Тир 3 — папочная структура. Создана человеком вручную (или её явное
 # отсутствие подтверждено — "no_series_folder") — самый надёжный

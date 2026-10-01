@@ -13,9 +13,8 @@ Author Normalizer Extended - PASS 3, 5, 6 functions for CSV regeneration
 """
 
 import re
-from typing import List, Dict, Set, Optional, Callable, Any
-from collections import Counter
-from dataclasses import dataclass, field
+from typing import List, Dict, Optional
+from dataclasses import dataclass
 
 from .settings_manager import SettingsManager
 from .logger import Logger

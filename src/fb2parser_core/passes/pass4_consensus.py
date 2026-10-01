@@ -2,10 +2,9 @@
 PASS 4: Apply consensus author to files in same folder.
 """
 
-import re
 import unicodedata
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 
 from ..series_normalizer import _nfc_lower_yo
@@ -971,7 +970,6 @@ class Pass4Consensus:
         # Use case: "Злой медик (сборник).fb2" has no metadata author, but the same folder
         # contains "Злой медик. Тень медработника (сборник).fb2" which has author="Zлой Медик".
         # The shared filename prefix identifies the author.
-        import re as _re_prefix
         # Латинские двойники кириллицы → кириллица. Применяется ПОСЛЕ lower(),
         # поэтому таблица строчная (заглавные B/H/M/T/K после lower() дают
         # b/h/m/t/k — их кириллические пары в, н, м, т, к). Прежняя таблица
@@ -1238,7 +1236,6 @@ class Pass4Consensus:
         #          "Переписать сценарий.fb2"   → в имени есть "переписать сценарий",
         #                                        metadata_series = "Переписать сценарий"
         #          → вывод: серия "Переписать сценарий", source = "filename+meta_confirmed"
-        import re as _re_seq
         LOW_CONFIDENCE = {"consensus", "author-consensus", "author-consensus (metadata-confirmed)"}
 
         def _is_strong_series_source(source: str) -> bool:

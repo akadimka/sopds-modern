@@ -17,7 +17,6 @@ API-токена): https://author.today/search?category=works&q=...
 """
 import random
 import re
-import time
 import urllib.error
 import urllib.parse
 import urllib.request

@@ -2,12 +2,10 @@
 PASS 1: Read FB2 files and determine initial authors from folder hierarchy.
 """
 
-import os
 import re
 import sys
-import threading
 import multiprocessing
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 import concurrent.futures
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -15,7 +13,6 @@ from typing import List, Dict, Tuple, Optional
 import tqdm
 
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES
-from ..fb2_sax_extractor import FB2SAXExtractor
 from ..fb2_utils import fb2_rglob
 
 
@@ -35,7 +32,6 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
             _sys.path.insert(0, _pkg)
         from fb2parser_core.fb2_author_extractor import FB2AuthorExtractor
         from fb2parser_core.fb2_sax_extractor import FB2SAXExtractor
-        from fb2parser_core.settings_manager import SettingsManager
         from fb2parser_core.metadata_cache import MetadataCache
 
         fb2_file = Path(fb2_file_path_str)

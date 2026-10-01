@@ -13,7 +13,6 @@ This reflects the user's explicit folder structure which is the most reliable so
 
 from typing import List, Optional
 from pathlib import Path
-from .file_structural_analysis import analyze_file_structure, score_pattern_match
 
 from ..name_normalizer import validate_author_name
 

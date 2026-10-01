@@ -219,7 +219,7 @@ class FB2SAXExtractor:
 
             return authors_list, handler.series_name
 
-        except Exception as e:
+        except Exception:
             # В случае ошибки возвращаем пустые результаты
             return [], ""
 

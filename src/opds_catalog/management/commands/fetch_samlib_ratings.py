@@ -9,7 +9,6 @@
 import json
 import random
 import re
-import time
 import urllib.parse
 import urllib.request
 from datetime import timedelta
@@ -116,7 +115,7 @@ class Command(BaseCommand):
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _next_book(self):
-        from opds_catalog.models import Book, SamlibRating
+        from opds_catalog.models import Book
         stale_cutoff = timezone.now() - timedelta(days=self._STALE_DAYS)
         without = Book.objects.exclude(samlib_rating__isnull=False).first()
         if without:

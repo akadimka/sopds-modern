@@ -27,7 +27,7 @@ from collections import Counter, defaultdict
 from .settings_manager import SettingsManager
 from .logger import Logger
 from .regen_csv import RegenCSVService
-from .fb2_utils import read_fb2_bytes, write_fb2_bytes, fb2_rglob, has_fb2_files as _has_fb2_util
+from .fb2_utils import read_fb2_bytes, write_fb2_bytes, has_fb2_files as _has_fb2_util
 
 
 # Символы, недопустимые в имени файла/папки на Windows.

@@ -16,7 +16,6 @@ https://litmarket.ru/search?query=...&type=book
 """
 import random
 import re
-import time
 import urllib.error
 import urllib.parse
 import urllib.request

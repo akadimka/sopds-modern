@@ -23,7 +23,6 @@ PASS 2 для СЕРИЙ: Извлечение серий из имён файл
 """
 
 import re
-import sys
 import unicodedata
 from pathlib import Path
 from typing import Dict, List
@@ -3903,7 +3902,7 @@ class Pass2SeriesFilename:
                             self._last_from_block_matcher = (best_score >= 0.99)
                             return processed_series
                         # processed_series пуст → аббревиатура или мусор, не возвращаем сырое значение
-        except Exception as e:
+        except Exception:
             # Если случится ошибка, продолжаем со старым методом
             pass
         

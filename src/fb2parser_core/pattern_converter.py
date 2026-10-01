@@ -40,7 +40,7 @@ def _normalize_group_name(name: str) -> str:
 
 
 def convert_simple_pattern_to_regex(pattern_str: str) -> str:
-    """
+    r"""
     Преобразует простой шаблон в регулярное выражение.
     
     Примеры:
@@ -240,7 +240,7 @@ def compile_patterns(pattern_strings: list) -> list:
             compiled_regex = re.compile(regex_str)
             group_names = extract_group_names(pattern_str)
             result.append((pattern_str, compiled_regex, group_names))
-        except Exception as e:
+        except Exception:
             # Пропускаем невалидные паттерны
             continue
     
