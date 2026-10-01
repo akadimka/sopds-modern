@@ -233,6 +233,11 @@ def avail_check_prepare_scoped(rel_path: str) -> int:
     return Book.objects.filter(_path_scope_q(rel_path)).exclude(avail=0).update(avail=1)
 
 
+def books_del_logical_scoped(rel_path: str) -> int:
+    """Точечный аналог books_del_logical() — только для одной папки библиотеки."""
+    return Book.objects.filter(_path_scope_q(rel_path), avail=1).update(avail=0)
+
+
 def books_del_phisical_scoped(rel_path: str):
     """Точечный аналог books_del_phisical() — только для одной папки библиотеки."""
     return Book.objects.filter(_path_scope_q(rel_path), avail__lte=1).delete()

@@ -1202,3 +1202,9 @@ msgstr "оставить только выбранный"
 #, python-format
 msgid "⚠ Codes linked to several genres at once: %(n)s — marked below."
 msgstr "⚠ Кодов, привязанных сразу к нескольким жанрам: %(n)s — отмечены ниже."
+
+msgid "Scan into Catalog"
+msgstr "Сканировать в каталог"
+
+msgid "Adds books from the selected folder — the whole library or one of its subfolders — to the SOPDS catalog."
+msgstr "Добавляет в каталог SOPDS книги из выбранной папки — всей библиотеки или одной её подпапки."

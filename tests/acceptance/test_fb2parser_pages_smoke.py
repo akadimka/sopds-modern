@@ -8,7 +8,7 @@ import pytest
 from django.urls import reverse
 
 PAGES = [
-    "dashboard", "statistics", "compress", "normalize", "sync", "genres",
+    "dashboard", "scan", "statistics", "compress", "normalize", "sync", "genres",
     "fb2parser_settings", "archive", "database", "log", "search", "new_books",
     "series_gaps", "integrity",
 ]

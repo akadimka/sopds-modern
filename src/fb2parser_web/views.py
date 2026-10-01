@@ -109,7 +109,12 @@ def _run_scan_thread(root_path):
         if is_scoped:
             opdsdb.avail_check_prepare_scoped(rel_path)
             scanner.scan_path(root_path)
-            opdsdb.books_del_phisical_scoped(rel_path)
+            # Как scan_all(): пропавшие с диска книги — по настройке
+            # SOPDS_DELETE_LOGICAL (скрыть) или удалить из БД.
+            if config.SOPDS_DELETE_LOGICAL:
+                opdsdb.books_del_logical_scoped(rel_path)
+            else:
+                opdsdb.books_del_phisical_scoped(rel_path)
             opdsdb.cleanup_orphan_entities()
         else:
             scanner.scan_all()
@@ -199,6 +204,14 @@ def scan_start(request):
     if not root or not os.path.isdir(root):
         return HttpResponse(
             f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {escape(root)}</div></div>'
+        )
+    # Папка вне библиотеки не может попасть в каталог (пути книг считаются
+    # от SOPDS_ROOT_LIB) — раньше такой выбор молча запускал полный скан.
+    lib_root = config.SOPDS_ROOT_LIB or ""
+    if not _is_within_folder(root, lib_root):
+        return HttpResponse(
+            '<div id="scan-status"><div class="callout alert">'
+            f'❌ Папка вне библиотеки SOPDS ({escape(lib_root) or "не задана"}): {escape(root)}</div></div>'
         )
     if not scan_job.try_start(root=root):
         return _render_status(scan_job.get())

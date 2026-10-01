@@ -10,6 +10,7 @@ docs/quality-roadmap.md, баг №77.
 выбрана.
 """
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -89,3 +90,48 @@ class TestScopedFolderScan:
 
         assert Book.objects.filter(path="folderA").count() == 0
         assert Book.objects.filter(path="folderB").count() == 1
+
+
+class TestScopedScanRespectsDeleteLogical:
+    """Точечный скан удалял пропавшие книги физически всегда, а полный
+    (scan_all) — по настройке SOPDS_DELETE_LOGICAL."""
+
+    def _vanish_and_rescan(self, two_folder_library, override_config, delete_logical):
+        from fb2parser_web.views import _run_scan_thread
+
+        root, folder_a, folder_b = two_folder_library
+        _run_scan_thread(root)
+        (Path(folder_a) / "book_a.fb2").unlink()
+        with override_config(SOPDS_DELETE_LOGICAL=delete_logical):
+            _run_scan_thread(folder_a)
+
+    def test_logical_delete_hides_book(self, two_folder_library, override_config):
+        self._vanish_and_rescan(two_folder_library, override_config, True)
+        assert Book.objects.get(path="folderA").avail == 0
+
+    def test_physical_delete_removes_book(self, two_folder_library, override_config):
+        self._vanish_and_rescan(two_folder_library, override_config, False)
+        assert not Book.objects.filter(path="folderA").exists()
+
+
+class TestScanPage:
+    def test_folder_outside_library_rejected(self, two_folder_library, tmp_path_factory, admin_user, monkeypatch):
+        from django.test import RequestFactory
+
+        import fb2parser_web.views as views
+
+        started = []
+        monkeypatch.setattr(views, "_run_scan_thread", lambda root: started.append(root))
+        outside = tmp_path_factory.mktemp("outside")
+        request = RequestFactory().post("/fb2parser/scan/start/", {"root": str(outside)})
+        request.user = admin_user
+        html = views.scan_start(request).content.decode()
+
+        assert "вне библиотеки" in html
+        assert started == []
+
+    def test_menu_links_to_scan_page(self, admin_client):
+        from django.urls import reverse
+
+        html = admin_client.get(reverse("fb2parser:dashboard")).content.decode()
+        assert f'href="{reverse("fb2parser:scan")}"' in html
