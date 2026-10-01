@@ -2843,11 +2843,6 @@ class FB2CompilerService:
             return 0, 0
         return lo, hi
 
-    def _precompiled_count(self, book: CompilationBook, series: str) -> int:
-        """Обёртка для обратной совместимости. Возвращает hi - lo + 1 или 0."""
-        lo, hi = self._precompiled_range(book, series)
-        return (hi - lo + 1) if hi > lo else 0
-
     @classmethod
     def _normalize_title_key(cls, raw_title: str, series: str) -> str:
         """Нормализовать заголовок для дедупликации.
@@ -5191,8 +5186,3 @@ class FB2CompilerService:
                     self._log(f"  🗑 Удалена пустая папка: {parent.name}")
             except Exception as e:
                 self._log(f"  ⚠ Не удалось удалить {path.name}: {e}")
-
-    def delete_sources_for_result(self, result: CompilationResult) -> None:
-        """Удалить исходники для уже выполненной компиляции (по подтверждению)."""
-        if result.success:
-            self._delete_sources(result.source_paths)

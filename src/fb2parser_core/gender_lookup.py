@@ -22,7 +22,7 @@ import urllib.parse
 import json
 import threading
 from pathlib import Path
-from typing import Dict, List, Tuple, Callable, Optional
+from typing import Dict, List, Tuple, Optional
 
 # ── Константы ────────────────────────────────────────────────────────────────
 WIKIDATA_API_URL  = "https://www.wikidata.org/w/api.php"
@@ -159,97 +159,6 @@ class GenderLookupService:
             self._set_cache(wd_key, r)
         _, result = self._select_result(author)
         return result
-
-    def lookup_authors_async(
-        self,
-        items: List[Tuple[int, str]],
-        on_result: Callable[[int, str, 'LookupResult'], None],
-        on_done:   Callable[[bool], None],
-    ) -> None:
-        """Асинхронный lookup (не блокирует UI).
-
-        on_result(row_idx, name_word, result) — для каждого автора.
-        on_done(rate_limited) — когда все проверки завершены (rate_limited всегда False).
-        """
-        threading.Thread(
-            target=self._worker,
-            args=(items, on_result, on_done),
-            daemon=True,
-        ).start()
-
-    # ── Рабочий поток (параллельный пул) ─────────────────────────────────────
-
-    _PARALLEL_WORKERS = 3   # одновременных потоков к Wikidata
-
-    def _worker(self, items, on_result, on_done):
-        """Параллельный Wikidata-поиск: _PARALLEL_WORKERS потоков, общий throttle."""
-        import queue as _queue
-
-        task_q: '_queue.Queue[Tuple[int,str]]' = _queue.Queue()
-        for item in items:
-            task_q.put(item)
-
-        rate_limit_hit = [False]  # общий флаг для всех потоков
-
-        # on_result вызываем сразу по готовности каждого результата
-        def _fetch():
-            while True:
-                try:
-                    row_idx, author = task_q.get_nowait()
-                except _queue.Empty:
-                    return
-                wd_key = '_wd_' + author.lower()
-                if not self._in_cache(wd_key):
-                    self._throttle_wikidata()
-                    try:
-                        r = self._wikidata_lookup(author)
-                    except _RateLimitError:
-                        rate_limit_hit[0] = True
-                        r = LookupResult(status=STATUS_RATE_LIMIT)
-                        self._set_cache(wd_key, r)
-                        # Сообщаем о текущем авторе
-                        name_word, result = self._select_result(author)
-                        try:
-                            on_result(row_idx, name_word, result)
-                        except Exception:
-                            pass
-                        # Дренируем очередь: все оставшиеся авторы тоже rate_limit
-                        while True:
-                            try:
-                                ri, au = task_q.get_nowait()
-                                rl_key = '_wd_' + au.lower()
-                                if not self._in_cache(rl_key):
-                                    self._set_cache(rl_key, LookupResult(status=STATUS_RATE_LIMIT))
-                                nw, res = self._select_result(au)
-                                try:
-                                    on_result(ri, nw, res)
-                                except Exception:
-                                    pass
-                            except _queue.Empty:
-                                break
-                        return
-                    except Exception as exc:
-                        r = LookupResult(status=STATUS_ERROR, error=str(exc))
-                    self._set_cache(wd_key, r)
-                name_word, result = self._select_result(author)
-                try:
-                    on_result(row_idx, name_word, result)
-                except Exception:
-                    pass
-
-        threads = [
-            threading.Thread(target=_fetch, daemon=True)
-            for _ in range(min(self._PARALLEL_WORKERS, len(items)))
-        ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-
-        try:
-            on_done(rate_limit_hit[0])
-        except Exception:
-            pass
 
     # ── Wikidata SPARQL ───────────────────────────────────────────────────────
 

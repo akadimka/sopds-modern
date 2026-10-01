@@ -180,26 +180,6 @@ class RegenCSVService:
         normalized = re.sub(r'\s+', ' ', normalized.strip().lower())
         return normalized
     
-    def _is_author_folder(self, folder_name: str, proposed_author: str) -> bool:
-        """Проверить, является ли папка папкой автора.
-        
-        Сравнивает нормализованные имена.
-        
-        Args:
-            folder_name: Имя папки
-            proposed_author: Предложенное имя автора
-            
-        Returns:
-            True если папка = папка автора
-        """
-        if not proposed_author or not folder_name:
-            return False
-        
-        folder_normalized = self._normalize_name_for_comparison(folder_name)
-        author_normalized = self._normalize_name_for_comparison(proposed_author)
-        
-        return folder_normalized == author_normalized
-
     def _surnames_match_folder(self, proposed_author: str, folder_name: str) -> bool:
         """Проверить, является ли папка папкой автора с учётом склонения и формы.
 

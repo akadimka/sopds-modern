@@ -1770,21 +1770,6 @@ class SynchronizationService:
             self.logger.log(f"Ошибка при расчёте хеша {file_path}: {str(e)}")
             return ""
     
-    def get_statistics(self) -> Dict:
-        """Get current statistics.
-        
-        Returns:
-            Dictionary with statistics
-        """
-        stats = self.stats.copy()
-        
-        if stats['start_time'] and stats['end_time']:
-            duration = (stats['end_time'] - stats['start_time']).total_seconds()
-            stats['duration_seconds'] = duration
-            stats['duration_str'] = f"{int(duration)} секунд"
-        
-        return stats
-
     # ------------------------------------------------------------------
     # FB2 tag patching
     # ------------------------------------------------------------------

@@ -143,16 +143,3 @@ class FolderClassifier:
         return FolderType.UNKNOWN
 
     # ------------------------------------------------------------------
-    def classify_path_root(self, path_parts: tuple) -> FolderType:
-        """Classify the top-level folder of a file path relative to work_dir.
-
-        Args:
-            path_parts: Tuple of path components (relative to work_dir, excluding filename).
-                        E.g. ("Волков Тим", "Дуэлянт") for a file two levels deep.
-
-        Returns:
-            FolderType of the first (root) folder, or UNKNOWN if path_parts is empty.
-        """
-        if not path_parts:
-            return FolderType.UNKNOWN
-        return self.classify(path_parts[0])

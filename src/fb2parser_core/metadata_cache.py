@@ -205,26 +205,3 @@ class MetadataCache:
             return hash_obj.hexdigest()
         except OSError:
             return ""
-
-    def clear_cache(self):
-        """Clear all cached metadata."""
-        with self._connect() as conn:
-            conn.execute("DELETE FROM file_metadata")
-            conn.commit()
-
-    def get_cache_stats(self) -> Dict[str, int]:
-        """Get cache statistics."""
-        with self._connect() as conn:
-            total = conn.execute("SELECT COUNT(*) FROM file_metadata").fetchone()[0]
-            recent = conn.execute(
-                "SELECT COUNT(*) FROM file_metadata WHERE cached_at > ?",
-                (datetime.now().timestamp() - 86400,)
-            ).fetchone()[0]
-            return {"total_cached": total, "recently_cached": recent}
-
-    def cleanup_old_entries(self, max_age_days: int = 30):
-        """Remove cache entries older than max_age_days."""
-        cutoff = datetime.now().timestamp() - (max_age_days * 86400)
-        with self._connect() as conn:
-            conn.execute("DELETE FROM file_metadata WHERE cached_at < ?", (cutoff,))
-            conn.commit()

@@ -46,11 +46,6 @@ class GenreNode:
         self.children.append(child)
         return True  # Successfully added
 
-    def remove_child(self, child):
-        """Remove child node / Удалить дочерний узел."""
-        if child in self.children:
-            self.children.remove(child)
-
 class GenresManager:
     """
     Manages genre hierarchy and associations.
@@ -106,11 +101,6 @@ class GenresManager:
             if code:
                 reference[code] = (fields.get('section') or '', fields.get('subsection') or '')
         return reference
-
-    def set_xml_path(self, xml_path):
-        """Set XML file path / Установить путь к файлу XML."""
-        self.xml_path = Path(xml_path)
-        self.load()
 
     def register_discovered_codes(self, codes):
         """При каждом скане жанров (кнопки "Scan genres"/"Start scan") —
@@ -726,21 +716,3 @@ class GenresManager:
 
         self.save()
         return True
-
-    def get_all_genres(self):
-        """
-        Получить список всех жанров в плоском формате.
-        
-        Returns:
-            List[str] - список всех названий жанров
-        """
-        genres = []
-        
-        def collect_genres(nodes):
-            for node in nodes:
-                genres.append(node.name)
-                if node.children:
-                    collect_genres(node.children)
-        
-        collect_genres(self.root_nodes)
-        return genres

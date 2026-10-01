@@ -12,38 +12,11 @@ from pathlib import Path
 from typing import Iterator, List
 
 
-def is_fb2_zip(path: Path) -> bool:
-    """True если файл — ZIP-архив (имеет сигнатуру PK)."""
-    try:
-        raw = path.read_bytes(4) if hasattr(path, 'read_bytes') else b''
-        return raw[:2] == b'PK'
-    except Exception:
-        return False
-
-
-def fb2_stem(path: Path) -> str:
-    """Логический stem FB2-файла без расширений.
-
-    "Автор. Книга 1.fb2"     → "Автор. Книга 1"
-    "Автор. Книга 1.fb2.zip" → "Автор. Книга 1"
-    """
-    name = path.name
-    if name.lower().endswith('.fb2.zip'):
-        return name[:-8]
-    return path.stem
-
-
 def fb2_rglob(directory: Path) -> List[Path]:
     """Рекурсивно найти все FB2 и FB2.ZIP файлы в каталоге."""
     plain = list(directory.rglob('*.fb2'))
     zipped = list(directory.rglob('*.fb2.zip'))
     return sorted(plain + zipped, key=lambda p: str(p).lower())
-
-
-def fb2_count(directory: Path) -> int:
-    """Количество FB2/FB2.ZIP файлов в каталоге."""
-    return sum(1 for _ in directory.rglob('*.fb2')) + \
-           sum(1 for _ in directory.rglob('*.fb2.zip'))
 
 
 MAX_FB2_UNCOMPRESSED_SIZE = 200 * 1024 * 1024  # 200 МБ — см. read_fb2_bytes (баг №97)

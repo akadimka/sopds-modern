@@ -2243,9 +2243,6 @@ def _find_duplicates(records, folder_path) -> dict:
         m2 = _RNG_IN_STEM.search(last)
         return m2.group(0).strip() if m2 else ''
 
-    def _is_precomp(rec):
-        return bool(_precomp_range(rec))
-
     def _is_subcomp(rec):
         return (_Path(_rget(rec, 'file_path') or '').stem.count('. ') >= 2)
 
