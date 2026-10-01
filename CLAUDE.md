@@ -35,7 +35,8 @@ Django 5.2 веб-приложение: OPDS-каталог электронны
 случай должен закрепляться тестом:
 `tests/integration/fb2parser_core/` — см. **README.md там** за полным
 процессом (как добавить новый кейс через `scripts/build_regen_fixtures.py`).
-Запуск: `DJANGO_SETTINGS_MODULE=sopds.settings.local python -m pytest tests/integration/fb2parser_core/`.
+Запуск: `python -m pytest tests/integration/fb2parser_core/` (настройки по
+умолчанию — `sopds.settings.test`, как в CI; весь набор — `python -m pytest`).
 
 ## Обязательные конвенции
 

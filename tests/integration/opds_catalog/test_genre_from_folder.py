@@ -76,3 +76,35 @@ class TestGenreFromFolder:
 
         book = Book.objects.get(filename=TEST_FB2)
         assert book.genres.get().section == str(unknown_genre)
+
+
+@pytest.mark.django_db
+class TestAuthorAndGenreForBooksInsideZip:
+    """Для книги из zip rel_path кончается именем архива; оно не уровень
+    папок. Раньше «Жанр/сборник.zip» давал автора «сборник.zip», а zip в
+    корне библиотеки — жанр с именем архива."""
+
+    ZIP = os.path.join(os.path.dirname(_fixture_fb2_path()), "books.zip")
+
+    def _scan(self, tmp_path, override_config, *folders):
+        target = tmp_path.joinpath(*folders) if folders else tmp_path
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(self.ZIP, target / "сборник.zip")
+        with override_config(SOPDS_ROOT_LIB=str(tmp_path)):
+            opdsdb.clear_all()
+            opdsScanner().scan_all()
+        return Book.objects.get(filename="539603.fb2")
+
+    def test_zip_in_genre_author_folder(self, tmp_path, override_config):
+        book = self._scan(tmp_path, override_config, "Фантастика", "Логинов Святослав")
+        assert book.authors.get().full_name == "Логинов Святослав"
+        assert book.genres.get().section == "Фантастика"
+
+    def test_zip_in_genre_folder_has_no_author_named_after_archive(self, tmp_path, override_config):
+        book = self._scan(tmp_path, override_config, "Фантастика")
+        assert book.authors.get().full_name != "сборник.zip"
+        assert book.genres.get().section == "Фантастика"
+
+    def test_zip_at_root_has_unknown_genre(self, tmp_path, override_config):
+        book = self._scan(tmp_path, override_config)
+        assert book.genres.get().section == str(unknown_genre)

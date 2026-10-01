@@ -1,7 +1,7 @@
 # Парсеры для разных форматов электронных книг
 import base64
 import logging
-import os
+import posixpath
 import re
 import zipfile
 from abc import ABC, abstractmethod
@@ -14,7 +14,7 @@ from lxml.etree import _Element
 
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.fb2sax import fb2parser
-from book_tools.format.util import safe_xml_parser, strip_symbols
+from book_tools.format.util import MAX_COVER_SIZE, ZipMemberTooLarge, read_zip_member, safe_xml_parser, strip_symbols
 
 logger = logging.getLogger(__name__)
 
@@ -572,11 +572,11 @@ class EpubParser(EbookMetaParser):
 
                 # Получаем ссылку на обложку и считываем содержимое файла
                 href = cover_item.get("href")
-                opf_dir = os.path.dirname(self.opf_path)
+                # Имена внутри zip всегда через "/" — os.path на Windows дал бы "\\".
+                opf_dir = posixpath.dirname(self.opf_path)
                 with zipfile.ZipFile(self.file, mode="r") as zf:
-                    return zf.read(os.path.join(opf_dir, href))
-                break
-            except (IndexError, AttributeError):
+                    return read_zip_member(zf, posixpath.normpath(posixpath.join(opf_dir, href)), MAX_COVER_SIZE)
+            except (IndexError, AttributeError, ZipMemberTooLarge):
                 continue
         return None
 

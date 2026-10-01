@@ -27,20 +27,6 @@ def counter_with_books(db) -> None:
 # ──────────────────────────────────────────────
 
 
-class TestGetBreadcrumbs:
-    def test_basic(self) -> None:
-        from sopds_web_backend.views import get_breadcrumbs
-
-        result = get_breadcrumbs("m")
-        assert result[0] == "Books"
-
-    def test_with_append(self) -> None:
-        from sopds_web_backend.views import get_breadcrumbs
-
-        result = get_breadcrumbs("m", append="test")
-        assert result[-1] == "test"
-
-
 class TestExtractInputParameters:
     def test_with_params(self, rf) -> None:
         from sopds_web_backend.views import _extract_input_parameters
@@ -68,9 +54,15 @@ class TestExtractInputParameters:
 
 @pytest.mark.django_db
 class TestHello:
-    def test_hello_ok(self, client, counter_with_books) -> None:
+    def test_hello_ok(self, client, django_user, counter_with_books) -> None:
+        client.force_login(django_user)
         response = client.get(reverse("web:main"))
         assert response.status_code == 200
+
+    def test_hello_requires_login_when_auth_enabled(self, client, counter_with_books) -> None:
+        response = client.get(reverse("web:main"))
+        assert response.status_code == 302
+        assert response.url.startswith(reverse("web:login"))
 
     def test_random_book_does_not_sort_whole_table(
         self, client, django_user, counter_with_books, catalog

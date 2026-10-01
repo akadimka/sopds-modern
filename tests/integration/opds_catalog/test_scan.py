@@ -1,12 +1,34 @@
 import os
+import shutil
 
 import pytest
+from django.utils.translation import gettext
 
 from opds_catalog import opdsdb
 from opds_catalog.dl import getFileData
 from opds_catalog.models import Author, Book, Catalog, Genre, Series
 from opds_catalog.opdsdb import CAT_ZIP
 from opds_catalog.sopdscan import opdsScanner
+
+_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, "data")
+
+
+@pytest.fixture
+def sample_books_root(tmp_path):
+    """Только книги верхнего уровня tests/data: подпапки (regen_library и др.) —
+    фикстуры fb2parser, scan_all по ним считал бы сотни лишних книг."""
+    for name in os.listdir(_DATA):
+        path = os.path.join(_DATA, name)
+        if os.path.isfile(path):
+            shutil.copyfile(path, tmp_path / name)
+    return str(tmp_path)
+
+
+def _assert_root_level_author_and_genre(book):
+    """Автор и жанр берутся из папок «жанр/автор/…» (не из тегов книги);
+    у файла в корне библиотеки обоих уровней нет."""
+    assert [a.full_name for a in book.authors.all()] == [gettext("Unknown author")]
+    assert [g.section for g in book.genres.all()] == [str(opdsdb.unknown_genre)]
 
 
 @pytest.mark.django_db
@@ -55,15 +77,7 @@ class TestBookScaner(object):
         assert book.catalog.cat_type == 0
         assert book.filesize == 495373
 
-        assert book.authors.count() == 1
-        assert (
-            book.authors.get(full_name="Peters Ellis").search_full_name
-            == "PETERS ELLIS"
-        )
-
-        assert book.genres.count() == 1
-        assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
-        assert book.genres.get(genre="antique").subsection == "antique"
+        _assert_root_level_author_and_genre(book)
         assert getFileData(book) is not None
 
     @pytest.mark.parametrize("fb2sax", [True, False])
@@ -99,15 +113,7 @@ class TestBookScaner(object):
         assert book.catalog.cat_type == CAT_ZIP
         assert book.filesize == 495373
 
-        assert book.authors.count() == 1
-        assert (
-            book.authors.get(full_name="Peters Ellis").search_full_name
-            == "PETERS ELLIS"
-        )
-
-        assert book.genres.count() == 1
-        assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
-        assert book.genres.get(genre="antique").subsection == "antique"
+        _assert_root_level_author_and_genre(book)
         assert getFileData(book) is not None
 
     def test_processfile_epub(self):
@@ -142,15 +148,7 @@ class TestBookScaner(object):
         assert book.catalog.cat_type == 0
         assert book.filesize == 491279
 
-        assert book.authors.count() == 1
-        assert (
-            book.authors.get(full_name="Мирер Александр").search_full_name
-            == "МИРЕР АЛЕКСАНДР"
-        )
-
-        assert book.genres.count() == 1
-        assert book.genres.get(genre="sf").section == opdsdb.unknown_genre
-        assert book.genres.get(genre="sf").subsection == "sf"
+        _assert_root_level_author_and_genre(book)
 
     def test_processfile_mobi(self):
         """Тестирование процедуры processfile (извлекает метаданные из книги EPUB и помещает в БД)"""
@@ -183,8 +181,7 @@ class TestBookScaner(object):
         assert book.catalog.cat_type == 0
         assert book.filesize == 542811
 
-        assert book.authors.count() == 1
-        assert book.authors.get(full_name="Cook Robin").search_full_name == "COOK ROBIN"
+        _assert_root_level_author_and_genre(book)
 
     def test_processzip(self):
         """Тестирование процедуры processzip (извлекает метаданные из книг, помещенных в архив и помещает их БД)"""
@@ -209,51 +206,41 @@ class TestBookScaner(object):
         assert book.docdate == "2014-09-15"
         assert book.title == "Любовь в жизни Обломова"
         assert book.avail == 2
-        assert book.authors.count() == 1
-        assert (
-            book.authors.get(full_name="Логинов Святослав").search_full_name
-            == "ЛОГИНОВ СВЯТОСЛАВ"
-        )
-
-        assert book.genres.count() == 1
-        assert book.genres.get(genre="nonf_criticism").section == opdsdb.unknown_genre
-
-        assert book.genres.get(genre="nonf_criticism").subsection == "nonf_criticism"
+        _assert_root_level_author_and_genre(book)
 
         book = Book.objects.get(filename="539485.fb2")
         assert book.filesize == 12293
         assert book.path == self.test_zip
         assert book.cat_type == 1
         assert book.title == "Китайски сладкиш с късметче"
-        assert book.authors.get(full_name="Фрич Чарлз").search_full_name == "ФРИЧ ЧАРЛЗ"
+        _assert_root_level_author_and_genre(book)
 
         book = Book.objects.get(filename="539273.fb2")
         assert book.filesize == 21722
         assert book.path == self.test_zip
         assert book.cat_type == 1
         assert book.title == "Драконьи Услуги"
-        assert (
-            book.authors.get(full_name="Куприянов Денис").search_full_name
-            == "КУПРИЯНОВ ДЕНИС"
-        )
+        _assert_root_level_author_and_genre(book)
 
-    def test_scanall(self):
+    def test_scanall(self, sample_books_root, override_config):
         """Тестирование процедуры scanall (извлекает метаданные из книг и помещает в БД)"""
         opdsdb.clear_all()
-        scanner = opdsScanner()
-        scanner.scan_all()
-        assert scanner.books_added == 8
-        assert scanner.bad_books == 3
-        assert Book.objects.all().count() == 8
-        assert Author.objects.all().count() == 7
-        assert Genre.objects.all().count() == 6
+        with override_config(SOPDS_ROOT_LIB=sample_books_root):
+            scanner = opdsScanner()
+            scanner.scan_all()
+        assert scanner.books_added == 10
+        assert scanner.bad_books == 1
+        assert Book.objects.all().count() == 10
+        # Все книги в корне библиотеки: автор и жанр — «неизвестные».
+        assert Author.objects.all().count() == 1
+        assert Genre.objects.all().count() == 1
         assert Series.objects.all().count() == 1
         assert Catalog.objects.all().count() == 5
 
 
 @pytest.mark.django_db
-def test_inpx_scanner(fake_sopds_root_lib, override_config) -> None:
-    with override_config(SOPDS_INPX_ENABLE=True, SOPDS_INPX_TEST_FILES=False):
+def test_inpx_scanner(sample_books_root, override_config) -> None:
+    with override_config(SOPDS_ROOT_LIB=sample_books_root, SOPDS_INPX_ENABLE=True, SOPDS_INPX_TEST_FILES=False):
         scanner = opdsScanner()
         scanner.scan_all()
     assert scanner.books_added == 3

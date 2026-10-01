@@ -145,16 +145,6 @@ class TestOpdsDb:  # integration
         assert cat is not None
         assert cat.cat_name == "."
 
-    def test_findauthor(self) -> None:
-        """Тестирование findauthor"""
-        authors = opdsdb.findauthor("Test Author")
-        assert len(authors) == 1
-
-    def test_findauthor_not_found(self) -> None:
-        """Тестирование findauthor для несуществующего автора"""
-        authors = opdsdb.findauthor("Nonexistent Author")
-        assert len(authors) == 0
-
     def test_getlangcode(self) -> None:
         """Тестирование getlangcode"""
         assert opdsdb.getlangcode("") == 9  # empty

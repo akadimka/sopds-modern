@@ -382,7 +382,11 @@ class opdsScanner:
                             f"Store authors metadata for {name} in database"
                         )
                         # Author is taken from the folder structure (level 2: genre/author/...)
-                        path_parts = rel_path.replace("\\", "/").split("/")
+                        # Для книги из архива rel_path кончается именем самого
+                        # zip — это не уровень папок: иначе «Жанр/сборник.zip»
+                        # давал автора «сборник.zip».
+                        folder_rel = os.path.dirname(rel_path) if archive else rel_path
+                        path_parts = [p for p in folder_rel.replace("\\", "/").split("/") if p not in ("", ".")]
                         author_name = path_parts[1] if len(path_parts) >= 2 else _("Unknown author")
                         self.logger.debug(f"Author from path: {author_name}")
                         author = opdsdb.addauthor(author_name)

@@ -1,7 +1,7 @@
-"""Тесты getFileName — unit, без БД, только расчёт имени файла.
+"""Тесты getFileName — только расчёт имени файла для скачивания.
 
-NOTE: @pytest.mark.override_config требует доступа к БД (constance хранит
-значения в таблице), поэтому django_db обязателен, несмотря на unit-характер.
+Имя не транслитерируется: кириллица сохраняется (d55819c), а для старых
+клиентов dl.py добавляет ASCII-вариант в Content-Disposition (RFC 5987).
 """
 
 import pytest
@@ -28,15 +28,15 @@ def test_by_filename(_book) -> None:
 @pytest.mark.override_config(SOPDS_TITLE_AS_FILENAME=True)
 def test_by_title(_book) -> None:
     """Имя файла из title, если SOPDS_TITLE_AS_FILENAME=True."""
-    expected = "Kniga.fb2"
+    expected = "Книга.fb2"
     result = getFileName(_book)
     assert result == expected
 
 
 @pytest.mark.override_config(SOPDS_TITLE_AS_FILENAME=False)
 def test_by_russian_filename(book_factory) -> None:
-    """Имя файла транслитерируется, даже если filename на кириллице."""
+    """Кириллическое имя файла сохраняется как есть."""
     book = book_factory(title="Книга", format="fb2", filename="Книга.zip")
-    expected = "Kniga.zip"
+    expected = "Книга.zip"
     result = getFileName(book)
     assert result == expected

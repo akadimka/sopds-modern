@@ -41,6 +41,9 @@ dev = [
 [tool.pytest]
 minversion = "9.0"
 addopts = ["-ra", "-q"]
+# Как в CI: StaticFilesStorage без манифеста, LocMemCache. Переменная
+# окружения DJANGO_SETTINGS_MODULE по-прежнему имеет приоритет.
+DJANGO_SETTINGS_MODULE = "sopds.settings.test"
 
 testpaths = ["tests/unit", "tests/integration", "tests/acceptance"]
 pythonpath = [".", "src"]
@@ -61,10 +64,10 @@ omit = [
     "manage.py",
     "*/migrations/*",
     "*/sopds/*",
-    "src/inpx/*",
-    "*/zipf*",
-    "*/fb2parse*",
-    "*/pymobi*",
+    # Именно файл, не "*/fb2parse*": тот glob совпадал и с fb2parser_core/,
+    # fb2parser_web/ — ~30 тыс. строк выпадали из покрытия.
+    "*/opds_catalog/fb2parse.py",
+    "*/pymobi/*",
 ]
 source = ["src"]
 
