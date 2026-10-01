@@ -39,8 +39,6 @@ class SettingsManager:
             'last_scan_path': '',
             'normalizer_folder': '',
             'genres_file_path': 'genres.xml',  # Путь к файлу жанров
-            'genre_association_method': 'context_menu',
-            'window_sizes': {},  # Для хранения размеров окон
             'generate_csv': False,  # Флаг генерации CSV файла
             'performance': {
                 'enable_caching': True,  # Enable metadata caching
@@ -97,27 +95,6 @@ class SettingsManager:
         self.save()
 
     # --- Settings file path ---
-    def get_settings_file_path(self) -> str:
-        """Get stored path to the config (settings) file."""
-        return self.settings.get('settings_file_path', '')
-
-    def set_settings_file_path(self, path: str) -> None:
-        """Set stored path to the config file and redirect future saves there."""
-        self.settings['settings_file_path'] = path
-        if path:
-            self.config_path = Path(path)
-            self.app_settings_path = self.config_path.parent / 'app_settings.json'
-        self.save()
-
-    def get_genre_association_method(self):
-        """Get genre association method / Получить метод ассоциации жанров."""
-        return self.settings.get('genre_association_method', 'context_menu')
-        
-    def set_genre_association_method(self, method):
-        """Set genre association method / Установить метод ассоциации жанров."""
-        self.settings['genre_association_method'] = method
-        self.save()
-
     def get_library_path(self):
         """Get library path / Получить путь к библиотеке."""
         return self.settings.get('library_path', '')
@@ -189,94 +166,6 @@ class SettingsManager:
         self.settings['generate_csv'] = bool(value)
         self.save()
 
-    def get_test_window_path(self):
-        """
-        Get test window saved path.
-        
-        / Получает сохраненный путь для окна тестирования.
-        """
-        return self.settings.get('test_window_path', '')
-        
-    def set_test_window_path(self, path):
-        """
-        Set test window path.
-        
-        / Сохраняет путь для окна тестирования.
-        """
-        self.settings['test_window_path'] = path
-        self.save()
-
-    def set_window_size(self, window_name, width, height):
-        """
-        Save window size.
-        
-        / Сохраняет размеры окна.
-        """
-        if 'window_sizes' not in self.settings:
-            self.settings['window_sizes'] = {}
-        self.settings['window_sizes'][window_name] = {'width': width, 'height': height}
-        self.save()
-
-    def get_window_size(self, window_name):
-        """
-        Get saved window size.
-        
-        / Получает сохраненные размеры окна.
-        """
-        sizes = self.settings.get('window_sizes', {})
-        return sizes.get(window_name, None)
-
-    def set_window_geometry(self, window_name, geometry):
-        """
-        Save window geometry (size and position).
-        
-        / Сохраняет геометрию окна (размеры и позицию).
-        """
-        if 'window_sizes' not in self.settings:
-            self.settings['window_sizes'] = {}
-        self.settings['window_sizes'][window_name] = geometry
-        self.save()
-
-    def get_window_geometry(self, window_name):
-        """
-        Get saved window geometry.
-
-        / Получает сохраненную геометрию окна.
-        """
-        sizes = self.settings.get('window_sizes', {})
-        return sizes.get(window_name, None)
-
-    def clear_secondary_window_geometries(self):
-        """Remove saved geometry for all windows except 'main'.
-
-        Called when the main window closes so secondary windows reopen near
-        the main window (on the correct monitor) on the next launch.
-        """
-        sizes = self.settings.get('window_sizes', {})
-        main_geom = sizes.get('main')
-        self.settings['window_sizes'] = {'main': main_geom} if main_geom else {}
-        self.save()
-
-    def set_genre_tree_state(self, expanded_nodes):
-        """
-        Save genre tree state (expanded nodes).
-        
-        / Сохраняет состояние дерева жанров (развернутые узлы).
-        """
-        if 'genre_tree_state' not in self.settings:
-            self.settings['genre_tree_state'] = {}
-        self.settings['genre_tree_state']['expanded_nodes'] = list(expanded_nodes)
-        self.save()
-
-    def get_genre_tree_state(self):
-        """
-        Get saved genre tree state.
-        
-        / Получает сохраненное состояние дерева жанров.
-        """
-        state = self.settings.get('genre_tree_state', {})
-        return set(state.get('expanded_nodes', []))
-
     # --- Blacklist helpers / Вспомогательные функции черного списка ---
     
     def get_filename_blacklist(self):
@@ -290,32 +179,7 @@ class SettingsManager:
             return []
         return list(lst)
 
-    def set_filename_blacklist(self, lst):
-        """
-        Set filename blacklist and save config.
-        
-        / Устанавливает список токенов для filename_blacklist и сохраняет конфиг.
-        """
-        if lst is None:
-            self.settings.pop('filename_blacklist', None)
-        else:
-            # Remove duplicates (case-insensitive) while preserving order
-            seen = set()
-            unique_list = []
-            for item in lst:
-                item_lower = str(item).lower()
-                if item_lower not in seen:
-                    seen.add(item_lower)
-                    unique_list.append(str(item))
-            # store as list of strings
-            self.settings['filename_blacklist'] = unique_list
-        self.save()
-
     # Generic list helpers
-    def list_list_keys(self):
-        """Return top-level keys in settings whose value is a list."""
-        return [k for k, v in self.settings.items() if isinstance(v, list)]
-
     def get_list(self, key):
         """Get a list value by key (or None if not present or not a list)."""
         v = self.settings.get(key)
@@ -338,14 +202,6 @@ class SettingsManager:
         """
         lst = self.settings.get('genre_priority_order')
         return list(lst) if isinstance(lst, list) else []
-
-    def set_genre_priority_order(self, lst) -> None:
-        """Установить приоритет корневых жанров и сохранить конфиг."""
-        if lst is None:
-            self.settings.pop('genre_priority_order', None)
-        else:
-            self.settings['genre_priority_order'] = [str(item) for item in lst]
-        self.save()
 
     def get_writer_occupation_qids(self) -> list:
         """Вернуть список Wikidata QID писательских профессий (P106).
@@ -424,13 +280,6 @@ class SettingsManager:
             self.settings['female_names'] = unique_list
         self.save()
 
-    def add_female_name(self, name):
-        """Добавляет женское имя в список (если его там ещё нет, case-insensitive)."""
-        names = self.get_female_names()
-        if name and not any(n.lower() == name.lower() for n in names):
-            names.append(name)
-            self.set_female_names(names)
-
     # --- Male names helpers ---
     def get_male_names(self):
         """Возвращает список мужских имён."""
@@ -457,23 +306,7 @@ class SettingsManager:
             self.settings['male_names'] = unique_list
         self.save()
 
-    def add_male_name(self, name):
-        """Добавляет мужское имя в список (если его там ещё нет, case-insensitive)."""
-        names = self.get_male_names()
-        if name and not any(n.lower() == name.lower() for n in names):
-            names.append(name)
-            self.set_male_names(names)
-
     # --- Genderize.io API key ---
-    def get_genderize_api_key(self) -> str:
-        """Вернуть API-ключ Genderize.io (пустая строка = бесплатный лимит)."""
-        return str(self.settings.get('genderize_api_key', ''))
-
-    def set_genderize_api_key(self, key: str) -> None:
-        """Сохранить API-ключ Genderize.io."""
-        self.settings['genderize_api_key'] = key.strip()
-        self.save()
-
     # --- Service words helpers ---
     def get_service_words(self):
         """Возвращает список служебных слов."""
@@ -517,129 +350,10 @@ class SettingsManager:
         lst = self.settings.get('author_folder_name_patterns')
         return list(lst) if lst else []
 
-    def set_service_words(self, lst):
-        """Устанавливает список служебных слов и сохраняет конфиг.
-        Removes duplicates (case-insensitive) while preserving order."""
-        if lst is None:
-            self.settings.pop('service_words', None)
-        else:
-            # Remove duplicates (case-insensitive) while preserving order
-            seen = set()
-            unique_list = []
-            for item in lst:
-                item_lower = str(item).lower()
-                if item_lower not in seen:
-                    seen.add(item_lower)
-                    unique_list.append(str(item))
-            # store as list of strings
-            self.settings['service_words'] = unique_list
-        self.save()
-
     # --- Sequence patterns helpers ---
-    def get_sequence_patterns(self):
-        """Возвращает список шаблонов поиска серий."""
-        lst = self.settings.get('sequence_patterns')
-        if lst is None:
-            return []
-        return list(lst)
-
-    def set_sequence_patterns(self, lst):
-        """Устанавливает список шаблонов поиска серий и сохраняет конфиг.
-        Removes duplicates (case-insensitive) while preserving order."""
-        if lst is None:
-            self.settings.pop('sequence_patterns', None)
-        else:
-            # Remove duplicates (case-insensitive) while preserving order
-            seen = set()
-            unique_list = []
-            for item in lst:
-                item_lower = str(item).lower()
-                if item_lower not in seen:
-                    seen.add(item_lower)
-                    unique_list.append(str(item))
-            # store as list of strings
-            self.settings['sequence_patterns'] = unique_list
-        self.save()
-
-
-
-
-
     # --- Abbreviations preserve case helpers ---
-    def get_abbreviations_preserve_case(self):
-        """Возвращает список аббревиатур для сохранения кейса."""
-        lst = self.settings.get('abbreviations_preserve_case')
-        if lst is None:
-            return []
-        return list(lst)
-
-    def set_abbreviations_preserve_case(self, lst):
-        """Устанавливает список аббревиатур для сохранения кейса и сохраняет конфиг.
-        Removes duplicates (case-insensitive) while preserving order."""
-        if lst is None:
-            self.settings.pop('abbreviations_preserve_case', None)
-        else:
-            # Remove duplicates (case-insensitive) while preserving order
-            seen = set()
-            unique_list = []
-            for item in lst:
-                item_lower = str(item).lower()
-                if item_lower not in seen:
-                    seen.add(item_lower)
-                    unique_list.append(str(item))
-            self.settings['abbreviations_preserve_case'] = unique_list
-        self.save()
-
     # --- Author initials and suffixes helpers ---
-    def get_author_initials_and_suffixes(self):
-        """Возвращает список инициалов и суффиксов авторов."""
-        lst = self.settings.get('author_initials_and_suffixes')
-        if lst is None:
-            return []
-        return list(lst)
-
-    def set_author_initials_and_suffixes(self, lst):
-        """Устанавливает список инициалов и суффиксов авторов и сохраняет конфиг.
-        Removes duplicates (case-insensitive) while preserving order."""
-        if lst is None:
-            self.settings.pop('author_initials_and_suffixes', None)
-        else:
-            # Remove duplicates (case-insensitive) while preserving order
-            seen = set()
-            unique_list = []
-            for item in lst:
-                item_lower = str(item).lower()
-                if item_lower not in seen:
-                    seen.add(item_lower)
-                    unique_list.append(str(item))
-            self.settings['author_initials_and_suffixes'] = unique_list
-        self.save()
-
     # --- Series category words helpers ---
-    def get_series_category_words(self):
-        """Возвращает список категорийных слов для серий."""
-        lst = self.settings.get('series_category_words')
-        if lst is None:
-            return []
-        return list(lst)
-
-    def set_series_category_words(self, lst):
-        """Устанавливает список категорийных слов для серий и сохраняет конфиг.
-        Removes duplicates (case-insensitive) while preserving order."""
-        if lst is None:
-            self.settings.pop('series_category_words', None)
-        else:
-            # Remove duplicates (case-insensitive) while preserving order
-            seen = set()
-            unique_list = []
-            for item in lst:
-                item_lower = str(item).lower()
-                if item_lower not in seen:
-                    seen.add(item_lower)
-                    unique_list.append(str(item))
-            self.settings['series_category_words'] = unique_list
-        self.save()
-
     def get_author_series_patterns_in_files(self):
         """Возвращает список паттернов для поиска в имени файла."""
         lst = self.settings.get('author_series_patterns_in_files')
@@ -647,43 +361,12 @@ class SettingsManager:
             return []
         return list(lst)
 
-    def set_author_series_patterns_in_files(self, lst):
-        """Устанавливает список паттернов для поиска в имени файла и сохраняет конфиг."""
-        if lst is None:
-            self.settings.pop('author_series_patterns_in_files', None)
-        else:
-            self.settings['author_series_patterns_in_files'] = list(lst)
-        self.save()
-
     def get_author_series_patterns_in_folders(self):
         """Возвращает список паттернов для поиска в имени папки."""
         lst = self.settings.get('author_series_patterns_in_folders')
         if lst is None:
             return []
         return list(lst)
-
-    def set_author_series_patterns_in_folders(self, lst):
-        """Устанавливает список паттернов для поиска в имени папки и сохраняет конфиг."""
-        if lst is None:
-            self.settings.pop('author_series_patterns_in_folders', None)
-        else:
-            self.settings['author_series_patterns_in_folders'] = list(lst)
-        self.save()
-
-    def get_author_name_patterns(self):
-        """Возвращает список паттернов для парсинга имени автора."""
-        lst = self.settings.get('author_name_patterns')
-        if lst is None:
-            return []
-        return list(lst)
-
-    def set_author_name_patterns(self, lst):
-        """Устанавливает список паттернов для парсинга имени автора и сохраняет конфиг."""
-        if lst is None:
-            self.settings.pop('author_name_patterns', None)
-        else:
-            self.settings['author_name_patterns'] = list(lst)
-        self.save()
 
     # --- Author surname conversions helpers ---
     def get_author_surname_conversions(self):
@@ -702,17 +385,3 @@ class SettingsManager:
         else:
             self.settings['author_surname_conversions'] = dict(d)
         self.save()
-
-    def add_author_surname_conversion(self, from_surname, to_surname):
-        """Добавляет конвертацию фамилии."""
-        conversions = self.get_author_surname_conversions()
-        if from_surname and to_surname:
-            conversions[from_surname] = to_surname
-            self.set_author_surname_conversions(conversions)
-
-    def remove_author_surname_conversion(self, from_surname):
-        """Удаляет конвертацию фамилии."""
-        conversions = self.get_author_surname_conversions()
-        if from_surname in conversions:
-            del conversions[from_surname]
-            self.set_author_surname_conversions(conversions)
