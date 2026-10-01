@@ -166,7 +166,7 @@ class Command(BaseCommand):
                 try:
                     if not os.path.isdir(d):
                         # Папка целиком исчезла (переименована/удалена) — всё
-                        # равно нужно пройти books_del_phisical_scoped ниже,
+                        # равно нужно пройти books_del_scoped ниже,
                         # scan_path() по несуществующему пути просто ничего не найдёт.
                         self.stdout.write(f"  {d} (папка больше не существует)")
                     else:
@@ -175,7 +175,7 @@ class Command(BaseCommand):
                     opdsdb.avail_check_prepare_scoped(rel_path)
                     if os.path.isdir(d):
                         scanner.scan_path(d)
-                    opdsdb.books_del_phisical_scoped(rel_path)
+                    opdsdb.books_del_scoped(rel_path, config.SOPDS_DELETE_LOGICAL)
                 except OSError:
                     # Файл/папка исчезли между inotify-событием и этим
                     # пересканом (например их как раз переименовывает

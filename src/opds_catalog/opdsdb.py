@@ -243,6 +243,16 @@ def books_del_phisical_scoped(rel_path: str):
     return Book.objects.filter(_path_scope_q(rel_path), avail__lte=1).delete()
 
 
+def books_del_scoped(rel_path: str, logical: bool):
+    """Пропавшие с диска книги одной папки — по SOPDS_DELETE_LOGICAL, как в
+    полном скане: скрыть (avail=0) или удалить из БД. Логическое удаление
+    защищает каталог, если папка временно пропала (переименована,
+    отключён диск) — физическое стёрло бы все её книги."""
+    if logical:
+        return books_del_logical_scoped(rel_path)
+    return books_del_phisical_scoped(rel_path)
+
+
 def cleanup_orphan_entities():
     """Удаляет записи Author/Genre/Series, у которых после удаления книг
     (books_del_phisical) не осталось ни одной привязанной книги.

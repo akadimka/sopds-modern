@@ -109,12 +109,7 @@ def _run_scan_thread(root_path):
         if is_scoped:
             opdsdb.avail_check_prepare_scoped(rel_path)
             scanner.scan_path(root_path)
-            # Как scan_all(): пропавшие с диска книги — по настройке
-            # SOPDS_DELETE_LOGICAL (скрыть) или удалить из БД.
-            if config.SOPDS_DELETE_LOGICAL:
-                opdsdb.books_del_logical_scoped(rel_path)
-            else:
-                opdsdb.books_del_phisical_scoped(rel_path)
+            opdsdb.books_del_scoped(rel_path, config.SOPDS_DELETE_LOGICAL)
             opdsdb.cleanup_orphan_entities()
         else:
             scanner.scan_all()
