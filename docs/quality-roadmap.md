@@ -8381,3 +8381,27 @@ trusted_number.py` — fail-before/pass-after подтверждён `git stash`
 Закреплено:
 `tests/unit/fb2parser_core/test_pass4_filename_prefix_latin_homoglyphs.py`
 — fail-before/pass-after подтверждён `git stash`.
+
+## Баг №124: сканер жанров на главной и regen видели разные жанры одного файла; SAX резал текст жанра на куски — ✅ Починено
+
+Найдено аудитом кода (2026-10-01).
+
+1. Сканер жанров (`FB2AuthorExtractor._extract_genres_from_fb2`, regex)
+   искал только `<genre>` без префикса и `<title-info>` без атрибутов и не
+   убирал повторы, а pass1 regen (`FB2SAXExtractor`) сравнивает локальное
+   имя тега и повторы убирает. На Test2 у 378 файлов сканер показывал
+   отдельные «комбинации» вида `sf, sf` / `sf_history, popadancy,
+   sf_history` рядом с теми же, но без повторов; у файла с `<fb:genre>`
+   был бы «Не определено». Общий хелпер `_genres_from_title_info`
+   (любой префикс, атрибуты, `html.unescape`, без повторов) теперь у
+   сканера и у regex-ветки pass1.
+2. Сам SAX-обработчик считал жанром каждый вызов `characters()`, а expat
+   отдаёт текст кусками — на каждой сущности (`a &amp; b` → три жанра) и
+   на границе буфера чтения (длинный код мог разрезаться надвое). Текст
+   жанра теперь копится до закрывающего тега.
+
+Проверка на реальных данных: Test2 (15148 записей, включая
+`metadata_genre`, после полного сброса кеша метаданных) — без изменений.
+
+Закреплено: `tests/unit/fb2parser_core/test_genre_regex_matches_sax.py`
+— fail-before/pass-after подтверждён `git stash`.
