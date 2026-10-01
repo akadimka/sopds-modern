@@ -28,6 +28,7 @@ from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
 from opds_catalog import opdsdb, settings, utils
+from opds_catalog.converters import CONVERT_TIMEOUT_SECONDS
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
 from opds_catalog.utils import get_fs_book_path, getFileData, getFileName
@@ -336,8 +337,15 @@ def ConvertFB2(request, book_id, convert_type):
         [converter_path, file_path, tmp_conv_path],
         stdout=subprocess.PIPE,
     )
-    proc.stdout.read()
-    proc.wait()
+    try:
+        proc.communicate(timeout=CONVERT_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        logger.error(f"Converter {converter_path} timed out on {file_path}")
+        # Недописанный результат не отдаём.
+        if os.path.isfile(tmp_conv_path):
+            os.remove(tmp_conv_path)
 
     if os.path.isfile(tmp_conv_path):
         fo = codecs.open(tmp_conv_path, "rb")

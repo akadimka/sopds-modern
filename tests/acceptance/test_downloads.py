@@ -238,6 +238,37 @@ class TestConvertFB2:
         assert response.status_code == 200
         assert response["Content-Length"] != "0"
 
+    def test_convert_timeout_kills_converter_and_serves_nothing(
+        self, client, create_regular_book, override_config, tmp_path
+    ) -> None:
+        """Зависший конвертер раньше навсегда занимал воркер (proc.wait()
+        без таймаута). Теперь он убивается, а недописанный файл не отдаётся."""
+        import subprocess
+        from unittest.mock import MagicMock
+
+        procs = []
+
+        def _hanging_converter(*args, **kwargs):
+            dst = args[0][2]
+            with open(dst, "wb") as f:
+                f.write(b"partial")
+            proc = MagicMock()
+            proc.communicate.side_effect = [subprocess.TimeoutExpired("conv", 1), (b"", b"")]
+            procs.append(proc)
+            return proc
+
+        with override_config(
+            SOPDS_FB2TOEPUB="fake-converter", SOPDS_TEMP_DIR=str(tmp_path),
+            SOPDS_AUTH=False,
+        ):
+            with patch("opds_catalog.dl.subprocess.Popen", side_effect=_hanging_converter):
+                response = client.get(
+                    reverse("opds:convert", args=(create_regular_book.id, "epub"))
+                )
+        assert response.status_code == 404
+        assert procs[0].kill.called
+        assert not any(tmp_path.iterdir())
+
     def test_convert_compressed_book_decompresses_before_converting(
         self, client, catalog, override_config, tmp_path, test_rootlib
     ) -> None:

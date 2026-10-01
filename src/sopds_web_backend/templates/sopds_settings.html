@@ -9,6 +9,9 @@
 {% if saved %}
 <div class="s-msg ok">✓ {% trans "Settings saved." %}</div>
 {% endif %}
+{% for error in errors %}
+<div class="s-msg err">✖ {{ error }}</div>
+{% endfor %}
 
 <div class="s-tabs">
     <button class="s-tab-btn active" onclick="sTab('general')">{% trans "General" %}</button>
@@ -68,28 +71,31 @@
     </div>
 
     <div class="s-section-title">{% trans "Conversion" %}</div>
+    {% if not can_edit_exec_fields %}
+    <div class="s-hint">{% trans "Only a superuser can change converter paths and the temp directory." %}</div>
+    {% endif %}
 
     <div class="s-field">
         <label>{% trans "fb2→epub converter path" %}</label>
-        <input type="text" name="fb2toepub" value="{{ sopds.fb2toepub }}" placeholder="/usr/bin/fb2toepub">
+        <input type="text" name="fb2toepub" value="{{ sopds.fb2toepub }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/usr/bin/fb2toepub">
         <div class="s-hint">{{ comments.fb2toepub }}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "fb2→azw3 converter path (Kindle)" %}</label>
-        <input type="text" name="fb2toazw3" value="{{ sopds.fb2toazw3 }}" placeholder="/usr/bin/ebook-convert">
+        <input type="text" name="fb2toazw3" value="{{ sopds.fb2toazw3 }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/usr/bin/ebook-convert">
         <div class="s-hint">{{ comments.fb2toazw3 }}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "fb2→mobi converter path" %}</label>
-        <input type="text" name="fb2tomobi" value="{{ sopds.fb2tomobi }}" placeholder="/usr/bin/ebook-convert">
+        <input type="text" name="fb2tomobi" value="{{ sopds.fb2tomobi }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/usr/bin/ebook-convert">
         <div class="s-hint">{{ comments.fb2tomobi }}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "Temp directory" %}</label>
-        <input type="text" name="temp_dir" value="{{ sopds.temp_dir }}" placeholder="/tmp">
+        <input type="text" name="temp_dir" value="{{ sopds.temp_dir }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/tmp">
         <div class="s-hint">{{ comments.temp_dir }}</div>
     </div>
 

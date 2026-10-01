@@ -817,3 +817,15 @@ msgstr "Ошибка"
 
 msgid "Superuser: only another superuser can change it"
 msgstr "Суперпользователь: изменить может только другой суперпользователь"
+
+msgid "Only a superuser can change converter paths and the temp directory."
+msgstr "Пути к конвертерам и временную папку может менять только суперпользователь."
+
+msgid "Temp directory not found: %(path)s"
+msgstr "Временная папка не найдена: %(path)s"
+
+msgid "%(path)s is not a known converter (ebook-convert, fb2c, fb2epub, kindlegen…). Another program can only be set in config.json on the server."
+msgstr "%(path)s — не известный конвертер (ebook-convert, fb2c, fb2epub, kindlegen…). Другую программу можно указать только в config.json на сервере."
+
+msgid "Converter not found: %(path)s"
+msgstr "Конвертер не найден: %(path)s"

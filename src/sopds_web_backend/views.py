@@ -657,6 +657,29 @@ def _render_sopds_scan_status(request):
     return render(request, "sopds_scan_status.html", {"state": state})
 
 
+# Пути, которые сервер запускает (конвертеры) или куда пишет их вывод.
+# Меняет только суперпользователь: иначе любой Admin (или XSS от его имени)
+# указал бы /bin/sh как «конвертер» и выполнял команды на сервере.
+_EXEC_FIELDS = ('fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir')
+
+
+def _exec_field_error(user, field, value):
+    from opds_catalog.converters import converter_path_error
+    import os
+    if not user.is_superuser:
+        return _("Only a superuser can change converter paths and the temp directory.")
+    if field == 'temp_dir':
+        if value and not os.path.isdir(value):
+            return _("Temp directory not found: %(path)s") % {"path": value}
+        return None
+    reason = converter_path_error(value)
+    if reason == "unknown":
+        return _("%(path)s is not a known converter (ebook-convert, fb2c, fb2epub, kindlegen…). Another program can only be set in config.json on the server.") % {"path": value}
+    if reason == "missing":
+        return _("Converter not found: %(path)s") % {"path": value}
+    return None
+
+
 @sopds_admin(url="web:login")
 @require_http_methods(["GET", "POST"])
 def sopds_settings(request):
@@ -676,6 +699,7 @@ def sopds_settings(request):
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min', 'watch_debounce_seconds']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
 
+    errors = []
     if request.method == 'POST':
         sopds = sm.settings.setdefault('sopds', {})
         for f in _BOOL_FIELDS:
@@ -686,7 +710,13 @@ def sopds_settings(request):
             except ValueError:
                 pass
         for f in _STR_FIELDS:
-            sopds[f] = request.POST.get(f, '').strip()
+            value = request.POST.get(f, '').strip()
+            if f in _EXEC_FIELDS and value != (sopds.get(f) or ''):
+                error = _exec_field_error(request.user, f, value)
+                if error:
+                    errors.append(error)
+                    continue
+            sopds[f] = value
         sm.save()
 
         # Сохранение настроек с включённой галочкой гарантирует, что фоновый сбор
@@ -717,13 +747,16 @@ def sopds_settings(request):
         else:
             stop_fetcher('litmarket')
 
-        return redirect(reverse('web:settings') + '?saved=1')
+        if not errors:
+            return redirect(reverse('web:settings') + '?saved=1')
 
     sopds = sm.settings.get('sopds', {})
     comments = sopds.get('_comments', {})
     args = {
         'breadcrumbs': [_('Settings')],
         'saved': request.GET.get('saved') == '1',
+        'errors': errors,
+        'can_edit_exec_fields': request.user.is_superuser,
         'sopds': sopds,
         'comments': comments,
     }
