@@ -32,6 +32,7 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
         self.series_number = ""
         self.book_title = ""
         self.genres = []
+        self._genre_text = ""
         # Накапливаем все sequence-теги: list of (name, number_str)
         self._all_sequences: list = []
 
@@ -96,6 +97,7 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
             self.in_book_title = True
         elif self.in_title_info and local_name == 'genre':
             self.in_genre = True
+            self._genre_text = ""
 
     def endElement(self, name):
         local_name = name.split(':', 1)[-1] if ':' in name else name
@@ -118,6 +120,10 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
         elif local_name == 'book-title':
             self.in_book_title = False
         elif local_name == 'genre':
+            if self.in_genre:
+                g = self._genre_text.strip()
+                if g and g not in self.genres:
+                    self.genres.append(g)
             self.in_genre = False
 
         if self.element_stack:
@@ -136,9 +142,10 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
         elif self.in_book_title:
             self.book_title += content
         elif self.in_genre:
-            g = content.strip()
-            if g and g not in self.genres:
-                self.genres.append(g)
+            # Текст тега приходит кусками (на каждой сущности вроде &amp; и
+            # на границе буфера expat) — жанр собирается целиком в endElement,
+            # иначе «a &amp; b» давал три жанра, а длинный код резался надвое.
+            self._genre_text += content
 
 
 class FB2SAXExtractor:

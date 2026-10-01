@@ -13,6 +13,7 @@ docs/quality-roadmap.md, баг №105). Остались только 4 мет�
 реально вызываются извне.
 """
 
+import html
 import re
 from pathlib import Path
 
@@ -20,6 +21,24 @@ try:
     from settings_manager import SettingsManager
 except ImportError:
     from .settings_manager import SettingsManager
+
+# Любой префикс пространства имён (<fb:genre>, <FictionBook:genre>…) и
+# атрибуты у <title-info> — как у SAX-разбора в pass1 (fb2_sax_extractor),
+# иначе сканер жанров и regen видели разные наборы жанров одного файла.
+_TITLE_INFO_RE = re.compile(
+    r'<(?:[\w.-]+:)?title-info\b[^>]*>.*?</(?:[\w.-]+:)?title-info\s*>', re.DOTALL
+)
+_GENRE_RE = re.compile(r'<(?:[\w.-]+:)?genre\b[^>]*>(.*?)</(?:[\w.-]+:)?genre\s*>', re.DOTALL)
+
+
+def _genres_from_title_info(title_info: str, unescape: bool = True) -> list:
+    """Жанры из блока <title-info>: без пустых и повторов, в порядке файла."""
+    genres = []
+    for raw in _GENRE_RE.findall(title_info):
+        g = (html.unescape(raw) if unescape else raw).strip()
+        if g and g not in genres:
+            genres.append(g)
+    return genres
 
 
 class FB2AuthorExtractor:
@@ -57,9 +76,7 @@ class FB2AuthorExtractor:
             if not content:
                 return result
 
-            title_info_match = re.search(
-                r'<(?:fb:)?title-info>.*?</(?:fb:)?title-info>', content, re.DOTALL
-            )
+            title_info_match = _TITLE_INFO_RE.search(content)
             if not title_info_match:
                 return result
 
@@ -120,9 +137,8 @@ class FB2AuthorExtractor:
                     result['series_number'] = ''
 
             # Genre
-            genres = re.findall(r'<genre[^>]*>(.*?)</genre>', title_info, re.DOTALL)
-            if genres:
-                result['genre'] = ', '.join(g.strip() for g in genres if g.strip())
+            # Сущности раскрываются ниже для всех полей сразу.
+            result['genre'] = ', '.join(_genres_from_title_info(title_info, unescape=False))
 
             # Раскрываем HTML-сущности во всех строковых полях
             import html as _html
@@ -287,22 +303,10 @@ class FB2AuthorExtractor:
             if not content:
                 return ""
             
-            # Найти <title-info> блок
-            title_info_match = re.search(r'<(?:fb:)?title-info>.*?</(?:fb:)?title-info>', content, re.DOTALL)
+            title_info_match = _TITLE_INFO_RE.search(content)
             if not title_info_match:
                 return ""
-            
-            title_info_content = title_info_match.group(0)
-            
-            # Найти все <genre> теги
-            genres = re.findall(r'<genre[^>]*>(.*?)</genre>', title_info_content, re.DOTALL)
-            
-            if genres:
-                # Очистить и объединить жанры
-                genres = [g.strip() for g in genres if g.strip()]
-                return ", ".join(genres)
-            
-            return ""
+            return ", ".join(_genres_from_title_info(title_info_match.group(0)))
             
         except Exception:
             return ""
