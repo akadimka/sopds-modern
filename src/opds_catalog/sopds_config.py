@@ -124,6 +124,24 @@ def _get_sm():
     return sm
 
 
+# Размер страницы: 0 недопустим (Paginator делит на него) — считаем «не задано».
+_POSITIVE_KEYS = {'maxitems', 'splititems'}
+
+
+def _is_unset(json_key: str, val) -> bool:
+    """Значение не задано → берём умолчание.
+
+    Раньше было `not val`: False и 0 тоже уходили в умолчание, поэтому
+    auth/doubles_hide/zipscan/delete_logical… нельзя было выключить, а
+    scan_shed_dow=0 (понедельник) превращался в -1 («каждый день»).
+    """
+    if val is None:
+        return True
+    if isinstance(val, str):
+        return not val.strip()
+    return json_key in _POSITIVE_KEYS and not val
+
+
 class SopdsConfig:
     """Прокси для настроек SOPDS из config.json.
 
@@ -145,7 +163,7 @@ class SopdsConfig:
             sm = _get_sm()
             sopds = sm.settings.get('sopds', {})
             val = sopds.get(json_key, _DEFAULTS.get(json_key))
-            if not val and json_key in _DEFAULTS:
+            if json_key in _DEFAULTS and _is_unset(json_key, val):
                 return _DEFAULTS[json_key]
             return val
 

@@ -972,7 +972,12 @@ class Pass4Consensus:
         # contains "Злой медик. Тень медработника (сборник).fb2" which has author="Zлой Медик".
         # The shared filename prefix identifies the author.
         import re as _re_prefix
-        _MIXED_SCRIPT_NORM = str.maketrans('ZzАВЕКМНОРСТХ', 'ЗзАВЕКМНОРСТХ')  # Latin→Cyrillic lookalikes
+        # Латинские двойники кириллицы → кириллица. Применяется ПОСЛЕ lower(),
+        # поэтому таблица строчная (заглавные B/H/M/T/K после lower() дают
+        # b/h/m/t/k — их кириллические пары в, н, м, т, к). Прежняя таблица
+        # 'ZzАВЕКМНОРСТХ' была набрана кириллицей и стояла до lower() по
+        # смыслу, но не по коду — работало только z→з.
+        _MIXED_SCRIPT_NORM = str.maketrans('abcehkmoptxyz', 'авсенкмортхуз')
 
         def _norm_for_prefix(s: str) -> str:
             return _nfc_lower_yo(s).translate(_MIXED_SCRIPT_NORM)
