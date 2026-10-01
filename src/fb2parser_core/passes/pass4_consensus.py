@@ -48,7 +48,7 @@ class Pass4Consensus:
         self.logger = logger
         try:
             self.settings = settings or SettingsManager('config.json')
-        except:
+        except Exception:
             self.settings = None
         self.series_filename_extractor = series_filename_extractor
         self.normalizer = AuthorNormalizer(self.settings)

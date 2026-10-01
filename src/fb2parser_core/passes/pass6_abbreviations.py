@@ -41,7 +41,7 @@ class Pass6Abbreviations:
         self.py_logger = logger  # Reference to system logger
         try:
             self.settings = settings or SettingsManager('config.json')
-        except:
+        except Exception:
             self.settings = None
         self.normalizer = AuthorNormalizer(self.settings)
     

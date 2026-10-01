@@ -191,7 +191,7 @@ def SearchBooksView(request):
                 if subsection.lower() != section.lower():
                     crumbs.append({"label": subsection, "url": ""})
                 args["breadcrumbs"] = crumbs
-            except:
+            except Exception:
                 args["breadcrumbs"] = [genres_root]
 
             args["searchobject"] = "genre"

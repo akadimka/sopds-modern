@@ -367,11 +367,11 @@ def ConvertFB2(request, book_id, convert_type):
     try:
         if tmp_fb2_path:
             os.remove(tmp_fb2_path)
-    except:
+    except OSError:
         pass
     try:
         os.remove(tmp_conv_path)
-    except:
+    except OSError:
         pass
 
     return response

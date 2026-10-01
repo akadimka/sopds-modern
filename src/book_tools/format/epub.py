@@ -103,7 +103,7 @@ class EPub(BookFile):
         with self.__zip_file.open(info) as entry:
             try:
                 return etree.fromstring(entry.read(1048576), parser=safe_xml_parser())
-            except:
+            except Exception:
                 raise EPub.StructureException(
                     "'" + info.filename + "' is not a valid XML"
                 )
@@ -185,7 +185,7 @@ class EPub(BookFile):
             path = os.path.normpath(prefix + node.get("href")).replace("\\", "/")
             try:
                 fileinfo = self.__zip_file.getinfo(path)
-            except:
+            except Exception:
                 fileinfo = self.__zip_file.getinfo(urllib.parse.unquote(path))
             mime = node.get("media-type")
             info = {"filename": fileinfo.filename, "mime": mime}
@@ -271,7 +271,7 @@ class EPub(BookFile):
     def __get_root_info(self):
         try:
             container_info = self.__zip_file.getinfo(EPub.Entry.CONTAINER)
-        except:
+        except Exception:
             container_info = None
         if container_info:
             tree = self.__etree_from_entry(container_info)
@@ -321,7 +321,7 @@ class EPub(BookFile):
                 key_name = res[0].text
                 if key_name and key_name.startswith(EPub.CONTENT_ID_PREFIX):
                     content_ids.add(key_name[len(EPub.CONTENT_ID_PREFIX) :])
-        except:
+        except Exception:
             pass
         return list(content_ids)
 
@@ -350,7 +350,7 @@ class EPub(BookFile):
                     algo = algorithms[0]
                 else:
                     return UNKNOWN_ENCRYPTION
-            except:
+            except Exception:
                 return UNKNOWN_ENCRYPTION
 
         if self.__contains_entry(EPub.Entry.RIGHTS):
@@ -374,7 +374,7 @@ class EPub(BookFile):
                             "token_url": token_url,
                             "content_ids": content_ids,
                         }
-                except:
+                except Exception:
                     pass
             return UNKNOWN_ENCRYPTION
 

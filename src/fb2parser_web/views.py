@@ -285,8 +285,8 @@ def _genre_scan_cache_save(folder_key, results, errors):
         data = {"folder": folder_key, "results": results, "errors": errors}
         with open(_genre_scan_cache_path(folder_key), "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
-    except Exception:
-        pass
+    except Exception as e:
+        logging.getLogger(__name__).warning("genre scan cache not saved: %s", e)
 
 
 def _genre_scan_cache_load(folder_key):
@@ -368,8 +368,8 @@ def _run_genre_scan_thread(folder_paths):
                     if code:
                         all_codes.add(code)
             discovered_codes_count = gm.register_discovered_codes(all_codes) or 0
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger(__name__).warning("discovered genre codes not registered: %s", e)
 
         genre_scan_job.update(
             done=True, running=False, folder=folder_key,
@@ -1453,8 +1453,8 @@ def _norm_cache_save(folder_path, records):
         data = {"folder": folder_path, "ts": time.time(), "records": records}
         with open(_norm_cache_path(folder_path), "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
-    except Exception:
-        pass
+    except Exception as e:
+        logging.getLogger(__name__).warning("normalization cache not saved: %s", e)
 
 
 def _norm_cache_load(folder_path, max_age_hours=24):

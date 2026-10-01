@@ -74,7 +74,7 @@ class Pass2Filename:
         """Load author_series_patterns_in_files from config."""
         try:
             return self.settings.get_author_series_patterns_in_files()
-        except:
+        except Exception:
             return []
     
     def _add_to_author_cache(self, extracted: str, expanded: str) -> None:

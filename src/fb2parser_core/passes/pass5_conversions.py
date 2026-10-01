@@ -29,7 +29,7 @@ class Pass5Conversions:
         self.logger = logger
         try:
             self.settings = settings or SettingsManager('config.json')
-        except:
+        except Exception:
             self.settings = None
         self.normalizer = AuthorNormalizer(self.settings)
     

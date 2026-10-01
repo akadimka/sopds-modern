@@ -178,6 +178,26 @@ class TestSkipAction:
         assert sync_job.get()["reconciliation_notes"] == []
         assert "файл.fb2" in sync_module._load_reconciliation_skip_set()
 
+    def test_failed_save_is_reported_not_silently_ignored(self, tmp_path, admin_user, monkeypatch):
+        """Ошибка записи списка «Пропустить» глоталась: интерфейс говорил
+        «отложено», а пара всплывала снова на следующей синхронизации."""
+        import fb2parser_core.synchronization as sync_module
+
+        not_writable = tmp_path / "dir_instead_of_file"
+        not_writable.mkdir()
+        monkeypatch.setattr(sync_module, "_RECONCILIATION_SKIP_PATH", not_writable)
+
+        scan_path = tmp_path / "staging"
+        scan_path.mkdir()
+        (scan_path / "файл.fb2").write_bytes(b"stub")
+        note = _note(incoming="файл.fb2")
+        sync_job.update(scan_path=str(scan_path), reconciliation_notes=[note])
+
+        response = _post(note, "skip", admin_user)
+
+        assert response.status_code == 500
+        assert sync_job.get()["reconciliation_notes"] == [note]
+
 
 class TestPathConfinement:
     """note приходит от клиента: путь к входящему файлу не должен выходить

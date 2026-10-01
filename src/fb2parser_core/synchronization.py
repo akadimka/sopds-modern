@@ -103,11 +103,10 @@ def _add_to_reconciliation_skip_set(file_path: str) -> None:
     import json
     skip = _load_reconciliation_skip_set()
     skip.add(file_path)
-    try:
-        with open(_RECONCILIATION_SKIP_PATH, 'w', encoding='utf-8') as f:
-            json.dump(sorted(skip), f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    # Ошибку записи не глотаем: иначе интерфейс сообщал «отложено», а пара
+    # всплывала снова на следующей синхронизации.
+    with open(_RECONCILIATION_SKIP_PATH, 'w', encoding='utf-8') as f:
+        json.dump(sorted(skip), f, ensure_ascii=False, indent=2)
 
 
 class SynchronizationService:
