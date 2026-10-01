@@ -1208,3 +1208,203 @@ msgstr "Сканировать в каталог"
 
 msgid "Adds books from the selected folder — the whole library or one of its subfolders — to the SOPDS catalog."
 msgstr "Добавляет в каталог SOPDS книги из выбранной папки — всей библиотеки или одной её подпапки."
+
+#, python-format
+msgid "Folder not found: %(path)s"
+msgstr "Папка не найдена: %(path)s"
+
+#, python-format
+msgid "Folder is outside the SOPDS library (%(lib)s): %(path)s"
+msgstr "Папка вне библиотеки SOPDS (%(lib)s): %(path)s"
+
+msgid "not set"
+msgstr "не задана"
+
+#, python-format
+msgid "No FB2 files in folder: %(path)s"
+msgstr "В папке нет FB2-файлов: %(path)s"
+
+#, python-format
+msgid "Could not load fb2parser: %(error)s"
+msgstr "Не удалось загрузить fb2parser: %(error)s"
+
+#, python-format
+msgid "Library folder not found: %(path)s"
+msgstr "Папка библиотеки не найдена: %(path)s"
+
+msgid "Choose a folder to show its structure"
+msgstr "Укажите папку для отображения структуры"
+
+msgid "No access to the folder"
+msgstr "Нет доступа к папке"
+
+msgid "Restarting sopds-modern..."
+msgstr "Перезапуск sopds-modern..."
+
+msgid "Reloading..."
+msgstr "Перезагрузка..."
+
+msgid "Folder not found"
+msgstr "Папка не найдена"
+
+msgid "No FB2 files found or none changed"
+msgstr "FB2-файлы не найдены или не изменены"
+
+msgid "Genre assignment is already running"
+msgstr "Присвоение жанра уже выполняется"
+
+msgid "Enter the path to a CSV file."
+msgstr "Укажите путь к CSV-файлу."
+
+#, python-format
+msgid "File not found: %(path)s"
+msgstr "Файл не найден: %(path)s"
+
+#, python-format
+msgid "CSV read error: %(error)s"
+msgstr "Ошибка чтения CSV: %(error)s"
+
+msgid "Create the CSV first."
+msgstr "Сначала создайте CSV."
+
+msgid "No data — run normalization first."
+msgstr "Нет данных — сначала запустите нормализацию."
+
+msgid "Volume number"
+msgstr "Номер тома"
+
+msgid "File name"
+msgstr "Имя файла"
+
+msgid "Date (title)"
+msgstr "Дата (назв.)"
+
+msgid "Date (publication)"
+msgstr "Дата (изд.)"
+
+msgid "No groups selected"
+msgstr "Не выбрано ни одной группы"
+
+msgid "Compilation is already running"
+msgstr "Компиляция уже запущена"
+
+msgid "Unknown action"
+msgstr "Неизвестное действие"
+
+msgid "The source scan folder is unknown"
+msgstr "Не известна исходная папка сканирования"
+
+msgid "File is outside the source scan folder"
+msgstr "Файл вне исходной папки сканирования"
+
+msgid "File not found in the source folder"
+msgstr "Файл не найден в исходной папке"
+
+msgid "Deleted as a confirmed duplicate"
+msgstr "Удалён как подтверждённый дубликат"
+
+msgid "Postponed — the next sync will treat it as a new, separate entry"
+msgstr "Отложено — при следующей синхронизации будет обработан как новая, независимая запись"
+
+msgid "Invalid target path"
+msgstr "Некорректный целевой путь"
+
+msgid "Source file not found"
+msgstr "Исходный файл не найден"
+
+#, python-format
+msgid "A file with this name already exists in the target folder: %(path)s"
+msgstr "Файл с таким именем уже есть в целевой папке: %(path)s"
+
+#, python-format
+msgid "Moved as a new entry: %(path)s"
+msgstr "Перенесено как новая запись: %(path)s"
+
+msgid "Conflict not found — run the sync again"
+msgstr "Конфликт не найден — запустите синхронизацию заново"
+
+msgid "The genre is not one of this series' options"
+msgstr "Жанр не из списка вариантов этой серии"
+
+msgid "Invalid file path"
+msgstr "Некорректный путь файла"
+
+#, python-format
+msgid "Could not write the genre to %(failed)d of %(total)d files"
+msgstr "Не удалось записать жанр в %(failed)d из %(total)d файлов"
+
+#, python-format
+msgid "Genre «%(genre)s» written to %(count)d files — they will be moved on the next sync"
+msgstr "Жанр «%(genre)s» прописан в %(count)d файлах — они будут перенесены при следующей синхронизации"
+
+msgid "No folders selected for sync."
+msgstr "Не выбрано ни одной папки для синхронизации."
+
+msgid "Words/phrases that are never series names (genre terms etc.)"
+msgstr "Слова/фразы, не считающиеся названиями серий (жанровые термины и т.д.)"
+
+msgid "Service words ignored when analysing file names"
+msgstr "Служебные слова, игнорируемые при анализе имён файлов"
+
+msgid "Regex patterns that recognise series numbers (e.g. «том N», «книга N»)"
+msgstr "Regex-шаблоны для распознавания номеров серий (напр. «том N», «книга N»)"
+
+msgid "Abbreviations whose case is kept (СССР, РФ, США)"
+msgstr "Аббревиатуры с сохранением регистра (СССР, РФ, США)"
+
+msgid "Author suffixes/initials ignored when comparing (мл, ст, ср)"
+msgstr "Суффиксы/инициалы авторов, игнорируемые при сравнении (мл, ст, ср)"
+
+msgid "Series category words used to recognise the series type"
+msgstr "Слова-категории серий для распознавания типа серии"
+
+msgid "Male first names used to detect the author's gender"
+msgstr "Список мужских имён для определения пола автора"
+
+msgid "Female first names used to detect the author's gender"
+msgstr "Список женских имён для определения пола автора"
+
+msgid "Folder names meaning «no series» (Вне серий, Без серии, standalone)"
+msgstr "Имена папок, означающих «без серии» (Вне серий, Без серии, standalone)"
+
+msgid "Words marking an alternative/draft version of a work (вариант, редакция, draft)"
+msgstr "Слова, означающие альтернативную/черновую версию произведения (вариант, редакция, draft)"
+
+msgid "Words marking collections/anthologies/complete works (сборник, антология, лучшее)"
+msgstr "Слова-маркеры сборников/антологий/полных собраний (сборник, антология, лучшее)"
+
+msgid "Series values kept as they are, without normalisation"
+msgstr "Значения серии, сохраняемые как есть, без нормализации"
+
+msgid "Folder names that are not series names (Разное, Рассказы, Без цикла)"
+msgstr "Имена папок, не являющиеся названием серии (Разное, Рассказы, Без цикла)"
+
+msgid "Prefixes stripped from a folder name when taking the series from it"
+msgstr "Префиксы, обрезаемые из имени папки при извлечении серии"
+
+msgid "Collection folders whose direct subfolders are always author folders"
+msgstr "Папки-коллекции, чьи прямые подпапки всегда считаются авторскими"
+
+msgid "Regex patterns cut out of a series value during cleanup ((АСТ), (Эксмо) etc.)"
+msgstr "Regex-шаблоны, вырезаемые из значения серии при очистке ((АСТ), (Эксмо) и т.п.)"
+
+msgid "Publisher series prefixes stripped from a series value (Серия «, Серия - )"
+msgstr "Издательские префиксы серии, обрезаемые из значения серии (Серия «, Серия - )"
+
+msgid "Translation folder prefixes that are not author folders (Переводы)"
+msgstr "Префиксы папок-переводов, не считающиеся авторскими (Переводы)"
+
+msgid "Folders with genre/publisher prefixes — not author folders"
+msgstr "Папки с жанровыми/издательскими префиксами — не считаются авторскими"
+
+msgid "Regex patterns that extract the author name from a folder name"
+msgstr "Regex-шаблоны для извлечения имени автора из названия папки"
+
+msgid "Service folder names skipped while scanning (tmp, cache, covers)"
+msgstr "Служебные имена папок, пропускаемые при сканировании (tmp, cache, covers)"
+
+msgid "Wikidata QIDs of writing occupations — preferred when detecting gender"
+msgstr "QID писательских профессий в Wikidata — приоритет при определении пола автора"
+
+msgid "Particles of foreign names (де, ван, фон, ла) skipped when comparing"
+msgstr "Частицы иностранных имён (де, ван, фон, ла), пропускаемые при сравнении"

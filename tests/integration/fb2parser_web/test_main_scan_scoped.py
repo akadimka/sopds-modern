@@ -13,6 +13,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+from django.utils import translation
 
 from opds_catalog.models import Book
 
@@ -125,7 +126,8 @@ class TestScanPage:
         outside = tmp_path_factory.mktemp("outside")
         request = RequestFactory().post("/fb2parser/scan/start/", {"root": str(outside)})
         request.user = admin_user
-        html = views.scan_start(request).content.decode()
+        with translation.override("ru"):
+            html = views.scan_start(request).content.decode()
 
         assert "вне библиотеки" in html
         assert started == []

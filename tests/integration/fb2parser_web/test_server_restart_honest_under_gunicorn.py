@@ -21,6 +21,7 @@
 from unittest.mock import patch
 
 from django.test import RequestFactory
+from django.utils import translation
 
 from fb2parser_web.views import server_restart
 
@@ -48,7 +49,8 @@ class TestServerRestartHonestAboutGunicorn:
         with patch("subprocess.run") as mock_run, \
              patch("time.sleep"), \
              patch("threading.Thread", _SyncThread):
-            response = server_restart(request)
+            with translation.override("ru"):
+                response = server_restart(request)
 
         content = response.content.decode("utf-8")
         assert "location.reload()" in content
@@ -66,7 +68,8 @@ class TestServerRestartHonestAboutGunicorn:
             SERVER_SOFTWARE="WSGIServer/0.2 CPython/3.13.14",
         )
         request.user = admin_user
-        response = server_restart(request)
+        with translation.override("ru"):
+            response = server_restart(request)
         content = response.content.decode("utf-8")
 
         assert "location.reload()" in content

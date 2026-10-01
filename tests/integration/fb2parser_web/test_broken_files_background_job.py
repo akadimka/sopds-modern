@@ -9,6 +9,7 @@ docs/quality-roadmap.md, баг №99.
 """
 import pytest
 from django.test import RequestFactory
+from django.utils import translation
 
 from fb2parser_web.views import (
     _run_broken_files_thread,
@@ -113,7 +114,8 @@ class TestBrokenFilesStartView:
             request = rf.post("/fb2parser/normalize/broken-files/start/")
             request.user = admin_user
 
-            response = broken_files_start(request)
+            with translation.override("ru"):
+                response = broken_files_start(request)
 
         assert "Сначала создайте CSV" in response.content.decode("utf-8")
         assert broken_files_job.get()["running"] is False

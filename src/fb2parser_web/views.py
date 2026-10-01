@@ -9,6 +9,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils.html import escape
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _lazy
 from django.views.decorators.http import require_http_methods
 
 from fb2parser_core.path_safety import is_within
@@ -140,7 +142,7 @@ def dashboard(request):
     root = request.session.get('dashboard_root') or config.SOPDS_ROOT_LIB or ""
     state = genre_scan_job.get()
     return render(request, "fb2parser/dashboard.html", _ctx(
-        "dashboard", "Главная",
+        "dashboard", _("Home"),
         root=root,
         state=state,
     ))
@@ -178,7 +180,7 @@ def statistics(request):
     top_genres = Genre.objects.annotate(cnt=Count("bgenre")).order_by("-cnt")[:5]
     recent_books = Book.objects.order_by("-id").prefetch_related("genres")[:10]
     return render(request, "fb2parser/statistics.html", _ctx(
-        "statistics", "Статистика",
+        "statistics", _("Statistics"),
         stats=stats,
         last_scan=last_scan,
         top_genres=top_genres,
@@ -190,7 +192,7 @@ def statistics(request):
 def scan(request):
     root = config.SOPDS_ROOT_LIB or ""
     state = scan_job.get()
-    return render(request, "fb2parser/scan.html", _ctx("scan", "Сканирование", root=root, state=state))
+    return render(request, "fb2parser/scan.html", _ctx("scan", _("Scan into Catalog"), root=root, state=state))
 
 
 @staff_member_required(login_url="/web/login/")
@@ -203,15 +205,17 @@ def scan_start(request):
     root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
     if not root or not os.path.isdir(root):
         return HttpResponse(
-            f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {escape(root)}</div></div>'
+            '<div id="scan-status"><div class="callout alert">❌ ' + _("Folder not found: %(path)s") % {"path": escape(root)} + '</div></div>'
         )
     # Папка вне библиотеки не может попасть в каталог (пути книг считаются
     # от SOPDS_ROOT_LIB) — раньше такой выбор молча запускал полный скан.
     lib_root = config.SOPDS_ROOT_LIB or ""
     if not _is_within_folder(root, lib_root):
         return HttpResponse(
-            '<div id="scan-status"><div class="callout alert">'
-            f'❌ Папка вне библиотеки SOPDS ({escape(lib_root) or "не задана"}): {escape(root)}</div></div>'
+            '<div id="scan-status"><div class="callout alert">❌ '
+            + _("Folder is outside the SOPDS library (%(lib)s): %(path)s")
+            % {"lib": escape(lib_root) or _("not set"), "path": escape(root)}
+            + '</div></div>'
         )
     if not scan_job.try_start(root=root):
         return _render_status(scan_job.get())
@@ -409,7 +413,7 @@ def _resolve_scan_folders(request):
     if not folder_paths:
         root = request.POST.get("root", "").strip()
         if not root or not os.path.isdir(root):
-            return [], 0, f"Папка не найдена: {root}"
+            return [], 0, _("Folder not found: %(path)s") % {"path": root}
         folder_paths = [root]
 
     from pathlib import Path
@@ -421,7 +425,7 @@ def _resolve_scan_folders(request):
         total = 0
     if total == 0:
         shown = ", ".join(folder_paths)
-        return [], 0, f"В папке нет FB2-файлов: {shown}"
+        return [], 0, _("No FB2 files in folder: %(path)s") % {"path": shown}
 
     return folder_paths, total, None
 
@@ -520,7 +524,7 @@ def genre_scan_assign(request):
     try:
         service = get_genre_assignment_service()
     except Exception as e:
-        return JsonResponse({"error": f"Не удалось загрузить fb2parser: {e}"}, status=500)
+        return JsonResponse({"error": _("Could not load fb2parser: %(error)s") % {"error": e}}, status=500)
 
     # Баг №82: каждое подтверждённое (авто или вручную) назначение сразу
     # запоминается как точная ассоциация код→корневой жанр — следующий скан
@@ -578,7 +582,7 @@ def genre_scan_assign(request):
                     code = code.strip()
                     if not code or not gm.is_discriminating_code(code):
                         continue
-                    existing_genre, _ = gm.resolve_code(code, priority_order)
+                    existing_genre, _exact = gm.resolve_code(code, priority_order)
                     if existing_genre != genre:
                         learned_genres.setdefault(code, set()).add(genre)
         for abs_path, ok in per_file.items():
@@ -670,7 +674,7 @@ def compress(request):
     from .fb2parser_bridge import _config_path
     library_path = SettingsManager(_config_path()).get_library_path()
     return render(request, "fb2parser/compress.html", _ctx(
-        "compress", "Сжатие FB2", library_path=library_path, state=compress_job.get(),
+        "compress", _("Compress"), library_path=library_path, state=compress_job.get(),
     ))
 
 
@@ -688,8 +692,9 @@ def compress_start(request):
     library_path = SettingsManager(_config_path()).get_library_path()
     if not library_path or not os.path.isdir(library_path):
         return HttpResponse(
-            '<div id="compress-status"><div class="callout alert">'
-            f'❌ Папка библиотеки не найдена: {escape(library_path)}</div></div>'
+            '<div id="compress-status"><div class="callout alert">❌ '
+            + _("Library folder not found: %(path)s") % {"path": escape(library_path)}
+            + '</div></div>'
         )
 
     compress_stop_flag.clear()
@@ -793,12 +798,12 @@ def folder_tree(request):
     path = request.GET.get("path", "").strip()
     if not path or not os.path.isdir(path):
         return HttpResponse(
-            "<div style='padding:1.5rem; color:#7f8c8d; text-align:center;'>Укажите папку для отображения структуры</div>"
+            "<div style='padding:1.5rem; color:#7f8c8d; text-align:center;'>" + _("Choose a folder to show its structure") + "</div>"
         )
     try:
         names = sorted(os.listdir(path), key=str.lower)
     except PermissionError:
-        return HttpResponse("<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ Нет доступа к папке</div>")
+        return HttpResponse("<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ " + _("No access to the folder") + "</div>")
     except Exception as e:
         return HttpResponse(f"<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ {escape(str(e))}</div>")
 
@@ -866,7 +871,7 @@ def server_restart(request):
         threading.Thread(target=_restart_service, daemon=True).start()
         return HttpResponse(
             '<script>setTimeout(function(){location.reload();},5000);</script>'
-            '<span style="color:#27ae60">⟳ Перезапуск sopds-modern...</span>',
+            '<span style="color:#27ae60">⟳ ' + _("Restarting sopds-modern...") + '</span>',
             content_type="text/html; charset=utf-8",
         )
     import pathlib
@@ -878,7 +883,7 @@ def server_restart(request):
     threading.Thread(target=_touch, daemon=True).start()
     return HttpResponse(
         '<script>setTimeout(function(){location.reload();},2500);</script>'
-        '<span style="color:#27ae60">⟳ Перезагрузка...</span>',
+        '<span style="color:#27ae60">⟳ ' + _("Reloading...") + '</span>',
         content_type="text/html; charset=utf-8",
     )
 
@@ -980,7 +985,7 @@ def _run_assign_genre_thread(genre, paths):
 
         for path in paths:
             if not os.path.isdir(path):
-                results.append({"path": path, "success": False, "error": "Папка не найдена"})
+                results.append({"path": path, "success": False, "error": _("Folder not found")})
                 genre_assign_job.update(results=list(results))
                 continue
 
@@ -1015,7 +1020,7 @@ def _run_assign_genre_thread(genre, paths):
                     genre_assignment_times.set(times)
                 else:
                     results.append({"path": path, "success": False, "count": 0,
-                                     "error": "FB2-файлы не найдены или не изменены"})
+                                     "error": _("No FB2 files found or none changed")})
             except Exception as e:
                 results.append({"path": path, "success": False, "error": str(e)})
 
@@ -1053,7 +1058,7 @@ def assign_genre_multi(request):
         return JsonResponse({"error": "genre and paths required"}, status=400)
 
     if genre_assign_job.get()["running"]:
-        return JsonResponse({"error": "Присвоение жанра уже выполняется"}, status=409)
+        return JsonResponse({"error": _("Genre assignment is already running")}, status=409)
 
     from pathlib import Path
 
@@ -1061,7 +1066,7 @@ def assign_genre_multi(request):
     total = sum(len(fb2_rglob(Path(p))) for p in paths if os.path.isdir(p))
 
     if not genre_assign_job.try_start(total=total, results=[]):
-        return JsonResponse({"error": "Присвоение жанра уже выполняется"}, status=409)
+        return JsonResponse({"error": _("Genre assignment is already running")}, status=409)
 
     t = threading.Thread(target=_run_assign_genre_thread, args=(genre, paths), daemon=True)
     t.start()
@@ -1130,12 +1135,12 @@ def _render_main_status(state):
 
 @staff_member_required(login_url="/web/login/")
 def archive(request):
-    return render(request, "fb2parser/archive.html", _ctx("archive", "Заархивировать"))
+    return render(request, "fb2parser/archive.html", _ctx("archive", _("Archive")))
 
 
 @staff_member_required(login_url="/web/login/")
 def database(request):
-    return render(request, "fb2parser/database.html", _ctx("database", "База данных"))
+    return render(request, "fb2parser/database.html", _ctx("database", _("Database")))
 
 
 # ── Жанры ────────────────────────────────────────────────────────────────────
@@ -1187,7 +1192,7 @@ def genres(request):
     except Exception as e:
         error = str(e)
     return render(request, "fb2parser/genres.html", _ctx(
-        "genres", "Справочник жанров",
+        "genres", _("Genre Reference"),
         genre_list=genre_list,
         genre_names_sorted=genre_names_sorted,
         sections=sections,
@@ -1429,7 +1434,7 @@ def normalize(request):
             state = norm_job.get()
     root = filter_folder or state.get("folder") or last_path or cfg.SOPDS_ROOT_LIB or ""
     return render(request, "fb2parser/normalize.html", _ctx(
-        "normalize", "Нормализация",
+        "normalize", _("Normalization"),
         root=root,
         state=state,
         filter_subfolders=filter_subfolders,
@@ -1597,7 +1602,7 @@ def normalize_start(request):
         except Exception:
             pass
     if not folder or not os.path.isdir(folder):
-        return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {escape(folder)}</div></div>')
+        return HttpResponse('<div id="norm-status"><div class="callout alert">❌ ' + _("Folder not found: %(path)s") % {"path": escape(folder)} + '</div></div>')
     from .fb2parser_bridge import get_normalization_settings
     get_normalization_settings().set_last_normalize_path(folder)
     norm_stop_flag.clear()
@@ -1683,10 +1688,10 @@ def names_from_csv(request):
 
     if not csv_path:
         return HttpResponse(
-            '<div style="padding:1rem;color:#7f8c8d;">Укажите путь к CSV-файлу.</div>')
+            '<div style="padding:1rem;color:#7f8c8d;">' + _("Enter the path to a CSV file.") + '</div>')
     if not os.path.isfile(csv_path):
         return HttpResponse(
-            f'<div style="padding:1rem;color:#c0392b;">❌ Файл не найден: {escape(csv_path)}</div>')
+            '<div style="padding:1rem;color:#c0392b;">❌ ' + _("File not found: %(path)s") % {"path": escape(csv_path)} + '</div>')
 
     from fb2parser_core.author_pipeline_service import guess_first_name
     from fb2parser_core.settings_manager import SettingsManager
@@ -1728,7 +1733,7 @@ def names_from_csv(request):
                                  'file_path': file_path})
     except Exception as e:
         return HttpResponse(
-            f'<div style="padding:1rem;color:#c0392b;">❌ Ошибка чтения CSV: {escape(str(e))}</div>')
+            '<div style="padding:1rem;color:#c0392b;">❌ ' + _("CSV read error: %(error)s") % {"error": escape(str(e))} + '</div>')
 
     from django.template.loader import render_to_string
     html = render_to_string("fb2parser/names_list.html", {"rows": rows})
@@ -1752,7 +1757,7 @@ def names_list(request):
         _norm_restore_from_cache(cached_folder)
         records = list(norm_job["records"])
     if not records:
-        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
+        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">' + _("Create the CSV first.") + '</div>')
 
     from fb2parser_core.author_pipeline_service import guess_first_name
     from fb2parser_core.settings_manager import SettingsManager
@@ -1923,7 +1928,7 @@ def martyrs_list(request):
         folder  = _state.get("folder", "")
 
     if not records:
-        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
+        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">' + _("Create the CSV first.") + '</div>')
 
     from fb2parser_core.settings_manager import SettingsManager
 
@@ -2126,7 +2131,7 @@ def broken_files_start(request):
         folder = _cfg.SOPDS_ROOT_LIB or ""
 
     if not folder or not os.path.isdir(folder):
-        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
+        return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">' + _("Create the CSV first.") + '</div>')
 
     if not broken_files_job.try_start(folder=folder):
         return _render_broken_files_status(broken_files_job.get())
@@ -2354,7 +2359,7 @@ def duplicates_find(request):
     if not records:
         return render(request, "fb2parser/duplicates.html", {
             "rows": [], "groups": [],
-            "error": "Нет данных — сначала запустите нормализацию.",
+            "error": _("No data — run normalization first."),
         })
 
     folder_path = _Path(folder) if folder else _Path(".")
@@ -2479,10 +2484,10 @@ def _rec_to_ns(rec):
 
 
 _COMPILER_SORT_LABEL = {
-    "series_number": "Номер тома",
-    "filename":      "Имя файла",
-    "title_date":    "Дата (назв.)",
-    "publish_date":  "Дата (изд.)",
+    "series_number": _lazy("Volume number"),
+    "filename":      _lazy("File name"),
+    "title_date":    _lazy("Date (title)"),
+    "publish_date":  _lazy("Date (publication)"),
 }
 
 
@@ -2602,7 +2607,7 @@ def compiler_scan(request):
 
     if not records:
         return render(request, "fb2parser/compiler_groups.html", {
-            "groups": [], "error": "Нет данных — сначала запустите нормализацию.",
+            "groups": [], "error": _("No data — run normalization first."),
         })
 
     ns_records = [_rec_to_ns(r) for r in records]
@@ -2760,10 +2765,10 @@ def compiler_run(request):
         return JsonResponse({"error": "bad json"}, status=400)
 
     if not indices:
-        return JsonResponse({"error": "Не выбрано ни одной группы"}, status=400)
+        return JsonResponse({"error": _("No groups selected")}, status=400)
 
     if compiler_job["running"]:
-        return JsonResponse({"error": "Компиляция уже запущена"}, status=409)
+        return JsonResponse({"error": _("Compilation is already running")}, status=409)
     # groups/folder must survive this reset — try_start() only overlays `fields`
     # on top of the class default, which would otherwise wipe the scan results.
     if not compiler_job.try_start(
@@ -2771,7 +2776,7 @@ def compiler_run(request):
         done=False, error=None,
         progress=0, total=len(indices), current="", log=[],
     ):
-        return JsonResponse({"error": "Компиляция уже запущена"}, status=409)
+        return JsonResponse({"error": _("Compilation is already running")}, status=409)
 
     t = threading.Thread(target=_run_compiler_thread, args=(indices, delete_sources), daemon=True)
     t.start()
@@ -2913,7 +2918,7 @@ def sync_reconciliation_resolve(request):
         return JsonResponse({"error": "bad json"}, status=400)
 
     if action not in ("delete", "move", "skip"):
-        return JsonResponse({"error": "Неизвестное действие"}, status=400)
+        return JsonResponse({"error": _("Unknown action")}, status=400)
 
     from .fb2parser_bridge import get_sync_service
     state = sync_job.get()
@@ -2922,14 +2927,14 @@ def sync_reconciliation_resolve(request):
         _svc0 = get_sync_service()
         scan_path = str(_svc0.last_scan_path) if _svc0.last_scan_path else ""
     if not scan_path:
-        return JsonResponse({"error": "Не известна исходная папка сканирования"}, status=400)
+        return JsonResponse({"error": _("The source scan folder is unknown")}, status=400)
 
     from pathlib import Path as _Path
     abs_incoming = str(_Path(scan_path) / incoming_file_path)
     # note приходит от клиента: абсолютный путь или "..\\" вывели бы
     # перемещение/удаление за пределы папки сканирования.
     if not _is_within_folder(abs_incoming, scan_path):
-        return JsonResponse({"error": "Файл вне исходной папки сканирования"}, status=400)
+        return JsonResponse({"error": _("File is outside the source scan folder")}, status=400)
 
     try:
         if action == "delete":
@@ -2937,13 +2942,13 @@ def sync_reconciliation_resolve(request):
             if errors:
                 return JsonResponse({"error": "; ".join(errors)}, status=500)
             if not deleted:
-                return JsonResponse({"error": "Файл не найден в исходной папке"}, status=404)
-            result_msg = "🗑️ Удалён как подтверждённый дубликат"
+                return JsonResponse({"error": _("File not found in the source folder")}, status=404)
+            result_msg = "🗑️ " + _("Deleted as a confirmed duplicate")
 
         elif action == "skip":
             from fb2parser_core.synchronization import _add_to_reconciliation_skip_set
             _add_to_reconciliation_skip_set(incoming_file_path)
-            result_msg = "➡ Отложено — при следующей синхронизации будет обработан как новая, независимая запись"
+            result_msg = "➡ " + _("Postponed — the next sync will treat it as a new, separate entry")
 
         else:  # move
             svc = get_sync_service()
@@ -2961,20 +2966,20 @@ def sync_reconciliation_resolve(request):
             # genre/author/series приходят в note от клиента — путь не должен
             # выйти за пределы библиотеки (в т.ч. в соседнюю "<library>2").
             if not _is_within_folder(str(target_dir), str(svc.library_path)):
-                return JsonResponse({"error": "Некорректный целевой путь"}, status=400)
+                return JsonResponse({"error": _("Invalid target path")}, status=400)
 
             if not _Path(abs_incoming).exists():
-                return JsonResponse({"error": "Исходный файл не найден"}, status=404)
+                return JsonResponse({"error": _("Source file not found")}, status=404)
 
             target_dir.mkdir(parents=True, exist_ok=True)
             target_name = svc._shorten_filename_for_path_limit(target_dir, _Path(incoming_file_path).name)
             target_file = target_dir / target_name
             if target_file.exists():
-                return JsonResponse({"error": f"Файл с таким именем уже есть в целевой папке: {target_file}"}, status=409)
+                return JsonResponse({"error": _("A file with this name already exists in the target folder: %(path)s") % {"path": target_file}}, status=409)
 
             import shutil
             shutil.move(abs_incoming, str(target_file))
-            result_msg = f"✓ Перенесено как новая запись: {genre}/{author}" + (f"/{series}" if series else "")
+            result_msg = "✓ " + _("Moved as a new entry: %(path)s") % {"path": f"{genre}/{author}" + (f"/{series}" if series else "")}
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
@@ -3013,9 +3018,9 @@ def sync_genre_conflict_resolve(request):
     notes = state.get("genre_conflict_notes") or []
     note = next((n for n in notes if n["author"] == author and n["series"] == series), None)
     if note is None:
-        return JsonResponse({"error": "Конфликт не найден — запустите синхронизацию заново"}, status=404)
+        return JsonResponse({"error": _("Conflict not found — run the sync again")}, status=404)
     if genre not in note["genres"]:
-        return JsonResponse({"error": "Жанр не из списка вариантов этой серии"}, status=400)
+        return JsonResponse({"error": _("The genre is not one of this series' options")}, status=400)
 
     from .fb2parser_bridge import get_genre_assignment_service, get_sync_service
     scan_path = state.get("scan_path") or ""
@@ -3023,7 +3028,7 @@ def sync_genre_conflict_resolve(request):
         _svc = get_sync_service()
         scan_path = str(_svc.last_scan_path) if _svc.last_scan_path else ""
     if not scan_path:
-        return JsonResponse({"error": "Не известна исходная папка сканирования"}, status=400)
+        return JsonResponse({"error": _("The source scan folder is unknown")}, status=400)
 
     from pathlib import Path as _Path
     root = _Path(scan_path).resolve()
@@ -3031,7 +3036,7 @@ def sync_genre_conflict_resolve(request):
     for f in note["files"]:
         p = (root / f["file_path"]).resolve()
         if p == root or not _is_within_folder(str(p), str(root)):
-            return JsonResponse({"error": "Некорректный путь файла"}, status=400)
+            return JsonResponse({"error": _("Invalid file path")}, status=400)
         abs_paths.append(str(p))
 
     try:
@@ -3040,7 +3045,7 @@ def sync_genre_conflict_resolve(request):
         return JsonResponse({"error": str(e)}, status=500)
     failed = [p for p, ok in per_file.items() if not ok]
     if failed:
-        return JsonResponse({"error": f"Не удалось записать жанр в {len(failed)} из {len(abs_paths)} файлов"}, status=500)
+        return JsonResponse({"error": _("Could not write the genre to %(failed)d of %(total)d files") % {"failed": len(failed), "total": len(abs_paths)}}, status=500)
 
     # Следующая синхронизация берёт только папки из списка назначенных
     # жанров (с истечением по времени) — обновляем его, как genre_scan_assign.
@@ -3062,7 +3067,7 @@ def sync_genre_conflict_resolve(request):
     sync_job.update(genre_conflict_notes=notes)
     return JsonResponse({
         "ok": True,
-        "message": f"✓ Жанр «{genre}» прописан в {len(abs_paths)} файлах — они будут перенесены при следующей синхронизации",
+        "message": "✓ " + _("Genre «%(genre)s» written to %(count)d files — they will be moved on the next sync") % {"genre": genre, "count": len(abs_paths)},
         "remaining": len(notes),
     })
 
@@ -3276,7 +3281,7 @@ def sync_start(request):
         html = render_to_string("fb2parser/sync_status.html", {
             "state": {
                 "running": False, "done": False,
-                "error": "Не выбрано ни одной папки для синхронизации.",
+                "error": _("No folders selected for sync."),
                 "log": [],
             },
             "pct": 0,
@@ -3331,55 +3336,56 @@ def _render_sync_status(state):
 
 @staff_member_required(login_url="/web/login/")
 def log(request):
-    return render(request, "fb2parser/log.html", _ctx("log", "Лог"))
+    return render(request, "fb2parser/log.html", _ctx("log", _("Log")))
 
 
 @staff_member_required(login_url="/web/login/")
 def search(request):
-    return render(request, "fb2parser/search.html", _ctx("search", "Поиск по метаданным"))
+    return render(request, "fb2parser/search.html", _ctx("search", _("Metadata Search")))
 
 
 @staff_member_required(login_url="/web/login/")
 def new_books(request):
-    return render(request, "fb2parser/new_books.html", _ctx("new_books", "Новые книги"))
+    return render(request, "fb2parser/new_books.html", _ctx("new_books", _("New Books")))
 
 
 @staff_member_required(login_url="/web/login/")
 def series_gaps(request):
-    return render(request, "fb2parser/series_gaps.html", _ctx("series_gaps", "Серии с пробелами"))
+    return render(request, "fb2parser/series_gaps.html", _ctx("series_gaps", _("Series with Gaps")))
 
 
 @staff_member_required(login_url="/web/login/")
 def integrity(request):
-    return render(request, "fb2parser/integrity.html", _ctx("integrity", "Проверка целостности FB2"))
+    return render(request, "fb2parser/integrity.html", _ctx("integrity", _("FB2 Integrity Check")))
 
 
 # ── Настройки FB2Parser ───────────────────────────────────────────────────────
 
+# Описания показываются на странице настроек — переводятся при отрисовке.
 _SETTINGS_LISTS = {
-    'filename_blacklist':         'Слова/фразы, не считающиеся названиями серий (жанровые термины и т.д.)',
-    'service_words':              'Служебные слова, игнорируемые при анализе имён файлов',
-    'series_value_patterns':      'Regex-шаблоны для распознавания номеров серий (напр. том \\d+, книга \\d+)',
-    'abbreviations_preserve_case':'Аббревиатуры с сохранением регистра (СССР, РФ, США)',
-    'author_initials_and_suffixes':'Суффиксы/инициалы авторов, игнорируемые при сравнении (мл, ст, ср)',
-    'genre_category_words':       'Слова-категории серий для распознавания типа серии',
-    'male_names':                 'Список мужских имён для определения пола автора',
-    'female_names':               'Список женских имён для определения пола автора',
-    'no_series_folder_names':     'Имена папок, означающих «без серии» (Вне серий, Без серии, standalone)',
-    'variant_folder_keywords':    'Слова, означающие альтернативную/черновую версию произведения (вариант, редакция, draft)',
-    'collection_keywords':        'Слова-маркеры сборников/антологий/полных собраний (сборник, антология, лучшее)',
-    'special_series_values':      'Значения серии, сохраняемые как есть, без нормализации',
-    'series_folder_blacklist':    'Имена папок, не являющиеся названием серии (Разное, Рассказы, Без цикла)',
-    'series_folder_prefixes_to_strip': 'Префиксы, обрезаемые из имени папки при извлечении серии',
-    'author_subfolder_collections': 'Папки-коллекции, чьи прямые подпапки всегда считаются авторскими',
-    'series_cleanup_patterns':    'Regex-шаблоны, вырезаемые из значения серии при очистке ((АСТ), (Эксмо) и т.п.)',
-    'publisher_prefixes':         'Издательские префиксы серии, обрезаемые из значения серии (Серия «, Серия - )',
-    'translator_folder_prefixes': 'Префиксы папок-переводов, не считающиеся авторскими (Переводы)',
-    'genre_folder_prefixes':      'Папки с жанровыми/издательскими префиксами — не считаются авторскими',
-    'author_folder_name_patterns':'Regex-шаблоны для извлечения имени автора из названия папки',
-    'system_folder_names':        'Служебные имена папок, пропускаемые при сканировании (tmp, cache, covers)',
-    'writer_occupation_qids':     'QID писательских профессий в Wikidata — приоритет при определении пола автора',
-    'name_particles':             'Частицы иностранных имён (де, ван, фон, ла), пропускаемые при сравнении',
+    'filename_blacklist': _lazy('Words/phrases that are never series names (genre terms etc.)'),
+    'service_words': _lazy('Service words ignored when analysing file names'),
+    'series_value_patterns': _lazy('Regex patterns that recognise series numbers (e.g. «том N», «книга N»)'),
+    'abbreviations_preserve_case': _lazy('Abbreviations whose case is kept (СССР, РФ, США)'),
+    'author_initials_and_suffixes': _lazy('Author suffixes/initials ignored when comparing (мл, ст, ср)'),
+    'genre_category_words': _lazy('Series category words used to recognise the series type'),
+    'male_names': _lazy("Male first names used to detect the author's gender"),
+    'female_names': _lazy("Female first names used to detect the author's gender"),
+    'no_series_folder_names': _lazy('Folder names meaning «no series» (Вне серий, Без серии, standalone)'),
+    'variant_folder_keywords': _lazy('Words marking an alternative/draft version of a work (вариант, редакция, draft)'),
+    'collection_keywords': _lazy('Words marking collections/anthologies/complete works (сборник, антология, лучшее)'),
+    'special_series_values': _lazy('Series values kept as they are, without normalisation'),
+    'series_folder_blacklist': _lazy('Folder names that are not series names (Разное, Рассказы, Без цикла)'),
+    'series_folder_prefixes_to_strip': _lazy('Prefixes stripped from a folder name when taking the series from it'),
+    'author_subfolder_collections': _lazy('Collection folders whose direct subfolders are always author folders'),
+    'series_cleanup_patterns': _lazy('Regex patterns cut out of a series value during cleanup ((АСТ), (Эксмо) etc.)'),
+    'publisher_prefixes': _lazy('Publisher series prefixes stripped from a series value (Серия «, Серия - )'),
+    'translator_folder_prefixes': _lazy('Translation folder prefixes that are not author folders (Переводы)'),
+    'genre_folder_prefixes': _lazy('Folders with genre/publisher prefixes — not author folders'),
+    'author_folder_name_patterns': _lazy('Regex patterns that extract the author name from a folder name'),
+    'system_folder_names': _lazy('Service folder names skipped while scanning (tmp, cache, covers)'),
+    'writer_occupation_qids': _lazy('Wikidata QIDs of writing occupations — preferred when detecting gender'),
+    'name_particles': _lazy('Particles of foreign names (де, ван, фон, ла) skipped when comparing'),
 }
 
 
@@ -3405,7 +3411,7 @@ def fb2parser_settings(request):
         from django.urls import reverse as _rev
         return _redir(_rev('fb2parser:fb2parser_settings') + '?saved=1')
 
-    ctx = _ctx("settings", "Настройки")
+    ctx = _ctx("settings", _("Settings"))
     ctx['saved'] = request.GET.get('saved') == '1'
 
     # Подставляем дефолты если пути не заданы
