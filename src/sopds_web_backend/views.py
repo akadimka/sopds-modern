@@ -1090,7 +1090,9 @@ def user_profile(request):
     from sopds_web_backend.models import UserProfile
 
     user = request.user
-    profile, _ = UserProfile.objects.get_or_create(user=user)
+    # Не "_": это gettext модуля — затенённый флагом created, он падал
+    # TypeError на первом же сообщении об ошибке ниже (500 вместо формы).
+    profile, _created = UserProfile.objects.get_or_create(user=user)
     errors = {}
     success = None
 
