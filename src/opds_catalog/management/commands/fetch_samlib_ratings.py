@@ -16,7 +16,6 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-
 _SERIES_WORDS = [
     'Дилогия', 'Трилогия', 'Тетралогия', 'Пенталогия', 'Гексалогия',
     'Гепталогия', 'Окталогия', 'Ноналогия', 'Декалогия',
@@ -57,8 +56,12 @@ class Command(BaseCommand):
         from opds_catalog.sopds_config import sopds_cfg
         self.stdout.write("Запуск fetch_samlib_ratings…")
 
+        from opds_catalog.ratings_fetchers import (
+            clear_stop,
+            sleep_or_stop,
+            stop_requested,
+        )
         from opds_catalog.ratings_progress import set_progress
-        from opds_catalog.ratings_fetchers import sleep_or_stop, stop_requested, clear_stop
 
         _SRC = "samlib"
 

@@ -32,6 +32,7 @@ def check_genre_conflicts(folder_path: str, target_genre: str, config_path: str)
         (в т.ч. если автор не сопоставлен с каталогом или его история мала).
     """
     from django.db.models import Count
+
     from opds_catalog.models import Author, bgenre
 
     folder = Path(folder_path)

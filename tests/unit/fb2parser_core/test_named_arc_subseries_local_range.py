@@ -13,7 +13,11 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from fb2parser_core.fb2_compiler import CompilationBook, CompilationGroup, FB2CompilerService
+from fb2parser_core.fb2_compiler import (
+    CompilationBook,
+    CompilationGroup,
+    FB2CompilerService,
+)
 
 
 def _named_arc_book(global_pos: int, local_pos: int, title: str) -> CompilationBook:

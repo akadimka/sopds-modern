@@ -10,6 +10,7 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+
 class GenreNode:
     """
     Represents a single genre node in the hierarchy.

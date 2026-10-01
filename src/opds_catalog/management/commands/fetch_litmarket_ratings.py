@@ -25,7 +25,6 @@ from difflib import SequenceMatcher
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-
 _AUTHOR_RE = re.compile(r'card-author">\s*<a[^>]*href="([^"]+)"[^>]*>([^<]+)</a>')
 _TITLE_RE = re.compile(r'card-name">\s*<a href="([^"]+)">([^<]+)</a>')
 _LIKES_RE = re.compile(r'rating-sticker">\s*<i[^>]*></i>\s*(\d+)')
@@ -63,8 +62,12 @@ class Command(BaseCommand):
         from opds_catalog.sopds_config import sopds_cfg
         self.stdout.write("Запуск fetch_litmarket_ratings…")
 
+        from opds_catalog.ratings_fetchers import (
+            clear_stop,
+            sleep_or_stop,
+            stop_requested,
+        )
         from opds_catalog.ratings_progress import set_progress
-        from opds_catalog.ratings_fetchers import sleep_or_stop, stop_requested, clear_stop
 
         _SRC = "litmarket"
 

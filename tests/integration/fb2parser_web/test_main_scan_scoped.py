@@ -22,9 +22,9 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def two_folder_library(tmp_path, override_config):
     """Библиотека из 2 подпапок, в каждой — копия тестового FB2-файла."""
-    from opds_catalog import opdsdb
-
     import os
+
+    from opds_catalog import opdsdb
     # tests/integration/fb2parser_web/test_main_scan_scoped.py -> tests/data/262001.fb2
     src_fb2 = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),

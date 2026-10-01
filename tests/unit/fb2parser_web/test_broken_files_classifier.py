@@ -11,10 +11,10 @@
 заготовка ("Stage 2", disabled, без backend) — реализована здесь вместе
 с проверкой на ознакомительные фрагменты.
 """
+import os
 from pathlib import Path
 
 import django
-import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sopds.settings.local")
 django.setup()

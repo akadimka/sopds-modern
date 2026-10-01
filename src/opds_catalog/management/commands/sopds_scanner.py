@@ -3,6 +3,16 @@ import os
 import signal
 import sys
 
+from apscheduler.schedulers.blocking import BlockingScheduler
+from django.conf import settings as main_settings
+from django.core.management.base import BaseCommand
+from django.db import connection, connections, transaction
+
+from opds_catalog import settings
+from opds_catalog.models import Counter
+from opds_catalog.sopds_config import sopds_cfg as config
+from opds_catalog.sopdscan import opdsScanner
+
 
 class _SafeMixin:
     """Заглушает handleError: предотвращает каскадный краш logging → traceback → stderr на Windows/Python 3.13."""
@@ -31,16 +41,7 @@ class _SafeFileHandler(_SafeMixin, logging.FileHandler):
     """FileHandler с явной кодировкой UTF-8 — кириллические имена файлов не ломают лог."""
     pass
 
-from apscheduler.schedulers.blocking import BlockingScheduler
-from opds_catalog.sopds_config import sopds_cfg as config
-from django.conf import settings as main_settings
-from django.core.management.base import BaseCommand
-from django.db import connection, connections, transaction
 
-# from opds_catalog.settings import SCANNER_LOG, SCAN_SHED_DAY, SCAN_SHED_DOW, SCAN_SHED_HOUR, SCAN_SHED_MIN, LOGLEVEL, SCANNER_PID
-from opds_catalog import settings
-from opds_catalog.models import Counter
-from opds_catalog.sopdscan import opdsScanner
 
 
 def _cron_day(day):

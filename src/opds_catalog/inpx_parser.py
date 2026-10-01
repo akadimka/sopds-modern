@@ -11,7 +11,6 @@ import os
 import zipfile
 
 from opds_catalog.sopds_config import sopds_cfg as config
-
 from opds_catalog.utils import get_infolist_filename
 
 sAuthor = "AUTHOR"

@@ -3,8 +3,8 @@ import os
 import re
 import threading
 import time
+import unicodedata as _ud
 
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -13,7 +13,9 @@ from django.views.decorators.http import require_http_methods
 
 from opds_catalog import opdsdb
 from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
+from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.sopdscan import opdsScanner
+
 from .job_state import JobFlag, JobState, SharedDict
 
 # ── Состояние сканирования (общий кэш — виден всем worker-процессам gunicorn) ─
@@ -147,7 +149,9 @@ def dashboard(request):
 @require_http_methods(["POST"])
 def dashboard_set_root(request):
     from django.http import JsonResponse
+
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     path = request.POST.get("path", "").strip()
     if path and os.path.isdir(path):
@@ -309,7 +313,9 @@ def _run_genre_scan_thread(folder_paths):
     db.connections.close_all()
     try:
         from pathlib import Path
+
         from fb2parser_core.genre_scan_service import scan_fb2_genres
+
         from .fb2parser_bridge import _config_path
 
         folder_key = _genre_scan_folder_key(folder_paths)
@@ -406,6 +412,7 @@ def _resolve_scan_folders(request):
         folder_paths = [root]
 
     from pathlib import Path
+
     from fb2parser_core.fb2_utils import fb2_rglob
     try:
         total = sum(len(fb2_rglob(Path(folder))) for folder in folder_paths)
@@ -428,8 +435,9 @@ def genre_scan_results(request):
     применяется молча — только подсказка в UI и групповая кнопка
     "Применить предложенное" (см. `genre_scan_assign`).
     """
-    from .fb2parser_bridge import get_genres_manager, _config_path
     from fb2parser_core.settings_manager import SettingsManager
+
+    from .fb2parser_bridge import _config_path, get_genres_manager
 
     state = genre_scan_job.get()
     # Состояние задачи живёт в памяти процесса и пропадает при рестарте
@@ -505,8 +513,9 @@ def genre_scan_assign(request):
 
     state = genre_scan_job.get()
 
-    from .fb2parser_bridge import get_genre_assignment_service
     from pathlib import Path
+
+    from .fb2parser_bridge import get_genre_assignment_service
     try:
         service = get_genre_assignment_service()
     except Exception as e:
@@ -524,8 +533,9 @@ def genre_scan_assign(request):
     # только когда это РЕАЛЬНАЯ коррекция/заполнение пробела — код
     # дискриминирующий (`is_discriminating_code`) И его текущее
     # разрешение расходится с применяемым жанром.
-    from .fb2parser_bridge import get_genres_manager, _config_path
     from fb2parser_core.settings_manager import SettingsManager
+
+    from .fb2parser_bridge import _config_path, get_genres_manager
     try:
         gm = get_genres_manager()
         priority_order = SettingsManager(_config_path()).get_genre_priority_order()
@@ -626,6 +636,7 @@ def _run_compress_thread(library_path):
     db.connections.close_all()
     try:
         from pathlib import Path
+
         from fb2parser_core.compress_service import compress_library
 
         def _on_progress(done, total, current):
@@ -653,8 +664,9 @@ def _run_compress_thread(library_path):
 
 @staff_member_required(login_url="/web/login/")
 def compress(request):
-    from .fb2parser_bridge import _config_path
     from fb2parser_core.settings_manager import SettingsManager
+
+    from .fb2parser_bridge import _config_path
     library_path = SettingsManager(_config_path()).get_library_path()
     return render(request, "fb2parser/compress.html", _ctx(
         "compress", "Сжатие FB2", library_path=library_path, state=compress_job.get(),
@@ -669,8 +681,9 @@ def compress_start(request):
     if compress_job.get()["running"]:
         return _render_compress_status(compress_job.get())
 
-    from .fb2parser_bridge import _config_path
     from fb2parser_core.settings_manager import SettingsManager
+
+    from .fb2parser_bridge import _config_path
     library_path = SettingsManager(_config_path()).get_library_path()
     if not library_path or not os.path.isdir(library_path):
         return HttpResponse(
@@ -838,7 +851,9 @@ def server_restart(request):
     браузеру, а не до.
     """
     if "gunicorn" in request.META.get("SERVER_SOFTWARE", "").lower():
-        import subprocess, threading, time
+        import subprocess
+        import threading
+        import time
 
         def _restart_service():
             time.sleep(0.3)
@@ -853,10 +868,11 @@ def server_restart(request):
             '<span style="color:#27ae60">⟳ Перезапуск sopds-modern...</span>',
             content_type="text/html; charset=utf-8",
         )
-    import pathlib, threading
+    import pathlib
+    import threading
     manage_py = pathlib.Path(__file__).parent.parent / "manage.py"
     def _touch():
-        import time; time.sleep(0.3)
+        time.sleep(0.3)
         manage_py.touch()
     threading.Thread(target=_touch, daemon=True).start()
     return HttpResponse(
@@ -902,8 +918,9 @@ def genre_names(request):
     имеющимся picker'ом дерева папок — оба на dashboard.html, общая JS-
     область видимости, разные имена функций не пересекаются).
     """
-    from .fb2parser_bridge import get_genres_manager
     from django.template.loader import render_to_string
+
+    from .fb2parser_bridge import get_genres_manager
     callback = request.GET.get("cb", "gpSelectGenre")
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", callback):
         callback = "gpSelectGenre"
@@ -949,8 +966,10 @@ def _run_assign_genre_thread(genre, paths):
     db.connections.close_all()
     try:
         from pathlib import Path
+
         from fb2parser_core.fb2_utils import fb2_rglob
-        from .fb2parser_bridge import get_genre_assignment_service, _config_path
+
+        from .fb2parser_bridge import _config_path, get_genre_assignment_service
         from .genre_conflict_check import check_genre_conflicts
 
         base_total = genre_assign_job.get()["total"]
@@ -1021,6 +1040,7 @@ def assign_genre_multi(request):
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
     import json
+
     from django.http import JsonResponse
     try:
         data = json.loads(request.body)
@@ -1035,6 +1055,7 @@ def assign_genre_multi(request):
         return JsonResponse({"error": "Присвоение жанра уже выполняется"}, status=409)
 
     from pathlib import Path
+
     from fb2parser_core.fb2_utils import fb2_rglob
     total = sum(len(fb2_rglob(Path(p))) for p in paths if os.path.isdir(p))
 
@@ -1381,7 +1402,9 @@ def normalize_clear_filter(request):
 @staff_member_required(login_url="/web/login/")
 def normalize(request):
     import json as _json
+
     from opds_catalog.sopds_config import sopds_cfg as cfg
+
     from .fb2parser_bridge import get_normalization_settings
 
     # .get(), не .pop(): страница нормализации может перерисоваться (обычный
@@ -1423,7 +1446,8 @@ def _norm_cache_path(folder_path):
 
 
 def _norm_cache_save(folder_path, records):
-    import json, time
+    import json
+    import time
     try:
         data = {"folder": folder_path, "ts": time.time(), "records": records}
         with open(_norm_cache_path(folder_path), "w", encoding="utf-8") as f:
@@ -1433,7 +1457,8 @@ def _norm_cache_save(folder_path, records):
 
 
 def _norm_cache_load(folder_path, max_age_hours=24):
-    import json, time
+    import json
+    import time
     try:
         p = _norm_cache_path(folder_path)
         if not os.path.exists(p):
@@ -1497,7 +1522,8 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
     db.connections.close_all()
     try:
         from fb2parser_core import regen_csv
-        from .fb2parser_bridge import _config_path, get_normalization_settings, _csv_dir
+
+        from .fb2parser_bridge import _config_path, _csv_dir, get_normalization_settings
         config_path = _config_path()
         service = regen_csv.RegenCSVService(config_path)
 
@@ -1599,6 +1625,7 @@ def normalize_stop(request):
 def normalize_set_root(request):
     """Сохранить путь, введённый в поле "Папка для Input", не дожидаясь запуска нормализации."""
     from django.http import JsonResponse
+
     from .fb2parser_bridge import get_normalization_settings
     path = request.POST.get("path", "").strip()
     if path and os.path.isdir(path):
@@ -1649,7 +1676,8 @@ def normalize_table(request):
 @staff_member_required(login_url="/web/login/")
 def names_from_csv(request):
     """GET ?csv_path=... → список авторов с неизвестным полом из CSV-файла."""
-    import re as _re, csv as _csv
+    import csv as _csv
+    import re as _re
     csv_path = request.GET.get("csv_path", "").strip()
 
     if not csv_path:
@@ -1659,8 +1687,9 @@ def names_from_csv(request):
         return HttpResponse(
             f'<div style="padding:1rem;color:#c0392b;">❌ Файл не найден: {escape(csv_path)}</div>')
 
-    from fb2parser_core.settings_manager import SettingsManager
     from fb2parser_core.author_pipeline_service import guess_first_name
+    from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
     male_set   = {n.lower() for n in sm.get_male_names()}
@@ -1686,9 +1715,11 @@ def names_from_csv(request):
                     for word in author.split():
                         w = word.lower()
                         if w in male_set:
-                            gender = 'М'; break
+                            gender = 'М'
+                            break
                         if w in female_set:
-                            gender = 'Ж'; break
+                            gender = 'Ж'
+                            break
                     if gender:
                         continue
                     rows.append({'source': source, 'author': author,
@@ -1722,8 +1753,9 @@ def names_list(request):
     if not records:
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 
-    from fb2parser_core.settings_manager import SettingsManager
     from fb2parser_core.author_pipeline_service import guess_first_name
+    from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
     male_set   = {n.lower() for n in sm.get_male_names()}
@@ -1767,7 +1799,9 @@ def names_save(request):
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
     import json
+
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
 
     try:
@@ -1810,6 +1844,7 @@ def names_check_online(request):
     Каждое событие: data: {"author": "...", "gender": "М"|"Ж"|"", "status": "ok"|"unknown"|"error"|"rate_limit"}
     """
     import json
+
     from django.http import StreamingHttpResponse
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
@@ -1820,8 +1855,9 @@ def names_check_online(request):
     except Exception:
         return JsonResponse({"error": "bad json"}, status=400)
 
-    from fb2parser_core.gender_lookup import GenderLookupService, STATUS_FOUND
+    from fb2parser_core.gender_lookup import STATUS_FOUND, GenderLookupService
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
 
     def event_stream():
@@ -1889,6 +1925,7 @@ def martyrs_list(request):
         return HttpResponse('<div style="padding:1rem;color:#7f8c8d;">Сначала создайте CSV.</div>')
 
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
     male_set   = {n.lower() for n in sm.get_male_names()}
@@ -2050,6 +2087,7 @@ def _run_broken_files_thread(folder):
     db.connections.close_all()
     try:
         from pathlib import Path as _Path
+
         from fb2parser_core.fb2_utils import fb2_rglob
 
         folder_path = _Path(folder)
@@ -2140,8 +2178,6 @@ def broken_files_delete(request):
 
 
 # ── Дубликаты ─────────────────────────────────────────────────────────────────
-
-import unicodedata as _ud
 
 
 _RGET_ALIASES = {'file_title': 'book_title', 'book_title': 'file_title'}
@@ -2463,6 +2499,7 @@ def _serialize_compiler_group(svc, g):
     группы после ручного исключения/восстановления книги (compiler_exclude).
     """
     from pathlib import Path
+
     from fb2parser_core.fb2_compiler import FB2CompilerService
 
     if g.cleanup_only:
@@ -2828,6 +2865,7 @@ def sync(request):
     scan_path = request.GET.get("scan_path", "").strip()
     assignments = _get_clean_genre_assignments()
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
     return render(request, "fb2parser/sync.html", {
@@ -2985,7 +3023,7 @@ def sync_genre_conflict_resolve(request):
     if genre not in note["genres"]:
         return JsonResponse({"error": "Жанр не из списка вариантов этой серии"}, status=400)
 
-    from .fb2parser_bridge import get_sync_service, get_genre_assignment_service
+    from .fb2parser_bridge import get_genre_assignment_service, get_sync_service
     scan_path = state.get("scan_path") or ""
     if not scan_path:
         _svc = get_sync_service()
@@ -3054,6 +3092,7 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
         Tuple[int, int]: (успешно скомпилировано групп, ошибок).
     """
     from fb2parser_core.auto_compile_service import auto_compile_library
+
     from .fb2parser_bridge import _config_path
     on_log("─" * 40)
     on_log(f"🔧 Авто-компиляция серий ({label})...")
@@ -3076,8 +3115,9 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
 
 
 def _run_sync_thread():
-    from .fb2parser_bridge import get_sync_service
     from django import db
+
+    from .fb2parser_bridge import get_sync_service
     db.connections.close_all()
     try:
         svc = get_sync_service()
@@ -3352,7 +3392,8 @@ _SETTINGS_LISTS = {
 @staff_member_required(login_url="/web/login/")
 def fb2parser_settings(request):
     from fb2parser_core.settings_manager import SettingsManager
-    from .fb2parser_bridge import _config_path, _genres_path, _csv_dir
+
+    from .fb2parser_bridge import _config_path, _csv_dir, _genres_path
     sm = SettingsManager(_config_path())
 
     if request.method == 'POST':
@@ -3414,6 +3455,7 @@ def settings_list_op(request):
         return JsonResponse({'error': 'empty value'}, status=400)
 
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
     lst = list(sm.get_list(key) or [])
@@ -3443,6 +3485,7 @@ def settings_conv_op(request):
     from_val = (body.get('from_val') or '').strip()
 
     from fb2parser_core.settings_manager import SettingsManager
+
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
     convs = dict(sm.get_author_surname_conversions() or {})

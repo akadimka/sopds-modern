@@ -16,15 +16,17 @@
 уже полностью исправен, но веб-слой его результат обрезал.
 """
 import os
+from types import SimpleNamespace
 
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sopds.settings.local")
 django.setup()
 
-from types import SimpleNamespace
-
-from fb2parser_web.views import _bookrecord_to_norm_dict, _rec_to_ns
+from fb2parser_web.views import (  # noqa: E402 — нужен django.setup()
+    _bookrecord_to_norm_dict,
+    _rec_to_ns,
+)
 
 
 def _fake_record(**overrides):

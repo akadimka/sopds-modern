@@ -3,6 +3,7 @@ PASS 5: Re-apply author surname conversions.
 """
 
 from typing import List
+
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
 

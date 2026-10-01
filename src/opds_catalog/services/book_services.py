@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Callable, TypeVar
 
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, Paginator
@@ -15,6 +14,7 @@ from django.utils.translation import gettext as _
 
 from opds_catalog.models import Author, Book, bookshelf
 from opds_catalog.services import SearchType
+from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.utils import get_lang_name, to_int
 
 T = TypeVar("T")

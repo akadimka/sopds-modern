@@ -15,14 +15,14 @@
 """
 
 import difflib
-import sqlite3
-import time
-import urllib.request
-import urllib.parse
 import json
+import sqlite3
 import threading
+import time
+import urllib.parse
+import urllib.request
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 # ── Константы ────────────────────────────────────────────────────────────────
 WIKIDATA_API_URL  = "https://www.wikidata.org/w/api.php"

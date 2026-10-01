@@ -14,7 +14,10 @@ from pathlib import Path
 
 from fb2parser_core.logger import Logger
 from fb2parser_core.passes.pass1_read_files import BookRecord
-from fb2parser_core.synchronization import SynchronizationService, _sanitize_path_component
+from fb2parser_core.synchronization import (
+    SynchronizationService,
+    _sanitize_path_component,
+)
 
 
 class TestSanitizePathComponentUnit:

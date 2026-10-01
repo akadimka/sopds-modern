@@ -22,8 +22,8 @@ metadata sn как есть. Для «Тьма. Том 3.fb2» meta_num=2 ниг
 """
 from pathlib import Path
 
-from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_core.fb2_compiler import FB2CompilerService
+from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_web.fb2parser_bridge import _config_path
 
 _FB2 = """<?xml version="1.0" encoding="utf-8"?>

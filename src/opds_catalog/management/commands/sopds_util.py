@@ -6,7 +6,7 @@ from django.db import transaction
 # from django.conf import settings as main_settings
 from opds_catalog import models, opdsdb
 from opds_catalog.models import Counter
-from opds_catalog.sopds_config import sopds_cfg, _KEY_MAP
+from opds_catalog.sopds_config import _KEY_MAP, sopds_cfg
 
 
 class Command(BaseCommand):

@@ -5,6 +5,7 @@ PASS 3: Normalize author names to standard format.
 import re
 import unicodedata
 from typing import List
+
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
 

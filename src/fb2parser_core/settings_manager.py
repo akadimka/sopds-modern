@@ -5,9 +5,10 @@ Handles configuration and settings management.
 
 / Работа с конфигом и настройками.
 """
+import copy
 import json
 from pathlib import Path
-import copy
+from typing import Any, Dict
 
 # Keys that belong to config.json (machine-specific, gitignored after first push).
 # Everything else lives in app_settings.json (always in git).
@@ -34,7 +35,7 @@ class SettingsManager:
         """
         self.config_path = Path(config_path)
         self.app_settings_path = self.config_path.parent / 'app_settings.json'
-        self.settings = {
+        self.settings: Dict[str, Any] = {
             'library_path': '',
             'last_scan_path': '',
             'normalizer_folder': '',

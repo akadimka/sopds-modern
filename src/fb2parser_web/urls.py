@@ -1,4 +1,5 @@
 from django.urls import path
+
 from fb2parser_web import views
 
 app_name = "fb2parser"

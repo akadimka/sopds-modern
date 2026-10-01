@@ -17,16 +17,15 @@ FB2 Compilation Service
   Один <body> на каждую книгу с <title><p>N. Название</p></title>
 """
 
-import re
 import html as _html
+import re
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Tuple
 
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
 from .roman_numerals import roman_to_int
-
 from .series_normalizer import _nfc_lower_yo as _norm_key
 
 try:
@@ -2811,7 +2810,7 @@ class FB2CompilerService:
                     target_start = h.end()
                     target_end = headers[i + 1].start() if i + 1 < len(headers) else len(annotation)
                     break
-            if target_start is None:
+            if target_start is None or target_end is None:
                 return 0, 0  # многосерийный сборник, но нужная серия не найдена среди заголовков
             nums = [int(m.group(1)) for m in items if target_start <= m.start() < target_end]
         else:
@@ -2935,8 +2934,8 @@ class FB2CompilerService:
         (ненулевой subseries-компонент sort_key[2] или sort_key[3]). При равной
         конкретности — больший по размеру файл (вероятный сборник).
         """
-        from difflib import SequenceMatcher
         from concurrent.futures import ThreadPoolExecutor
+        from difflib import SequenceMatcher
 
         if len(books) < 2:
             return books
@@ -4666,7 +4665,8 @@ class FB2CompilerService:
         raw = path.read_bytes()
         # Zip-упакованный FB2 (сигнатура PK): распаковываем первый .fb2-файл внутри
         if raw[:2] == b'PK':
-            import zipfile, io as _io
+            import io as _io
+            import zipfile
             try:
                 with zipfile.ZipFile(_io.BytesIO(raw)) as zf:
                     names = zf.namelist()

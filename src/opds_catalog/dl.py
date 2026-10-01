@@ -9,7 +9,6 @@ import re
 import subprocess
 import zipfile
 
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.http import (
     Http404,
     HttpRequest,
@@ -31,6 +30,7 @@ from opds_catalog import opdsdb, settings
 from opds_catalog.converters import CONVERT_TIMEOUT_SECONDS
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
+from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.utils import get_fs_book_path, getFileData, getFileName
 
 logger = logging.getLogger(__name__)

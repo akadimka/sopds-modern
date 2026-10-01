@@ -11,7 +11,6 @@
 - fixture_config
 """
 
-from .fixture_config import _apply_override_config_marker, override_config
 from .fixture_book_tools import (
     epub_parser,
     fb2_params,
@@ -19,6 +18,7 @@ from .fixture_book_tools import (
     test_tag,
     virtual_fb2_book,
 )
+from .fixture_config import _apply_override_config_marker, override_config
 from .fixture_django import (
     book_factory,
     create_regular_book,

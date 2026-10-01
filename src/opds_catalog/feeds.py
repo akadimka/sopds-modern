@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.syndication.views import Feed
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpRequest
@@ -30,6 +29,7 @@ from opds_catalog.services import (
     genre_services,
     series_services,
 )
+from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.utils import to_int
 
 from .decorators import sopds_auth_validate

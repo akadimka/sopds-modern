@@ -8,8 +8,8 @@ import argparse
 import html
 import json as _json
 import re
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 FB_NS = "http://www.gribuser.ru/xml/fictionbook/2.0"

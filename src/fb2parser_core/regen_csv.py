@@ -12,24 +12,23 @@ Reference: REGEN_CSV_ARCHITECTURE.md
 """
 
 import csv
+import re
 import sys
 import time
 from pathlib import Path
 
-from .settings_manager import SettingsManager
-from .logger import Logger
-from .fb2_author_extractor import FB2AuthorExtractor
 from .author_normalizer_extended import AuthorNormalizer
 from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
 from .evidence import folder_has_signal as _folder_has_signal_fn
-from .evidence import log_decision
-from .evidence import series_source_rank
-
-from .precache import Precache
+from .evidence import log_decision, series_source_rank
+from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
+from .fb2_author_extractor import FB2AuthorExtractor
+from .folder_classifier import FolderClassifier, FolderType
+from .logger import Logger
 from .passes import (
     Pass1ReadFiles,
-    Pass2Filename,
     Pass2Fallback,
+    Pass2Filename,
     Pass3Normalize,
     Pass4Consensus,
     Pass5Conversions,
@@ -37,11 +36,10 @@ from .passes import (
 )
 from .passes.pass2_series_filename import Pass2SeriesFilename
 from .passes.pass3_series_normalize import Pass3SeriesNormalize
-from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from .pattern_converter import compile_patterns
-from .folder_classifier import FolderClassifier, FolderType
+from .precache import Precache
 from .series_helpers import _bl_matches
-import re
+from .settings_manager import SettingsManager
 
 
 class RegenCSVService:
@@ -755,8 +753,10 @@ class RegenCSVService:
                     _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
                     self._series_folder_blacklist_cache = _sfbl
 
+                _sfbl_set: set = _sfbl
+
                 def _drop_blacklisted(folders: tuple) -> tuple:
-                    return tuple(f for f in folders if f.lower() not in _sfbl)
+                    return tuple(f for f in folders if f.lower() not in _sfbl_set)
 
                 root_type = self.folder_classifier.classify(parent_parts[0])
 
@@ -1295,7 +1295,7 @@ class RegenCSVService:
                 self._save_csv()
                 self.logger.log(f"[OK] CSV saved to {self.output_csv}")
             
-            print(f"\n[OK] CSV regeneration completed successfully!")
+            print("\n[OK] CSV regeneration completed successfully!")
             print(f"   Output: {self.output_csv}")
             print(f"   Records: {len(self.records)}")
             print("="*80 + "\n")
@@ -2392,6 +2392,7 @@ class RegenCSVService:
           - дедушка-папка не является коллекционной папкой (не в collection_keywords)
         """
         from pathlib import Path as _P
+
         from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES
 
         # Нормализованные ключи author_folder_cache (lowercase paths)
@@ -3345,8 +3346,8 @@ class RegenCSVService:
         # и series_number пустой — такую серию не принимаем.
         # Цель: отсечь артефакты metadata вроде «The Pact - ru (версии)».
         _meta_singleton_count = 0
-        from collections import defaultdict as _dd
         import unicodedata as _ud_s
+        from collections import defaultdict as _dd
         def _sn_norm(s: str) -> str:
             return _ud_s.normalize('NFC', s or '').rstrip('. ').strip().lower().replace('ё', 'е')
         _author_series_cnt: dict = _dd(lambda: _dd(int))

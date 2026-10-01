@@ -7,16 +7,13 @@ import re
 import time
 import zipfile
 
-from book_tools.format.util import MAX_BOOK_FILE_SIZE
-
-from opds_catalog.sopds_config import sopds_cfg as config
-
 # from django.db import transaction
 from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
-from book_tools.format.util import strip_symbols
+from book_tools.format.util import MAX_BOOK_FILE_SIZE, strip_symbols
 from opds_catalog import inpx_parser, opdsdb
+from opds_catalog.sopds_config import sopds_cfg as config
 
 
 class opdsScanner:

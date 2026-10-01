@@ -39,10 +39,10 @@ Configuration:
     - female_names: Известные женские имена для определения порядка
 """
 
-import re
 import json
-from typing import Optional, Tuple, Set
+import re
 from pathlib import Path
+from typing import Optional, Set, Tuple
 
 
 class AuthorName:

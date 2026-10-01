@@ -11,8 +11,8 @@ roadmap.md, баг №38.
 """
 from pathlib import Path
 
-from fb2parser_core.passes.pass1_read_files import BookRecord
 from fb2parser_core.fb2_compiler import CompilationBook, FB2CompilerService
+from fb2parser_core.passes.pass1_read_files import BookRecord
 
 _OPENING = "Общий пролог романа, слово в слово одинаковый у обоих изданий. " * 40
 

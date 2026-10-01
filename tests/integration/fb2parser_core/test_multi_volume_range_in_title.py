@@ -9,8 +9,8 @@ volume_number()` захватывали только ПЕРВУЮ римскую
 показывал «т. 3-6.7» (искажённая дробь на стыке случайного совпадения
 позиции файла и первой цифры диапазона) вместо честного «т. 3-8».
 """
-from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_core.fb2_compiler import FB2CompilerService
+from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_web.fb2parser_bridge import _config_path
 
 _FB2 = """<?xml version="1.0" encoding="utf-8"?>

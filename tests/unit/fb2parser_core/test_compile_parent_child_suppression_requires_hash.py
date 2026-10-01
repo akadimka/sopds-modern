@@ -22,8 +22,8 @@ child) — docs/quality-roadmap.md, баг №109.
 """
 from pathlib import Path
 
-from fb2parser_core.passes.pass1_read_files import BookRecord
 from fb2parser_core.fb2_compiler import FB2CompilerService
+from fb2parser_core.passes.pass1_read_files import BookRecord
 
 _STUB_FB2 = """<?xml version="1.0" encoding="utf-8"?>
 <FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">

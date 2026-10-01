@@ -14,7 +14,13 @@ from lxml.etree import _Element
 
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.fb2sax import fb2parser
-from book_tools.format.util import MAX_COVER_SIZE, ZipMemberTooLarge, read_zip_member, safe_xml_parser, strip_symbols
+from book_tools.format.util import (
+    MAX_COVER_SIZE,
+    ZipMemberTooLarge,
+    read_zip_member,
+    safe_xml_parser,
+    strip_symbols,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -19,8 +19,8 @@ golden-снапшот тест — прогон полной фикстур-би
 prebuild_author_cache()).
 """
 from fb2parser_core.name_normalizer import AuthorName
-from fb2parser_web.fb2parser_bridge import _config_path
 from fb2parser_core.settings_manager import SettingsManager
+from fb2parser_web.fb2parser_bridge import _config_path
 
 
 def setup_module(module):

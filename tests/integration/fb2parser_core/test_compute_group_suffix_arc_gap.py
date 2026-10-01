@@ -18,7 +18,11 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from fb2parser_core.fb2_compiler import CompilationBook, CompilationGroup, FB2CompilerService
+from fb2parser_core.fb2_compiler import (
+    CompilationBook,
+    CompilationGroup,
+    FB2CompilerService,
+)
 
 
 def _book(path, sort_key, volume_label, sort_source="subseries_number"):

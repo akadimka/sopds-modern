@@ -21,8 +21,8 @@ from lxml import etree
 
 from book_tools.format.epub import EPub
 from book_tools.format.fb2 import FB2 as LegacyFB2
-from book_tools.format.parsers import EpubParser
 from book_tools.format.parsers import FB2 as ParsersFB2
+from book_tools.format.parsers import EpubParser
 from book_tools.format.util import safe_xml_parser
 
 ENTITY_MARKER = "INTERNAL-SUBSTITUTED-TEXT"

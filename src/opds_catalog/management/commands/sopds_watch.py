@@ -94,8 +94,9 @@ class Command(BaseCommand):
     help = "Real-time incremental library watcher (inotify) — replaces periodic full scans."
 
     def handle(self, *args, **options):
-        from opds_catalog.sopdscan import opdsScanner
         from watchdog.observers import Observer
+
+        from opds_catalog.sopdscan import opdsScanner
 
         scanner = opdsScanner()
 

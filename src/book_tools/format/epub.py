@@ -9,8 +9,14 @@ from lxml import etree
 from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import MAX_COVER_SIZE, ZipMemberTooLarge, read_zip_member
-from book_tools.format.util import list_zip_file_infos, normalize_string, safe_xml_parser
+from book_tools.format.util import (
+    MAX_COVER_SIZE,
+    ZipMemberTooLarge,
+    list_zip_file_infos,
+    normalize_string,
+    read_zip_member,
+    safe_xml_parser,
+)
 
 
 class EPub(BookFile):

@@ -26,7 +26,7 @@ high/low), `pass3_series_normalize.py` (своя 6-уровневая шкала
 же цикла.
 """
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Sequence, Tuple
 
 # Тир 3 — папочная структура. Создана человеком вручную (или её явное
 # отсутствие подтверждено — "no_series_folder") — самый надёжный
@@ -160,7 +160,7 @@ def pick_winner(
     """
     best: Optional[Tuple[object, Optional[str]]] = None
     best_tier = -1
-    best_tie_key: object = None
+    best_tie_key: Any = None
     for value, source in candidates:
         if not value:
             continue

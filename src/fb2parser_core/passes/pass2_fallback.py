@@ -5,6 +5,7 @@ Detects collections when 3+ authors present and filename contains collection key
 
 import os
 from typing import List
+
 from ..settings_manager import SettingsManager
 
 

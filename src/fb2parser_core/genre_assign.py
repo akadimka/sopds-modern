@@ -7,14 +7,17 @@
 - Сохраняет изменения в файл
 """
 
-import threading
-import re
-import html
 import ctypes
+import html
 import os
-from pathlib import Path
-from typing import Optional, Callable, List, Dict
+import re
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Callable, Dict, List, Optional
+
+from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
+from .logger import Logger
 
 
 def _detect_optimal_workers(path: Path) -> int:
@@ -37,9 +40,6 @@ def _detect_optimal_workers(path: Path) -> int:
     except Exception:
         return 4
 
-from .logger import Logger
-
-from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
 
 
 class GenreAssignmentService:
@@ -95,7 +95,7 @@ class GenreAssignmentService:
             return 0
         
         self.logger.log(f"Папка сканирования: {folder_path_normalized}")
-        self.logger.log(f"Поиск файлов (рекурсивно)...")
+        self.logger.log("Поиск файлов (рекурсивно)...")
         
         # Найти все FB2 файлы (*.fb2 покрывает оба случая на Windows)
         fb2_files = list(folder.rglob('*.fb2')) + list(folder.rglob('*.FBZ'))
@@ -369,7 +369,7 @@ class GenreAssignmentService:
             # Обновляем XML-декларацию если кодировка изменилась
             if content_encoding.lower().replace('-', '').replace('_', '') in ('utf8', 'utf8sig'):
                 # Уже UTF-8: просто записываем с BOM если был
-                encoding_to_write = 'utf-8-sig' if has_bom else 'utf-8'
+                encoding_to_write: str = 'utf-8-sig' if has_bom else 'utf-8'
             else:
                 # Не-UTF-8 (например cp1251): обновить XML-декларацию и записать обратно
                 result_text = re.sub(
@@ -385,8 +385,8 @@ class GenreAssignmentService:
             # оригинальный файл останется целым вместо усечённого/битого.
             tmp_path = fb2_path.with_name(fb2_path.name + '.tmp')
             try:
-                with open(tmp_path, 'w', encoding=encoding_to_write, errors='replace') as f:
-                    f.write(result_text)
+                with open(tmp_path, 'w', encoding=encoding_to_write, errors='replace') as out:
+                    out.write(result_text)
                 os.replace(tmp_path, fb2_path)
             except Exception:
                 tmp_path.unlink(missing_ok=True)

@@ -24,8 +24,8 @@ arc-подсерий — и пропускала ВСЮ группу "Демон
 """
 from pathlib import Path
 
-from fb2parser_core.passes.pass1_read_files import BookRecord
 from fb2parser_core.fb2_compiler import FB2CompilerService
+from fb2parser_core.passes.pass1_read_files import BookRecord
 
 
 def _rec(path, title, series_number):

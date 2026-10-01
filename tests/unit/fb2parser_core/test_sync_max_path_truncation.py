@@ -11,7 +11,10 @@
 """
 from pathlib import Path
 
-from fb2parser_core.synchronization import SynchronizationService, _shorten_path_component
+from fb2parser_core.synchronization import (
+    SynchronizationService,
+    _shorten_path_component,
+)
 
 
 def _sync():

@@ -8,6 +8,7 @@ Handles logging of actions and errors.
 from collections import deque
 from datetime import datetime
 
+
 class Logger:
     """
     Simple in-memory logger (capped at 10,000 entries to limit memory use).

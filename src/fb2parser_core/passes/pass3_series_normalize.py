@@ -6,14 +6,11 @@ PASS 3 для СЕРИЙ: Нормализация названий серий.
 import re
 from typing import List
 
-from ..series_normalizer import _nfc_lower_yo
-
-from .pass1_read_files import BookRecord
-
 from ..evidence import pick_winner, series_source_rank
-
 from ..logger import Logger
+from ..series_normalizer import _nfc_lower_yo
 from ..settings_manager import SettingsManager
+from .pass1_read_files import BookRecord
 
 
 class Pass3SeriesNormalize:

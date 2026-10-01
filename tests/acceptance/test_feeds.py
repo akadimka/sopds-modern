@@ -1,12 +1,12 @@
 from io import BytesIO
 
 import pytest
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from lxml import etree
 
 from opds_catalog import opdsdb, settings
+from opds_catalog.sopds_config import sopds_cfg as config
 from tests.helpers import (
     opds_acquisition_links,
     opds_acquisition_or_navigation_feed,

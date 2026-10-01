@@ -13,22 +13,22 @@ Handles:
 - Progress reporting and statistics
 """
 
-import os
-import re
-import sqlite3
-import shutil
 import hashlib
 import html as _html_mod
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Tuple, Optional, Callable
+import os
+import re
+import shutil
+import sqlite3
 from collections import Counter, defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .settings_manager import SettingsManager
+from .fb2_utils import has_fb2_files as _has_fb2_util
+from .fb2_utils import read_fb2_bytes, write_fb2_bytes
 from .logger import Logger
 from .regen_csv import RegenCSVService
-from .fb2_utils import read_fb2_bytes, write_fb2_bytes, has_fb2_files as _has_fb2_util
-
+from .settings_manager import SettingsManager
 
 # Символы, недопустимые в имени файла/папки на Windows.
 _ILLEGAL_PATH_CHARS_RE = re.compile(r'[<>:"/\\|?*]')
@@ -135,7 +135,8 @@ class SynchronizationService:
         self.log_callback = None
         
         # Statistics tracking
-        self.stats = {
+        # Смешанные значения (счётчики, списки заметок, множества путей).
+        self.stats: Dict[str, Any] = {
             'files_moved': 0,
             'duplicates_found': 0,
             'duplicates_deleted': 0,
@@ -240,7 +241,7 @@ class SynchronizationService:
                 
                 if progress_callback:
                     progress_callback(len(deleted_ids), len(deleted_ids), 
-                                    f"Удаление orphaned записей...")
+                                    "Удаление orphaned записей...")
                 
                 self._log(f"Удалено orphaned записей: {len(deleted_ids)}")
                 conn.commit()
@@ -666,10 +667,10 @@ class SynchronizationService:
                     file_to_delete = self.last_scan_path / record.file_path
                     if file_to_delete.exists():
                         os.unlink(str(file_to_delete))
-                        self._log(f"       ✓ Удален")
+                        self._log("       ✓ Удален")
                         self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
                     else:
-                        self._log(f"       ⚠️  Файл не найден для удаления")
+                        self._log("       ⚠️  Файл не найден для удаления")
                 except Exception as e:
                     self._log(f"       ✗ Ошибка при удалении: {str(e)}")
                     self.stats['errors'] += 1
@@ -762,8 +763,8 @@ class SynchronizationService:
             # Record as existing for duplicate detection in this batch
             existing_entries.add(dup_key)
 
-        self._log(f"")
-        self._log(f"РЕЗУЛЬТАТЫ АНАЛИЗА:")
+        self._log("")
+        self._log("РЕЗУЛЬТАТЫ АНАЛИЗА:")
         self._log(f"  Новые файлы: {new_files_count}")
         self._log(f"  Дубликаты: {duplicate_files_count}")
         self._log(f"  Требуют ручной сверки: {len(reconciliation_notes)}")
@@ -1407,10 +1408,10 @@ class SynchronizationService:
                     file_to_delete = self.last_scan_path / record.file_path
                     if file_to_delete.exists():
                         os.unlink(str(file_to_delete))
-                        self._log(f"       ✓ Успешно удален")
+                        self._log("       ✓ Успешно удален")
                         self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
                     else:
-                        self._log(f"       ⚠️  Файл не найден")
+                        self._log("       ⚠️  Файл не найден")
                 except Exception as e:
                     self._log(f"       ✗ Ошибка при удалении: {str(e)}")
                     self.stats['errors'] += 1
@@ -1489,7 +1490,7 @@ class SynchronizationService:
                 if source_file.exists():
                     self._log(f"  → Перемещение: {source_file.name}")
                     shutil.move(str(source_file), str(target_file))
-                    self._log(f"  ✓ Успешно перемещён")
+                    self._log("  ✓ Успешно перемещён")
                     self.stats['files_moved'] += 1
                     self.stats['touched_author_dirs'].add(str(self.library_path / genre / author))
 
@@ -1636,7 +1637,7 @@ class SynchronizationService:
             inserted_count = len(rows_to_insert) - self.stats.get('errors', 0)
             self._log(f"Коммит базы данных... ({inserted_count} записей)")
             conn.commit()
-            self._log(f"Коммит завершён успешно")
+            self._log("Коммит завершён успешно")
             self._log(f"Записано в БД: {inserted_count} записей")
             
         except Exception as e:

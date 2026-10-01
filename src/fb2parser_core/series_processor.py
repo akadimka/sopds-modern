@@ -14,12 +14,11 @@
 `apply_series_consensus()` (используется `passes/pass4_consensus.py`).
 """
 
-from typing import List
 from collections import defaultdict
+from typing import List
 
+from .series_normalizer import SeriesNormalizer, _nfc_lower_yo
 from .settings_manager import SettingsManager
-from .series_normalizer import SeriesNormalizer
-from .series_normalizer import _nfc_lower_yo
 
 
 class SeriesProcessor:

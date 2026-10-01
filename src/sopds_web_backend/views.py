@@ -1,12 +1,17 @@
 import logging
 import threading
 from random import randint
+from typing import Any
 
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
+from django.http import (
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotAllowed,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
@@ -16,6 +21,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
 
+from fb2parser_web.job_state import JobState
 from opds_catalog.models import (
     Author,
     Book,
@@ -35,8 +41,8 @@ from opds_catalog.services import (
     series_services,
 )
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
+from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.utils import to_int
-from fb2parser_web.job_state import JobState
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +53,11 @@ sopds_scan_job = JobState("sopds:scan", {"running": False, "done": False, "error
 def _run_sopds_scan():
     import logging
     import traceback as _tb
-    from opds_catalog.sopdscan import opdsScanner
-    from opds_catalog.sopds_config import sopds_cfg as _cfg
+
     from django import db
+
+    from opds_catalog.sopds_config import sopds_cfg as _cfg
+    from opds_catalog.sopdscan import opdsScanner
     db.connections.close_all()
     root = _cfg.SOPDS_ROOT_LIB
     sopds_scan_job.update(running=True, done=False, error=None,
@@ -454,7 +462,7 @@ def BooksView(request):
     args["items"] = items
     args["current"] = "book"
     args["lang_code"] = lang_code
-    crumbs = [{"label": _("Books"), "url": book_url}]
+    crumbs: list[dict[str, Any]] = [{"label": _("Books"), "url": book_url}]
     if chars:
         crumbs.append({"label": lang_menu[lang_code], "url": f"{book_url}?lang={lang_code}"})
         crumbs.append({"label": chars, "url": ""})
@@ -489,7 +497,7 @@ def AuthorsView(request):
     args["items"] = items
     args["current"] = "author"
     args["lang_code"] = lang_code
-    crumbs = [{"label": _("Authors"), "url": author_url}]
+    crumbs: list[dict[str, Any]] = [{"label": _("Authors"), "url": author_url}]
     if chars:
         crumbs.append({"label": lang_menu[lang_code], "url": f"{author_url}?lang={lang_code}"})
         crumbs.append({"label": chars, "url": ""})
@@ -521,7 +529,7 @@ def SeriesView(request):
     args["current"] = "series"
     args["lang_code"] = lang_code
     series_url = reverse("web:series")
-    crumbs = [{"label": _("Series"), "url": f"{series_url}?lang=0"}]
+    crumbs: list[dict[str, Any]] = [{"label": _("Series"), "url": f"{series_url}?lang=0"}]
     if chars:
         crumbs.append({"label": lang_menu[lang_code], "url": f"{series_url}?lang={lang_code}"})
         crumbs.append({"label": chars, "url": ""})
@@ -664,8 +672,9 @@ _EXEC_FIELDS = ('fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir')
 
 
 def _exec_field_error(user, field, value):
-    from opds_catalog.converters import converter_path_error
     import os
+
+    from opds_catalog.converters import converter_path_error
     if not user.is_superuser:
         return _("Only a superuser can change converter paths and the temp directory.")
     if field == 'temp_dir':
@@ -684,6 +693,7 @@ def _exec_field_error(user, field, value):
 @require_http_methods(["GET", "POST"])
 def sopds_settings(request):
     import os
+
     from fb2parser_core.settings_manager import SettingsManager
     _config_path = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json")
@@ -783,7 +793,7 @@ def hello(request):
     from django.db.models import Count
     from django.db.models.functions import TruncDate
 
-    args = {}
+    args: dict[str, Any] = {}
     args["breadcrumbs"] = []
     args["stats"] = {
         "allbooks":   Book.objects.count(),
@@ -983,7 +993,12 @@ def ratings_restart_cycle(request, source):
     одного не трогает данные другого."""
     if source not in ("samlib", "authortoday", "fantlab", "litmarket"):
         return HttpResponse("unknown source", status=404)
-    from opds_catalog.models import AuthorTodayRating, FantlabRating, LitmarketRating, SamlibRating
+    from opds_catalog.models import (
+        AuthorTodayRating,
+        FantlabRating,
+        LitmarketRating,
+        SamlibRating,
+    )
     from opds_catalog.ratings_fetchers import wake_or_start
 
     _MODELS = {
@@ -1004,8 +1019,9 @@ def ratings_restart_cycle(request, source):
 
 @sopds_login(url="web:login")
 def book_card(request, book_id):
-    from opds_catalog.models import Book
     from django.http import Http404
+
+    from opds_catalog.models import Book
     try:
         book = Book.objects.select_related(
             "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
@@ -1087,6 +1103,7 @@ def handler403(request, args):
 @require_http_methods(["GET", "POST"])
 def user_profile(request):
     from django.contrib.auth import update_session_auth_hash
+
     from sopds_web_backend.models import UserProfile
 
     user = request.user

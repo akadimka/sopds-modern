@@ -77,6 +77,9 @@ warn_unused_configs = true
 warn_return_any = false
 ignore_missing_imports = true
 mypy_path = "src/"
+# src/convert без __init__.py: иначе mypy видит fb2_to_html под двумя именами
+# ("fb2_to_html" и "convert.fb2_to_html") и останавливается.
+explicit_package_bases = true
 check_untyped_defs = true
 # follow_imports = "skip" — убрано, mypy теперь видит типы из импортов
 no_implicit_optional = true
@@ -97,8 +100,15 @@ disable_error_code = [
     "index",
 ]
 
+[[tool.mypy.overrides]]
+# Нет stub-пакета (types-polib не в зависимостях).
+module = ["polib"]
+ignore_missing_imports = true
+
 [tool.ruff]
 line-length = 88
+# Миграции генерирует Django — не правим их вручную.
+extend-exclude = ["src/*/migrations/*"]
 
 [tool.ruff.format]
 docstring-code-format = true

@@ -9,7 +9,10 @@ import pytest
 from django.test import RequestFactory
 
 from fb2parser_web.views import (
-    genre_assignment_times, genre_assignments, sync_genre_conflict_resolve, sync_job,
+    genre_assignment_times,
+    genre_assignments,
+    sync_genre_conflict_resolve,
+    sync_job,
 )
 
 _FB2 = """<?xml version="1.0" encoding="utf-8"?>

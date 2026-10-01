@@ -19,9 +19,9 @@ Example:
   Match block 0 (filename) to block 0 (pattern) → "Янковский Дмитрий" is Author
 """
 
-from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass

@@ -25,17 +25,20 @@ PASS 2 для СЕРИЙ: Извлечение серий из имён файл
 import re
 import unicodedata
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
-
+from ..block_level_pattern_matcher import BlockLevelPatternMatcher
 from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
 from ..evidence import folder_has_signal as _folder_has_signal_fn
 from ..evidence import log_decision
-
+from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
+from ..logger import Logger
+from ..name_normalizer import AuthorName
+from ..pattern_converter import compile_patterns
 from ..roman_numerals import roman_to_int as _roman_to_int
-
 from ..series_normalizer import _nfc_lower_yo
+from ..settings_manager import SettingsManager
+from .pass1_read_files import BookRecord
 
 
 def _norm_s(s: str) -> str:
@@ -115,17 +118,6 @@ def _author_matches_folder(proposed_author: str, folder_part: str) -> bool:
 
     return True
 
-from .pass1_read_files import BookRecord
-
-from ..logger import Logger
-
-from ..settings_manager import SettingsManager
-
-from ..name_normalizer import AuthorName
-
-from ..pattern_converter import compile_patterns
-
-from ..block_level_pattern_matcher import BlockLevelPatternMatcher
 
 
 class BlockLevelPatternSelector:
@@ -138,7 +130,7 @@ class BlockLevelPatternSelector:
         # Извлекаем содержимое скобок
         bracket_match = re.search(r'\(([^)]+)\)\s*$', filename)
         
-        parts = {
+        parts: Dict[str, Any] = {
             'filename': filename,
             'has_brackets': bool(bracket_match),
             'content_in_brackets': bracket_match.group(1).strip() if bracket_match else None,
@@ -1082,7 +1074,8 @@ class Pass2SeriesFilename:
                     # точному имени файла ("Максим Юрьев N. ...", "Мент в законе
                     # N"). Обрезаем непарную пунктуацию по краям каждого токена
                     # ПЕРЕД сравнением — это не меняет обычные, "чистые" слова.
-                    _strip_punct = lambda w: re.sub(r'^[^\w]+|[^\w]+$', '', w, flags=re.UNICODE)
+                    def _strip_punct(w):
+                        return re.sub(r'^[^\w]+|[^\w]+$', '', w, flags=re.UNICODE)
                     # Check if ANY word in the folder (>2 chars) matches an author word.
                     # This covers "Таннер А" where the FIRST word "Таннер" is the surname,
                     # not just the last word (the old check only caught endings like "Куанг").
@@ -2135,7 +2128,8 @@ class Pass2SeriesFilename:
 
         def _br_series_match(prefix_raw: str, proposed: str) -> bool:
             """Prefix ≈ proposed_series root (нечувствительно к знакам и регистру)."""
-            _n = lambda s: re.sub(r'[\W_]+', ' ', _nfc_lower_yo(s)).strip()
+            def _n(s):
+                return re.sub(r'[\W_]+', ' ', _nfc_lower_yo(s)).strip()
             p = _n(prefix_raw)
             root = _n(proposed.split('\\')[0])
             root = re.sub(r'\s*\d+\s*$', '', root).strip()  # убираем хвостовые цифры
@@ -2286,7 +2280,8 @@ class Pass2SeriesFilename:
             # признак несовпадения с метадатой (иначе ложно перезаписывали
             # verного series_number с source='metadata' на 'filename_series_root'
             # с зубчатым «08» только из-за padding).
-            _norm_num = lambda s: '-'.join(str(int(p)) for p in s.split('-'))
+            def _norm_num(s):
+                return '-'.join(str(int(p)) for p in s.split('-'))
             fn_val2_norm = _norm_num(fn_val2)
             if record.series_number and _norm_num(record.series_number) == fn_val2_norm:
                 continue  # уже верное значение
@@ -2451,7 +2446,8 @@ class Pass2SeriesFilename:
             record.series_number_source = 'filename_abbrev_prefix'
 
         # Правило 7: «Пролог» без series_number → sn=0, если в серии нет тома 0.
-        _norm6 = lambda s: _nfc_lower_yo(s).strip()
+        def _norm6(s):
+            return _nfc_lower_yo(s).strip()
         _has_zero: set = set()
         for rec in records:
             if (_norm6(rec.series_number or '') == '0'
@@ -2628,7 +2624,8 @@ class Pass2SeriesFilename:
         from collections import defaultdict
 
         _TOM_RE = _TOM_WORD_RE
-        _norm = lambda s: re.sub(r'\s+', ' ', re.sub(r'[.,:;!?]+', ' ', unicodedata.normalize('NFC', s).lower().replace('ё', 'е'))).strip()
+        def _norm(s):
+            return re.sub(r'\s+', ' ', re.sub(r'[.,:;!?]+', ' ', unicodedata.normalize('NFC', s).lower().replace('ё', 'е'))).strip()
 
         # Regex для извлечения числа из стема файла когда series_number пуст.
         # Ищем паттерн «СЛОВО N.» или «СЛОВО N » в имени файла.

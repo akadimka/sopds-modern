@@ -5,16 +5,6 @@ import zipfile
 from io import BytesIO
 from typing import Callable, Optional
 
-def _parse_series_no(value) -> int:
-    """Convert series index to int, tolerating '9.0', '1-3', None, etc."""
-    if not value:
-        return 0
-    s = str(value).strip()
-    # Take only the leading numeric part (handles '1-3' → 1, '9.0' → 9)
-    m = re.match(r'^(\d+)', s)
-    return int(m.group(1)) if m else 0
-
-
 from .exceptions import (
     EbookParserException,
     EpubStructureException,
@@ -31,6 +21,18 @@ from .format.parsers import FB2
 from .format.util import MAX_FB2_XML_SIZE, ZipMemberTooLarge, read_zip_member
 from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
+
+
+def _parse_series_no(value) -> int:
+    """Convert series index to int, tolerating '9.0', '1-3', None, etc."""
+    if not value:
+        return 0
+    s = str(value).strip()
+    # Take only the leading numeric part (handles '1-3' → 1, '9.0' → 9)
+    m = re.match(r'^(\d+)', s)
+    return int(m.group(1)) if m else 0
+
+
 
 logger = logging.getLogger(__name__)
 

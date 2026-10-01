@@ -4,8 +4,8 @@ import sys
 from pathlib import Path
 from typing import Callable, Optional
 
-from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_core.fb2_compiler import FB2CompilerService
+from fb2parser_core.regen_csv import RegenCSVService
 
 
 def auto_compile_library(

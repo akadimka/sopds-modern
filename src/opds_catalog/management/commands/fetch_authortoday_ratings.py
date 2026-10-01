@@ -26,7 +26,6 @@ from difflib import SequenceMatcher
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-
 _SEARCH_RESULT_RE = re.compile(
     r'<div class="book-title">\s*<a[^>]+href="(/work/\d+)"[^>]*>(.*?)</a>.*?'
     r'<div class="book-author"><a[^>]*>(.*?)</a></div>',
@@ -64,8 +63,12 @@ class Command(BaseCommand):
         from opds_catalog.sopds_config import sopds_cfg
         self.stdout.write("Запуск fetch_authortoday_ratings…")
 
+        from opds_catalog.ratings_fetchers import (
+            clear_stop,
+            sleep_or_stop,
+            stop_requested,
+        )
         from opds_catalog.ratings_progress import set_progress
-        from opds_catalog.ratings_fetchers import sleep_or_stop, stop_requested, clear_stop
 
         _SRC = "authortoday"
 

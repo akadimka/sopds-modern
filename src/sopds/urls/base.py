@@ -15,11 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.urls import include
-from django.contrib import admin
-from django.urls import path, reverse_lazy
-from django.views.generic import RedirectView
 from django.conf.urls.i18n import set_language
+from django.contrib import admin
+from django.urls import include, path, reverse_lazy
+from django.views.generic import RedirectView
+
 from sopds_web_backend import views as web_views
 
 urlpatterns = [

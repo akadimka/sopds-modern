@@ -8,7 +8,7 @@ Identifies:
 - Text before first bracket / after last bracket
 """
 
-from typing import Tuple, List
+from typing import List, Tuple
 
 
 def analyze_structure(folder_name: str) -> dict:

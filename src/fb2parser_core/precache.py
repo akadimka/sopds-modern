@@ -3,11 +3,11 @@ PRECACHE Phase: Build author folder hierarchy before PASS 1.
 """
 
 import re
-
 from pathlib import Path
-from typing import Dict, Tuple, Optional, Set
-from .passes.folder_author_parser import parse_author_from_folder_name
+from typing import Dict, Optional, Set, Tuple
+
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES
+from .passes.folder_author_parser import parse_author_from_folder_name
 
 _FIRST_NAME_RE = re.compile(r'<(?:fb:)?first-name>(.*?)</(?:fb:)?first-name>', re.DOTALL)
 _LAST_NAME_RE = re.compile(r'<(?:fb:)?last-name>(.*?)</(?:fb:)?last-name>', re.DOTALL)

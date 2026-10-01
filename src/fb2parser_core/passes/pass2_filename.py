@@ -11,8 +11,8 @@ Files with author_source="folder_dataset" are NEVER modified in this pass.
 This reflects the user's explicit folder structure which is the most reliable source.
 """
 
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 from ..name_normalizer import validate_author_name
 
@@ -799,7 +799,9 @@ class Pass2Filename:
                         sep = '; ' if '; ' in record.metadata_authors else ', '
                         meta_parts = [a.strip() for a in record.metadata_authors.split(sep) if a.strip()]
                         if len(meta_parts) == 2:
-                            from ..author_normalizer_extended import AuthorNormalizer as _AN
+                            from ..author_normalizer_extended import (
+                                AuthorNormalizer as _AN,
+                            )
                             _norm = _AN(self.settings)
                             normalized_pair = [
                                 _norm.normalize_format(a) for a in meta_parts
@@ -1005,8 +1007,9 @@ class Pass2Filename:
         
         try:
             # Import block-level matcher
-            from ..block_level_pattern_matcher import BlockLevelPatternMatcher
             import re
+
+            from ..block_level_pattern_matcher import BlockLevelPatternMatcher
             
             # CRITICAL: Remove blacklist markers from filename BEFORE pattern matching
             # "(СИ)" at the end creates an extra block that breaks pattern matching!
@@ -1085,7 +1088,7 @@ class Pass2Filename:
                     pass
             
             # Handle comma-separated authors (co-authorship)
-            if ', ' in author:
+            if author and ', ' in author:
                 authors = [a.strip() for a in author.split(', ')]
                 validated_authors = []
                 

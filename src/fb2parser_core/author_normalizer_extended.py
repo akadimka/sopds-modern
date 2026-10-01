@@ -13,12 +13,12 @@ Author Normalizer Extended - PASS 3, 5, 6 functions for CSV regeneration
 """
 
 import re
-from typing import List, Dict, Optional
 from dataclasses import dataclass
+from typing import Dict, List, Optional
 
-from .settings_manager import SettingsManager
 from .logger import Logger
 from .name_normalizer import AuthorName
+from .settings_manager import SettingsManager
 
 
 @dataclass
@@ -240,14 +240,14 @@ class AuthorNormalizer:
         # → используем всех авторов из metadata (восстановление потерянных соавторов)
         if metadata_authors_list and len(metadata_authors_list) > 1:
             # Проверить: есть ли слова из author в metadata авторах?
-            author_words = set(author.lower().split())
+            author_word_set = set(author.lower().split())
             metadata_normalized = []
             
             # Нормализовать всех авторов из metadata
             for meta_author in metadata_authors_list:
-                meta_words = set(meta_author.lower().split())
+                meta_word_set = set(meta_author.lower().split())
                 # Если есть пересечение слов - это тот же автор
-                if author_words & meta_words:  # intersection
+                if author_word_set & meta_word_set:  # intersection
                     # Используем всех авторов из metadata
                     for meta_author_full in metadata_authors_list:
                         meta_name_obj = AuthorName(meta_author_full)

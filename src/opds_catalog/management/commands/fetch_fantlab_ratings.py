@@ -22,7 +22,6 @@ from difflib import SequenceMatcher
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-
 _WORK_BLOCK_RE = re.compile(
     r'<div class="one">\s*<div class="rating">\s*<span[^>]*>(?:<big>)?([\d.]+)(?:</big>)?\s*\((\d+)\)</span>\s*</div>\s*'
     r'<div class="cover[^"]*">\s*<a href="(/work\d+)">.*?</a>\s*</div>\s*'
@@ -52,8 +51,12 @@ class Command(BaseCommand):
         from opds_catalog.sopds_config import sopds_cfg
         self.stdout.write("Запуск fetch_fantlab_ratings…")
 
+        from opds_catalog.ratings_fetchers import (
+            clear_stop,
+            sleep_or_stop,
+            stop_requested,
+        )
         from opds_catalog.ratings_progress import set_progress
-        from opds_catalog.ratings_fetchers import sleep_or_stop, stop_requested, clear_stop
 
         _SRC = "fantlab"
 

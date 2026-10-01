@@ -11,7 +11,11 @@ from lxml.etree import _ElementTree
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos, normalize_string, safe_xml_parser
+from book_tools.format.util import (
+    list_zip_file_infos,
+    normalize_string,
+    safe_xml_parser,
+)
 
 
 @dataclass

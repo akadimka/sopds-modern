@@ -1,8 +1,8 @@
+import re
 import xml.sax
 import xml.sax.handler
 from pathlib import Path
 from typing import List, Optional, Tuple
-import re
 
 from .settings_manager import SettingsManager
 

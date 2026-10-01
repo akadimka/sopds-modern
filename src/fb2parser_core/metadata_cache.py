@@ -1,9 +1,9 @@
-import sqlite3
-import json
 import hashlib
-from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+import json
+import sqlite3
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 _CONTENT_HASH_BYTES = 256 * 1024  # 256 KB — совпадает с gui_duplicate_finder._file_hash
 
@@ -132,7 +132,7 @@ class MetadataCache:
                 conn.commit()
                 if stored_version is not None:
                     # Не первый запуск — сообщаем о сбросе
-                    print(f"[CACHE] Парсер обновлён — кэш метаданных сброшен")
+                    print("[CACHE] Парсер обновлён — кэш метаданных сброшен")
 
     def get_cached_metadata(self, file_path: Path) -> Tuple[Optional[Dict[str, Any]], str]:
         """Get cached metadata if file hasn't changed.

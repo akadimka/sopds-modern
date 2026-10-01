@@ -6,12 +6,16 @@ from typing import Any
 from zipfile import ZipInfo
 
 import chardet
-from book_tools.format.util import MAX_BOOK_FILE_SIZE, ZipMemberTooLarge, read_zip_member
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.conf import settings
 
+from book_tools.format.util import (
+    MAX_BOOK_FILE_SIZE,
+    ZipMemberTooLarge,
+    read_zip_member,
+)
 from opds_catalog import opdsdb
 from opds_catalog.models import Book
+from opds_catalog.sopds_config import sopds_cfg as config
 
 logger = logging.getLogger(__name__)
 

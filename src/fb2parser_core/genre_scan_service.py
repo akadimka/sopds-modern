@@ -11,8 +11,8 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-from .fb2_utils import fb2_rglob
 from .fb2_author_extractor import FB2AuthorExtractor
+from .fb2_utils import fb2_rglob
 from .synchronization import _sanitize_path_component
 
 

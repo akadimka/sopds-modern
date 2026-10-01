@@ -26,8 +26,8 @@ from opds_catalog.inpx_parser import (
     sGenre,
     sLang,
     sLibId,
-    sSerNo,
     sSeries,
+    sSerNo,
     sSize,
     sTitle,
 )

@@ -2,10 +2,10 @@
 PASS 6: Expand author abbreviations to full names.
 """
 
-from typing import List, Dict
+from typing import Dict, List
+
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
-
 
 _APOSTROPHE_VARIANTS = str.maketrans({
     '‘': "'",  # LEFT SINGLE QUOTATION MARK

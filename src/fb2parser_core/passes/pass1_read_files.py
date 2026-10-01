@@ -2,14 +2,15 @@
 PASS 1: Read FB2 files and determine initial authors from folder hierarchy.
 """
 
+import concurrent.futures
+import multiprocessing
 import re
 import sys
-import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
-import concurrent.futures
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
+
 import tqdm
 
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES
@@ -24,9 +25,11 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
     Must be serializable and import all needed dependencies.
     """
     try:
-        from pathlib import Path
+        import os as _os
+
         # Ensure fb2parser_core is importable in subprocess
-        import sys as _sys, os as _os
+        import sys as _sys
+        from pathlib import Path
         _pkg = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
         if _pkg not in _sys.path:
             _sys.path.insert(0, _pkg)
@@ -419,7 +422,7 @@ class Pass1ReadFiles:
         max_workers = min(multiprocessing.cpu_count() or 4, max(1, total // 20))
         print(f"[PASS 1] Using {max_workers} processes for CPU-bound XML parsing...")
         if use_cache:
-            print(f"[PASS 1] Metadata caching enabled")
+            print("[PASS 1] Metadata caching enabled")
             # Каждый воркер создаёт свой MetadataCache() (по одному на файл —
             # см. process_file_worker), и его __init__ проверяет, не изменились
             # ли исходники парсера (_check_parser_version) — если да, чистит

@@ -4,9 +4,8 @@ import zipfile
 from enum import StrEnum
 from io import BytesIO
 
-from opds_catalog.sopds_config import sopds_cfg as config
-
 from book_tools.format.parsers import FB2, FB2sax
+from opds_catalog.sopds_config import sopds_cfg as config
 
 
 class SearchType(StrEnum):

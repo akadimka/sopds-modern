@@ -4,16 +4,13 @@ PASS 4: Apply consensus author to files in same folder.
 
 import unicodedata
 from pathlib import Path
-from typing import List, Dict
-
-
-from ..series_normalizer import _nfc_lower_yo
-
+from typing import Dict, List
 
 from ..author_normalizer_extended import AuthorNormalizer
-from ..settings_manager import SettingsManager
-from ..series_processor import SeriesProcessor
 from ..evidence import log_decision, series_source_rank
+from ..series_normalizer import _nfc_lower_yo
+from ..series_processor import SeriesProcessor
+from ..settings_manager import SettingsManager
 from .pass2_series_filename import _TOM_WORD_RE
 
 
@@ -751,7 +748,7 @@ class Pass4Consensus:
         # Предварительно строим индекс: (author, series) → множество series_number
         _series_sn_map: dict = {}
         for _r in records:
-            if _r.proposed_series and not ('\\' in (_r.proposed_series or '')):
+            if _r.proposed_series and '\\' not in (_r.proposed_series or ''):
                 _k = (_r.proposed_author or '', _r.proposed_series)
                 _series_sn_map.setdefault(_k, set()).add((_r.series_number or '').strip())
 
@@ -901,7 +898,8 @@ class Pass4Consensus:
             # совпадает с author_prefixes даже для настоящей папки-автора.
             # Обрезаем непарную пунктуацию по краям токена перед сравнением.
             import re as _re_strip
-            _strip_punct4 = lambda w: _re_strip.sub(r'^[^\w]+|[^\w]+$', '', w, flags=_re_strip.UNICODE)
+            def _strip_punct4(w):
+                return _re_strip.sub(r'^[^\w]+|[^\w]+$', '', w, flags=_re_strip.UNICODE)
 
             # Build 4-char prefix sets for fuzzy Russian declension matching
             # e.g. "Браст" → author prefix "Брас" matches series word "Браста"[:4] = "Брас"
@@ -1198,11 +1196,11 @@ class Pass4Consensus:
             # Фильтруем издательские импринты через blacklist
             _blacklist_words = self.settings.get_list('filename_blacklist') if self.settings else []
             _meta_l = meta.lower()
-            _bl_hit = any(
+            _bl_found = any(
                 re.search(r'(?<![а-яёa-z])' + re.escape(bl.lower().strip()) + r'(?![а-яёa-z])', _meta_l)
                 for bl in _blacklist_words if bl.strip()
             )
-            if _bl_hit:
+            if _bl_found:
                 log_decision(
                     record,
                     "PASS4 METADATA RESCUE: НЕ восстановил — "
@@ -1679,7 +1677,8 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Hierarchical series conversions (dot→backslash): {hier_count}")
 
-        from collections import defaultdict as _dd, Counter as _Cnt
+        from collections import Counter as _Cnt
+        from collections import defaultdict as _dd
         _series_author_groups: dict = _dd(list)
         for rec in records:
             if rec.proposed_series and rec.proposed_author:
@@ -1755,7 +1754,8 @@ class Pass4Consensus:
             # сравнением — реальный случай "СМЕРШ" (Барчук, Ларин): одна
             # запись несёт metadata_series="СМЕРШ [Барчук, Ларин]", другая
             # — голое "СМЕРШ", хотя это то же самое произведение.
-            _strip_bracket_suffix = lambda s: re.sub(r'\s*[\(\[][^\)\]]*[\)\]]\s*$', '', s).strip()
+            def _strip_bracket_suffix(s):
+                return re.sub(r'\s*[\(\[][^\)\]]*[\)\]]\s*$', '', s).strip()
             _meta_series_vals_fw = {_nfc_lower_yo(_strip_bracket_suffix(r.metadata_series.strip()))
                                      for r in _recs if r.metadata_series and r.metadata_series.strip()}
             if len(_meta_series_vals_fw) > 1:
@@ -1763,10 +1763,11 @@ class Pass4Consensus:
             _fd_recs = [r for r in _recs if (r.author_source or '').startswith('folder_dataset')]
             if not _fd_recs:
                 continue
-            _own_tokens_of = lambda r: {
-                t.lower().replace('ё', 'е')
-                for t in re.split(r'[\s,;]+', r.proposed_author or '') if len(t) > 2
-            }
+            def _own_tokens_of(r):
+                return {
+                            t.lower().replace('ё', 'е')
+                            for t in re.split(r'[\s,;]+', r.proposed_author or '') if len(t) > 2
+                        }
             # Кандидат КАЖДОЙ записи считаем один раз и переиспользуем и для
             # голосования, и для применения — иначе на шаге применения
             # (баг, найденный на реальной полной библиотеке) кандидат

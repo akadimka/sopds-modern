@@ -12,7 +12,10 @@ quality-roadmap.md, баг №42.
 """
 from fb2parser_core.logger import Logger
 from fb2parser_core.passes.pass1_read_files import BookRecord
-from fb2parser_core.passes.pass3_normalize import Pass3Normalize, _fix_mixed_script_homoglyphs
+from fb2parser_core.passes.pass3_normalize import (
+    Pass3Normalize,
+    _fix_mixed_script_homoglyphs,
+)
 
 
 def _rec(author):

@@ -41,7 +41,9 @@ class TestFolderAuthorParserBlacklistUnion:
         monkeypatch.setattr(
             settings_manager_module, "SettingsManager", _FakeSettingsManagerForBlacklist
         )
-        from fb2parser_core.passes.folder_author_parser import parse_author_from_folder_name
+        from fb2parser_core.passes.folder_author_parser import (
+            parse_author_from_folder_name,
+        )
 
         assert parse_author_from_folder_name("Цикл Иванова") == ""
         assert parse_author_from_folder_name("Архив Петрова") == ""
@@ -53,7 +55,9 @@ class TestFolderAuthorParserBlacklistUnion:
         monkeypatch.setattr(
             settings_manager_module, "SettingsManager", _FakeSettingsManagerForBlacklist
         )
-        from fb2parser_core.passes.folder_author_parser import parse_author_from_folder_name
+        from fb2parser_core.passes.folder_author_parser import (
+            parse_author_from_folder_name,
+        )
 
         assert parse_author_from_folder_name("Компиляция Иванова") == ""
 
@@ -61,7 +65,9 @@ class TestFolderAuthorParserBlacklistUnion:
         monkeypatch.setattr(
             settings_manager_module, "SettingsManager", _FakeSettingsManagerForBlacklist
         )
-        from fb2parser_core.passes.folder_author_parser import parse_author_from_folder_name
+        from fb2parser_core.passes.folder_author_parser import (
+            parse_author_from_folder_name,
+        )
 
         assert parse_author_from_folder_name("Иванов Иван") == "Иванов Иван"
 

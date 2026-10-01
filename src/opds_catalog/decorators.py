@@ -4,9 +4,10 @@ import base64
 import binascii
 from functools import wraps
 
-from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib import auth
 from django.http import HttpResponse
+
+from opds_catalog.sopds_config import sopds_cfg as config
 
 
 def sopds_auth_validate(view_function):

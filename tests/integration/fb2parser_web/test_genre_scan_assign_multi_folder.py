@@ -14,7 +14,11 @@ from pathlib import Path
 import pytest
 from django.test import RequestFactory
 
-from fb2parser_web.views import _run_genre_scan_thread, genre_scan_assign, genre_scan_job
+from fb2parser_web.views import (
+    _run_genre_scan_thread,
+    genre_scan_assign,
+    genre_scan_job,
+)
 
 _FB2_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 <FictionBook>
