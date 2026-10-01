@@ -6,8 +6,8 @@ from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
-from django.shortcuts import redirect, render
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -1125,6 +1125,30 @@ def user_profile(request):
 
 # ── Управление пользователями (только Admin) ──────────────────────────────────
 
+def _can_manage_user(actor, target):
+    """Admin (is_staff) управляет обычными пользователями и другими Admin,
+    но не суперпользователем — иначе любой Admin сбросил бы ему пароль
+    и получил полный доступ к /admin/."""
+    return actor.is_superuser or not target.is_superuser
+
+
+def _password_error(password, user):
+    """Текст ошибки AUTH_PASSWORD_VALIDATORS или None."""
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    try:
+        validate_password(password, user)
+    except ValidationError as e:
+        return " ".join(e.messages)
+    return None
+
+
+def _users_list_error(request, error):
+    from django.contrib.auth.models import User as DjangoUser
+    users = DjangoUser.objects.all().order_by("username")
+    return render(request, "sopds_users.html", {"users": users, "error": error}, status=422)
+
+
 @sopds_admin(url="web:login")
 @require_http_methods(["GET"])
 def users_list(request):
@@ -1145,9 +1169,10 @@ def user_create(request):
         error = _("Username and password are required.")
     elif DjangoUser.objects.filter(username=username).exists():
         error = _("User with this username already exists.")
+    else:
+        error = _password_error(password, DjangoUser(username=username))
     if error:
-        users = DjangoUser.objects.all().order_by("username")
-        return render(request, "sopds_users.html", {"users": users, "error": error}, status=422)
+        return _users_list_error(request, error)
     user = DjangoUser.objects.create_user(username=username, password=password)
     user.is_staff = (role == "admin")
     user.save()
@@ -1158,12 +1183,17 @@ def user_create(request):
 @require_http_methods(["POST"])
 def user_edit(request, user_id):
     from django.contrib.auth.models import User as DjangoUser
-    user = DjangoUser.objects.get(pk=user_id)
+    user = get_object_or_404(DjangoUser, pk=user_id)
+    if not _can_manage_user(request.user, user):
+        return HttpResponseForbidden()
     role = request.POST.get("role", "user")
     password = request.POST.get("password", "").strip()
-    user.is_staff = (role == "admin")
     if password:
+        error = _password_error(password, user)
+        if error:
+            return _users_list_error(request, error)
         user.set_password(password)
+    user.is_staff = (role == "admin")
     user.save()
     return redirect(reverse("web:users_list"))
 
@@ -1172,6 +1202,9 @@ def user_edit(request, user_id):
 @require_http_methods(["POST"])
 def user_delete(request, user_id):
     from django.contrib.auth.models import User as DjangoUser
-    if str(user_id) != str(request.user.pk):
-        DjangoUser.objects.filter(pk=user_id).delete()
+    user = get_object_or_404(DjangoUser, pk=user_id)
+    if not _can_manage_user(request.user, user):
+        return HttpResponseForbidden()
+    if user.pk != request.user.pk:
+        user.delete()
     return redirect(reverse("web:users_list"))

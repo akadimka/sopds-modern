@@ -38,6 +38,9 @@
         </td>
         <td>{% if u.is_active %}✓{% else %}✗{% endif %}</td>
         <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          {% if u.is_superuser and not request.user.is_superuser %}
+          <span style="color:var(--text-muted); font-size:0.82rem;">{% trans "Superuser: only another superuser can change it" %}</span>
+          {% else %}
           <!-- Редактировать роль/пароль -->
           <form method="post" action="{% url 'web:user_edit' u.pk %}" style="display:inline;">
             {% csrf_token %}
@@ -54,13 +57,14 @@
           <!-- Удалить (нельзя удалить себя) -->
           {% if u.pk != request.user.pk %}
           <form method="post" action="{% url 'web:user_delete' u.pk %}"
-                onsubmit="return confirm('{% trans "Delete user" %} «{{ u.username }}»?');"
+                onsubmit="return confirm('{% trans "Delete user" %} «{{ u.username|escapejs }}»?');"
                 style="display:inline;">
             {% csrf_token %}
             <button type="submit" class="button small alert" style="margin:0; padding:0.3rem 0.7rem;">
               {% trans "Delete" %}
             </button>
           </form>
+          {% endif %}
           {% endif %}
         </td>
       </tr>

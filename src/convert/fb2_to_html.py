@@ -17,6 +17,11 @@ XLINK_NS = "http://www.w3.org/1999/xlink"
 XML_NS = "http://www.w3.org/XML/1998/namespace"
 NS = {"fb": FB_NS, "xlink": XLINK_NS}
 
+# Схемы, которые допустимы во внешних ссылках книги. Всё остальное
+# (javascript:, data:, vbscript: …) выводится текстом без ссылки — FB2
+# приходит из недоверенного источника, а читалка открыта на домене приложения.
+_SAFE_LINK_RE = re.compile(r"^(?:https?:|mailto:)", re.IGNORECASE)
+
 
 def local_name(tag: str) -> str:
     return tag.split("}", 1)[-1]
@@ -160,7 +165,9 @@ def render_inline(elem, binaries, note_ids=None, note_backrefs=None, current_anc
                 )
             # Обычный якорь внутри документа — оставляем как есть
             return f'<a href="{html.escape(href)}">{text}{children}</a>{tail}'
-        return f'<a href="{html.escape(href)}">{text}{children}</a>{tail}'
+        if not _SAFE_LINK_RE.match(href.strip()):
+            return f"{text}{children}{tail}"
+        return f'<a href="{html.escape(href)}" rel="noopener noreferrer">{text}{children}</a>{tail}'
     if tag == "image":
         href = elem.attrib.get(f"{{{XLINK_NS}}}href", "")
         img_id = href.lstrip("#")

@@ -8,8 +8,9 @@
 </div>
 
 {% else %}
+{{ groups_books|json_script:"cg-groups-books" }}
 <script>
-window._cgGroupsBooks = {{ groups_books_json|safe }};
+window._cgGroupsBooks = JSON.parse(document.getElementById('cg-groups-books').textContent);
 </script>
 
 <!-- Тулбар -->

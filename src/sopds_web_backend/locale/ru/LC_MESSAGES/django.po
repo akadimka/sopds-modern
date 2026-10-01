@@ -814,3 +814,6 @@ msgstr "Ошибок"
 
 msgid "Error"
 msgstr "Ошибка"
+
+msgid "Superuser: only another superuser can change it"
+msgstr "Суперпользователь: изменить может только другой суперпользователь"

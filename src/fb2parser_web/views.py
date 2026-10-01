@@ -8,6 +8,7 @@ from opds_catalog.sopds_config import sopds_cfg as config
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.utils.html import escape
 from django.views.decorators.http import require_http_methods
 
 from opds_catalog import opdsdb
@@ -197,7 +198,7 @@ def scan_start(request):
     root = request.POST.get("root", config.SOPDS_ROOT_LIB or "").strip()
     if not root or not os.path.isdir(root):
         return HttpResponse(
-            f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {root}</div></div>'
+            f'<div id="scan-status"><div class="callout alert">❌ Папка не найдена: {escape(root)}</div></div>'
         )
     if not scan_job.try_start(root=root):
         return _render_status(scan_job.get())
@@ -666,7 +667,7 @@ def compress_start(request):
     if not library_path or not os.path.isdir(library_path):
         return HttpResponse(
             '<div id="compress-status"><div class="callout alert">'
-            f'❌ Папка библиотеки не найдена: {library_path}</div></div>'
+            f'❌ Папка библиотеки не найдена: {escape(library_path)}</div></div>'
         )
 
     compress_stop_flag.clear()
@@ -705,6 +706,10 @@ def browse_folders(request):
     """Возвращает HTML-список подпапок (и опционально файлов) для picker."""
     path = request.GET.get("path", "").strip()
     target_input = request.GET.get("target", "")
+    # target — id поля ввода; он подставляется в onclick="…('{{ target }}')",
+    # где HTML-экранирование не защищает JS-строку, поэтому только id-символы.
+    if not re.fullmatch(r"[A-Za-z0-9_-]*", target_input):
+        return HttpResponse(status=400)
     show_files = request.GET.get("show_files", "")       # непустое → показывать файлы
     ext_filter  = request.GET.get("ext", "").lower()     # ".csv" → только .csv файлы
 
@@ -772,7 +777,7 @@ def folder_tree(request):
     except PermissionError:
         return HttpResponse("<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ Нет доступа к папке</div>")
     except Exception as e:
-        return HttpResponse(f"<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ {e}</div>")
+        return HttpResponse(f"<div style='padding:0.5rem 1rem; color:#c0392b; font-size:0.83rem;'>⚠ {escape(str(e))}</div>")
 
     # Раньше здесь для КАЖДОЙ подпапки делался ещё один listdir (узнать,
     # показывать ли стрелку "развернуть" и не пустая ли папка целиком) — на
@@ -1058,7 +1063,7 @@ def main_scan_start(request):
 
     folder_paths, total, error = _resolve_scan_folders(request)
     if error:
-        return HttpResponse(f'<span style="color:#c0392b;">❌ {error}</span>')
+        return HttpResponse(f'<span style="color:#c0392b;">❌ {escape(error)}</span>')
 
     genre_scan_stop_flag.clear()
     folder_key = _genre_scan_folder_key(folder_paths)
@@ -1557,7 +1562,7 @@ def normalize_start(request):
         except Exception:
             pass
     if not folder or not os.path.isdir(folder):
-        return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {folder}</div></div>')
+        return HttpResponse(f'<div id="norm-status"><div class="callout alert">❌ Папка не найдена: {escape(folder)}</div></div>')
     from .fb2parser_bridge import get_normalization_settings
     get_normalization_settings().set_last_normalize_path(folder)
     norm_stop_flag.clear()
@@ -1634,7 +1639,6 @@ def normalize_table(request):
 
 
 @staff_member_required(login_url="/web/login/")
-@staff_member_required(login_url="/web/login/")
 def names_from_csv(request):
     """GET ?csv_path=... → список авторов с неизвестным полом из CSV-файла."""
     import re as _re, csv as _csv
@@ -1645,7 +1649,7 @@ def names_from_csv(request):
             '<div style="padding:1rem;color:#7f8c8d;">Укажите путь к CSV-файлу.</div>')
     if not os.path.isfile(csv_path):
         return HttpResponse(
-            f'<div style="padding:1rem;color:#c0392b;">❌ Файл не найден: {csv_path}</div>')
+            f'<div style="padding:1rem;color:#c0392b;">❌ Файл не найден: {escape(csv_path)}</div>')
 
     from fb2parser_core.settings_manager import SettingsManager
     from fb2parser_core.author_pipeline_service import guess_first_name
@@ -1684,7 +1688,7 @@ def names_from_csv(request):
                                  'file_path': file_path})
     except Exception as e:
         return HttpResponse(
-            f'<div style="padding:1rem;color:#c0392b;">❌ Ошибка чтения CSV: {e}</div>')
+            f'<div style="padding:1rem;color:#c0392b;">❌ Ошибка чтения CSV: {escape(str(e))}</div>')
 
     from django.template.loader import render_to_string
     html = render_to_string("fb2parser/names_list.html", {"rows": rows})
@@ -2599,7 +2603,7 @@ def compiler_scan(request):
     return render(request, "fb2parser/compiler_groups.html", {
         "groups": group_data,
         "total": len(groups),
-        "groups_books_json": _json.dumps(groups_books_js, ensure_ascii=False),
+        "groups_books": groups_books_js,
     })
 
 
@@ -3384,7 +3388,7 @@ def fb2parser_settings(request):
     ctx['generate_csv']       = sm.get_generate_csv()
     ctx['lists_meta']         = list(_SETTINGS_LISTS.items())
     ctx['first_list_key']     = list(_SETTINGS_LISTS.keys())[0]
-    ctx['lists_data_json']    = _json.dumps({k: sm.get_list(k) or [] for k in _SETTINGS_LISTS}, ensure_ascii=False)
+    ctx['lists_data']         = {k: sm.get_list(k) or [] for k in _SETTINGS_LISTS}
     ctx['conversions']        = sm.get_author_surname_conversions() or {}
     return render(request, "fb2parser/settings.html", ctx)
 

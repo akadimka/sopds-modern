@@ -120,6 +120,7 @@
 <div id="cv-msg" style="font-size:0.8rem; min-height:1.2em; margin-top:0.3rem;"></div>
 </div>
 
+{{ lists_data|json_script:"s-lists-data" }}
 <script>
 var _t = {
     listEmpty:     "{% trans 'List is empty.' %}",
@@ -141,7 +142,7 @@ var _t = {
         document.getElementById('s-pane-'+name).classList.add('active');
     };
 
-    var _listsData = {{ lists_data_json|safe }};
+    var _listsData = JSON.parse(document.getElementById('s-lists-data').textContent);
     var _listsMeta = {
         {% for key, desc in lists_meta %}'{{ key }}': '{{ desc|escapejs }}',{% endfor %}
     };

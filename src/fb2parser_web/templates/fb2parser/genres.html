@@ -316,14 +316,20 @@ const GENRE_DATA = {
 
 let _selectedGenre = null;
 
+// Коды и шаблоны приходят из FB2 (недоверенные): в разметку — только экранированными,
+// а в обработчик — через data-атрибут, не внутри JS-строки в onclick.
+function _escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function _genreListHtml(items, removeFn) {
     if (items.length === 0) {
         return '<div style="color:var(--text-muted); font-size:0.82rem; padding:0.2rem 0;">' + i18n_noAssociations + '</div>';
     }
     return '<ul class="no-bullet" style="font-size:0.82rem; margin:0;">' +
         items.map(a => '<li style="display:flex; justify-content:space-between; align-items:center; padding:0.15rem 0; border-bottom:1px solid var(--border);">' +
-            '<span style="font-family:monospace;">' + a + '</span>' +
-            '<button type="button" class="button alert" style="margin:0; padding:0 0.4rem; font-size:0.7rem;" onclick="' + removeFn + "('" + a.replace(/'/g, "\\'") + '\')">✕</button></li>').join('') +
+            '<span style="font-family:monospace;">' + _escHtml(a) + '</span>' +
+            '<button type="button" class="button alert" style="margin:0; padding:0 0.4rem; font-size:0.7rem;" data-val="' + _escHtml(a) + '" onclick="' + removeFn + '(this.dataset.val)">✕</button></li>').join('') +
         '</ul>';
 }
 
