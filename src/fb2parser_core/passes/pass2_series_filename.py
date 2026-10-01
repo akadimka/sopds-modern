@@ -43,10 +43,14 @@ except ImportError:
     from ..evidence import log_decision
 
 try:
+    from roman_numerals import roman_to_int as _roman_to_int
+except ImportError:
+    from ..roman_numerals import roman_to_int as _roman_to_int
+
+try:
     from series_normalizer import _nfc_lower_yo
 except ImportError:
-    def _nfc_lower_yo(s: str) -> str:  # type: ignore[misc]
-        return unicodedata.normalize('NFC', s).lower().replace('ё', 'е')
+    from ..series_normalizer import _nfc_lower_yo
 
 
 def _norm_s(s: str) -> str:
@@ -2377,19 +2381,6 @@ class Pass2SeriesFilename:
             re.IGNORECASE | re.UNICODE,
         )
 
-        def _roman_to_int_range(s: str):
-            s = s.upper().strip()
-            if not s:
-                return None
-            vals = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
-            result = 0
-            prev = 0
-            for ch in reversed(s):
-                v = vals[ch]
-                result += v if v >= prev else -v
-                prev = v
-            return result if result > 0 else None
-
         for record in records:
             if record.series_number:
                 continue  # уже есть — не трогаем
@@ -2399,8 +2390,8 @@ class Pass2SeriesFilename:
             mrr = _BARE_ROMAN_RANGE_RE.search(stem)
             if not mrr:
                 continue
-            lo_r = _roman_to_int_range(mrr.group(1))
-            hi_r = _roman_to_int_range(mrr.group(2))
+            lo_r = _roman_to_int(mrr.group(1))
+            hi_r = _roman_to_int(mrr.group(2))
             if lo_r is None or hi_r is None or lo_r >= hi_r:
                 continue
             record.series_number = f'{lo_r}-{hi_r}'
@@ -2463,19 +2454,6 @@ class Pass2SeriesFilename:
             r'(?=[IVXLCDM])(M{0,4}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))\b',
             re.IGNORECASE | re.UNICODE,
         )
-
-        def _roman_to_int(s: str):
-            s = s.upper().strip()
-            if not s:
-                return None
-            vals = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
-            result = 0
-            prev = 0
-            for ch in reversed(s):
-                v = vals[ch]
-                result += v if v >= prev else -v
-                prev = v
-            return result if result > 0 else None
 
         for record in records:
             if record.series_number:

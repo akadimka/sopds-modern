@@ -9,9 +9,7 @@ from typing import List
 try:
     from series_normalizer import _nfc_lower_yo
 except ImportError:
-    import unicodedata
-    def _nfc_lower_yo(s):
-        return unicodedata.normalize("NFC", s).lower().replace("ё", "е")
+    from ..series_normalizer import _nfc_lower_yo
 
 try:
     from BookRecord import BookRecord

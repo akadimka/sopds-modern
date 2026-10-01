@@ -25,12 +25,9 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
+from .roman_numerals import roman_to_int
 
-try:
-    from .series_normalizer import _nfc_lower_yo as _norm_key
-except ImportError:
-    def _norm_key(s: str) -> str:
-        return unicodedata.normalize('NFC', s).lower().replace('ё', 'е')
+from .series_normalizer import _nfc_lower_yo as _norm_key
 
 try:
     from .passes.pass1_read_files import BookRecord
@@ -2172,22 +2169,7 @@ class FB2CompilerService:
         re.IGNORECASE | re.UNICODE,
     )
 
-    @staticmethod
-    def _roman_to_int(s: str) -> Optional[int]:
-        """Конвертировать римскую цифру в целое. Возвращает None если s пустая или невалидна."""
-        s = s.upper().strip()
-        if not s:
-            return None
-        vals = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
-        result = 0
-        prev = 0
-        for ch in reversed(s):
-            if ch not in vals:
-                return None
-            v = vals[ch]
-            result += v if v >= prev else -v
-            prev = v
-        return result if result > 0 else None
+    _roman_to_int = staticmethod(roman_to_int)
 
     @classmethod
     def _extract_volume_part(cls, title: str, stem: str) -> Optional[Tuple[int, int]]:

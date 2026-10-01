@@ -5,14 +5,6 @@
 """
 
 import re
-import unicodedata
-
-
-def _nfc_lower_yo(s: str) -> str:
-    """
-    NFC-нормализация + lower + ё→е.
-    """
-    return unicodedata.normalize('NFC', s).lower().replace('\u0451', '\u0435')
 
 
 def _bl_matches(bl: str, text: str, multi_word_series: bool = False) -> bool:
