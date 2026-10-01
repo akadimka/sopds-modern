@@ -64,9 +64,6 @@ omit = [
     "manage.py",
     "*/migrations/*",
     "*/sopds/*",
-    # Именно файл, не "*/fb2parse*": тот glob совпадал и с fb2parser_core/,
-    # fb2parser_web/ — ~30 тыс. строк выпадали из покрытия.
-    "*/opds_catalog/fb2parse.py",
     "*/pymobi/*",
 ]
 source = ["src"]

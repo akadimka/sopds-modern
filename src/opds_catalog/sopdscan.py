@@ -16,14 +16,11 @@ from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
 from book_tools.format.util import strip_symbols
-from opds_catalog import fb2parse, inpx_parser, opdsdb
+from opds_catalog import inpx_parser, opdsdb
 
 
 class opdsScanner:
     def __init__(self, logger=None):
-        self.fb2parser = None
-        self.init_parser()
-
         if logger:
             self.logger = logger
         else:
@@ -44,10 +41,6 @@ class opdsScanner:
         self.bad_archives = 0
         self.bad_books = 0
         self.books_in_archives = 0
-
-    def init_parser(self) -> None:
-        # FIXME: Указан фиксированный парсер
-        self.fb2parser = fb2parse.fb2parser(False)
 
     def log_options(self) -> None:
         """Вывод в лог параметров контекста запуска сканера"""
