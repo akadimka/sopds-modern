@@ -180,7 +180,6 @@ class Command(BaseCommand):
     def check_settings(self):
         if connection.connection and not connection.is_usable():
             del connections._connections.default
-        settings.constance_update_all()
         if not (
             self.SCAN_SHED_MIN == config.SOPDS_SCAN_SHED_MIN
             and self.SCAN_SHED_HOUR == config.SOPDS_SCAN_SHED_HOUR

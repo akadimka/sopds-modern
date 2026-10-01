@@ -250,11 +250,6 @@ def SearchBooksView(request):
             op["number"],
         )
 
-        if args["searchtype"] == "u":
-            args["cache_t"] = 0
-        else:
-            args["cache_t"] = config.SOPDS_CACHE_TIME
-
     return render(request, "sopds_books.html", args)
 
 
@@ -318,7 +313,6 @@ def SearchSeriesView(request):
             {"label": searchterms, "url": ""},
         ]
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
-        args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_series.html", args)
 
@@ -382,7 +376,6 @@ def SearchAuthorsView(request):
             {"label": searchterms, "url": ""},
         ]
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
-        args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_authors.html", args)
 
@@ -434,7 +427,6 @@ def CatalogsView(request):
     args["breadcrumbs_cat"] = breadcrumbs_list
     args["breadcrumbs"] = [{"label": _("Catalogs"), "url": catalog_url if cat_id else ""}]
     args["cache_id"] = "%s:%s:%s" % (args["current"], cat_id, op["number"])
-    args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_catalogs.html", args)
 
@@ -470,7 +462,6 @@ def BooksView(request):
         crumbs.append({"label": lang_menu[lang_code], "url": ""})
     args["breadcrumbs"] = crumbs
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_selectbook.html", args)
 
@@ -506,7 +497,6 @@ def AuthorsView(request):
         crumbs.append({"label": lang_menu[lang_code], "url": ""})
     args["breadcrumbs"] = crumbs
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_selectauthor.html", args)
 
@@ -539,7 +529,6 @@ def SeriesView(request):
         crumbs.append({"label": lang_menu[lang_code], "url": ""})
     args["breadcrumbs"] = crumbs
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_selectseries.html", args)
 
@@ -576,7 +565,6 @@ def GenresView(request):
     args["current"] = "genre"
     args["parent_id"] = section_id
     args["cache_id"] = "%s:%s" % (args["current"], section_id)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_selectgenres.html", args)
 

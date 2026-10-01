@@ -99,7 +99,6 @@ def Download(request, book_id, zip_flag):
 
 
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
-# @cache_page(config.SOPDS_CACHE_TIME)
 # Баг №92: раньше без @sopds_auth_validate — обложка отдавалась без
 # авторизации даже при включённом SOPDS_AUTH, в отличие от Download.
 @sopds_auth_validate

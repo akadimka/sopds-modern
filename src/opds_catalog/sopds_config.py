@@ -49,15 +49,14 @@ _DEFAULTS: dict = {
     'litmarket_rating': False,
 }
 
-# Маппинг SOPDS_KEY -> json_key (None = мёртвая константа, возвращаем 0)
-_KEY_MAP: dict[str, str | None] = {
+# Маппинг SOPDS_KEY -> json_key
+_KEY_MAP: dict[str, str] = {
     'SOPDS_AUTH': 'auth',
     'SOPDS_MAXITEMS': 'maxitems',
     'SOPDS_ALPHABET_MENU': 'alphabet_menu',
     'SOPDS_SPLITITEMS': 'splititems',
     'SOPDS_DOUBLES_HIDE': 'doubles_hide',
     'SOPDS_BOOK_EXTENSIONS': 'book_extensions',
-    'SOPDS_CACHE_TIME': None,   # мёртвая константа
     'SOPDS_TITLE_AS_FILENAME': 'title_as_filename',
     'SOPDS_FB2TOEPUB': 'fb2toepub',
     'SOPDS_FB2TOMOBI': 'fb2tomobi',
@@ -153,10 +152,6 @@ class SopdsConfig:
         if name == 'SOPDS_ROOT_LIB':
             sm = _get_sm()
             return sm.settings.get('sopds', {}).get('root_lib', '')
-
-        # Мёртвая константа
-        if name in _KEY_MAP and _KEY_MAP[name] is None:
-            return 0
 
         json_key = _KEY_MAP.get(name)
         if json_key is not None:

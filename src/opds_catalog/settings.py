@@ -33,10 +33,6 @@ else:
     LOGLEVEL = logging.NOTSET
 
 
-def constance_update_all():
-    pass
-
-
 # Переопределяем некоторые функции для SQLite, которые работают неправлено
 
 

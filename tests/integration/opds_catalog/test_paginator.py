@@ -115,9 +115,8 @@ class TestPaginatedBookContent:
         assert paginator["number"] == 3
         assert paginator["has_next"] is False
 
-    # Эти два теста подменяют модульный config напрямую, а не через
-    # @override_config: тот — от django-constance, которую заменил
-    # config.json-прокси sopds_cfg, и на sopds_cfg он не влияет.
+    # Эти два теста подменяют модульный config напрямую (SimpleNamespace) —
+    # нужны только два значения, без файла настроек.
     def test_page_zero_returns_first_page(self, catalog, monkeypatch):
         """page=0 (так шлёт форма поиска на главной) — первая страница, не EmptyPage."""
         monkeypatch.setattr(
@@ -188,12 +187,11 @@ class TestPaginatedBookContent:
         with CaptureQueriesContext(connection) as ctx:
             items, _ = book_services.paginated_book_content(qs, 1)
         assert len(items) > 1
-        # Фильтруем запросы constance + savepoints (SQLite)
+        # Фильтруем savepoints (SQLite)
         db_queries = [
             q
             for q in ctx.captured_queries
-            if "constance_constance" not in q["sql"]
-            and "SAVEPOINT" not in q["sql"]
+            if "SAVEPOINT" not in q["sql"]
             and "RELEASE" not in q["sql"]
         ]
         # COUNT(*) + основная страница + 3 prefetch (authors, genres, series)
@@ -235,9 +233,8 @@ class TestPaginatedCatalogContent:
         assert all(item["is_catalog"] == 0 for item in items)
 
     # Баг №101: маркер @pytest.mark.override_config(SOPDS_MAXITEMS=4) здесь
-    # был лишним (и конфликтует с pytest-плагином django-constance,
-    # падающим на отсутствующем redis-py) — paginated_catalog_content
-    # принимает pager_max_items прямым аргументом, конфиг вообще не читает.
+    # был лишним — paginated_catalog_content принимает pager_max_items
+    # прямым аргументом, конфиг вообще не читает.
     def test_mixed_catalog_first_page(self, catalog):
         """3 подкаталога + 5 книг, MAXITEMS=4, страница 1 — 3 ката + 1 книга."""
         for i in range(3):

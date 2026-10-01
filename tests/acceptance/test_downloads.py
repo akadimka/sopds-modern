@@ -126,10 +126,6 @@ def test_thumbnail(
 # Раньше эти четыре view были достижимы без авторизации даже при
 # SOPDS_AUTH=True (в отличие от Download, защищённого с самого начала) —
 # полный текст книги, обложки и конвертация отдавались кому угодно.
-# Используем fixture override_config (`with override_config(...)`), а
-# НЕ `@pytest.mark.override_config` — последний конфликтует с
-# pytest-плагином django-constance (падает на отсутствующем redis-py
-# независимо от этого фикса, см. TestDownloads выше).
 
 
 class TestBug92CoverViewHtmlConvertRequireAuth:
@@ -205,10 +201,7 @@ class TestConvertFB2:
     Баг №92: ConvertFB2 теперь защищён @sopds_auth_validate — этот класс
     проверяет саму конвертацию (маршрутизация форматов, распаковка ZIP
     перед конвертацией и т.п.), не авторизацию, поэтому каждый тест
-    явно отключает SOPDS_AUTH через fixture `override_config` (маркер
-    `@pytest.mark.override_config` здесь НЕ используется — конфликтует
-    с pytest-плагином django-constance, падающим на отсутствующем
-    redis-py, независимо от этого фикса).
+    явно отключает SOPDS_AUTH через fixture `override_config`.
     """
 
     def test_convert_non_fb2_book_404(self, client, catalog, override_config) -> None:

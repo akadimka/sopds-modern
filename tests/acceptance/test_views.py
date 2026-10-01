@@ -368,7 +368,7 @@ class TestSopdsProcessor:
 
         db_queries = [
             q for q in ctx.captured_queries
-            if "constance_constance" not in q["sql"] and "SAVEPOINT" not in q["sql"]
+            if "SAVEPOINT" not in q["sql"]
             and "RELEASE" not in q["sql"]
         ]
         # 1 запрос на bookshelf+book (select_related) + 1 на статистику
