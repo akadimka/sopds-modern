@@ -8,7 +8,11 @@
 ### Local dev
 src/.env
 src/sopds.db
+src/sopds.db-shm
+src/sopds.db-wal
 src/metadata_cache.db*
+# кеш метаданных pass1 создаётся в текущем каталоге запуска
+metadata_cache.db*
 src/log/
 src/fb2parser_web/_norm_cache/
 src/fb2parser_web/_genre_scan_cache/
