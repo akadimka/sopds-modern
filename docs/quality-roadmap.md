@@ -8358,3 +8358,26 @@ Test2 (15148) — расхождение РОВНО в 8 файлах, той ж
 Закреплено:
 `tests/integration/fb2parser_core/test_arc_numbering_does_not_overwrite_
 trusted_number.py` — fail-before/pass-after подтверждён `git stash`.
+
+## Баг №123: таблица «латиница→кириллица» в FILENAME PREFIX AUTHOR CONSENSUS не работала — ✅ Починено
+
+Найдено аудитом кода (2026-10-01), а не на реальном файле. В
+`Pass4Consensus.execute()` блок FILENAME PREFIX AUTHOR CONSENSUS (автор
+`[unknown]` получает автора соседнего файла, если имя файла начинается
+с этого имени) нормализует обе стороны через `_MIXED_SCRIPT_NORM`,
+подписанную «Latin→Cyrillic lookalikes». Но таблица
+`str.maketrans('ZzАВЕКМНОРСТХ', 'ЗзАВЕКМНОРСТХ')` была набрана
+кириллицей (U+0410…) и применялась после `lower()` — из всех двойников
+работал только `z→з` (тот самый «Zлой медик» из комментария). Имя файла
+с латинскими `C`/`o`/`x`/`e` («Cергей Мохов») не совпадало с «Сергей
+Мохов».
+
+Фикс: строчная таблица `'abcehkmoptxyz' → 'авсенкмортхуз'` (после
+`lower()` заглавные B/H/M/T/K дают b/h/m/t/k — их кириллические пары в,
+н, м, т, к). Мёртвая копия той же функции в `series_helpers.py` удалена.
+
+Проверка на реальных данных: Test2 (15148 записей) — без изменений.
+
+Закреплено:
+`tests/unit/fb2parser_core/test_pass4_filename_prefix_latin_homoglyphs.py`
+— fail-before/pass-after подтверждён `git stash`.
