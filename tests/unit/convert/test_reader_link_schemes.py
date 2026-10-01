@@ -41,3 +41,23 @@ def test_safe_scheme_kept(href):
 
 def test_internal_anchor_kept():
     assert 'href="#sec1"' in _render("#sec1")
+
+
+_FB2_IMG = """<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description><title-info><book-title>Книга</book-title></title-info></description>
+<body><section><p>до</p><image l:href="{href}"/><p>после</p></section></body>
+<binary id="pic.png" content-type="image/png">iVBORw0KGgo=</binary></FictionBook>
+"""
+
+
+def test_external_image_not_loaded():
+    """Внешняя картинка грузилась бы из сети при открытии книги (трекер)."""
+    html = convert_bytes_to_html_string(_FB2_IMG.format(href="https://tracker.example/p.gif").encode("utf-8"))
+    assert "tracker.example" not in html
+    assert "после" in html
+
+
+def test_embedded_image_rendered():
+    html = convert_bytes_to_html_string(_FB2_IMG.format(href="#pic.png").encode("utf-8"))
+    assert 'src="data:image/png;base64,iVBORw0KGgo="' in html

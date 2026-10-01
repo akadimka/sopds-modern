@@ -171,7 +171,11 @@ def render_inline(elem, binaries, note_ids=None, note_backrefs=None, current_anc
     if tag == "image":
         href = elem.attrib.get(f"{{{XLINK_NS}}}href", "")
         img_id = href.lstrip("#")
-        src = binaries.get(img_id, img_id)
+        # Только картинки из <binary> самой книги: внешний адрес из
+        # недоверенного FB2 грузился бы из сети при открытии (пиксель-трекер).
+        src = binaries.get(img_id)
+        if src is None:
+            return tail
         return f'<img src="{html.escape(src)}" alt="{html.escape(img_id)}" />{tail}'
 
     return f"{text}{children}{tail}"

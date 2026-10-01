@@ -64,7 +64,7 @@ AXES_FAILURE_LIMIT = 5          # блокировка после 5 неудач
 AXES_COOLOFF_TIME = 1           # разблокировка через 1 час
 AXES_LOCKOUT_CALLABLE = None    # возвращает 403 (стандартное поведение)
 AXES_RESET_ON_SUCCESS = True    # сброс счётчика после успешного входа
-AXES_ENABLE_ADMIN = False       # не блокировать /admin/
+AXES_ENABLE_ADMIN = False       # не показывать модели axes в /admin/ (вход в /admin/ защищён всё равно)
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",

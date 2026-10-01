@@ -1,6 +1,7 @@
 """Декораторы для SOPDS."""
 
 import base64
+import binascii
 from functools import wraps
 
 from opds_catalog.sopds_config import sopds_cfg as config
@@ -50,8 +51,12 @@ def sopds_auth_validate(view_function):
 
         if "basic" != auth_meth.lower():
             return _unauthed()
-        auth_data = base64.b64decode(auth_data.strip()).decode("utf-8")
-        username, password = auth_data.split(":", 1)
+        # Мусор в заголовке (не base64, не UTF-8, без ":") — это 401, не 500.
+        try:
+            auth_data = base64.b64decode(auth_data.strip(), validate=True).decode("utf-8")
+            username, password = auth_data.split(":", 1)
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            return _unauthed()
 
         user = auth.authenticate(request, username=username, password=password)
         if user and user.is_active:
