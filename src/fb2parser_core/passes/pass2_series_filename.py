@@ -26,6 +26,7 @@ import logging
 import re
 import unicodedata
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, List
 
 from ..block_level_pattern_matcher import BlockLevelPatternMatcher
@@ -1634,8 +1635,18 @@ class Pass2SeriesFilename:
           «Флибер 05. Джони, о-е! Или назад в СССР 2» → Флибер\\Джони, о-е! Или назад в СССР  sn=5
           «Флибер 01. Изменить будущее»                → Флибер  sn=1  (title уникален — не дуга)
         """
-        from collections import defaultdict
+        ctx = SimpleNamespace()
+        self._named_arcs_dash_numbered(records, ctx)
+        self._named_arcs_unnumbered_base(records, ctx)
+        self._named_arcs_collect_candidates(records, ctx)
+        self._named_arcs_promote_repeated(records, ctx)
+        self._named_arcs_align_existing(records, ctx)
+        self._named_arcs_apply_back_to_flat(records, ctx)
 
+
+    def _named_arcs_dash_numbered(self, records, ctx) -> None:
+        """Named arcs, шаг 1: Проход 0: «Франшиза. ИмяАрки-N»."""
+        from collections import defaultdict
         # --- Проход 0: «Франшиза. ИмяАрки-N» / «Франшиза. ИмяАрки N[(annот)]»
         # (дефис ИЛИ пробел перед номером, БЕЗ подзаголовка после числа,
         # опциональная скобочная аннотация типа "(дополнение)"/"[доп.]") ---
@@ -1687,7 +1698,12 @@ class Pass2SeriesFilename:
             folder_k = str(Path(rec.file_path).parent)
             key = (_norm_s(rec.proposed_author or ''), series_norm, arc_norm, folder_k)
             _dash_groups[key].append((rec, vol_num, arc_name))
+        ctx._dash_groups = _dash_groups
 
+
+    def _named_arcs_unnumbered_base(self, records, ctx) -> None:
+        """Named arcs, шаг 2: Безномерный «базовый» том той же дуги."""
+        _dash_groups = ctx._dash_groups
         # Безномерный "базовый" кандидат — та же дуга, но без цифры в конце
         # (напр. "Калинин Максим - S-T-I-K-S. Офис.fb2" рядом с "…Офис
         # 2.fb2" — единственный численный том сам по себе не набирает
@@ -1740,6 +1756,10 @@ class Pass2SeriesFilename:
                 rec.series_number_source = 'filename_named_arc'
                 rec.series_source = 'filename_named_arc'
 
+
+    def _named_arcs_collect_candidates(self, records, ctx) -> None:
+        """Named arcs, шаг 3: Проход 1: arc-кандидаты по плоским сериям (шаблоны «Root 0N. Arc»)."""
+        from collections import defaultdict
         # Zero-padded паттерн: «SeriesRoot 0N. ArcTitle»
         # Захватываем серию, номер тома (zero-padded) и arc candidate.
         # Допускаем многосоставный arc title с точками внутри: «Другая жизнь. Назад в СССР»
@@ -1832,7 +1852,13 @@ class Pass2SeriesFilename:
             _folder_k = str(Path(rec.file_path).parent)
             key = (_norm_s(rec.proposed_author or ''), series_rec, _folder_k)
             groups[key].append((rec, vol_num, arc_norm, arc_display, arc_norm_prefix, arc_prefix))
+        ctx.groups = groups
 
+
+    def _named_arcs_promote_repeated(self, records, ctx) -> None:
+        """Named arcs, шаг 4: Проход 2: arc с 2+ вхождениями → подсерия."""
+        from collections import defaultdict
+        groups = ctx.groups
         # 2. По каждой группе: arc titles с 2+ вхождениями → подсерия
         for (_author_k, _series_k, _folder_k), entries in groups.items():
             arc_counts: dict = defaultdict(list)
@@ -1901,6 +1927,10 @@ class Pass2SeriesFilename:
                     rec.series_number_source = 'filename_named_arc'
                     rec.series_source = 'filename_named_arc'
 
+
+    def _named_arcs_align_existing(self, records, ctx) -> None:
+        r"""Named arcs, шаг 5: Второй проход: выравнивание существующих «Series\Arc»."""
+        from collections import defaultdict
         # --- Второй проход: выравниваем существующие Series\Arc из filename-источников ---
         # Тома которые уже имеют '\' (созданы старым двухточечным механизмом) должны
         # получить тот же формат с диапазоном в корне, что и дуги из первого прохода.
@@ -2004,7 +2034,13 @@ class Pass2SeriesFilename:
                 rec.series_number = str(vol_num)
                 rec.series_number_source = 'filename_named_arc'
                 rec.series_source = 'filename_named_arc'
+        ctx._ARC_RE2 = _ARC_RE2
 
+
+    def _named_arcs_apply_back_to_flat(self, records, ctx) -> None:
+        """Named arcs, шаг 6: Третий проход: подтверждённый арк — плоским томам."""
+        from collections import defaultdict
+        _ARC_RE2 = ctx._ARC_RE2
         # --- Третий проход: обратное применение арка к плоским томам ---
         # Если (автор, корень, арк) уже подтверждён (2+ тома с «ArcName. Subtitle»),
         # плоские тома у которых stem = «Серия N. ArcName» (без подзаголовка)

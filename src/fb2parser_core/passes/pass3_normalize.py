@@ -5,6 +5,7 @@ PASS 3: Normalize author names to standard format.
 import logging
 import re
 import unicodedata
+from types import SimpleNamespace
 from typing import List
 
 from ..author_normalizer_extended import AuthorNormalizer
@@ -102,6 +103,20 @@ class Pass3Normalize:
 
         normalized_count = 0
 
+        ctx = SimpleNamespace(normalized_count=normalized_count)
+        self._fix_mixed_script_author_typos(records, ctx)
+        self._normalize_author_names(records, ctx)
+        self._capitalize_author_words(records, ctx)
+        self._strip_author_colons(records, ctx)
+        self._sanitize_author_for_folders(records, ctx)
+        self._dedupe_authors_after_normalization(records, ctx)
+        self._final_author_format(records, ctx)
+        self._normalize_series_yo(records, ctx)
+        self._strip_author_diacritics(records, ctx)
+
+
+    def _fix_mixed_script_author_typos(self, records, ctx) -> None:
+        """PASS 3, шаг 1: Опечатки латиница/кириллица в именах — до остальной нормализации."""
         # Опечатки латиница/кириллица ("Анонимyс" вместо "Анонимус") — ДО
         # остальной нормализации, чтобы дальнейшие сравнения (дедуп имён,
         # консенсус, группировка компилятора) видели один и тот же автора.
@@ -109,6 +124,10 @@ class Pass3Normalize:
             if record.proposed_author:
                 record.proposed_author = _fix_mixed_script_homoglyphs(record.proposed_author)
 
+
+    def _normalize_author_names(self, records, ctx) -> None:
+        """PASS 3, шаг 2: Основная нормализация авторов (закреплённые фамилии не переставляются)."""
+        normalized_count = ctx.normalized_count
         # Build set of pinned author names from author_surname_conversions values.
         # These are used verbatim and must not be reordered by normalize_format.
         _conversions = (self.settings.get_author_surname_conversions() if self.settings else None) or {}
@@ -398,7 +417,11 @@ class Pass3Normalize:
                         and record.author_source == 'filename'
                         and metadata_for_normalization):
                     record.author_source = 'filename+meta_expanded'
+        ctx.normalized_count = normalized_count
 
+
+    def _capitalize_author_words(self, records, ctx) -> None:
+        """PASS 3, шаг 3: Каждое слово автора с заглавной (частицы — строчные)."""
         # Капитализация: каждое слово в proposed_author начинается с заглавной буквы.
         # Исключения: "Соавторство", "Сборник" — уже корректны.
         # Частицы имён (де, ван, фон…) всегда остаются строчными.
@@ -425,6 +448,9 @@ class Pass3Normalize:
             if capitalized != record.proposed_author:
                 record.proposed_author = capitalized
 
+
+    def _strip_author_colons(self, records, ctx) -> None:
+        """PASS 3, шаг 4: Убрать двоеточия и метку «Автор:» из имён."""
         # Удалить двоеточия из имён авторов (в т.ч. китайское «：» U+FF1A).
         # Формат «作者：牛顿不秃顶» содержит метку «Автор:»; берём часть ПОСЛЕ двоеточия.
         for record in records:
@@ -435,6 +461,9 @@ class Pass3Normalize:
                     record.proposed_author = record.proposed_author.split(colon_char, 1)[1].strip()
                     break
 
+
+    def _sanitize_author_for_folders(self, records, ctx) -> None:
+        """PASS 3, шаг 5: Убрать символы, недопустимые в именах папок."""
         # Санитизация: убрать символы, недопустимые в именах папок Windows/Linux,
         # а также случайные знаки "=", которые иногда попадают из метаданных.
         # Windows-запрещённые: \ / : * ? " < > |   Linux-запрещённые: /
@@ -446,6 +475,9 @@ class Pass3Normalize:
                 if sanitized != record.proposed_author:
                     record.proposed_author = sanitized
 
+
+    def _dedupe_authors_after_normalization(self, records, ctx) -> None:
+        """PASS 3, шаг 6: Повторная дедупликация соавторов после нормализации."""
         # Повторная дедупликация ПОСЛЕ нормализации:
         # нормализация может привести "Максим Гаусс" → "Гаусс Максим",
         # создав дубль если рядом уже было "Гаусс Максим".
@@ -463,6 +495,9 @@ class Pass3Normalize:
             if len(_seen) < len(_parts):
                 record.proposed_author = sep.join(_seen)
 
+
+    def _final_author_format(self, records, ctx) -> None:
+        """PASS 3, шаг 7: Финальный формат: «Фамилия Имя», соавторы через «, »."""
         # ФИНАЛЬНАЯ НОРМАЛИЗАЦИЯ ФОРМАТА:
         # Правило: ТОЛЬКО "Фамилия Имя" для каждого автора, ТОЛЬКО ", " между соавторами.
         # 1. Заменяем "; " → ", "
@@ -561,6 +596,9 @@ class Pass3Normalize:
             if result != record.proposed_author:
                 record.proposed_author = result
 
+
+    def _normalize_series_yo(self, records, ctx) -> None:
+        """PASS 3, шаг 8: ё→е в proposed_series."""
         # Нормализация ё→е в proposed_series:
         # Разные FB2-файлы одной серии могут иметь ё в одних и е в других,
         # что приводит к расхождению proposed_series ("Тёмные звёзды" vs "Темные звезды").
@@ -570,6 +608,10 @@ class Pass3Normalize:
                 if normalized_series != record.proposed_series:
                     record.proposed_series = normalized_series
 
+
+    def _strip_author_diacritics(self, records, ctx) -> None:
+        """PASS 3, шаг 9: Снять знаки ударения из имён авторов и записать итог в лог."""
+        normalized_count = ctx.normalized_count
         # Снять комбинированные диакритические знаки (знаки ударения е́ → е) из имён авторов.
         for record in records:
             if record.proposed_author:
