@@ -280,9 +280,15 @@ systemctl start sopds-modern
 systemctl status sopds-modern
 ```
 
-Сервис запустится на порту **8008**, на всех интерфейсах (`bind = 0.0.0.0:8008` в `sopds.settings.gunicorn`). Это значит, что сайт уже доступен напрямую по адресу `http://<IP-адрес сервера>:8008/` — без Apache. Если хотите открывать сайт именно так (по IP и порту 8008, без reverse-прокси на 80), просто убедитесь, что порт 8008 разрешён в firewall, и переходите сразу к шагу 13, пропустив Apache.
+Сервис запустится на порту **8008**, на всех интерфейсах (`bind = 0.0.0.0:8008` в `sopds.settings.gunicorn`). Это значит, что сайт уже доступен напрямую по адресу `http://<IP-адрес сервера>:8008/` — без Apache.
 
-Шаг 12 нужен, только если хотите отдавать сайт на стандартном порту 80 (или с доменным именем/SSL) через reverse-прокси.
+> ⚠️ **Прямой доступ на `:8008` — только для доверенной домашней сети.**
+> Это обычный HTTP: пароль при входе, cookie сессии и логин/пароль
+> OPDS-клиентов (Basic-auth) идут по сети открытым текстом. Если сервер
+> доступен из интернета (проброс порта на роутере, VPS), настройте
+> Apache (шаг 12) **и** HTTPS (шаг 12a), а порт 8008 закройте.
+
+Если сервер работает только в домашней сети и хотите открывать сайт по IP и порту 8008 — убедитесь, что порт 8008 разрешён в firewall, и переходите к шагу 13, пропустив Apache.
 
 ---
 
@@ -322,6 +328,150 @@ a2dissite 000-default          # отключить дефолтный сайт 
 apache2ctl configtest
 systemctl reload apache2
 ```
+
+---
+
+## 12a. HTTPS и закрытие порта 8008 (обязательно, если сервер доступен из интернета)
+
+Без этого шага пароли, cookie сессии и Basic-auth OPDS-клиентов идут по
+сети открытым текстом, а порт 8008 позволяет обойти Apache. Порядок
+важен: сначала HTTPS на Apache, потом gunicorn только на localhost, потом
+настройки Django, и в самом конце — firewall.
+
+### 1. Сертификат
+
+С доменным именем — бесплатный сертификат Let's Encrypt:
+
+```bash
+apt install -y certbot python3-certbot-apache
+certbot --apache -d <домен>        # сам пропишет SSL в конфиг Apache
+```
+
+Только IP, без домена — самоподписанный сертификат (браузер покажет
+предупреждение, OPDS-клиенты могут попросить подтвердить исключение):
+
+```bash
+mkdir -p /etc/ssl/sopds-modern
+openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+    -keyout /etc/ssl/sopds-modern/sopds.key \
+    -out    /etc/ssl/sopds-modern/sopds.crt \
+    -subj "/CN=<IP-адрес сервера>"
+chmod 600 /etc/ssl/sopds-modern/sopds.key
+```
+
+### 2. Apache: 443 с проксированием, 80 — редирект на HTTPS
+
+```bash
+a2enmod ssl proxy proxy_http headers rewrite
+nano /etc/apache2/sites-available/sopds-modern.conf
+```
+
+```apache
+<VirtualHost *:80>
+    ServerName <IP-адрес или домен>
+    RewriteEngine On
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName <IP-адрес или домен>
+
+    SSLEngine on
+    SSLCertificateFile    /etc/ssl/sopds-modern/sopds.crt   # или путь от certbot
+    SSLCertificateKeyFile /etc/ssl/sopds-modern/sopds.key
+
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:8008/
+    ProxyPassReverse / http://127.0.0.1:8008/
+
+    # Apache ВСЕГДА перезаписывает заголовок сам — клиент не может его подделать.
+    RequestHeader set X-Forwarded-Proto "https"
+
+    ProxyTimeout 120
+    ErrorLog  ${APACHE_LOG_DIR}/sopds-modern-error.log
+    CustomLog ${APACHE_LOG_DIR}/sopds-modern-access.log combined
+</VirtualHost>
+```
+
+```bash
+apache2ctl configtest && systemctl reload apache2
+```
+
+### 3. gunicorn — только localhost
+
+В `ExecStart` юнита `/etc/systemd/system/sopds-modern.service` добавьте
+`--bind` (параметр командной строки перекрывает `bind` из
+`sopds.settings.gunicorn`):
+
+```ini
+ExecStart=/opt/sopds-modern/.venv/bin/gunicorn \
+    --config "python:sopds.settings.gunicorn" \
+    --bind 127.0.0.1:8008 \
+    sopds.wsgi
+```
+
+```bash
+systemctl daemon-reload && systemctl restart sopds-modern
+ss -ltnp | grep 8008               # должно быть 127.0.0.1:8008, не 0.0.0.0:8008
+```
+
+### 4. Django: HTTPS-режим
+
+В `/opt/sopds-modern/src/.env`:
+
+```ini
+SOPDS_USE_HTTPS=True
+SOPDS_TRUST_X_FORWARDED_PROTO=True
+ALLOWED_HOSTS=<IP-адрес или домен>,localhost,127.0.0.1
+```
+
+- `SOPDS_USE_HTTPS` включает Secure-флаг у cookie сессии и CSRF и
+  редирект на HTTPS.
+- `SOPDS_TRUST_X_FORWARDED_PROTO` обязателен за прокси: без него Django
+  не видит, что запрос пришёл по HTTPS, и все формы (вход, настройки)
+  падают с ошибкой CSRF «Origin checking failed». Включать **только**
+  после шага 3: пока gunicorn слушает `0.0.0.0`, клиент может прийти
+  напрямую на `:8008` с поддельным заголовком.
+
+```bash
+systemctl restart sopds-modern
+```
+
+### 5. Firewall — в последнюю очередь
+
+> ⚠️ Сначала разрешите SSH (тот порт, на котором вы сейчас подключены),
+> и только потом включайте firewall — иначе потеряете доступ к серверу.
+> На втором сервере (`docs/deploy-sopds-modern-2-status.md`) после
+> `ufw enable` пропал доступ по всем портам; держите под рукой консольный
+> доступ (KVM/IPMI/физический) на случай `ufw disable`.
+
+```bash
+ufw allow <SSH-порт>/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw deny 8008/tcp
+ufw status verbose                 # убедиться, что правило для SSH есть
+ufw enable
+```
+
+На роутере пробросьте 80 и 443 и **уберите** проброс 8008, если он был.
+
+### 6. Проверка (с другого компьютера)
+
+```bash
+curl -sI http://<IP>:8008/                 # должно не соединиться
+curl -sI http://<IP или домен>/            # 301 → https://…
+curl -skI https://<IP или домен>/web/login/   # 200
+```
+
+Войдите в браузере и проверьте, что cookie `sessionid` и `csrftoken`
+помечены как **Secure**. В OPDS-клиентах (читалках) замените адрес
+каталога на `https://<IP или домен>/opds/`.
+
+HSTS (`SECURE_HSTS_SECONDS`) не включён намеренно: с самоподписанным
+сертификатом или при ошибке в настройке HTTPS он заблокирует доступ к
+сайту в браузерах на всё время действия. Включать — только с настоящим
+сертификатом и после того, как HTTPS проработал без проблем.
 
 ---
 
@@ -725,6 +875,24 @@ systemctl status sopds-watch
 ---
 
 ## Обновление
+
+> **Один раз, если клон сделан до 2026-10-02:** история `master` на
+> GitHub переписана (из старого коммита удалены данные сервера), поэтому
+> `git pull` на старом клоне не сработает. Обновите так, затем дальше —
+> как обычно:
+>
+> ```bash
+> cd /opt/sopds-modern
+> git status --short          # что изменено на сервере
+> git stash                   # сохранить правки (app_settings.json, genres.xml…)
+> git fetch origin && git reset --hard origin/master
+> git stash pop               # вернуть их поверх новой истории
+> ```
+>
+> `app_settings.json` и `genres.xml` отслеживаются git и правятся через
+> веб-интерфейс прямо на сервере — без `git stash` `reset --hard` их
+> перезапишет. `.env`, `secret_key.txt`, `config.json`, база и библиотека
+> в git не входят и не затрагиваются.
 
 ```bash
 cd /opt/sopds-modern
