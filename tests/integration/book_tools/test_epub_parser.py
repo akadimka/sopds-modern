@@ -1,10 +1,12 @@
+"""Извлечение метаданных из EPUB рабочим парсером `book_tools.format.epub.EPub`
+(его использует сканер через create_bookfile). Раньше эти значения
+проверялись на `parsers.EpubParser` — недоподключённой альтернативе,
+которую нигде не вызывали; она удалена."""
 import os
 
-# from tests.conftest import epub_book_from_fs
 import pytest
 
 from book_tools.format.epub import EPub
-from book_tools.format.parsers import EbookMetaParser, EpubParser
 from tests.helpers import read_file_as_iobytes
 
 
@@ -22,65 +24,33 @@ def test_epub_parser(test_rootlib, book) -> None:
 
 
 @pytest.fixture(scope="module")
-def parsed_epub(epub_parser) -> EbookMetaParser:
-    epub_parser.parse()
-    return epub_parser
+def parsed_epub(test_rootlib) -> EPub:
+    return EPub(read_file_as_iobytes(os.path.join(test_rootlib, "mirer.epub")), "Test Book")
 
 
-class TestEpubParserValidation:
-    """тесты валидации книги парсером epub"""
-
-    def test_valid_epub(self, epub_parser) -> None:
-        assert epub_parser.validate()
-
-    def test_invalid_epub(self, invalid_epub) -> None:
-        parser = EpubParser(invalid_epub)
-        assert not parser.validate()
-
-
-class TestEpubParserValues(object):
+class TestEpubValues:
     """Тесты извлечения данных книги парсером epub"""
 
     def test_title(self, parsed_epub) -> None:
-        """Тест извлечения заголовка"""
-        expected = "У меня девять жизней (шф (продолжатели))"
-        assert parsed_epub.title == expected
+        assert parsed_epub.title == "У меня девять жизней (шф (продолжатели))"
 
     def test_authors(self, parsed_epub) -> None:
-        """Тест извлечения авторов"""
-        expected = [
-            "Александр  Мирер",
-        ]
-        assert parsed_epub.authors == expected
+        assert [a["name"] for a in parsed_epub.authors] == ["Александр Мирер"]
 
     def test_tags(self, parsed_epub) -> None:
-        """Тест извлечения жанров"""
-        expected = [
-            "sf",
-        ]
-        assert parsed_epub.tags == expected
+        assert parsed_epub.tags == ["sf"]
 
     def test_language_code(self, parsed_epub) -> None:
-        """Тест извлечения кода языка"""
-        expected = "ru"
-        assert parsed_epub.language_code == expected
+        assert parsed_epub.language_code == "ru"
 
     def test_series_info(self, parsed_epub) -> None:
-        """Тест извлечения информации о книжной серии"""
-        expected = None
-        assert parsed_epub.series_info == expected
+        assert parsed_epub.series_info == {"title": "ШФ (продолжатели)", "index": None}
 
     def test_docdate(self, parsed_epub) -> None:
-        """Тест извлечения информации о дате публикации"""
-        expected = "2015"
-        assert parsed_epub.docdate == expected
+        assert parsed_epub.docdate == "2015"
 
     def test_description(self, parsed_epub) -> None:
-        """Тест извлечения аннотации к книге"""
-        expected = 28
-        assert len(parsed_epub.description) == expected
+        assert len(parsed_epub.description) == 28
 
     def test_cover(self, parsed_epub) -> None:
-        """Тест извлечения аннотации к книге"""
-        expected = 41886
-        assert len(parsed_epub.extract_cover()) == expected
+        assert len(parsed_epub.extract_cover_memory()) == 41886

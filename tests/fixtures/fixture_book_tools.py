@@ -6,7 +6,6 @@ from types import MappingProxyType
 import pytest
 
 from book_tools.format.fb2sax import fb2tag
-from book_tools.format.parsers import EbookMetaParser, EpubParser
 from tests.book_tools.format.helpers import Author, fb2_book_fabric
 
 # ---------------------------------------------------------------------------
@@ -63,34 +62,6 @@ def build_fb2_book(**overrides) -> BytesIO:
 # ---------------------------------------------------------------------------
 # Фикстуры
 # ---------------------------------------------------------------------------
-
-
-@pytest.fixture(scope="module")
-def epub_parser(get_file_content, epub_book) -> EbookMetaParser:
-    """Парсер формата EPub.
-
-    Возвращает экземпляр ``EpubParser`` для реального epub-файла. Позволяет тестировать
-    работу парсера EPub без многократного создания.
-
-    :scope: module
-    :returns: EpubParser
-    :rtype: EbookMetaParser
-    """
-    return EpubParser(get_file_content(epub_book))
-
-
-@pytest.fixture(scope="module")
-def invalid_epub(get_file_content, zipped_fb2) -> BytesIO:
-    """Некорректный тип книги в формате EPub.
-
-    Возвращает содержимое, которое не является корректным epub (на самом деле это ZIP
-    с FB2-файлом). Используется для проверки отлова неверного формата.
-
-    :scope: module
-    :returns: BytesIO
-    :rtype: BytesIO
-    """
-    return get_file_content(zipped_fb2)
 
 
 @pytest.fixture

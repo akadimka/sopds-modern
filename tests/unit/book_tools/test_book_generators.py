@@ -1,6 +1,6 @@
 import io
 
-from book_tools.format.fb2 import FB2
+from book_tools.services import create_bookfile_service
 from tests.book_tools.format.helpers import Author, fb2_book_fabric
 
 
@@ -101,9 +101,9 @@ def test_book_fabric_returns_bytes() -> None:
 
 
 def test_book_fabric_parsed_correctly() -> None:
-    """Проверка, что сгенерированная книга корректно парсится классом FB2."""
+    """Проверка, что сгенерированная книга корректно парсится рабочим парсером FB2."""
     book = fb2_book_fabric(title="Generated Book")
-    result = FB2(io.BytesIO(book), "test")
+    result = create_bookfile_service(io.BytesIO(book), "test")
     assert result is not None
 
     assert result.title == "Generated Book"

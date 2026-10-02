@@ -17,12 +17,13 @@ DOCTYPE-подмножестве самого документа, в текст,
 import zipfile
 from io import BytesIO
 
+import pytest
 from lxml import etree
 
+from book_tools.exceptions import FB2StructureException
 from book_tools.format.epub import EPub
-from book_tools.format.fb2 import FB2 as LegacyFB2
 from book_tools.format.parsers import FB2 as ParsersFB2
-from book_tools.format.parsers import EpubParser
+from book_tools.format.parsers import FB2sax as ParsersFB2sax
 from book_tools.format.util import safe_xml_parser
 
 ENTITY_MARKER = "INTERNAL-SUBSTITUTED-TEXT"
@@ -95,17 +96,14 @@ class TestFb2ParsersDoNotResolveEntities:
         book = ParsersFB2(BytesIO(_xxe_fb2_bytes()))
         assert book.title != ENTITY_MARKER
 
-    def test_legacy_fb2_title_not_substituted(self):
-        book = LegacyFB2(BytesIO(_xxe_fb2_bytes()), "malicious.fb2")
-        assert book.title != ENTITY_MARKER
+    def test_parsers_fb2sax_rejects_entity_declarations(self):
+        # expat подставил бы внутреннюю сущность в title — SAX-парсер
+        # теперь отвергает книгу с <!ENTITY> целиком (как defusedxml).
+        with pytest.raises(FB2StructureException):
+            ParsersFB2sax(BytesIO(_xxe_fb2_bytes()), "malicious.fb2")
 
 
 class TestEpubParsersDoNotResolveEntities:
-    def test_epub_parser_title_not_substituted(self):
-        parser = EpubParser(_build_malicious_epub_zip())
-        parser.parse()
-        assert parser.title != ENTITY_MARKER
-
     def test_epub_old_title_not_substituted(self):
         epub = EPub(_build_malicious_epub_zip(), "malicious.epub")
         assert epub.title != ENTITY_MARKER

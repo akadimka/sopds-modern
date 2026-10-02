@@ -129,6 +129,10 @@ class fb2cover(fb2tag):
         self._cover_data = [value]
 
 
+def _forbid_entity_declaration(name, *_args):
+    raise FB2StructureException(f"entity declaration <!ENTITY {name}> is not allowed")
+
+
 class fb2parser:
     def __init__(self, readcover=0):
         self.rc = readcover
@@ -239,6 +243,10 @@ class fb2parser:
     def parse(self, f, hsize=0):
         self.reset()
         parser = xml.parsers.expat.ParserCreate()
+        # Как safe_xml_parser для lxml (баг №94): объявления сущностей в
+        # <!DOCTYPE> запрещены — expat подставлял бы их текст в title/автора
+        # (и раздувал бы документ). В настоящих FB2 их не бывает.
+        parser.EntityDeclHandler = _forbid_entity_declaration
         parser.StartElementHandler = self.start_element
         parser.EndElementHandler = self.end_element
         parser.CharacterDataHandler = self.char_data
@@ -253,88 +261,3 @@ class fb2parser:
             self.parse_errormsg = err
             self.parse_error = 1
 
-
-class FB2sax(BookFile):
-    def __init__(self, file, original_filename):
-        BookFile.__init__(self, file, original_filename, Mimetype.FB2)
-        self.fb2parser = fb2parser(0)
-        self.file.seek(0, 0)
-        self.fb2parser.parse(self.file)
-        if self.fb2parser.parse_error != 0:
-            raise FB2StructureException(
-                "FB2sax parse error (%s)" % self.fb2parser.parse_errormsg
-            )
-        self.__detect_title()
-        self.__detect_authors()
-        self.__detect_tags()
-        self.__detect_series_info()
-        self.__detect_language()
-        self.__detect_docdate()
-        self.description = self.__detect_description()
-
-    def extract_cover_memory(self):
-        imgfb2parser = fb2parser(1)
-        self.file.seek(0, 0)
-        imgfb2parser.parse(self.file)
-        if len(imgfb2parser.cover_image.cover_data) > 0:
-            try:
-                s = imgfb2parser.cover_image.cover_data
-                content = base64.b64decode(s)
-                return content
-            except Exception:
-                return None
-        return None
-
-    def __detect_title(self):
-        res = ""
-        if len(self.fb2parser.book_title.getvalue()) > 0:
-            res = self.fb2parser.book_title.getvalue()[0].strip(strip_symbols)
-        if len(res) > 0:
-            self.__set_title__(res)
-
-    def __detect_docdate(self):
-        res = self.fb2parser.docdate.getattr("value") or ""
-        if len(res) == 0 and len(self.fb2parser.docdate.getvalue()) > 0:
-            res = self.fb2parser.docdate.getvalue()[0].strip()
-        if len(res) > 0:
-            self.__set_docdate__(res)
-
-    def __detect_authors(self):
-        for idx, author in enumerate(self.fb2parser.author_last.getvalue()):
-            last_name = author.strip(strip_symbols)
-            first_name = self.fb2parser.author_first.getvalue()[idx].strip(
-                strip_symbols
-            )
-            self.__add_author__(" ".join([first_name, last_name]), last_name)
-
-    def __detect_language(self):
-        res = ""
-        if len(self.fb2parser.lang.getvalue()) > 0:
-            res = self.fb2parser.lang.getvalue()[0].strip(strip_symbols)
-        if len(res) > 0:
-            self.language_code = res
-
-    def __detect_tags(self):
-        for genre in self.fb2parser.genre.getvalue():
-            self.__add_tag__(genre.lower().strip(strip_symbols))
-
-    def __detect_series_info(self):
-        if len(self.fb2parser.series.attrss) > 0:
-            s = self.fb2parser.series.attrss[0]
-            ser_name = s.get("name")
-            if ser_name:
-                title = ser_name.strip(strip_symbols)
-                index = s.get("number", "0").strip(strip_symbols)
-
-                self.series_info = {"title": title, "index": index}
-
-    def __detect_description(self):
-        res = ""
-        if len(self.fb2parser.annotation.getvalue()) > 0:
-            res = "\n".join(self.fb2parser.annotation.getvalue())
-        if len(res) > 0:
-            return res
-        return None
-
-    def __exit__(self, kind, value, traceback):
-        pass
