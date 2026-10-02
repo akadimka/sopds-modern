@@ -2121,6 +2121,19 @@ class Pass2SeriesFilename:
           «04 Дабог. Авторская версия.fb2»          → series_number=4 (пробел, без знака пунктуации вовсе)
           «2024_SomeBook.fb2»                      → НЕ трогаем (год, не порядковый №)
         """
+        self._sn_rules_prefix_and_brackets(records)
+        self._sn_rule_bare_range_at_end(records)
+        self._sn_rule_bare_roman_range_at_end(records)
+        self._sn_rule_number_before_capital(records)
+        self._sn_rule_word_number(records)
+        self._sn_rule_word_roman_number(records)
+        self._sn_rule_series_abbreviation_number(records)
+        self._sn_rule_prologue_is_zero(records)
+        self._sn_rule_title_volume_range(records)
+
+
+    def _sn_rules_prefix_and_brackets(self, records) -> None:
+        """Номер тома из имени файла, шаг 1: Правила 1–3.6: ведущий номер/диапазон в имени, диапазон в скобках."""
         # \s* перед разделителем — «01 - Title» (пробел вокруг тире) встречается
         # не реже, чем «01_Title»/«01.Title» без пробела; без него эти файлы
         # вообще не получали series_number из имени файла.
@@ -2335,6 +2348,9 @@ class Pass2SeriesFilename:
                 if (record.series_source or '') != 'filename_named_arc':
                     record.proposed_series = series_root
 
+
+    def _sn_rule_bare_range_at_end(self, records) -> None:
+        """Номер тома из имени файла, шаг 2: Правило 4: голый диапазон в конце стема."""
         # Правило 4: голый диапазон в конце стема без скобок
         # «Варяг 1-3.fb2» → series_number='1-3'
         _BARE_RANGE_RE = re.compile(r'\s+(\d{1,3})\s*[-–—]\s*(\d{1,3})\s*$')
@@ -2353,6 +2369,9 @@ class Pass2SeriesFilename:
             record.series_number = f'{lo_b}-{hi_b}'
             record.series_number_source = 'filename_bare_range'
 
+
+    def _sn_rule_bare_roman_range_at_end(self, records) -> None:
+        """Номер тома из имени файла, шаг 3: Правило 4b: голый диапазон римскими цифрами в конце стема."""
         # Правило 4b: голый диапазон РИМСКИМИ цифрами в конце стема — римский
         # аналог Правила 4. Реальный случай (docs/quality-roadmap.md, баг
         # №43): «Баркер Клайв - Книги крови. I–III.fb2» и «…Запретное.
@@ -2381,6 +2400,9 @@ class Pass2SeriesFilename:
             record.series_number = f'{lo_r}-{hi_r}'
             record.series_number_source = 'filename_bare_roman_range'
 
+
+    def _sn_rule_number_before_capital(self, records) -> None:
+        """Номер тома из имени файла, шаг 4: Правило 5: «<текст> NN <Заглавная…>» без знака препинания."""
         # Правило 5: «<текст> NN <ЗаглавнаяБуква…>» без знака препинания перед
         # числом — например «Тамоников 10 Мятежные воины.fb2». Только для
         # папочных серий (folder_dataset и т.п.): там сама серия уже надёжно
@@ -2409,6 +2431,9 @@ class Pass2SeriesFilename:
             record.series_number = str(n5)
             record.series_number_source = 'filename_mid'
 
+
+    def _sn_rule_word_number(self, records) -> None:
+        """Номер тома из имени файла, шаг 5: Правило 6: «Том N», «Книга N», «Свиток N»."""
         # Правило 6: «Слово N» в имени файла — «Свиток 1», «Том 3», «Книга 4» и т.п.
         # Применяется только когда series_number ещё не задан (нет метаданных и нет префикса).
         _WORD_NUM_RE = _TOM_WORD_RE
@@ -2427,6 +2452,9 @@ class Pass2SeriesFilename:
             record.series_number = str(fn_numW)
             record.series_number_source = 'filename_word_number'
 
+
+    def _sn_rule_word_roman_number(self, records) -> None:
+        """Номер тома из имени файла, шаг 6: Правило 6b: «Том I», «Vol. IV»."""
         # Правило 6b: «Слово N» римскими цифрами — «Том I», «Том II», «Vol. IV» и т.п.
         # («Пастырь. Арка 2.0. Том I» — «Арка 2» из Правила 6 больше не матчится
         # из-за (?!\.\d) в _TOM_WORD_RE, но «Том I» рядом — реальный номер тома,
@@ -2454,6 +2482,9 @@ class Pass2SeriesFilename:
             record.series_number = str(fn_numR)
             record.series_number_source = 'filename_word_number'
 
+
+    def _sn_rule_series_abbreviation_number(self, records) -> None:
+        """Номер тома из имени файла, шаг 7: Правило 6c: аббревиатура серии + номер («ГКР-1.»)."""
         # Правило 6c: аббревиатура серии + номер — «ГКР-1.», «СВА-2.» и т.п.
         # Автор иногда называет файлы по первым буквам уже известной (из
         # папки, folder_dataset) серии вместо полного имени — «Герой
@@ -2484,6 +2515,9 @@ class Pass2SeriesFilename:
             record.series_number = str(int(ma.group(2)))
             record.series_number_source = 'filename_abbrev_prefix'
 
+
+    def _sn_rule_prologue_is_zero(self, records) -> None:
+        """Номер тома из имени файла, шаг 8: Правило 7: «Пролог» → том 0, если в серии нет тома 0."""
         # Правило 7: «Пролог» без series_number → sn=0, если в серии нет тома 0.
         def _norm6(s):
             return _nfc_lower_yo(s).strip()
@@ -2502,6 +2536,9 @@ class Pass2SeriesFilename:
                 rec.series_number = '0'
                 rec.series_number_source = 'filename_title_prologue'
 
+
+    def _sn_rule_title_volume_range(self, records) -> None:
+        """Номер тома из имени файла, шаг 9: Правило 8 (баг №117): заголовок называет диапазон томов."""
         # Правило 8 (баг №117): заголовок называет ДИАПАЗОН томов, физически
         # объединённых в одном файле — «5. Кузнец. Том V-VI.fb2» (Правило 1
         # выше уже поставило series_number='5' по голой позиции файла в
