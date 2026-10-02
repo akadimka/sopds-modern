@@ -22,6 +22,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
@@ -995,943 +996,7 @@ class FB2CompilerService:
                 on_group(g)
 
         for (_, _), recs in buckets.items():
-            if len(recs) < 2:
-                continue
-            author = recs[0].proposed_author.strip()
-
-            # Определяем имя серии для группы.
-            # Если все записи принадлежат одной подсерии — используем полный путь
-            # (Root\Sub), чтобы сохранить имя и порядковый номер подсерии.
-            # Если записи из разных подсерий (объединённая группа вида Серия N\X +
-            # Серия M\Y) — используем очищенный корень.
-            _all_subs = {r.proposed_series.strip().split('\\', 1)[1]
-                         for r in recs if '\\' in r.proposed_series}
-            _s0 = recs[0].proposed_series.strip()
-            # Первая запись с подсерией ('\\') — используем её как источник серии
-            # если recs[0] оказался плоской записью (folder_dataset без arc-детекции).
-            _s_with_sub = next((r.proposed_series.strip() for r in recs
-                                if '\\' in r.proposed_series), None)
-            # Если в группе есть записи без подсерии — их название задаёт зонтичную серию.
-            # Пример: "Не ГГ" (тт.1,4) + "Не ГГ\Курсанты" (тт.2-3) → серия = "Не ГГ".
-            _plain = next((r.proposed_series.strip() for r in recs
-                           if '\\' not in r.proposed_series), None)
-            if _plain:
-                series = _plain
-            elif len(_all_subs) == 1 and _s_with_sub:
-                # Единственная подсерия и нет плоских книг — берём полный путь
-                series = _s_with_sub
-            else:
-                if '\\' in _s0:
-                    _root = _s0.split('\\')[0].strip()
-                    series = re.sub(r'\s+\d{1,4}\s*$', '', _root).strip() or _root
-                else:
-                    series = _s0
-
-            books = [self._make_book(rec, work_dir) for rec in recs]
-            duplicate_paths: List[Path] = []
-
-            # Названия всех книг группы — запасная привязка диапазона к серии
-            # в _precompiled_range() для франшиз, где имя серии-зонтика не
-            # встречается в именах отдельных томов (см. docstring метода).
-            _group_titles = [b.record.file_title or b.abs_path.stem for b in books]
-            # Максимальная известная позиция в группе — единственный источник
-            # правды для диапазонов вида "N-финал" (баг №68 доп.), где верхняя
-            # граница не числовая. Считаем ОДИН раз на весь бакет.
-            _max_known_pos = max(
-                (b.sort_key[1] for b in books
-                 if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0),
-                default=0,
-            ) or None
-
-            # --- Если все книги в группе — уже предкомпиляции с разными series_number,
-            # это отдельные скомпилированные подсерии — не объединяем их дальше.
-            # Пример: "Вселенная Сафари 2. Егерь (Трилогия)" + "Вселенная Сафари 3.
-            # Чёрный археолог (Трилогия)" → оба уже готовы, merge не нужен.
-            # volume_label может быть ещё "2"/"3" (до контекстной коррекции),
-            # поэтому проверяем через _precompiled_range напрямую.
-            _precomp_ranges = {
-                id(b): self._precompiled_range(b, series, _group_titles, _max_known_pos)
-                for b in books
-            }
-            _all_precompiled = all(hi > 0 for lo, hi in _precomp_ranges.values())
-            if _all_precompiled and len(books) >= 2:
-                _sn_vals = [b.record.series_number or '' for b in books]
-                # Только если series_number — простые целые числа (arc-номера: 2, 3…),
-                # а не диапазоны ("1-3") и не пустые значения.
-                _plain_ints = all(re.match(r'^\d+$', sn) for sn in _sn_vals)
-                if _plain_ints and len(set(_sn_vals)) == len(_sn_vals):
-                    # Дополнительная проверка: если все arc-позиции одноточечные (lo==hi),
-                    # это отдельные arc'и родительской серии — их нужно компилировать вместе.
-                    # Пропускаем только если хотя бы один имеет многокнижный диапазон (lo<hi).
-                    _any_multi = any(lo < hi for lo, hi in _precomp_ranges.values())
-                    if _any_multi:
-                        continue  # пропускаем — подсерии с внутренними диапазонами
-
-            # --- Контекстная коррекция: книги с сервисным словом (Трилогия…)
-            # без явного series_number, которые не были опознаны _precompiled_range
-            # как предкомпиляция из-за отсутствия связи с именем серии в stem.
-            # Если в группе уже есть отдельные тома 1..N (N = число из слова),
-            # принудительно задаём series_number='1-N' и пересчитываем sort_key.
-            _known_positions = {
-                (b.sort_key[2] if b.sort_key[0] == 0 and b.sort_key[1] == 0 else b.sort_key[1])
-                for b in books if b.sort_key[0] == 0
-            } - {0}
-            _SWORDS_IDX = {kw.lower(): idx for idx, kw in enumerate(self._SERIES_WORDS) if kw}
-            _SWORDS_PAT = re.compile(
-                '|'.join(re.escape(kw) for kw in _SWORDS_IDX),
-                re.IGNORECASE | re.UNICODE,
-            )
-            for book in books:
-                # Уже опознанная предкомпиляция — пропускаем
-                if self._RANGE_NUM_RE.match(book.volume_label or ''):
-                    continue
-                stem_title = (book.abs_path.stem + ' ' + (book.record.file_title or '')).lower()
-                m = _SWORDS_PAT.search(stem_title)
-                if not m:
-                    continue
-                # Сервисное слово — часть САМОГО НАЗВАНИЯ серии (не структурный
-                # маркер "N-в-одном файле") — см. пояснение в _precompiled_range,
-                # баг №51. Иначе КАЖДЫЙ отдельный том серии вроде "Трилогия
-                # Дэвабада" ложно принудительно помечался диапазоном 1-N.
-                if m.group(0).lower() in series.lower():
-                    continue
-                n_vols = _SWORDS_IDX[m.group(0).lower()]
-                # Условие: все тома 1..N присутствуют среди других книг группы
-                if set(range(1, n_vols + 1)).issubset(_known_positions):
-                    book.record.series_number = f'1-{n_vols}'
-                    # Пересчитываем через _precompiled_range
-                    lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
-                    if hi > lo:
-                        book.sort_key = (0, lo, 0, 0)
-                        book.volume_label = f'{lo}-{hi}'
-                        book.sort_source = 'filename_range'
-                        book.order_ambiguous = False
-
-            # --- Коррекция «Сборника»: книга с «Сборник» в имени без подсерии.
-            # Читаем <annotation> сборника и сопоставляем имена всех дуг группы
-            # с её текстом — так один сборник может покрывать несколько подсерий.
-            # Все совпавшие дуги: отдельные книги → duplicate_paths.
-            _SBORNIK_RE = re.compile(r'\bсборник\b', re.IGNORECASE)
-            # Карта дуг: arc_num → {'name': str, 'books': [CompilationBook]}
-            # Все книги с подсерией в proposed_series (содержат '\\').
-            _arc_map2: dict = {}
-            for _b in books:
-                if '\\' not in (_b.record.proposed_series or ''):
-                    continue
-                _arc_num = _b.sort_key[1] if _b.sort_key[0] == 0 and _b.sort_key[1] else 0
-                if not _arc_num:
-                    continue
-                if _arc_num not in _arc_map2:
-                    _sub = (_b.record.proposed_series or '').split('\\')
-                    _arc_part = _sub[1].strip() if len(_sub) >= 2 else ''
-                    _arc_name = re.sub(r'^\d+\.\s*', '', _arc_part).lower().replace('ё', 'е')
-                    _arc_map2[_arc_num] = {'name': _arc_name, 'books': []}
-                _arc_map2[_arc_num]['books'].append(_b)
-
-            if _arc_map2:
-                for _book in list(books):
-                    if self._RANGE_NUM_RE.match(_book.volume_label or ''):
-                        continue
-                    if not _SBORNIK_RE.search(_book.abs_path.stem):
-                        continue
-                    if '\\' in (_book.record.proposed_series or ''):
-                        continue
-                    # Приоритет: аннотация из файла, запасной — имя файла
-                    _search_text = self._extract_annotation_text(_book)
-                    if not _search_text:
-                        _search_text = _book.abs_path.stem.lower().replace('ё', 'е')
-                    # Ищем ВСЕ совпавшие дуги:
-                    # 1) по названию дуги (≥2 слов совпадают)
-                    # 2) по названиям книг дуги (хотя бы одна книга упомянута)
-                    _matched_arcs = []
-                    for _arc_num, _arc_info in _arc_map2.items():
-                        # Критерий 1: название дуги
-                        _words = [w for w in _arc_info['name'].split() if len(w) >= 3]
-                        _score = sum(1 for w in _words if w in _search_text)
-                        if _score >= 2:
-                            _matched_arcs.append(_arc_num)
-                            continue
-                        # Критерий 2: хотя бы одна книга дуги упомянута в тексте
-                        for _ab in _arc_info['books']:
-                            _btitle = (_ab.record.file_title or _ab.abs_path.stem).lower().replace('ё', 'е')
-                            _btitle = re.sub(r'^\d+\.\s*', '', _btitle).strip()
-                            _bwords = [w for w in _btitle.split() if len(w) >= 4]
-                            if _bwords and sum(1 for w in _bwords if w in _search_text) >= min(2, len(_bwords)):
-                                _matched_arcs.append(_arc_num)
-                                break
-                    if not _matched_arcs:
-                        continue
-                    _matched_arcs.sort()
-                    # Сборник занимает позицию наименьшей дуги
-                    _book.sort_key = (0, _matched_arcs[0], 0, 0)
-                    _book.volume_label = str(_matched_arcs[0])
-                    _book.sort_source = 'inferred_sbornik'
-                    _book.order_ambiguous = False
-                    # Все книги совпавших дуг → дубликаты Сборника.
-                    # Сборник эмитируется как cleanup_only группа и убирается из books,
-                    # чтобы оставшиеся дуги обрабатывались независимо.
-                    _all_arc_books_to_remove: set = set()
-                    _sbornik_dup_paths = []
-                    for _arc_num in _matched_arcs:
-                        for _arc_book in _arc_map2[_arc_num]['books']:
-                            _sbornik_dup_paths.append(_arc_book.abs_path)
-                            _all_arc_books_to_remove.add(_arc_book.abs_path)
-                    books = [b for b in books if b.abs_path not in _all_arc_books_to_remove]
-                    _arc_range = (
-                        f'{_matched_arcs[0]}-{_matched_arcs[-1]}'
-                        if len(_matched_arcs) > 1 else str(_matched_arcs[0])
-                    )
-                    _emit(CompilationGroup(
-                        author=author, series=series, books=[],
-                        order_determined=True,
-                        volume_range=_arc_range,
-                        duplicate_paths=_sbornik_dup_paths,
-                        kept_paths=[_book.abs_path],
-                        cleanup_only=True,
-                    ))
-                    books = [b for b in books if b.abs_path != _book.abs_path]
-
-            # --- Групповая коррекция: если большинство книг группы используют
-            # series_number из метаданных, то книги где filename перебил метаданные
-            # исправляем обратно по мета. Это решает случай когда файлы пронумерованы
-            # "1. Книга 1", "2. Книга 2", "3. Книга 3" но book 3 на самом деле том 4.
-            _sn_meta_books = [b for b in books if b.sort_source == 'series_number'
-                              and b.sort_key[0] == 0 and b.sort_key[1] > 0]
-            _sn_file_books = [b for b in books if b.sort_source == 'filename'
-                              and b.sort_key[0] == 0 and b.record.series_number
-                              and re.match(r'^\d+$', b.record.series_number.strip())]
-            if len(_sn_meta_books) > len(_sn_file_books) and _sn_file_books:
-                # Правдоподобность (баг №68, docs/quality-roadmap.md): метадата
-                # большинства книг группы не гарантирует, что КОНКРЕТНОЕ значение
-                # meta_n правдоподобно — реальный случай (Клеванский Кирилл /
-                # "Сердце Дракона"): один файл несёт битую метадату стороннего
-                # инструмента (<sequence number="32">, автор метаданных —
-                # "Telegram Bot"), хотя правильный номер "18" уже верно
-                # извлечён из имени файла/заголовка. Большинство ОСТАЛЬНЫХ
-                # книг группы честно используют метаданные (позиции 1-15) —
-                # это удовлетворяло условию "большинство доверяет метадате" и
-                # безусловно затирало верный filename-номер битым "32". Не
-                # применяем коррекцию, если meta_n улетает далеко за пределы
-                # уже известных позиций группы — настоящая коррекция (файлы
-                # "1. Книга 1", "2. Книга 2", но book 3 — на самом деле том 4)
-                # всего лишь продолжает известную последовательность на
-                # небольшой шаг, а не перескакивает на позицию, вдесятеро
-                # большую всего остального.
-                _known_positions = [
-                    b.sort_key[1] for b in books
-                    if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0
-                ]
-                _plausible_ceiling = (
-                    max(_known_positions) + len(_sn_file_books) if _known_positions else None
-                )
-                for book in _sn_file_books:
-                    meta_n = int(book.record.series_number.strip())
-                    if meta_n < 1900 and meta_n > 0 and meta_n != book.sort_key[1]:
-                        if _plausible_ceiling is not None and meta_n > _plausible_ceiling:
-                            continue
-                        # Баг №109: потолок правдоподобия ловит только "СЛИШКОМ
-                        # большое" число (баг №68 — битые "32"/"99" от сторонних
-                        # инструментов) — но не ловит число, которое пусть и
-                        # правдоподобно само по себе, уже ЗАНЯТО другим файлом
-                        # группы с его собственной, независимо подтверждённой
-                        # позицией. Реальный случай (Шарапов Валерий /
-                        # "Контрразведка"): том 13 несёт битую метадату (<sequence
-                        # number="12">, опечатка издателя), а позиция 12 уже
-                        # занята другим, настоящим 12-м томом — оба сохраняли имя
-                        # файла как более надёжный сигнал, коррекция здесь
-                        # создала бы неразрешимую коллизию вместо продолжения
-                        # последовательности (в отличие от бага №68, где
-                        # скорректированная позиция ни с кем не конфликтовала).
-                        if any(
-                            other is not book and other.sort_key[0] == 0
-                            and other.sort_key[1] == meta_n
-                            for other in books
-                        ):
-                            continue
-                        book.sort_key = (0, meta_n, 0, book.sort_key[3])
-                        book.sort_source = 'series_number'
-                        book.volume_label = str(meta_n)
-                        book.order_ambiguous = False
-
-            # --- Сопоставление многосоставных заголовков с книгами группы ----------
-            # Внешние компиляции (e.g. «Спартанец. Великий царь. Удар в сердце»)
-            # не имеют <sequence number> и «Том N» — только заголовки разделов.
-            # Сопоставляем части многосоставного file_title с file_title других книг
-            # в группе: если ≥2 совпадений → задаём series_number диапазоном позиций.
-            _pos_to_title: Dict[int, str] = {}
-            for b in books:
-                if b.sort_key[0] == 0 and b.sort_key[1] > 0 and not b.order_ambiguous:
-                    t = (b.record.file_title or '').strip()
-                    if t:
-                        _pos_to_title[b.sort_key[1]] = t.lower().replace('ё', 'е')
-            if _pos_to_title:
-                for book in books:
-                    if self._RANGE_NUM_RE.match(book.volume_label or ''):
-                        continue  # уже распознана как предкомпиляция
-                    # Пропускаем файлы с ведущим числом в стеме — это обычная книга с позицией,
-                    # а не внешняя компиляция. «4_Спартанец. Племя равных» — том 4, не сборник.
-                    _stem_chk = book.abs_path.stem
-                    if re.match(r'^\d', _stem_chk):
-                        continue
-                    multi = (book.record.file_title or '').strip().lower().replace('ё', 'е')
-                    if not multi or len(re.findall(r'\.\s+[а-яёa-z]', multi, re.IGNORECASE)) < 1:
-                        continue
-                    own_pos = book.sort_key[1] if book.sort_key[0] == 0 else None
-                    # Если заголовок этого файла совпадает с заголовком его собственной позиции
-                    # (т.е. все книги группы имеют одинаковый file_title) — это обычный том,
-                    # а не внешняя компиляция других книг.
-                    if own_pos and _pos_to_title.get(own_pos, '') == multi:
-                        continue
-                    matched = sorted(
-                        pos for pos, t in _pos_to_title.items()
-                        if t and t in multi and pos != own_pos
-                    )
-                    if len(matched) < 2:
-                        continue
-                    lo_m, hi_m = matched[0], matched[-1]
-                    # Требуем непрерывный диапазон: все позиции от lo до hi должны присутствовать
-                    # среди совпавших. «1 и 4» без 2 и 3 — не трилогия.
-                    if set(matched) != set(range(lo_m, hi_m + 1)):
-                        continue
-                    book.record.series_number = f'{lo_m}-{hi_m}'
-                    lo2, hi2 = self._precompiled_range(book, series, _group_titles, _max_known_pos)
-                    if hi2 > lo2:
-                        book.sort_key = (0, lo2, 0, 0)
-                        book.volume_label = f'{lo2}-{hi2}'
-                        book.sort_source = 'filename_range'
-                        book.order_ambiguous = False
-
-            # --- Фильтр 1: обработка заранее скомпилированных файлов ----------
-            # Признак: stem/title содержит сервисное слово (Трилогия …) или
-            # series_number — диапазон вида "1-3".
-            #
-            # Три состояния:
-            #   1. АКТУАЛЬНА (best_count >= regular_count): компиляция уже
-            #      сделана — сохраняем предкомпиляцию, отдельные тома на удаление.
-            #   2. ЧАСТИЧНО УСТАРЕЛА (best_count < regular_count, но предкомпиляция
-            #      содержит тома которых нет отдельно, например том 1): включаем
-            #      предкомпиляцию как источник + добавляем недостающие тома.
-            #      Тома, уже покрытые предкомпиляцией, помечаем на удаление.
-            #   3. ПОЛНОСТЬЮ УСТАРЕЛА (все тома предкомпиляции есть и по отдельности):
-            #      удаляем предкомпиляцию, компилируем из отдельных томов.
-            precompiled: List[Tuple[CompilationBook, int, int]] = []  # (book, lo, hi)
-            regular_books: List[CompilationBook] = []
-            for book in books:
-                # Сначала проверяем inner_precompilation (EBLO-скомпилированная подсерия
-                # «ч. N в K книгах»). _precompiled_range не знает этот паттерн,
-                # поэтому обрабатываем до его вызова.
-                if book.sort_source == 'inner_precompilation':
-                    _rng_m = re.match(r'^(\d+)-(\d+)$', book.volume_label or '')
-                    if _rng_m:
-                        lo, hi = int(_rng_m.group(1)), int(_rng_m.group(2))
-                        # sort_source оставляем 'inner_precompilation' — _best_is_inner
-                        # проверяет именно его, чтобы не путать с обычными предкомпиляциями.
-                        book.order_ambiguous = False
-                        precompiled.append((book, lo, hi))
-                        continue
-                lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
-                if hi > lo:
-                    # Обновляем sort_key и volume_label по реальному диапазону файла.
-                    # Без этого "1-2. Название.fb2" получает sk=(0,2,0) vl='2' вместо
-                    # sk=(0,1,0) vl='1-2', и _split_into_consecutive_runs считает
-                    # что "1-2" и "3-4" не идут подряд (lo=4 ≠ hi=2+1).
-                    # Для подсерий без числа в корне (parent_num=0) отдельные книги
-                    # используют (0, 0, sub_ordinal, 0). Ставим предкомпиляцию в ту же
-                    # плоскость, иначе она сортируется после всех (0 < lo).
-                    _pre_series_root = series.split('\\')[0].strip() if '\\' in series else ''
-                    _pre_root_has_num = bool(re.search(r'\d+\s*$', _pre_series_root))
-                    if '\\' in series and not _pre_root_has_num:
-                        book.sort_key = (0, 0, lo, 0)
-                    else:
-                        book.sort_key = (0, lo, 0, 0)
-                    book.volume_label = f'{lo}-{hi}'
-                    book.sort_source = 'filename_range'
-                    book.order_ambiguous = False
-                    precompiled.append((book, lo, hi))
-                else:
-                    regular_books.append(book)
-
-            if precompiled:
-                regular_count = len(regular_books)
-                # Берём предкомпиляцию с максимальным охватом
-                best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
-
-                # Защита от урезанных изданий: широкий диапазон сам по себе не
-                # значит "больше контента" — более старая/сокращённая редакция
-                # может номинально покрывать томы 1-5, но реально содержать
-                # меньше текста, чем более новые переиздания по частям.
-                # Пример (реальный): "Странник. Пенталогия" (2010, ~4.3 МБ,
-                # тома 1-5) выигрывала у "Странник 1-3" (2021) + "Академик
-                # (Странник 4-5)" (2022) — вместе ~7.5 МБ, почти вдвое больше —
-                # хотя выбиралась как "лучшая" только по ширине диапазона.
-                # Если другие предкомпиляции ТОЧНО (без пропусков/наложений)
-                # замощают тот же диапазон и суммарно заметно крупнее —
-                # считаем best_pre подозрительно неполным и заменяем его.
-                _others = [e for e in precompiled if e[0] is not best_pre]
-                _tiling = sorted(_others, key=lambda t: t[1])
-                _is_exact_tiling = (
-                    bool(_tiling)
-                    and _tiling[0][1] == best_lo
-                    and _tiling[-1][2] == best_hi
-                    and all(_tiling[i][2] + 1 == _tiling[i + 1][1] for i in range(len(_tiling) - 1))
-                )
-                if _is_exact_tiling:
-                    def _sz(b: 'CompilationBook') -> int:
-                        # Сравниваем длину распакованного содержимого, а не
-                        # байты на диске: сжатый .fb2.zip (см. функцию "Сжать"
-                        # в Library) на диске меньше несжатого .fb2 с тем же
-                        # или даже большим реальным содержимым — сравнение
-                        # .stat().st_size ложно посчитало бы сжатый файл
-                        # урезанным изданием.
-                        try:
-                            return len(read_fb2_bytes(b.abs_path))
-                        except OSError:
-                            return 0
-                    _best_size = _sz(best_pre)
-                    _tiling_size = sum(_sz(e[0]) for e in _tiling)
-                    if _best_size < _tiling_size * 0.7:
-                        self._log(
-                            f"  ⚠ {best_pre.abs_path.name} покрывает {best_lo}-{best_hi} шире всех, "
-                            f"но заметно меньше по размеру суммы {[e[0].abs_path.name for e in _tiling]} "
-                            f"({_best_size // 1024} КБ vs {_tiling_size // 1024} КБ) — вероятно, урезанное "
-                            f"издание. Предпочитаем более полные части."
-                        )
-                        duplicate_paths.append(best_pre.abs_path)
-                        precompiled = _others
-                        best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
-
-                best_count = best_hi - best_lo + 1
-
-                # Фаза 1: дедуплицировать контент-дубли (файлы с одинаковым диапазоном).
-                # Для каждой группы (lo,hi): оставляем best_pre если он в группе, иначе первый.
-                # Остальные → duplicate_paths. Это предотвращает взаимное покрытие:
-                # Орёл: [1-2 Саймон] + [1-2 Скэрроу.] → Скэрроу. → дубль, Саймон остаётся.
-                # Кожевников: [1-3 Олег] + [1-3 "."] → обе разные → одна остаётся.
-                _by_range: dict = {}
-                for entry in precompiled:
-                    b, lo, hi = entry
-                    _by_range.setdefault((lo, hi), []).append(entry)
-                precompiled_unique: List[Tuple] = []
-                for rng, entries in _by_range.items():
-                    if len(entries) == 1:
-                        precompiled_unique.append(entries[0])
-                        continue
-                    # Среди нескольких файлов с одинаковым диапазоном:
-                    # сохраняем best_pre (если в группе) или первый по порядку
-                    winner = next((e for e in entries if e[0] is best_pre), entries[0])
-                    precompiled_unique.append(winner)
-                    for e in entries:
-                        if e is not winner:
-                            duplicate_paths.append(e[0].abs_path)
-                precompiled = precompiled_unique
-
-                # Фаза 2: range coverage — проверяем только файлы с разными диапазонами.
-                # Прочие предкомпиляции — на удаление ТОЛЬКО если их диапазон полностью
-                # покрыт хотя бы одной другой (best или иной).
-                other_precompiled: List[Tuple] = []
-                for entry in precompiled:
-                    book, lo, hi = entry
-                    if book is best_pre:
-                        continue
-                    # Arc-point pre-compilations (lo==hi) не дедуплицируем друг против друга:
-                    # два файла с одинаковым arc-position могут покрывать РАЗНЫЙ внутренний
-                    # контент (например, Брия 1 кн.1-2 и Брия 1 кн.3-4 оба имеют arc-pos 1).
-                    # Для подсерий (is_subseries) нужна проверка series_number — иначе
-                    # «Дилогия арк 3» (lo=1,hi=2) ошибочно покроется «Тетралогией арк 2»
-                    # (lo=1,hi=4), хотя это разные арки одной родительской серии.
-                    _is_arc_point = (lo == hi)
-                    _book_sn = (book.record.series_number or '').strip()
-                    _is_subseries_bucket = '\\' in series
-                    covered_by_any = (not _is_arc_point) and any(
-                        (o_lo <= lo and hi <= o_hi)
-                        and (not _is_subseries_bucket
-                             or (o_book.record.series_number or '').strip() == _book_sn)
-                        for (o_book, o_lo, o_hi) in precompiled
-                        if o_book is not book
-                    )
-                    if covered_by_any:
-                        duplicate_paths.append(book.abs_path)
-                    else:
-                        # Не полностью покрыт ни одной другой предкомпиляцией → источник
-                        other_precompiled.append(entry)
-
-                # АКТУАЛЬНА только если ВСЕ обычные тома входят в диапазон предкомпиляции
-                # И нет других непокрытых предкомпиляций (other_precompiled пуст).
-                # Пример: предкомпиляция 1-3 + обычный том 4 → НЕ актуальна (том 4 не покрыт).
-                # Пример: предкомпиляция 1-2 + предкомпиляция 3-4 → НЕ актуальна (нужно объединить).
-                _best_is_inner = best_pre.sort_source == 'inner_precompilation'
-                _inner_arc_pos = best_pre.sort_key[1] if _best_is_inner else None
-
-                def _vol_num_for_check(b: 'CompilationBook') -> Optional[int]:
-                    if b.sort_key and b.sort_key[0] == 0:
-                        if _best_is_inner:
-                            # Внутренняя предкомпиляция: сравниваем по sk[2] (подпозиция),
-                            # только если книга находится в той же arc-позиции.
-                            if b.sort_key[1] == _inner_arc_pos and b.sort_key[2] != 0:
-                                return b.sort_key[2]
-                            return None
-                        # Для подсерий без числа в корне позиция хранится в sort_key[2]
-                        return b.sort_key[2] if b.sort_key[1] == 0 else b.sort_key[1]
-                    return None
-
-                all_covered = (
-                    not other_precompiled and
-                    (all(
-                        (n := _vol_num_for_check(r)) is not None and best_lo <= n <= best_hi
-                        for r in regular_books
-                    ) if regular_books else True)
-                )
-
-                if all_covered:
-                    # 1. АКТУАЛЬНА — компиляция уже сделана, новая не нужна.
-                    # Отдельные тома, уже покрытые компиляцией, — на удаление.
-                    for book in regular_books:
-                        duplicate_paths.append(book.abs_path)
-                    if duplicate_paths:
-                        # Есть что удалить — сообщаем через cleanup_only группу
-                        _emit(CompilationGroup(
-                            author=author,
-                            series=series,
-                            books=[],
-                            order_determined=True,
-                            volume_range=f'{best_lo}-{best_hi}' if best_lo != best_hi else str(best_lo),
-                            duplicate_paths=duplicate_paths,
-                            kept_paths=[best_pre.abs_path],
-                            cleanup_only=True,
-                        ))
-                    continue
-                else:
-                    # Определяем, какие тома предкомпиляции присутствуют отдельно
-                    def _vol_num(b: CompilationBook) -> Optional[int]:
-                        """Номер тома из sort_key если источник надёжен."""
-                        if b.sort_key and b.sort_key[0] == 0:
-                            if _best_is_inner:
-                                if b.sort_key[1] == _inner_arc_pos and b.sort_key[2] != 0:
-                                    return b.sort_key[2]
-                                return None
-                            # Для подсерий без числа в корне позиция в sort_key[2]
-                            return b.sort_key[2] if b.sort_key[1] == 0 else b.sort_key[1]
-                        return None
-
-                    # Если regular_books пуст — нечем покрывать тома по отдельности.
-                    # all(...) при пустом range даёт vacuous True — это неверно:
-                    # «0 книг покрывают 4 тома» не означает «покрыты».
-                    pre_covered_individually = bool(regular_books) and all(
-                        any(_vol_num(r) == v for r in regular_books)
-                        for v in range(best_lo, best_hi + 1)
-                    )
-
-                    if pre_covered_individually:
-                        # 3. ПОЛНОСТЬЮ УСТАРЕЛА — все её тома есть по отдельности
-                        duplicate_paths.append(best_pre.abs_path)
-                        books = regular_books
-                    else:
-                        # 2. ЧАСТИЧНО УСТАРЕЛА
-                        covered_individually = [
-                            r for r in regular_books
-                            if (n := _vol_num(r)) is not None and best_lo <= n <= best_hi
-                        ]
-                        remaining = [r for r in regular_books if r not in covered_individually]
-
-                        # Проверяем: продолжают ли оставшиеся книги диапазон предкомпиляции?
-                        # Пример: предкомп [1-4] + книги [5,6,7] → консекутивны (5 = 4+1)
-                        #          → компилируем вместе → один файл 1-7
-                        # Пример: предкомп [1-3] + книга [7] → НЕ консекутивны
-                        #          → cleanup_only (удаляем покрытые) + книга [7] standalone
-                        remaining_known_positions = [
-                            n for r in remaining if (n := _vol_num(r)) is not None
-                        ]
-                        remaining_has_unknown = any(_vol_num(r) is None for r in remaining)
-                        remaining_extends_pre = (
-                            remaining_known_positions and
-                            min(remaining_known_positions) == best_hi + 1
-                        )
-
-                        if covered_individually and not remaining_extends_pre and not remaining_has_unknown and not other_precompiled:
-                            # Оставшиеся книги не продолжают предкомпиляцию и нет книг
-                            # с неизвестной позицией → cleanup_only: предкомп остаётся,
-                            # покрытые тома — на удаление; оставшиеся обрабатываются отдельно.
-                            cov_dup_paths = list(duplicate_paths) + [r.abs_path for r in covered_individually]
-                            _emit(CompilationGroup(
-                                author=author, series=series, books=[],
-                                order_determined=True,
-                                volume_range=(
-                                    f'{best_lo}-{best_hi}' if best_lo != best_hi else str(best_lo)
-                                ),
-                                duplicate_paths=cov_dup_paths,
-                                kept_paths=[best_pre.abs_path],
-                                cleanup_only=True,
-                            ))
-                            duplicate_paths = []
-                            books = remaining
-                        else:
-                            # Оставшиеся книги продолжают серию (или есть книги без номера)
-                            # → включаем предкомпиляцию как источник, компилируем вместе.
-                            for r in covered_individually:
-                                duplicate_paths.append(r.abs_path)
-                            books = [best_pre] + remaining
-
-                    # Добавляем прочие предкомпиляции с непересекающимися диапазонами
-                    # как дополнительные источники (они уже НЕ в duplicate_paths).
-                    for other_book, other_lo, other_hi in other_precompiled:
-                        # Проверяем: все тома этой предкомпиляции уже есть отдельно?
-                        other_fully_individual = bool(regular_books) and all(
-                            any(_vol_num(r) == v for r in regular_books)
-                            for v in range(other_lo, other_hi + 1)
-                        )
-                        if other_fully_individual:
-                            duplicate_paths.append(other_book.abs_path)
-                        else:
-                            books.append(other_book)
-                            # Индивидуальные книги в диапазоне [other_lo..other_hi]
-                            # дублируют контент предкомпиляции → помечаем к удалению.
-                            # Пример: «Щегол 6-11» + individual 6,7,8,9,10 →
-                            # individual 6-10 в дубли (книга 11 есть только в предкомп.).
-                            _cov = [r for r in list(books)
-                                    if r is not other_book
-                                    and (n := _vol_num(r)) is not None
-                                    and other_lo <= n <= other_hi]
-                            for r in _cov:
-                                duplicate_paths.append(r.abs_path)
-                                try:
-                                    books.remove(r)
-                                except ValueError:
-                                    pass
-            else:
-                books = regular_books
-
-            # --- Фильтр 1.5: приоритет доминирующей папки --------------------
-            # Если большинство томов группы сосредоточено в одной папке,
-            # файлы из неё получают приоритет: дубли тех же томов из других
-            # папок помечаются к удалению. Тома, которых нет в доминирующей
-            # папке, берутся из других папок как обычно.
-            _eff_vol = self._book_eff_pos
-
-            if books:
-                # Считаем сколько уникальных позиций томов покрывает каждая папка
-                folder_vol_sets: Dict[str, set] = {}
-                for b in books:
-                    folder = str(b.abs_path.parent)
-                    folder_vol_sets.setdefault(folder, set())
-                    rng_m = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
-                    if rng_m:
-                        # Предкомпиляция — добавляем весь диапазон, не только lo
-                        lo_r, hi_r = int(rng_m.group(1)), int(rng_m.group(2))
-                        folder_vol_sets[folder].update(range(lo_r, hi_r + 1))
-                    else:
-                        ev = _eff_vol(b)
-                        if ev:
-                            folder_vol_sets[folder].add(ev)
-                # Считаем также число файлов в каждой папке (тайбрейкер при равных томах)
-                folder_file_counts: Dict[str, int] = {}
-                for b in books:
-                    folder_file_counts[str(b.abs_path.parent)] = \
-                        folder_file_counts.get(str(b.abs_path.parent), 0) + 1
-                if len(folder_vol_sets) > 1:
-                    dominant_folder = max(
-                        folder_vol_sets,
-                        key=lambda f: (len(folder_vol_sets[f]), folder_file_counts.get(f, 0))
-                    )
-                    dominant_vols = folder_vol_sets[dominant_folder]
-                    if dominant_vols:
-                        # Баг №109: совпадение номера позиции между доминирующей
-                        # папкой и ДРУГОЙ папкой не обязательно означает, что это
-                        # одна и та же книга — если "другая папка" на деле
-                        # независимая подсерия того же автора внутри общего
-                        # организационного корня (напр. "Мир Вальдиры\Кроу" рядом
-                        # с доминирующей "Мир Вальдиры\Герой крайних рубежей"),
-                        # совпадение позиции случайно. Реальный случай: "Мир
-                        # Вальдиры\Цикл Люца\1. Маньяк отмели..." удалялся как
-                        # "дубликат" ГКР-1, хотя это совершенно другая книга.
-                        # Прежде чем считать это дублем, требуем хотя бы одно общее
-                        # значимое слово (≥4 символа, без ведущего номера) со
-                        # stem книги(-гами) доминирующей папки на той же позиции —
-                        # иначе не удаляем, оставляем обе.
-                        def _significant_words(b: 'CompilationBook') -> set:
-                            s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', b.abs_path.stem)
-                            return {w.lower() for w in re.split(r'\W+', s) if len(w) >= 4}
-
-                        dominant_books_by_vol: Dict[int, List['CompilationBook']] = {}
-                        for db in books:
-                            if str(db.abs_path.parent) != dominant_folder:
-                                continue
-                            rng_dm = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', db.volume_label or '')
-                            if rng_dm:
-                                for v in range(int(rng_dm.group(1)), int(rng_dm.group(2)) + 1):
-                                    dominant_books_by_vol.setdefault(v, []).append(db)
-                            else:
-                                dv = _eff_vol(db)
-                                if dv:
-                                    dominant_books_by_vol.setdefault(dv, []).append(db)
-
-                        new_books = []
-                        for b in books:
-                            folder = str(b.abs_path.parent)
-                            vol = _eff_vol(b) or None
-                            # Предкомпиляция с диапазоном N-M, у которой hi > max(dominant_vols):
-                            # содержит уникальный контент за пределами доминирующей папки.
-                            rng_pre = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
-                            has_unique = rng_pre and any(
-                                v not in dominant_vols
-                                for v in range(int(rng_pre.group(1)), int(rng_pre.group(2)) + 1)
-                            )
-                            is_dup = folder != dominant_folder and vol and vol in dominant_vols and not has_unique
-                            if is_dup:
-                                peers = dominant_books_by_vol.get(vol, [])
-                                shares_words = any(
-                                    _significant_words(b) & _significant_words(p) for p in peers
-                                )
-                                if not shares_words:
-                                    is_dup = False
-                            if is_dup:
-                                duplicate_paths.append(b.abs_path)
-                            else:
-                                new_books.append(b)
-                        books = new_books
-
-            # --- Фильтр 2: дедупликация по title (нормализованному) ----------
-            # Из дублей оставляем более позднюю редакцию (по году в имени файла),
-            # при равенстве — первый по алфавиту путь (детерминированный выбор).
-            def _title_dedup_order(b: CompilationBook):
-                year_m = re.search(r'[-–\s](\d{4})\b', b.abs_path.stem)
-                year = int(year_m.group(1)) if year_m else 0
-                # Предкомпиляция с бо́льшим диапазоном побеждает меньшую:
-                # «1-16» должна выжить против «1-14» при одинаковом title_key.
-                rng_m = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
-                range_hi = int(rng_m.group(2)) if rng_m else 0
-                return (-year, -range_hi, str(b.abs_path))
-
-            seen_titles: Dict[str, CompilationBook] = {}
-            for book in sorted(books, key=_title_dedup_order):
-                # Если file_title совпадает с именем серии — он не несёт информации
-                # о конкретном томе, используем stem файла как более информативный.
-                raw_title = book.record.file_title or book.abs_path.stem
-                if _norm_key(raw_title) == _norm_key(series):
-                    raw_title = book.abs_path.stem
-                title_key = self._normalize_title_key(raw_title, series)
-                # Для книг с известной позицией тома (level-0) добавляем позицию к ключу,
-                # чтобы не дедуплицировать разные тома с одинаковым названием.
-                # Пример: «Маршал 1-5» и «Маршал 6-9» оба имеют file_title="Маршал" —
-                # без этой защиты они бы считались дублями.
-                if book.sort_key[0] == 0:
-                    title_key = f"{title_key}\x00{book.sort_key[1]}"
-                if title_key not in seen_titles:
-                    seen_titles[title_key] = book
-                else:
-                    duplicate_paths.append(book.abs_path)
-            books = list(seen_titles.values())
-
-            # --- Фильтр 3: дедупликация по позиции тома ----------------------
-            # Если после title-дедупликации остались книги с одинаковым sort_key
-            # на уровнях 0 (series_number) или 1 (filename number), оставляем
-            # первую по алфавиту, остальные помечаем как дубликаты.
-            books = self._dedup_by_position(books, duplicate_paths)
-
-            # --- Фильтр 4: дедупликация по содержимому -----------------------
-            # Если два файла начинаются с практически одинакового текста
-            # (SequenceMatcher ratio ≥ 0.85 на первых 2000 символах), один
-            # из них — незарегистрированная предкомпиляция или дубликат с
-            # другим форматированием. Оставляем файл с более детальной позицией
-            # в серии (ненулевой subseries-компонент), иначе — больший по размеру.
-            books = self._dedup_by_content(books, duplicate_paths)
-
-            if len(books) < 2:
-                # Если после dedup остался один файл, но есть дубликаты — создаём cleanup_only.
-                # Пример: два файла с одинаковым sort_key (01. vs 1.) — dedup оставляет один,
-                # другой попадает в duplicate_paths, но без группы они не удаляются.
-                if duplicate_paths and books:
-                    _emit(CompilationGroup(
-                        author=author,
-                        series=series,
-                        books=[],
-                        order_determined=True,
-                        volume_range='',
-                        duplicate_paths=duplicate_paths,
-                        kept_paths=[books[0].abs_path],
-                        cleanup_only=True,
-                    ))
-                continue
-            books_sorted, order_determined, alphabetical_order = self._sort_books(books)
-            self._normalize_complete_inner_tom_runs(books_sorted)
-
-            if alphabetical_order:
-                # ВСЕ книги бакета имеют полностью неопределённый порядок
-                # (order_ambiguous=True у каждой — нет ни номера тома, ни
-                # даты, ничего) — единственный детерминированный порядок
-                # был бы алфавитным по названию, что не отражает никакого
-                # реального порядка чтения. Реальный случай (docs/
-                # quality-roadmap.md, баг №47): Житинский Александр /
-                # "Младший научный сотрудник Петр Верлухин" — 6 рассказов
-                # без series_number вообще. По решению пользователя такие
-                # группы НЕ компилируются вовсе — если это на самом деле
-                # пронумерованная серия с нераспознанным номером (а не
-                # сборник самостоятельных рассказов), молчаливая
-                # компиляция в произвольном порядке была бы хуже, чем
-                # оставить файлы как есть.
-                continue
-            else:
-                # Разбиваем числовые и нечисловые книги независимо:
-                #   • числовые (level-0) → непрерывные подгруппы, пропуски не допускаются
-                #   • нечисловые (даты / unknown) → отдельная группа «компиляция романов»
-                # Это предотвращает ложное смешение диапазона (например, sn=1 + sn=3 + дата
-                # дало бы volume_range='1-3' → «Трилогия», хотя тома 1 и 3 не идут подряд).
-                numeric = [b for b in books_sorted if b.sort_key[0] == 0]
-                others  = [b for b in books_sorted if b.sort_key[0] != 0]
-
-                # Эвристика «неопределённый = том 1»:
-                # Если ровно один файл без номера тома (год/неизвестен),
-                # а среди числовых нет тома 1 — считаем его первым томом.
-                if (len(others) == 1
-                        and numeric
-                        and min(b.sort_key[1] for b in numeric if b.sort_key[0] == 0) >= 2):
-                    lone = others[0]
-                    lone.sort_key = (0, 1, 0, 0)
-                    lone.sort_source = 'assumed_first'
-                    lone.order_ambiguous = False
-                    lone.volume_label = '1'
-                    numeric = sorted(numeric + [lone], key=lambda b: b.sort_key)
-                    others = []
-
-                first_group = True  # для назначения duplicate_paths только один раз
-
-                # ── Числовые книги: непрерывные блоки ──────────────────────
-                valid_runs = [r for r in self._split_into_consecutive_runs(numeric) if len(r) >= 2]
-                lone_numeric = [b for r in self._split_into_consecutive_runs(numeric) if len(r) < 2 for b in r]
-
-                # Мостим раны через позиции, ЗАКРЫТЫЕ гостевым однослотовым
-                # под-циклом того же автора+корня (см. _single_slot_by_root
-                # выше) — реальный случай (баг №37): "Отряд «Сигма»" 1-7 +
-                # 9-17 физически рвались на два отдельных, formально
-                # неполных куска только потому, что позицию 8 занимает
-                # отдельно скомпилированная тетралогия "Такер Уэйн". Раны
-                # НЕ мержим по книгам произвольно — соединяем только если
-                # ВЕСЬ промежуток между ними целиком закрыт такой вставкой.
-                _covered_here = _single_slot_by_root.get(
-                    (_norm_key(author), _punct_norm(series)), set(),
-                )
-                if _covered_here and len(valid_runs) > 1:
-                    def _run_lo(_r):
-                        return min(b.sort_key[1] for b in _r)
-
-                    def _run_hi(_r):
-                        return max(b.sort_key[1] for b in _r)
-
-                    _sorted_runs = sorted(valid_runs, key=_run_lo)
-                    _bridged = [_sorted_runs[0]]
-                    for _run in _sorted_runs[1:]:
-                        _prev = _bridged[-1]
-                        _gap = set(range(_run_hi(_prev) + 1, _run_lo(_run)))
-                        if _gap and _gap <= _covered_here:
-                            _bridged[-1] = _prev + _run
-                        else:
-                            _bridged.append(_run)
-                    valid_runs = _bridged
-
-                # Серия считается завершённой только если это ЕДИНСТВЕННЫЙ ран в бакете
-                # и нет одиночных томов за его пределами. Наличие ЛЮБЫХ других ранов —
-                # признак того, что серия продолжается за пределами этого куска (даже если
-                # сам кусок внутри непрерывен), иначе первый ран из разорванной пополам
-                # серии (напр. 1-19 при существующих где-то ещё 27-28, 30-33) получает
-                # суффикс «в N книгах», как будто это все книги серии, вместо «т. 1-N».
-                _has_other_runs = len(valid_runs) > 1
-                for run in valid_runs:
-                    # Детектируем паттерн N.M (том.часть): если ВСЕ книги в run
-                    # получили sort_source='dot_part', то volume_range = диапазон томов,
-                    # а part_count = общее число частей (файлов).
-                    all_dot_part = run and all(b.sort_source == 'dot_part' for b in run)
-                    # Именованная дуга-подсерия, компилируемая в СВОЮ ОТДЕЛЬНУЮ
-                    # группу (series содержит '\'): sort_key[1] — позиция в
-                    # РОДИТЕЛЬСКОЙ серии (нужна только для решения, куда
-                    # отнести книгу), а не внутри самой дуги — её честная
-                    # позиция лежит в sort_key[2]. Реальный случай (Калинин
-                    # Даниил / "Злая Русь. Князь Фёдор"): дуга занимает
-                    # позиции 6-8 родительской серии, но сама состоит ровно
-                    # из 3 книг — итоговое имя "(т. 6-8)" выглядит так, будто
-                    # пропущены тома 1-5 ЭТОЙ дуги, хотя их никогда не было.
-                    # По решению пользователя: раз компиляция выносит
-                    # подсерию в отдельную группу — диапазон должен отражать
-                    # позицию ВНУТРИ неё. Строим диапазон из sort_key[2],
-                    # НЕ трогая сам sort_key (он остаётся глобальным для
-                    # межгруппового учёта позиций/дедупа в find_groups()).
-                    _all_named_arc_own = ('\\' in series) and run and all(
-                        getattr(b.record, 'series_source', '') == 'filename_named_arc'
-                        and b.sort_key[2] != 0
-                        for b in run
-                    )
-                    if all_dot_part:
-                        toms = sorted({b.sort_key[1] for b in run})
-                        run_range = f'{toms[0]}-{toms[-1]}' if len(toms) > 1 else str(toms[0])
-                        run_part_count = len(run)
-                    elif _all_named_arc_own:
-                        _locals = sorted({b.sort_key[2] for b in run})
-                        run_range = (
-                            f'{_locals[0]}-{_locals[-1]}' if len(_locals) > 1 else str(_locals[0])
-                        ) if _locals == list(range(_locals[0], _locals[-1] + 1)) else ''
-                        run_part_count = 0
-                    else:
-                        run_range = self._compute_volume_range(run, covered=_covered_here)
-                        run_part_count = 0
-                    _emit(CompilationGroup(
-                        author=author,
-                        series=series,
-                        books=run,
-                        order_determined=True,
-                        volume_range=run_range,
-                        duplicate_paths=duplicate_paths if first_group else [],
-                        alphabetical_order=False,
-                        part_count=run_part_count,
-                        series_complete=not bool(lone_numeric) and not _has_other_runs,
-                    ))
-                    first_group = False
-
-                # ── Нечисловые книги: компиляция по году / по названию ─────
-                # Если нечисловых >= 2 — обычная группа
-                # Если нечисловых < 2, но есть одиночные числовые книги — объединяем всё вместе.
-                # ИСКЛЮЧЕНИЕ: precompiled книги (volume_label содержит диапазон "N-M") не
-                # объединяем с нечисловыми — они уже содержат несколько томов и не являются
-                # "одиночными" книгами в смысле серии.
-                _RANGE_VL = re.compile(r'^\d+\s*[-–—]\s*\d+$')
-                lone_regular = [b for b in lone_numeric if not _RANGE_VL.match(b.volume_label or '')]
-                all_others = others
-                if len(others) < 2 and lone_regular:
-                    # Объединяем одиночные обычные (не precompiled) + нечисловые,
-                    # НО только если lone_regular ровно один — иначе это несколько томов
-                    # с явными номерами и пробелом между ними (например, тома 7 и 9 без 8):
-                    # такие группы не компилируем.
-                    # Дополнительно: не объединяем, если ВСЕ "нечисловые" книги
-                    # полностью неопределены (order_ambiguous) — тот же принцип,
-                    # что и баг №47: без реального номера/позиции нет оснований
-                    # считать их частью той же серии, а не случайно попавшим в
-                    # ту же папку посторонним произведением. Реальный случай
-                    # (docs/quality-roadmap.md, баг №52): Гришанин Дмитрий /
-                    # "Безликие" — единственный пронумерованный том 1 сливался
-                    # с "Мах-недоучка.fb2" (другое произведение, без номера) в
-                    # одну группу компиляции только потому, что оба лежали в
-                    # одной папке.
-                    if (len(lone_regular) == 1
-                            and others
-                            and not all(b.order_ambiguous for b in others)):
-                        all_others = sorted(lone_regular, key=lambda b: b.sort_key) + list(others)
-                        lone_numeric = [b for b in lone_numeric if b not in lone_regular]
-
-                if len(all_others) >= 2:
-                    # Не компилируем если ни одна книга не имеет реального номера тома
-                    # (sort_key[0] == 0). Год публикации и «не определён» — не основание
-                    # для компиляции: порядок чтения неизвестен.
-                    if not any(b.sort_key[0] == 0 for b in all_others):
-                        continue
-                    all_oth_ambig = all(b.order_ambiguous for b in all_others)
-                    oth_sorted = sorted(all_others, key=lambda b: b.sort_key)
-                    _emit(CompilationGroup(
-                        author=author,
-                        series=series,
-                        books=oth_sorted,
-                        order_determined=not any(b.order_ambiguous for b in all_others),
-                        volume_range='',
-                        duplicate_paths=duplicate_paths if first_group else [],
-                        alphabetical_order=all_oth_ambig,
-                    ))
-                    first_group = False
+            self._build_group_from_bucket(recs, work_dir, _emit, _punct_norm, _single_slot_by_root)
 
         # ── POST-PASS: подавить compile-группы, полностью покрытые другой группой.
         #
@@ -2051,6 +1116,1052 @@ class FB2CompilerService:
         groups.sort(key=lambda g: (g.author.lower(), g.series.lower()))
         self._log(f"Найдено групп для компиляции: {len(groups)}")
         return groups
+
+
+    def _build_group_from_bucket(self, recs, work_dir, _emit, _punct_norm, _single_slot_by_root) -> None:
+        """Тело цикла по бакетам из find_groups() — одна группа компиляции."""
+        if len(recs) < 2:
+            return
+        author = recs[0].proposed_author.strip()
+
+        ctx = SimpleNamespace(author=author)
+        self._group_series_and_books(recs, work_dir, ctx)
+        if self._group_skip_if_all_arc_precompiled(ctx):
+            return
+        self._group_service_word_correction(ctx)
+        self._group_collection_correction(_emit, ctx)
+        self._group_majority_numbering_correction(ctx)
+        self._group_match_multipart_titles(ctx)
+        if self._group_filter_precompiled(_emit, ctx):
+            return
+        self._group_filter_dominant_folder(ctx)
+        self._group_dedupe_by_title(ctx)
+        self._group_dedupe_by_position(ctx)
+        if self._group_dedupe_by_content(_emit, ctx):
+            return
+        if self._group_emit(_emit, _punct_norm, _single_slot_by_root, ctx):
+            return
+
+
+    def _group_series_and_books(self, recs, work_dir, ctx) -> None:
+        """Группа компиляции, шаг 1: Имя серии группы и список книг с ключами сортировки."""
+        # Определяем имя серии для группы.
+        # Если все записи принадлежат одной подсерии — используем полный путь
+        # (Root\Sub), чтобы сохранить имя и порядковый номер подсерии.
+        # Если записи из разных подсерий (объединённая группа вида Серия N\X +
+        # Серия M\Y) — используем очищенный корень.
+        _all_subs = {r.proposed_series.strip().split('\\', 1)[1]
+                     for r in recs if '\\' in r.proposed_series}
+        _s0 = recs[0].proposed_series.strip()
+        # Первая запись с подсерией ('\\') — используем её как источник серии
+        # если recs[0] оказался плоской записью (folder_dataset без arc-детекции).
+        _s_with_sub = next((r.proposed_series.strip() for r in recs
+                            if '\\' in r.proposed_series), None)
+        # Если в группе есть записи без подсерии — их название задаёт зонтичную серию.
+        # Пример: "Не ГГ" (тт.1,4) + "Не ГГ\Курсанты" (тт.2-3) → серия = "Не ГГ".
+        _plain = next((r.proposed_series.strip() for r in recs
+                       if '\\' not in r.proposed_series), None)
+        if _plain:
+            series = _plain
+        elif len(_all_subs) == 1 and _s_with_sub:
+            # Единственная подсерия и нет плоских книг — берём полный путь
+            series = _s_with_sub
+        else:
+            if '\\' in _s0:
+                _root = _s0.split('\\')[0].strip()
+                series = re.sub(r'\s+\d{1,4}\s*$', '', _root).strip() or _root
+            else:
+                series = _s0
+
+        books = [self._make_book(rec, work_dir) for rec in recs]
+        duplicate_paths: List[Path] = []
+
+        # Названия всех книг группы — запасная привязка диапазона к серии
+        # в _precompiled_range() для франшиз, где имя серии-зонтика не
+        # встречается в именах отдельных томов (см. docstring метода).
+        _group_titles = [b.record.file_title or b.abs_path.stem for b in books]
+        # Максимальная известная позиция в группе — единственный источник
+        # правды для диапазонов вида "N-финал" (баг №68 доп.), где верхняя
+        # граница не числовая. Считаем ОДИН раз на весь бакет.
+        _max_known_pos = max(
+            (b.sort_key[1] for b in books
+             if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0),
+            default=0,
+        ) or None
+        ctx._group_titles = _group_titles
+        ctx._max_known_pos = _max_known_pos
+        ctx.books = books
+        ctx.duplicate_paths = duplicate_paths
+        ctx.series = series
+
+
+    def _group_skip_if_all_arc_precompiled(self, ctx) -> bool | None:
+        """Группа компиляции, шаг 2: Пропуск: все книги — предкомпиляции разных арок с внутренними диапазонами."""
+        _group_titles = ctx._group_titles
+        _max_known_pos = ctx._max_known_pos
+        books = ctx.books
+        series = ctx.series
+        # --- Если все книги в группе — уже предкомпиляции с разными series_number,
+        # это отдельные скомпилированные подсерии — не объединяем их дальше.
+        # Пример: "Вселенная Сафари 2. Егерь (Трилогия)" + "Вселенная Сафари 3.
+        # Чёрный археолог (Трилогия)" → оба уже готовы, merge не нужен.
+        # volume_label может быть ещё "2"/"3" (до контекстной коррекции),
+        # поэтому проверяем через _precompiled_range напрямую.
+        _precomp_ranges = {
+            id(b): self._precompiled_range(b, series, _group_titles, _max_known_pos)
+            for b in books
+        }
+        _all_precompiled = all(hi > 0 for lo, hi in _precomp_ranges.values())
+        if _all_precompiled and len(books) >= 2:
+            _sn_vals = [b.record.series_number or '' for b in books]
+            # Только если series_number — простые целые числа (arc-номера: 2, 3…),
+            # а не диапазоны ("1-3") и не пустые значения.
+            _plain_ints = all(re.match(r'^\d+$', sn) for sn in _sn_vals)
+            if _plain_ints and len(set(_sn_vals)) == len(_sn_vals):
+                # Дополнительная проверка: если все arc-позиции одноточечные (lo==hi),
+                # это отдельные arc'и родительской серии — их нужно компилировать вместе.
+                # Пропускаем только если хотя бы один имеет многокнижный диапазон (lo<hi).
+                _any_multi = any(lo < hi for lo, hi in _precomp_ranges.values())
+                if _any_multi:
+                    return True  # пропускаем — подсерии с внутренними диапазонами
+
+
+    def _group_service_word_correction(self, ctx) -> None:
+        """Группа компиляции, шаг 3: Контекстная коррекция: книги с сервисным словом (Трилогия…)."""
+        _group_titles = ctx._group_titles
+        _max_known_pos = ctx._max_known_pos
+        books = ctx.books
+        series = ctx.series
+        # --- Контекстная коррекция: книги с сервисным словом (Трилогия…)
+        # без явного series_number, которые не были опознаны _precompiled_range
+        # как предкомпиляция из-за отсутствия связи с именем серии в stem.
+        # Если в группе уже есть отдельные тома 1..N (N = число из слова),
+        # принудительно задаём series_number='1-N' и пересчитываем sort_key.
+        _known_positions = {
+            (b.sort_key[2] if b.sort_key[0] == 0 and b.sort_key[1] == 0 else b.sort_key[1])
+            for b in books if b.sort_key[0] == 0
+        } - {0}
+        _SWORDS_IDX = {kw.lower(): idx for idx, kw in enumerate(self._SERIES_WORDS) if kw}
+        _SWORDS_PAT = re.compile(
+            '|'.join(re.escape(kw) for kw in _SWORDS_IDX),
+            re.IGNORECASE | re.UNICODE,
+        )
+        for book in books:
+            # Уже опознанная предкомпиляция — пропускаем
+            if self._RANGE_NUM_RE.match(book.volume_label or ''):
+                continue
+            stem_title = (book.abs_path.stem + ' ' + (book.record.file_title or '')).lower()
+            m = _SWORDS_PAT.search(stem_title)
+            if not m:
+                continue
+            # Сервисное слово — часть САМОГО НАЗВАНИЯ серии (не структурный
+            # маркер "N-в-одном файле") — см. пояснение в _precompiled_range,
+            # баг №51. Иначе КАЖДЫЙ отдельный том серии вроде "Трилогия
+            # Дэвабада" ложно принудительно помечался диапазоном 1-N.
+            if m.group(0).lower() in series.lower():
+                continue
+            n_vols = _SWORDS_IDX[m.group(0).lower()]
+            # Условие: все тома 1..N присутствуют среди других книг группы
+            if set(range(1, n_vols + 1)).issubset(_known_positions):
+                book.record.series_number = f'1-{n_vols}'
+                # Пересчитываем через _precompiled_range
+                lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
+                if hi > lo:
+                    book.sort_key = (0, lo, 0, 0)
+                    book.volume_label = f'{lo}-{hi}'
+                    book.sort_source = 'filename_range'
+                    book.order_ambiguous = False
+
+
+    def _group_collection_correction(self, _emit, ctx) -> None:
+        """Группа компиляции, шаг 4: Коррекция «Сборника» и карта дуг."""
+        author = ctx.author
+        books = ctx.books
+        series = ctx.series
+        # --- Коррекция «Сборника»: книга с «Сборник» в имени без подсерии.
+        # Читаем <annotation> сборника и сопоставляем имена всех дуг группы
+        # с её текстом — так один сборник может покрывать несколько подсерий.
+        # Все совпавшие дуги: отдельные книги → duplicate_paths.
+        _SBORNIK_RE = re.compile(r'\bсборник\b', re.IGNORECASE)
+        # Карта дуг: arc_num → {'name': str, 'books': [CompilationBook]}
+        # Все книги с подсерией в proposed_series (содержат '\\').
+        _arc_map2: dict = {}
+        for _b in books:
+            if '\\' not in (_b.record.proposed_series or ''):
+                continue
+            _arc_num = _b.sort_key[1] if _b.sort_key[0] == 0 and _b.sort_key[1] else 0
+            if not _arc_num:
+                continue
+            if _arc_num not in _arc_map2:
+                _sub = (_b.record.proposed_series or '').split('\\')
+                _arc_part = _sub[1].strip() if len(_sub) >= 2 else ''
+                _arc_name = re.sub(r'^\d+\.\s*', '', _arc_part).lower().replace('ё', 'е')
+                _arc_map2[_arc_num] = {'name': _arc_name, 'books': []}
+            _arc_map2[_arc_num]['books'].append(_b)
+
+        if _arc_map2:
+            for _book in list(books):
+                if self._RANGE_NUM_RE.match(_book.volume_label or ''):
+                    continue
+                if not _SBORNIK_RE.search(_book.abs_path.stem):
+                    continue
+                if '\\' in (_book.record.proposed_series or ''):
+                    continue
+                # Приоритет: аннотация из файла, запасной — имя файла
+                _search_text = self._extract_annotation_text(_book)
+                if not _search_text:
+                    _search_text = _book.abs_path.stem.lower().replace('ё', 'е')
+                # Ищем ВСЕ совпавшие дуги:
+                # 1) по названию дуги (≥2 слов совпадают)
+                # 2) по названиям книг дуги (хотя бы одна книга упомянута)
+                _matched_arcs = []
+                for _arc_num, _arc_info in _arc_map2.items():
+                    # Критерий 1: название дуги
+                    _words = [w for w in _arc_info['name'].split() if len(w) >= 3]
+                    _score = sum(1 for w in _words if w in _search_text)
+                    if _score >= 2:
+                        _matched_arcs.append(_arc_num)
+                        continue
+                    # Критерий 2: хотя бы одна книга дуги упомянута в тексте
+                    for _ab in _arc_info['books']:
+                        _btitle = (_ab.record.file_title or _ab.abs_path.stem).lower().replace('ё', 'е')
+                        _btitle = re.sub(r'^\d+\.\s*', '', _btitle).strip()
+                        _bwords = [w for w in _btitle.split() if len(w) >= 4]
+                        if _bwords and sum(1 for w in _bwords if w in _search_text) >= min(2, len(_bwords)):
+                            _matched_arcs.append(_arc_num)
+                            break
+                if not _matched_arcs:
+                    continue
+                _matched_arcs.sort()
+                # Сборник занимает позицию наименьшей дуги
+                _book.sort_key = (0, _matched_arcs[0], 0, 0)
+                _book.volume_label = str(_matched_arcs[0])
+                _book.sort_source = 'inferred_sbornik'
+                _book.order_ambiguous = False
+                # Все книги совпавших дуг → дубликаты Сборника.
+                # Сборник эмитируется как cleanup_only группа и убирается из books,
+                # чтобы оставшиеся дуги обрабатывались независимо.
+                _all_arc_books_to_remove: set = set()
+                _sbornik_dup_paths = []
+                for _arc_num in _matched_arcs:
+                    for _arc_book in _arc_map2[_arc_num]['books']:
+                        _sbornik_dup_paths.append(_arc_book.abs_path)
+                        _all_arc_books_to_remove.add(_arc_book.abs_path)
+                books = [b for b in books if b.abs_path not in _all_arc_books_to_remove]
+                _arc_range = (
+                    f'{_matched_arcs[0]}-{_matched_arcs[-1]}'
+                    if len(_matched_arcs) > 1 else str(_matched_arcs[0])
+                )
+                _emit(CompilationGroup(
+                    author=author, series=series, books=[],
+                    order_determined=True,
+                    volume_range=_arc_range,
+                    duplicate_paths=_sbornik_dup_paths,
+                    kept_paths=[_book.abs_path],
+                    cleanup_only=True,
+                ))
+                books = [b for b in books if b.abs_path != _book.abs_path]
+        ctx.books = books
+
+
+    def _group_majority_numbering_correction(self, ctx) -> None:
+        """Группа компиляции, шаг 5: Групповая коррекция по преобладающему способу нумерации."""
+        books = ctx.books
+        # --- Групповая коррекция: если большинство книг группы используют
+        # series_number из метаданных, то книги где filename перебил метаданные
+        # исправляем обратно по мета. Это решает случай когда файлы пронумерованы
+        # "1. Книга 1", "2. Книга 2", "3. Книга 3" но book 3 на самом деле том 4.
+        _sn_meta_books = [b for b in books if b.sort_source == 'series_number'
+                          and b.sort_key[0] == 0 and b.sort_key[1] > 0]
+        _sn_file_books = [b for b in books if b.sort_source == 'filename'
+                          and b.sort_key[0] == 0 and b.record.series_number
+                          and re.match(r'^\d+$', b.record.series_number.strip())]
+        if len(_sn_meta_books) > len(_sn_file_books) and _sn_file_books:
+            # Правдоподобность (баг №68, docs/quality-roadmap.md): метадата
+            # большинства книг группы не гарантирует, что КОНКРЕТНОЕ значение
+            # meta_n правдоподобно — реальный случай (Клеванский Кирилл /
+            # "Сердце Дракона"): один файл несёт битую метадату стороннего
+            # инструмента (<sequence number="32">, автор метаданных —
+            # "Telegram Bot"), хотя правильный номер "18" уже верно
+            # извлечён из имени файла/заголовка. Большинство ОСТАЛЬНЫХ
+            # книг группы честно используют метаданные (позиции 1-15) —
+            # это удовлетворяло условию "большинство доверяет метадате" и
+            # безусловно затирало верный filename-номер битым "32". Не
+            # применяем коррекцию, если meta_n улетает далеко за пределы
+            # уже известных позиций группы — настоящая коррекция (файлы
+            # "1. Книга 1", "2. Книга 2", но book 3 — на самом деле том 4)
+            # всего лишь продолжает известную последовательность на
+            # небольшой шаг, а не перескакивает на позицию, вдесятеро
+            # большую всего остального.
+            _known_positions = [
+                b.sort_key[1] for b in books
+                if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0
+            ]
+            _plausible_ceiling = (
+                max(_known_positions) + len(_sn_file_books) if _known_positions else None
+            )
+            for book in _sn_file_books:
+                meta_n = int(book.record.series_number.strip())
+                if meta_n < 1900 and meta_n > 0 and meta_n != book.sort_key[1]:
+                    if _plausible_ceiling is not None and meta_n > _plausible_ceiling:
+                        continue
+                    # Баг №109: потолок правдоподобия ловит только "СЛИШКОМ
+                    # большое" число (баг №68 — битые "32"/"99" от сторонних
+                    # инструментов) — но не ловит число, которое пусть и
+                    # правдоподобно само по себе, уже ЗАНЯТО другим файлом
+                    # группы с его собственной, независимо подтверждённой
+                    # позицией. Реальный случай (Шарапов Валерий /
+                    # "Контрразведка"): том 13 несёт битую метадату (<sequence
+                    # number="12">, опечатка издателя), а позиция 12 уже
+                    # занята другим, настоящим 12-м томом — оба сохраняли имя
+                    # файла как более надёжный сигнал, коррекция здесь
+                    # создала бы неразрешимую коллизию вместо продолжения
+                    # последовательности (в отличие от бага №68, где
+                    # скорректированная позиция ни с кем не конфликтовала).
+                    if any(
+                        other is not book and other.sort_key[0] == 0
+                        and other.sort_key[1] == meta_n
+                        for other in books
+                    ):
+                        continue
+                    book.sort_key = (0, meta_n, 0, book.sort_key[3])
+                    book.sort_source = 'series_number'
+                    book.volume_label = str(meta_n)
+                    book.order_ambiguous = False
+
+
+    def _group_match_multipart_titles(self, ctx) -> None:
+        """Группа компиляции, шаг 6: Сопоставление многосоставных заголовков с книгами группы."""
+        _group_titles = ctx._group_titles
+        _max_known_pos = ctx._max_known_pos
+        books = ctx.books
+        series = ctx.series
+        # --- Сопоставление многосоставных заголовков с книгами группы ----------
+        # Внешние компиляции (e.g. «Спартанец. Великий царь. Удар в сердце»)
+        # не имеют <sequence number> и «Том N» — только заголовки разделов.
+        # Сопоставляем части многосоставного file_title с file_title других книг
+        # в группе: если ≥2 совпадений → задаём series_number диапазоном позиций.
+        _pos_to_title: Dict[int, str] = {}
+        for b in books:
+            if b.sort_key[0] == 0 and b.sort_key[1] > 0 and not b.order_ambiguous:
+                t = (b.record.file_title or '').strip()
+                if t:
+                    _pos_to_title[b.sort_key[1]] = t.lower().replace('ё', 'е')
+        if _pos_to_title:
+            for book in books:
+                if self._RANGE_NUM_RE.match(book.volume_label or ''):
+                    continue  # уже распознана как предкомпиляция
+                # Пропускаем файлы с ведущим числом в стеме — это обычная книга с позицией,
+                # а не внешняя компиляция. «4_Спартанец. Племя равных» — том 4, не сборник.
+                _stem_chk = book.abs_path.stem
+                if re.match(r'^\d', _stem_chk):
+                    continue
+                multi = (book.record.file_title or '').strip().lower().replace('ё', 'е')
+                if not multi or len(re.findall(r'\.\s+[а-яёa-z]', multi, re.IGNORECASE)) < 1:
+                    continue
+                own_pos = book.sort_key[1] if book.sort_key[0] == 0 else None
+                # Если заголовок этого файла совпадает с заголовком его собственной позиции
+                # (т.е. все книги группы имеют одинаковый file_title) — это обычный том,
+                # а не внешняя компиляция других книг.
+                if own_pos and _pos_to_title.get(own_pos, '') == multi:
+                    continue
+                matched = sorted(
+                    pos for pos, t in _pos_to_title.items()
+                    if t and t in multi and pos != own_pos
+                )
+                if len(matched) < 2:
+                    continue
+                lo_m, hi_m = matched[0], matched[-1]
+                # Требуем непрерывный диапазон: все позиции от lo до hi должны присутствовать
+                # среди совпавших. «1 и 4» без 2 и 3 — не трилогия.
+                if set(matched) != set(range(lo_m, hi_m + 1)):
+                    continue
+                book.record.series_number = f'{lo_m}-{hi_m}'
+                lo2, hi2 = self._precompiled_range(book, series, _group_titles, _max_known_pos)
+                if hi2 > lo2:
+                    book.sort_key = (0, lo2, 0, 0)
+                    book.volume_label = f'{lo2}-{hi2}'
+                    book.sort_source = 'filename_range'
+                    book.order_ambiguous = False
+
+
+    def _group_filter_precompiled(self, _emit, ctx) -> bool | None:
+        """Группа компиляции, шаг 7: Фильтр 1: заранее скомпилированные файлы."""
+        _group_titles = ctx._group_titles
+        _max_known_pos = ctx._max_known_pos
+        author = ctx.author
+        books = ctx.books
+        duplicate_paths = ctx.duplicate_paths
+        series = ctx.series
+        # --- Фильтр 1: обработка заранее скомпилированных файлов ----------
+        # Признак: stem/title содержит сервисное слово (Трилогия …) или
+        # series_number — диапазон вида "1-3".
+        #
+        # Три состояния:
+        #   1. АКТУАЛЬНА (best_count >= regular_count): компиляция уже
+        #      сделана — сохраняем предкомпиляцию, отдельные тома на удаление.
+        #   2. ЧАСТИЧНО УСТАРЕЛА (best_count < regular_count, но предкомпиляция
+        #      содержит тома которых нет отдельно, например том 1): включаем
+        #      предкомпиляцию как источник + добавляем недостающие тома.
+        #      Тома, уже покрытые предкомпиляцией, помечаем на удаление.
+        #   3. ПОЛНОСТЬЮ УСТАРЕЛА (все тома предкомпиляции есть и по отдельности):
+        #      удаляем предкомпиляцию, компилируем из отдельных томов.
+        precompiled: List[Tuple[CompilationBook, int, int]] = []  # (book, lo, hi)
+        regular_books: List[CompilationBook] = []
+        for book in books:
+            # Сначала проверяем inner_precompilation (EBLO-скомпилированная подсерия
+            # «ч. N в K книгах»). _precompiled_range не знает этот паттерн,
+            # поэтому обрабатываем до его вызова.
+            if book.sort_source == 'inner_precompilation':
+                _rng_m = re.match(r'^(\d+)-(\d+)$', book.volume_label or '')
+                if _rng_m:
+                    lo, hi = int(_rng_m.group(1)), int(_rng_m.group(2))
+                    # sort_source оставляем 'inner_precompilation' — _best_is_inner
+                    # проверяет именно его, чтобы не путать с обычными предкомпиляциями.
+                    book.order_ambiguous = False
+                    precompiled.append((book, lo, hi))
+                    continue
+            lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
+            if hi > lo:
+                # Обновляем sort_key и volume_label по реальному диапазону файла.
+                # Без этого "1-2. Название.fb2" получает sk=(0,2,0) vl='2' вместо
+                # sk=(0,1,0) vl='1-2', и _split_into_consecutive_runs считает
+                # что "1-2" и "3-4" не идут подряд (lo=4 ≠ hi=2+1).
+                # Для подсерий без числа в корне (parent_num=0) отдельные книги
+                # используют (0, 0, sub_ordinal, 0). Ставим предкомпиляцию в ту же
+                # плоскость, иначе она сортируется после всех (0 < lo).
+                _pre_series_root = series.split('\\')[0].strip() if '\\' in series else ''
+                _pre_root_has_num = bool(re.search(r'\d+\s*$', _pre_series_root))
+                if '\\' in series and not _pre_root_has_num:
+                    book.sort_key = (0, 0, lo, 0)
+                else:
+                    book.sort_key = (0, lo, 0, 0)
+                book.volume_label = f'{lo}-{hi}'
+                book.sort_source = 'filename_range'
+                book.order_ambiguous = False
+                precompiled.append((book, lo, hi))
+            else:
+                regular_books.append(book)
+
+        if precompiled:
+            regular_count = len(regular_books)
+            # Берём предкомпиляцию с максимальным охватом
+            best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
+
+            # Защита от урезанных изданий: широкий диапазон сам по себе не
+            # значит "больше контента" — более старая/сокращённая редакция
+            # может номинально покрывать томы 1-5, но реально содержать
+            # меньше текста, чем более новые переиздания по частям.
+            # Пример (реальный): "Странник. Пенталогия" (2010, ~4.3 МБ,
+            # тома 1-5) выигрывала у "Странник 1-3" (2021) + "Академик
+            # (Странник 4-5)" (2022) — вместе ~7.5 МБ, почти вдвое больше —
+            # хотя выбиралась как "лучшая" только по ширине диапазона.
+            # Если другие предкомпиляции ТОЧНО (без пропусков/наложений)
+            # замощают тот же диапазон и суммарно заметно крупнее —
+            # считаем best_pre подозрительно неполным и заменяем его.
+            _others = [e for e in precompiled if e[0] is not best_pre]
+            _tiling = sorted(_others, key=lambda t: t[1])
+            _is_exact_tiling = (
+                bool(_tiling)
+                and _tiling[0][1] == best_lo
+                and _tiling[-1][2] == best_hi
+                and all(_tiling[i][2] + 1 == _tiling[i + 1][1] for i in range(len(_tiling) - 1))
+            )
+            if _is_exact_tiling:
+                def _sz(b: 'CompilationBook') -> int:
+                    # Сравниваем длину распакованного содержимого, а не
+                    # байты на диске: сжатый .fb2.zip (см. функцию "Сжать"
+                    # в Library) на диске меньше несжатого .fb2 с тем же
+                    # или даже большим реальным содержимым — сравнение
+                    # .stat().st_size ложно посчитало бы сжатый файл
+                    # урезанным изданием.
+                    try:
+                        return len(read_fb2_bytes(b.abs_path))
+                    except OSError:
+                        return 0
+                _best_size = _sz(best_pre)
+                _tiling_size = sum(_sz(e[0]) for e in _tiling)
+                if _best_size < _tiling_size * 0.7:
+                    self._log(
+                        f"  ⚠ {best_pre.abs_path.name} покрывает {best_lo}-{best_hi} шире всех, "
+                        f"но заметно меньше по размеру суммы {[e[0].abs_path.name for e in _tiling]} "
+                        f"({_best_size // 1024} КБ vs {_tiling_size // 1024} КБ) — вероятно, урезанное "
+                        f"издание. Предпочитаем более полные части."
+                    )
+                    duplicate_paths.append(best_pre.abs_path)
+                    precompiled = _others
+                    best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
+
+            best_count = best_hi - best_lo + 1
+
+            # Фаза 1: дедуплицировать контент-дубли (файлы с одинаковым диапазоном).
+            # Для каждой группы (lo,hi): оставляем best_pre если он в группе, иначе первый.
+            # Остальные → duplicate_paths. Это предотвращает взаимное покрытие:
+            # Орёл: [1-2 Саймон] + [1-2 Скэрроу.] → Скэрроу. → дубль, Саймон остаётся.
+            # Кожевников: [1-3 Олег] + [1-3 "."] → обе разные → одна остаётся.
+            _by_range: dict = {}
+            for entry in precompiled:
+                b, lo, hi = entry
+                _by_range.setdefault((lo, hi), []).append(entry)
+            precompiled_unique: List[Tuple] = []
+            for rng, entries in _by_range.items():
+                if len(entries) == 1:
+                    precompiled_unique.append(entries[0])
+                    continue
+                # Среди нескольких файлов с одинаковым диапазоном:
+                # сохраняем best_pre (если в группе) или первый по порядку
+                winner = next((e for e in entries if e[0] is best_pre), entries[0])
+                precompiled_unique.append(winner)
+                for e in entries:
+                    if e is not winner:
+                        duplicate_paths.append(e[0].abs_path)
+            precompiled = precompiled_unique
+
+            # Фаза 2: range coverage — проверяем только файлы с разными диапазонами.
+            # Прочие предкомпиляции — на удаление ТОЛЬКО если их диапазон полностью
+            # покрыт хотя бы одной другой (best или иной).
+            other_precompiled: List[Tuple] = []
+            for entry in precompiled:
+                book, lo, hi = entry
+                if book is best_pre:
+                    continue
+                # Arc-point pre-compilations (lo==hi) не дедуплицируем друг против друга:
+                # два файла с одинаковым arc-position могут покрывать РАЗНЫЙ внутренний
+                # контент (например, Брия 1 кн.1-2 и Брия 1 кн.3-4 оба имеют arc-pos 1).
+                # Для подсерий (is_subseries) нужна проверка series_number — иначе
+                # «Дилогия арк 3» (lo=1,hi=2) ошибочно покроется «Тетралогией арк 2»
+                # (lo=1,hi=4), хотя это разные арки одной родительской серии.
+                _is_arc_point = (lo == hi)
+                _book_sn = (book.record.series_number or '').strip()
+                _is_subseries_bucket = '\\' in series
+                covered_by_any = (not _is_arc_point) and any(
+                    (o_lo <= lo and hi <= o_hi)
+                    and (not _is_subseries_bucket
+                         or (o_book.record.series_number or '').strip() == _book_sn)
+                    for (o_book, o_lo, o_hi) in precompiled
+                    if o_book is not book
+                )
+                if covered_by_any:
+                    duplicate_paths.append(book.abs_path)
+                else:
+                    # Не полностью покрыт ни одной другой предкомпиляцией → источник
+                    other_precompiled.append(entry)
+
+            # АКТУАЛЬНА только если ВСЕ обычные тома входят в диапазон предкомпиляции
+            # И нет других непокрытых предкомпиляций (other_precompiled пуст).
+            # Пример: предкомпиляция 1-3 + обычный том 4 → НЕ актуальна (том 4 не покрыт).
+            # Пример: предкомпиляция 1-2 + предкомпиляция 3-4 → НЕ актуальна (нужно объединить).
+            _best_is_inner = best_pre.sort_source == 'inner_precompilation'
+            _inner_arc_pos = best_pre.sort_key[1] if _best_is_inner else None
+
+            def _vol_num_for_check(b: 'CompilationBook') -> Optional[int]:
+                if b.sort_key and b.sort_key[0] == 0:
+                    if _best_is_inner:
+                        # Внутренняя предкомпиляция: сравниваем по sk[2] (подпозиция),
+                        # только если книга находится в той же arc-позиции.
+                        if b.sort_key[1] == _inner_arc_pos and b.sort_key[2] != 0:
+                            return b.sort_key[2]
+                        return None
+                    # Для подсерий без числа в корне позиция хранится в sort_key[2]
+                    return b.sort_key[2] if b.sort_key[1] == 0 else b.sort_key[1]
+                return None
+
+            all_covered = (
+                not other_precompiled and
+                (all(
+                    (n := _vol_num_for_check(r)) is not None and best_lo <= n <= best_hi
+                    for r in regular_books
+                ) if regular_books else True)
+            )
+
+            if all_covered:
+                # 1. АКТУАЛЬНА — компиляция уже сделана, новая не нужна.
+                # Отдельные тома, уже покрытые компиляцией, — на удаление.
+                for book in regular_books:
+                    duplicate_paths.append(book.abs_path)
+                if duplicate_paths:
+                    # Есть что удалить — сообщаем через cleanup_only группу
+                    _emit(CompilationGroup(
+                        author=author,
+                        series=series,
+                        books=[],
+                        order_determined=True,
+                        volume_range=f'{best_lo}-{best_hi}' if best_lo != best_hi else str(best_lo),
+                        duplicate_paths=duplicate_paths,
+                        kept_paths=[best_pre.abs_path],
+                        cleanup_only=True,
+                    ))
+                return True
+            else:
+                # Определяем, какие тома предкомпиляции присутствуют отдельно
+                def _vol_num(b: CompilationBook) -> Optional[int]:
+                    """Номер тома из sort_key если источник надёжен."""
+                    if b.sort_key and b.sort_key[0] == 0:
+                        if _best_is_inner:
+                            if b.sort_key[1] == _inner_arc_pos and b.sort_key[2] != 0:
+                                return b.sort_key[2]
+                            return None
+                        # Для подсерий без числа в корне позиция в sort_key[2]
+                        return b.sort_key[2] if b.sort_key[1] == 0 else b.sort_key[1]
+                    return None
+
+                # Если regular_books пуст — нечем покрывать тома по отдельности.
+                # all(...) при пустом range даёт vacuous True — это неверно:
+                # «0 книг покрывают 4 тома» не означает «покрыты».
+                pre_covered_individually = bool(regular_books) and all(
+                    any(_vol_num(r) == v for r in regular_books)
+                    for v in range(best_lo, best_hi + 1)
+                )
+
+                if pre_covered_individually:
+                    # 3. ПОЛНОСТЬЮ УСТАРЕЛА — все её тома есть по отдельности
+                    duplicate_paths.append(best_pre.abs_path)
+                    books = regular_books
+                else:
+                    # 2. ЧАСТИЧНО УСТАРЕЛА
+                    covered_individually = [
+                        r for r in regular_books
+                        if (n := _vol_num(r)) is not None and best_lo <= n <= best_hi
+                    ]
+                    remaining = [r for r in regular_books if r not in covered_individually]
+
+                    # Проверяем: продолжают ли оставшиеся книги диапазон предкомпиляции?
+                    # Пример: предкомп [1-4] + книги [5,6,7] → консекутивны (5 = 4+1)
+                    #          → компилируем вместе → один файл 1-7
+                    # Пример: предкомп [1-3] + книга [7] → НЕ консекутивны
+                    #          → cleanup_only (удаляем покрытые) + книга [7] standalone
+                    remaining_known_positions = [
+                        n for r in remaining if (n := _vol_num(r)) is not None
+                    ]
+                    remaining_has_unknown = any(_vol_num(r) is None for r in remaining)
+                    remaining_extends_pre = (
+                        remaining_known_positions and
+                        min(remaining_known_positions) == best_hi + 1
+                    )
+
+                    if covered_individually and not remaining_extends_pre and not remaining_has_unknown and not other_precompiled:
+                        # Оставшиеся книги не продолжают предкомпиляцию и нет книг
+                        # с неизвестной позицией → cleanup_only: предкомп остаётся,
+                        # покрытые тома — на удаление; оставшиеся обрабатываются отдельно.
+                        cov_dup_paths = list(duplicate_paths) + [r.abs_path for r in covered_individually]
+                        _emit(CompilationGroup(
+                            author=author, series=series, books=[],
+                            order_determined=True,
+                            volume_range=(
+                                f'{best_lo}-{best_hi}' if best_lo != best_hi else str(best_lo)
+                            ),
+                            duplicate_paths=cov_dup_paths,
+                            kept_paths=[best_pre.abs_path],
+                            cleanup_only=True,
+                        ))
+                        duplicate_paths = []
+                        books = remaining
+                    else:
+                        # Оставшиеся книги продолжают серию (или есть книги без номера)
+                        # → включаем предкомпиляцию как источник, компилируем вместе.
+                        for r in covered_individually:
+                            duplicate_paths.append(r.abs_path)
+                        books = [best_pre] + remaining
+
+                # Добавляем прочие предкомпиляции с непересекающимися диапазонами
+                # как дополнительные источники (они уже НЕ в duplicate_paths).
+                for other_book, other_lo, other_hi in other_precompiled:
+                    # Проверяем: все тома этой предкомпиляции уже есть отдельно?
+                    other_fully_individual = bool(regular_books) and all(
+                        any(_vol_num(r) == v for r in regular_books)
+                        for v in range(other_lo, other_hi + 1)
+                    )
+                    if other_fully_individual:
+                        duplicate_paths.append(other_book.abs_path)
+                    else:
+                        books.append(other_book)
+                        # Индивидуальные книги в диапазоне [other_lo..other_hi]
+                        # дублируют контент предкомпиляции → помечаем к удалению.
+                        # Пример: «Щегол 6-11» + individual 6,7,8,9,10 →
+                        # individual 6-10 в дубли (книга 11 есть только в предкомп.).
+                        _cov = [r for r in list(books)
+                                if r is not other_book
+                                and (n := _vol_num(r)) is not None
+                                and other_lo <= n <= other_hi]
+                        for r in _cov:
+                            duplicate_paths.append(r.abs_path)
+                            try:
+                                books.remove(r)
+                            except ValueError:
+                                pass
+        else:
+            books = regular_books
+        ctx.books = books
+        ctx.duplicate_paths = duplicate_paths
+
+
+    def _group_filter_dominant_folder(self, ctx) -> None:
+        """Группа компиляции, шаг 8: Фильтр 1.5: приоритет доминирующей папки."""
+        books = ctx.books
+        duplicate_paths = ctx.duplicate_paths
+        # --- Фильтр 1.5: приоритет доминирующей папки --------------------
+        # Если большинство томов группы сосредоточено в одной папке,
+        # файлы из неё получают приоритет: дубли тех же томов из других
+        # папок помечаются к удалению. Тома, которых нет в доминирующей
+        # папке, берутся из других папок как обычно.
+        _eff_vol = self._book_eff_pos
+
+        if books:
+            # Считаем сколько уникальных позиций томов покрывает каждая папка
+            folder_vol_sets: Dict[str, set] = {}
+            for b in books:
+                folder = str(b.abs_path.parent)
+                folder_vol_sets.setdefault(folder, set())
+                rng_m = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
+                if rng_m:
+                    # Предкомпиляция — добавляем весь диапазон, не только lo
+                    lo_r, hi_r = int(rng_m.group(1)), int(rng_m.group(2))
+                    folder_vol_sets[folder].update(range(lo_r, hi_r + 1))
+                else:
+                    ev = _eff_vol(b)
+                    if ev:
+                        folder_vol_sets[folder].add(ev)
+            # Считаем также число файлов в каждой папке (тайбрейкер при равных томах)
+            folder_file_counts: Dict[str, int] = {}
+            for b in books:
+                folder_file_counts[str(b.abs_path.parent)] = \
+                    folder_file_counts.get(str(b.abs_path.parent), 0) + 1
+            if len(folder_vol_sets) > 1:
+                dominant_folder = max(
+                    folder_vol_sets,
+                    key=lambda f: (len(folder_vol_sets[f]), folder_file_counts.get(f, 0))
+                )
+                dominant_vols = folder_vol_sets[dominant_folder]
+                if dominant_vols:
+                    # Баг №109: совпадение номера позиции между доминирующей
+                    # папкой и ДРУГОЙ папкой не обязательно означает, что это
+                    # одна и та же книга — если "другая папка" на деле
+                    # независимая подсерия того же автора внутри общего
+                    # организационного корня (напр. "Мир Вальдиры\Кроу" рядом
+                    # с доминирующей "Мир Вальдиры\Герой крайних рубежей"),
+                    # совпадение позиции случайно. Реальный случай: "Мир
+                    # Вальдиры\Цикл Люца\1. Маньяк отмели..." удалялся как
+                    # "дубликат" ГКР-1, хотя это совершенно другая книга.
+                    # Прежде чем считать это дублем, требуем хотя бы одно общее
+                    # значимое слово (≥4 символа, без ведущего номера) со
+                    # stem книги(-гами) доминирующей папки на той же позиции —
+                    # иначе не удаляем, оставляем обе.
+                    def _significant_words(b: 'CompilationBook') -> set:
+                        s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', b.abs_path.stem)
+                        return {w.lower() for w in re.split(r'\W+', s) if len(w) >= 4}
+
+                    dominant_books_by_vol: Dict[int, List['CompilationBook']] = {}
+                    for db in books:
+                        if str(db.abs_path.parent) != dominant_folder:
+                            continue
+                        rng_dm = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', db.volume_label or '')
+                        if rng_dm:
+                            for v in range(int(rng_dm.group(1)), int(rng_dm.group(2)) + 1):
+                                dominant_books_by_vol.setdefault(v, []).append(db)
+                        else:
+                            dv = _eff_vol(db)
+                            if dv:
+                                dominant_books_by_vol.setdefault(dv, []).append(db)
+
+                    new_books = []
+                    for b in books:
+                        folder = str(b.abs_path.parent)
+                        vol = _eff_vol(b) or None
+                        # Предкомпиляция с диапазоном N-M, у которой hi > max(dominant_vols):
+                        # содержит уникальный контент за пределами доминирующей папки.
+                        rng_pre = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
+                        has_unique = rng_pre and any(
+                            v not in dominant_vols
+                            for v in range(int(rng_pre.group(1)), int(rng_pre.group(2)) + 1)
+                        )
+                        is_dup = folder != dominant_folder and vol and vol in dominant_vols and not has_unique
+                        if is_dup:
+                            peers = dominant_books_by_vol.get(vol, [])
+                            shares_words = any(
+                                _significant_words(b) & _significant_words(p) for p in peers
+                            )
+                            if not shares_words:
+                                is_dup = False
+                        if is_dup:
+                            duplicate_paths.append(b.abs_path)
+                        else:
+                            new_books.append(b)
+                    books = new_books
+        ctx.books = books
+
+
+    def _group_dedupe_by_title(self, ctx) -> None:
+        """Группа компиляции, шаг 9: Фильтр 2: дедупликация по нормализованному названию."""
+        books = ctx.books
+        duplicate_paths = ctx.duplicate_paths
+        series = ctx.series
+        # --- Фильтр 2: дедупликация по title (нормализованному) ----------
+        # Из дублей оставляем более позднюю редакцию (по году в имени файла),
+        # при равенстве — первый по алфавиту путь (детерминированный выбор).
+        def _title_dedup_order(b: CompilationBook):
+            year_m = re.search(r'[-–\s](\d{4})\b', b.abs_path.stem)
+            year = int(year_m.group(1)) if year_m else 0
+            # Предкомпиляция с бо́льшим диапазоном побеждает меньшую:
+            # «1-16» должна выжить против «1-14» при одинаковом title_key.
+            rng_m = re.match(r'^(\d+)\s*[-–—]\s*(\d+)$', b.volume_label or '')
+            range_hi = int(rng_m.group(2)) if rng_m else 0
+            return (-year, -range_hi, str(b.abs_path))
+
+        seen_titles: Dict[str, CompilationBook] = {}
+        for book in sorted(books, key=_title_dedup_order):
+            # Если file_title совпадает с именем серии — он не несёт информации
+            # о конкретном томе, используем stem файла как более информативный.
+            raw_title = book.record.file_title or book.abs_path.stem
+            if _norm_key(raw_title) == _norm_key(series):
+                raw_title = book.abs_path.stem
+            title_key = self._normalize_title_key(raw_title, series)
+            # Для книг с известной позицией тома (level-0) добавляем позицию к ключу,
+            # чтобы не дедуплицировать разные тома с одинаковым названием.
+            # Пример: «Маршал 1-5» и «Маршал 6-9» оба имеют file_title="Маршал" —
+            # без этой защиты они бы считались дублями.
+            if book.sort_key[0] == 0:
+                title_key = f"{title_key}\x00{book.sort_key[1]}"
+            if title_key not in seen_titles:
+                seen_titles[title_key] = book
+            else:
+                duplicate_paths.append(book.abs_path)
+        books = list(seen_titles.values())
+        ctx.books = books
+
+
+    def _group_dedupe_by_position(self, ctx) -> None:
+        """Группа компиляции, шаг 10: Фильтр 3: дедупликация по позиции тома."""
+        books = ctx.books
+        duplicate_paths = ctx.duplicate_paths
+        # --- Фильтр 3: дедупликация по позиции тома ----------------------
+        # Если после title-дедупликации остались книги с одинаковым sort_key
+        # на уровнях 0 (series_number) или 1 (filename number), оставляем
+        # первую по алфавиту, остальные помечаем как дубликаты.
+        books = self._dedup_by_position(books, duplicate_paths)
+        ctx.books = books
+
+
+    def _group_dedupe_by_content(self, _emit, ctx) -> bool | None:
+        """Группа компиляции, шаг 11: Фильтр 4: дедупликация по содержимому; сортировка."""
+        author = ctx.author
+        books = ctx.books
+        duplicate_paths = ctx.duplicate_paths
+        series = ctx.series
+        # --- Фильтр 4: дедупликация по содержимому -----------------------
+        # Если два файла начинаются с практически одинакового текста
+        # (SequenceMatcher ratio ≥ 0.85 на первых 2000 символах), один
+        # из них — незарегистрированная предкомпиляция или дубликат с
+        # другим форматированием. Оставляем файл с более детальной позицией
+        # в серии (ненулевой subseries-компонент), иначе — больший по размеру.
+        books = self._dedup_by_content(books, duplicate_paths)
+
+        if len(books) < 2:
+            # Если после dedup остался один файл, но есть дубликаты — создаём cleanup_only.
+            # Пример: два файла с одинаковым sort_key (01. vs 1.) — dedup оставляет один,
+            # другой попадает в duplicate_paths, но без группы они не удаляются.
+            if duplicate_paths and books:
+                _emit(CompilationGroup(
+                    author=author,
+                    series=series,
+                    books=[],
+                    order_determined=True,
+                    volume_range='',
+                    duplicate_paths=duplicate_paths,
+                    kept_paths=[books[0].abs_path],
+                    cleanup_only=True,
+                ))
+            return True
+        books_sorted, order_determined, alphabetical_order = self._sort_books(books)
+        self._normalize_complete_inner_tom_runs(books_sorted)
+        ctx.alphabetical_order = alphabetical_order
+        ctx.books_sorted = books_sorted
+
+
+    def _group_emit(self, _emit, _punct_norm, _single_slot_by_root, ctx) -> bool | None:
+        """Группа компиляции, шаг 12: Порядок не определён / сборка и выдача группы."""
+        alphabetical_order = ctx.alphabetical_order
+        author = ctx.author
+        books_sorted = ctx.books_sorted
+        duplicate_paths = ctx.duplicate_paths
+        series = ctx.series
+        if alphabetical_order:
+            # ВСЕ книги бакета имеют полностью неопределённый порядок
+            # (order_ambiguous=True у каждой — нет ни номера тома, ни
+            # даты, ничего) — единственный детерминированный порядок
+            # был бы алфавитным по названию, что не отражает никакого
+            # реального порядка чтения. Реальный случай (docs/
+            # quality-roadmap.md, баг №47): Житинский Александр /
+            # "Младший научный сотрудник Петр Верлухин" — 6 рассказов
+            # без series_number вообще. По решению пользователя такие
+            # группы НЕ компилируются вовсе — если это на самом деле
+            # пронумерованная серия с нераспознанным номером (а не
+            # сборник самостоятельных рассказов), молчаливая
+            # компиляция в произвольном порядке была бы хуже, чем
+            # оставить файлы как есть.
+            return True
+        else:
+            # Разбиваем числовые и нечисловые книги независимо:
+            #   • числовые (level-0) → непрерывные подгруппы, пропуски не допускаются
+            #   • нечисловые (даты / unknown) → отдельная группа «компиляция романов»
+            # Это предотвращает ложное смешение диапазона (например, sn=1 + sn=3 + дата
+            # дало бы volume_range='1-3' → «Трилогия», хотя тома 1 и 3 не идут подряд).
+            numeric = [b for b in books_sorted if b.sort_key[0] == 0]
+            others  = [b for b in books_sorted if b.sort_key[0] != 0]
+
+            # Эвристика «неопределённый = том 1»:
+            # Если ровно один файл без номера тома (год/неизвестен),
+            # а среди числовых нет тома 1 — считаем его первым томом.
+            if (len(others) == 1
+                    and numeric
+                    and min(b.sort_key[1] for b in numeric if b.sort_key[0] == 0) >= 2):
+                lone = others[0]
+                lone.sort_key = (0, 1, 0, 0)
+                lone.sort_source = 'assumed_first'
+                lone.order_ambiguous = False
+                lone.volume_label = '1'
+                numeric = sorted(numeric + [lone], key=lambda b: b.sort_key)
+                others = []
+
+            first_group = True  # для назначения duplicate_paths только один раз
+
+            # ── Числовые книги: непрерывные блоки ──────────────────────
+            valid_runs = [r for r in self._split_into_consecutive_runs(numeric) if len(r) >= 2]
+            lone_numeric = [b for r in self._split_into_consecutive_runs(numeric) if len(r) < 2 for b in r]
+
+            # Мостим раны через позиции, ЗАКРЫТЫЕ гостевым однослотовым
+            # под-циклом того же автора+корня (см. _single_slot_by_root
+            # выше) — реальный случай (баг №37): "Отряд «Сигма»" 1-7 +
+            # 9-17 физически рвались на два отдельных, formально
+            # неполных куска только потому, что позицию 8 занимает
+            # отдельно скомпилированная тетралогия "Такер Уэйн". Раны
+            # НЕ мержим по книгам произвольно — соединяем только если
+            # ВЕСЬ промежуток между ними целиком закрыт такой вставкой.
+            _covered_here = _single_slot_by_root.get(
+                (_norm_key(author), _punct_norm(series)), set(),
+            )
+            if _covered_here and len(valid_runs) > 1:
+                def _run_lo(_r):
+                    return min(b.sort_key[1] for b in _r)
+
+                def _run_hi(_r):
+                    return max(b.sort_key[1] for b in _r)
+
+                _sorted_runs = sorted(valid_runs, key=_run_lo)
+                _bridged = [_sorted_runs[0]]
+                for _run in _sorted_runs[1:]:
+                    _prev = _bridged[-1]
+                    _gap = set(range(_run_hi(_prev) + 1, _run_lo(_run)))
+                    if _gap and _gap <= _covered_here:
+                        _bridged[-1] = _prev + _run
+                    else:
+                        _bridged.append(_run)
+                valid_runs = _bridged
+
+            # Серия считается завершённой только если это ЕДИНСТВЕННЫЙ ран в бакете
+            # и нет одиночных томов за его пределами. Наличие ЛЮБЫХ других ранов —
+            # признак того, что серия продолжается за пределами этого куска (даже если
+            # сам кусок внутри непрерывен), иначе первый ран из разорванной пополам
+            # серии (напр. 1-19 при существующих где-то ещё 27-28, 30-33) получает
+            # суффикс «в N книгах», как будто это все книги серии, вместо «т. 1-N».
+            _has_other_runs = len(valid_runs) > 1
+            for run in valid_runs:
+                # Детектируем паттерн N.M (том.часть): если ВСЕ книги в run
+                # получили sort_source='dot_part', то volume_range = диапазон томов,
+                # а part_count = общее число частей (файлов).
+                all_dot_part = run and all(b.sort_source == 'dot_part' for b in run)
+                # Именованная дуга-подсерия, компилируемая в СВОЮ ОТДЕЛЬНУЮ
+                # группу (series содержит '\'): sort_key[1] — позиция в
+                # РОДИТЕЛЬСКОЙ серии (нужна только для решения, куда
+                # отнести книгу), а не внутри самой дуги — её честная
+                # позиция лежит в sort_key[2]. Реальный случай (Калинин
+                # Даниил / "Злая Русь. Князь Фёдор"): дуга занимает
+                # позиции 6-8 родительской серии, но сама состоит ровно
+                # из 3 книг — итоговое имя "(т. 6-8)" выглядит так, будто
+                # пропущены тома 1-5 ЭТОЙ дуги, хотя их никогда не было.
+                # По решению пользователя: раз компиляция выносит
+                # подсерию в отдельную группу — диапазон должен отражать
+                # позицию ВНУТРИ неё. Строим диапазон из sort_key[2],
+                # НЕ трогая сам sort_key (он остаётся глобальным для
+                # межгруппового учёта позиций/дедупа в find_groups()).
+                _all_named_arc_own = ('\\' in series) and run and all(
+                    getattr(b.record, 'series_source', '') == 'filename_named_arc'
+                    and b.sort_key[2] != 0
+                    for b in run
+                )
+                if all_dot_part:
+                    toms = sorted({b.sort_key[1] for b in run})
+                    run_range = f'{toms[0]}-{toms[-1]}' if len(toms) > 1 else str(toms[0])
+                    run_part_count = len(run)
+                elif _all_named_arc_own:
+                    _locals = sorted({b.sort_key[2] for b in run})
+                    run_range = (
+                        f'{_locals[0]}-{_locals[-1]}' if len(_locals) > 1 else str(_locals[0])
+                    ) if _locals == list(range(_locals[0], _locals[-1] + 1)) else ''
+                    run_part_count = 0
+                else:
+                    run_range = self._compute_volume_range(run, covered=_covered_here)
+                    run_part_count = 0
+                _emit(CompilationGroup(
+                    author=author,
+                    series=series,
+                    books=run,
+                    order_determined=True,
+                    volume_range=run_range,
+                    duplicate_paths=duplicate_paths if first_group else [],
+                    alphabetical_order=False,
+                    part_count=run_part_count,
+                    series_complete=not bool(lone_numeric) and not _has_other_runs,
+                ))
+                first_group = False
+
+            # ── Нечисловые книги: компиляция по году / по названию ─────
+            # Если нечисловых >= 2 — обычная группа
+            # Если нечисловых < 2, но есть одиночные числовые книги — объединяем всё вместе.
+            # ИСКЛЮЧЕНИЕ: precompiled книги (volume_label содержит диапазон "N-M") не
+            # объединяем с нечисловыми — они уже содержат несколько томов и не являются
+            # "одиночными" книгами в смысле серии.
+            _RANGE_VL = re.compile(r'^\d+\s*[-–—]\s*\d+$')
+            lone_regular = [b for b in lone_numeric if not _RANGE_VL.match(b.volume_label or '')]
+            all_others = others
+            if len(others) < 2 and lone_regular:
+                # Объединяем одиночные обычные (не precompiled) + нечисловые,
+                # НО только если lone_regular ровно один — иначе это несколько томов
+                # с явными номерами и пробелом между ними (например, тома 7 и 9 без 8):
+                # такие группы не компилируем.
+                # Дополнительно: не объединяем, если ВСЕ "нечисловые" книги
+                # полностью неопределены (order_ambiguous) — тот же принцип,
+                # что и баг №47: без реального номера/позиции нет оснований
+                # считать их частью той же серии, а не случайно попавшим в
+                # ту же папку посторонним произведением. Реальный случай
+                # (docs/quality-roadmap.md, баг №52): Гришанин Дмитрий /
+                # "Безликие" — единственный пронумерованный том 1 сливался
+                # с "Мах-недоучка.fb2" (другое произведение, без номера) в
+                # одну группу компиляции только потому, что оба лежали в
+                # одной папке.
+                if (len(lone_regular) == 1
+                        and others
+                        and not all(b.order_ambiguous for b in others)):
+                    all_others = sorted(lone_regular, key=lambda b: b.sort_key) + list(others)
+                    lone_numeric = [b for b in lone_numeric if b not in lone_regular]
+
+            if len(all_others) >= 2:
+                # Не компилируем если ни одна книга не имеет реального номера тома
+                # (sort_key[0] == 0). Год публикации и «не определён» — не основание
+                # для компиляции: порядок чтения неизвестен.
+                if not any(b.sort_key[0] == 0 for b in all_others):
+                    return True
+                all_oth_ambig = all(b.order_ambiguous for b in all_others)
+                oth_sorted = sorted(all_others, key=lambda b: b.sort_key)
+                _emit(CompilationGroup(
+                    author=author,
+                    series=series,
+                    books=oth_sorted,
+                    order_determined=not any(b.order_ambiguous for b in all_others),
+                    volume_range='',
+                    duplicate_paths=duplicate_paths if first_group else [],
+                    alphabetical_order=all_oth_ambig,
+                ))
+                first_group = False
 
     def _normalize_complete_inner_tom_runs(self, books: List[CompilationBook]) -> None:
         """Убрать дробную метку тома («10.2», «12.1» — см. `_determine_sort_key`,
