@@ -18,6 +18,7 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
+from types import SimpleNamespace
 
 from .author_normalizer_extended import AuthorNormalizer
 from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
@@ -458,857 +459,15 @@ class RegenCSVService:
             True if successful, False otherwise
         """
         try:
-            # Пункт 3: compile blacklist once per run with current settings
-            self._compiled_blacklist = self._compile_blacklist_for_run()
-            # Загрузить пользовательский список «без серии» один раз на прогон
-            self._no_series_names = self.settings.get_no_series_folder_names()
-            # Загрузить ключевые слова вариантных папок
-            self._variant_kw = [kw.lower() for kw in (self.settings.get_list('variant_folder_keywords') or [])]
-
-            _log.info("\n" + "="*80)
-            _log.info("  CSV REGENERATION - 6-PASS SYSTEM (Modular)")
-            _log.info(f"  Work folder: {self.work_dir}\n")
-            _log.info("="*80 + "\n")
-
-            self.logger.log("=== Starting CSV regeneration ===")
-            if progress_callback:
-                progress_callback(0, 100, "Инициализация")
-            
-            # ===== PRECACHE =====
-            if progress_callback:
-                progress_callback(5, 100, "Кеширование папок авторов")
-            _t = time.perf_counter()
-            precache = Precache(self.work_dir, self.settings, self.logger,
-                               self.folder_parse_limit)
-            self.author_folder_cache = precache.execute(filter_paths=filter_paths)
-            _log.info(f"[PRECACHE] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] Author folder hierarchy cached")
-
-            # ===== PASS 1 =====
-            if progress_callback:
-                progress_callback(10, 100, "Pass 1: Чтение FB2 файлов")
-            _t = time.perf_counter()
-            pass1 = Pass1ReadFiles(self.work_dir, self.author_folder_cache,
-                                  self.extractor, self.logger,
-                                  self.folder_parse_limit,
-                                  filter_paths=filter_paths,
-                                  progress_callback=progress_callback)
-            self.records = pass1.execute()
-            _log.info(f"[PASS 1] → {time.perf_counter()-_t:.2f}s")
-            
-            if not self.records:
-                raise FileNotFoundError(
-                    f"Файлы FB2 не найдены в папке:\n{self.work_dir}\n\n"
-                    "Убедитесь, что папка содержит FB2-файлы."
-                )
-            
-            self.logger.log(f"[OK] PASS 1: Read {len(self.records)} files")
-
-            # ===== PASS 1.5: Propagate folder_dataset author within each folder =====
-            # If at least one file in a folder got author_source="folder_dataset",
-            # all other files in the same folder inherit that author.
-            from collections import defaultdict
-            _folder_groups = defaultdict(list)
-            for rec in self.records:
-                parent = str(Path(rec.file_path).parent)
-                _folder_groups[parent].append(rec)
-
-            propagated = 0
-            for parent, group in _folder_groups.items():
-                # Find the best folder_dataset author in this group
-                dataset_rec = next(
-                    (r for r in group if r.author_source == 'folder_dataset' and r.proposed_author),
-                    None
-                )
-                if dataset_rec:
-                    for rec in group:
-                        if rec is not dataset_rec and rec.proposed_author != dataset_rec.proposed_author:
-                            rec.proposed_author = dataset_rec.proposed_author
-                            rec.author_source = 'folder_dataset'
-                            rec.needs_filename_fallback = False
-                            propagated += 1
-
-            if propagated:
-                self.logger.log(f"[OK] PASS 1.5: Propagated folder_dataset author to {propagated} files")
-
-            # PASS 1.5 grandparent propagation: subfolders where all filled siblings
-            # share a folder_dataset author equal to the grandparent folder name —
-            # apply the same author to unfilled sibling-subfolder records.
-            from collections import defaultdict as _defdict15
-            _gp15: dict = _defdict15(list)
-            for rec in self.records:
-                _gp15[str(Path(rec.file_path).parent.parent)].append(rec)
-            _gp_prop = 0
-            for gp_str, grp in _gp15.items():
-                gp_name = Path(gp_str).name
-                if not gp_name:
-                    continue
-                _filled15 = [r for r in grp
-                             if r.author_source == 'folder_dataset' and r.proposed_author
-                             and r.proposed_author.lower() == gp_name.lower()]
-                _unfilled15 = [r for r in grp
-                               if r.author_source != 'folder_dataset' or not r.proposed_author]
-                if _filled15 and _unfilled15:
-                    _auth15 = _filled15[0].proposed_author
-                    for r in _unfilled15:
-                        r.proposed_author = _auth15
-                        r.author_source = 'folder_dataset'
-                        r.needs_filename_fallback = False
-                        _gp_prop += 1
-            if _gp_prop:
-                self.logger.log(f"[OK] PASS 1.5: Grandparent propagation applied to {_gp_prop} files")
-
-            # ===== TRANSLATOR FOLDERS: сброс folder_dataset автора =====
-            # Файлы в папках типа «Переводы Б. Акунина - Г. Чхартишвили» содержат
-            # чужие книги — автором является переводчик (из родительской папки), а не
-            # сам автор произведения. Сбрасываем folder_dataset, чтобы Pass2
-            # извлёк реального автора из имени файла.
-            _tfp = [p.lower() for p in
-                    (self.settings.settings.get('translator_folder_prefixes', [])
-                     if hasattr(self.settings, 'settings') else [])]
-            if _tfp:
-                _tr_cleared = 0
-                for _rec in self.records:
-                    if _rec.author_source != 'folder_dataset':
-                        continue
-                    _parts = Path(_rec.file_path).parts
-                    if any(p.lower().startswith(tuple(_tfp)) for p in _parts[:-1]):
-                        _rec.proposed_author = ''
-                        _rec.author_source = ''
-                        _tr_cleared += 1
-                if _tr_cleared:
-                    _log.info(f"[TRANSLATOR] Cleared folder_dataset author for {_tr_cleared} files in translator folders")
-
-            if progress_callback:
-                progress_callback(20, 100, "Pass 2: Извлечение авторов")
-            _t = time.perf_counter()
-            pass2 = Pass2Filename(self.settings, self.logger, self.work_dir,
-                                male_names=precache.male_names,
-                                female_names=precache.female_names)
-            pass2.prebuild_author_cache(self.records)
-            pass2.execute(self.records)
-            _log.info(f"[PASS 2] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] PASS 2: Authors extracted from filenames")
-
-            # ===== PASS 2 Fallback =====
-            if progress_callback:
-                progress_callback(25, 100, "Pass 2 Fallback: Применение метаданных")
-            _t = time.perf_counter()
-            pass2_fallback = Pass2Fallback(self.logger, settings=self.settings)
-            pass2_fallback.execute(self.records)
-            _log.info(f"[PASS 2 Fallback] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] PASS 2 Fallback: Metadata applied")
-
-
-            # ===== PASS 2.5: Expand abbreviated/plural author from consistent metadata =====
-            _t25 = time.perf_counter()
-            # Случай: папка "Войлошниковы", proposed_author="Войлошниковы" (filename),
-            # но metadata_authors стабильно содержит полные имена авторов. Расширяем.
-
-            # Перестраиваем группы по папкам после Pass 2
-            _folder_groups2: dict = {}
-            for rec in self.records:
-                parent = str(Path(rec.file_path).parent)
-                _folder_groups2.setdefault(parent, []).append(rec)
-
-            def _stem25(s: str) -> str:
-                # Two passes to handle compound endings like 'овы' = 'ов'+'ы'
-                # "Войлошниковы" → "Войлошников" → "Войлошник"
-                s = s.lower().replace('ё', 'е')
-                for _ in range(2):
-                    s2 = re.sub(r'(?:ова|ева|ов|ев|ин|ина|ий|ая|ый|ых|ы|а|я)$', '', s)
-                    if s2 == s:
-                        break
-                    s = s2
-                return s
-
-            def _normalize_meta_author25(name: str) -> str:
-                parts = name.strip().split()
-                if len(parts) == 2:
-                    return f"{parts[-1]} {parts[0]}"
-                return name.strip()
-
-            expanded25 = 0
-            for parent, group in _folder_groups2.items():
-                filename_recs = [
-                    r for r in group
-                    if r.author_source == 'filename' and r.proposed_author
-                    and r.metadata_authors and r.metadata_authors != '[unknown]'
-                ]
-                if not filename_recs:
-                    continue
-
-                # Проверяем стабильность metadata_authors (≥ 60% файлов согласны)
-                # Нормализуем: разбиваем на авторов и сортируем, чтобы порядок не важен
-                def _meta_key(m):
-                    authors = frozenset(a.strip().lower() for a in re.split(r'[;,]+', m) if a.strip())
-                    return authors
-
-                meta_counts: dict = {}
-                for r in filename_recs:
-                    key = _meta_key(r.metadata_authors.strip())
-                    meta_counts[key] = meta_counts.get(key, 0) + 1
-                dominant_key, dominant_count = max(meta_counts.items(), key=lambda x: x[1])
-                if dominant_count / len(filename_recs) < 0.6:
-                    continue
-                # Берём первый файл с этим ключом как источник canonical metadata
-                dominant_meta = next(
-                    r.metadata_authors for r in filename_recs
-                    if _meta_key(r.metadata_authors.strip()) == dominant_key
-                )
-
-                # proposed_author должен быть усечённой формой одного из авторов в meta.
-                # ВАЖНО: Pass 2.5 предназначен только для ОДНОСЛОВНЫХ усечённых форм
-                # (e.g. "Войлошниковы" → "Войлошников Тим"). Если proposed_author уже
-                # содержит 2+ слов — это полное имя, расширение не нужно.
-                proposed = filename_recs[0].proposed_author
-                if len(proposed.split()) >= 2:
-                    continue  # Уже полное имя — пропускаем
-                proposed_stem = _stem25(proposed)
-                if len(proposed_stem) < 4:
-                    continue
-
-                meta_authors_list = [a.strip() for a in re.split(r'[;,]+', dominant_meta) if a.strip()]
-                matched = any(
-                    # bidirectional: either stem contains the other
-                    (proposed_stem in _stem25(part) or _stem25(part) in proposed_stem)
-                    for a in meta_authors_list
-                    for part in a.split()
-                    if len(_stem25(part)) >= 4
-                )
-                if not matched:
-                    continue
-
-                normalized_authors = ', '.join(_normalize_meta_author25(a) for a in meta_authors_list)
-
-                for rec in group:
-                    if rec.proposed_author == proposed and rec.author_source in ('filename', ''):
-                        rec.proposed_author = normalized_authors
-                        rec.author_source = 'metadata'
-                        rec.needs_filename_fallback = False
-                        expanded25 += 1
-
-            _log.info(f"[PASS 2.5] → {time.perf_counter()-_t25:.2f}s")
-            if expanded25:
-                self.logger.log(f"[OK] PASS 2.5: Expanded abbreviated authors in {expanded25} files")
-
-            # ===== SERIES EXTRACTION: From Folders (VARIANT B) =====
-            if progress_callback:
-                progress_callback(30, 100, "Извлечение серий")
-            _t = time.perf_counter()
-            _log.info("\n[SERIES] Extracting series from folder structure...")
-
-            # Кэш нормализации имён для _surnames_match_folder
-            _norm_cache: dict = {}
-
-            def _norm(name: str) -> str:
-                if name not in _norm_cache:
-                    _norm_cache[name] = self._normalize_name_for_comparison(name)
-                return _norm_cache[name]
-
-            # Вспомогательная функция: вычислить (proposed_series, series_source)
-            # по частям пути и автору. Результат кэшируется по ключу (author, parent_parts).
-            _series_folder_cache: dict = {}  # (author, parent_parts) → (series, source)
-
-            def _compute_folder_series(author: str, parent_parts: tuple) -> tuple:
-                """Вернуть (proposed_series, series_source) из структуры папок.
-
-                Логика зависит от типа корневой папки (FolderType):
-
-                AUTHOR:
-                    Ищем папку автора в пути → всё что глубже = серия/подсерия.
-                    Это основной случай: Волков Тим/Дуэлянт/1. Книга.fb2
-
-                PUBLISHER / COLLECTION:
-                    Корневая папка НЕ является серией (это издательский каталог).
-                    Если файл лежит в подпапке — подпапка = серия, независимо от автора.
-                    Если файл лежит прямо в корневой папке — серии из папки нет.
-                    Пример: Серия - «Боевая фантастика»/ИмяСерии/1. Книга.fb2
-
-                UNKNOWN:
-                    Пробуем найти автора в пути (как AUTHOR).
-                    Если автор не найден, но есть подпапки — берём подпапки как серию.
-                    Это покрывает случай, когда корневая папка сама является серией.
-
-                VARIANT / NO_SERIES / SKIP:
-                    Серию из папки не извлекаем.
-                """
-                key = (author, parent_parts)
-                if key in _series_folder_cache:
-                    return _series_folder_cache[key]
-
-                result = ('', '')
-
-                if not parent_parts:
-                    _series_folder_cache[key] = result
-                    return result
-
-                # series_folder_blacklist: организационные ярлыки-папки
-                # ("Законченные циклы", "Компиляции циклов" и т.п.), которые
-                # нужно вычёркивать из ЛЮБОГО уровня иерархии пути, а не
-                # только когда весь итоговый (уже склеенный через '\') путь
-                # совпадает с ними целиком буквально — иначе такая папка
-                # ложно становится КОРНЕМ иерархической серии вместе с
-                # реальным именем цикла в подпапке. Реальный случай (Евгений
-                # Щепетнов): ".../Компиляции циклов/Законченные циклы/Цикл
-                # «Слава». Книги 1-5/..." — без пофрагментной фильтрации
-                # результат — "Законченные циклы\Цикл «Слава». Книги 1-5"
-                # вместо голого "Цикл «Слава». Книги 1-5".
-                _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
-                if _sfbl is None:
-                    _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
-                    self._series_folder_blacklist_cache = _sfbl
-
-                _sfbl_set: set = _sfbl
-
-                def _drop_blacklisted(folders: tuple) -> tuple:
-                    return tuple(f for f in folders if f.lower() not in _sfbl_set)
-
-                root_type = self.folder_classifier.classify(parent_parts[0])
-
-                if root_type in (FolderType.SKIP, FolderType.VARIANT, FolderType.NO_SERIES):
-                    # Не используем папку как источник серии
-                    pass
-
-                elif root_type in (FolderType.PUBLISHER, FolderType.COLLECTION):
-                    # Корневая папка = издательский каталог.
-                    # Серия = подпапки начиная с уровня 2 (index 1+).
-                    # Исключаем подпапки, которые являются ЧИСТОЙ папкой автора.
-                    # Папка формата "Серия (Автор)" НЕ является чистой папкой автора —
-                    # из неё нужно извлечь серию через _extract_series_from_folder_name.
-                    subfolders = parent_parts[1:]
-                    # Загружаем жанрово-издательские метки один раз
-                    _gfp = getattr(self, '_genre_folder_prefixes_cache', None)
-                    if _gfp is None:
-                        _gfp = [p.lower() for p in
-                                (self.settings.settings.get('genre_folder_prefixes', [])
-                                 if hasattr(self.settings, 'settings') else [])]
-                        self._genre_folder_prefixes_cache = _gfp
-                    _tfp_ser = getattr(self, '_translator_folder_prefixes_cache', None)
-                    if _tfp_ser is None:
-                        _tfp_ser = [p.lower() for p in
-                                    (self.settings.settings.get('translator_folder_prefixes', [])
-                                     if hasattr(self.settings, 'settings') else [])]
-                        self._translator_folder_prefixes_cache = _tfp_ser
-
-                    series_folders = []
-                    for _sf in subfolders:
-                        # Папка-буква алфавитного указателя («С», «А», «Б»…) — типичная
-                        # структура крупных коллекций (авторы рассортированы по первой
-                        # букве фамилии). Реальный случай (docs/quality-roadmap.md, баг
-                        # №48): "Азбука Социальной Фантастики (833)\С\Стругацки Аркадий\
-                        # ...fb2" — без этого фильтра "С" считалась частью серии.
-                        if self._is_alphabet_index_folder(_sf):
-                            continue
-                        if not author or not self._surnames_match_folder(author, _sf):
-                            # Дополнительная проверка: папка = латинский логин/транслит автора
-                            if self._folder_is_author_login(_sf, author):
-                                continue  # папка автора, не серия
-                            # Дополнительная проверка: папка начинается с жанрово-издательской метки
-                            # («Фэнтези МИФ. ...», «Детектив МИФ. ...») — это sub-collection,
-                            # а не серия. Серия извлекается из имени файла.
-                            _sf_lower = _sf.lower()
-                            _is_genre_collection = any(
-                                _sf_lower.startswith(_gp) for _gp in _gfp
-                            )
-                            if _is_genre_collection:
-                                continue  # жанровый sub-collection — не серия
-                            # Дополнительная проверка: папка-переводчик («Переводы X»)
-                            # — содержит чужие книги, не является серией автора.
-                            _is_translator_folder = any(
-                                _sf_lower.startswith(_tp) for _tp in _tfp_ser
-                            )
-                            if _is_translator_folder:
-                                continue  # папка переводов — не серия
-                            series_folders.append(_sf)
-                            continue
-                        # Даже если автор найден в имени подпапки — жанровая метка
-                        # имеет приоритет: «Fanzon. Кинжал и магия. Фэнтези Браста» — это
-                        # genre-collection несмотря на имя автора в названии.
-                        _sf_lower2 = _sf.lower()
-                        if any(_sf_lower2.startswith(_gp) for _gp in _gfp):
-                            continue  # жанровый sub-collection с упоминанием автора
-                        # Автор найден в имени подпапки.
-                        # Пробуем извлечь серию — если она непустая и не совпадает с автором,
-                        # это формат "Серия (Автор)", используем её.
-                        _extracted = self._extract_series_from_folder_name(_sf)
-                        # Баг №59: "С.К.С., Вязовский - Режим бога" — псевдоним автора для
-                        # части книг серии (через запятую) + реальное имя автора + тире +
-                        # НАСТОЯЩЕЕ название серии. _extract_series_from_folder_name не
-                        # знает про запятую-псевдоним и возвращает папку ЦЕЛИКОМ (ничего не
-                        # вырезано) — если бы это стало итоговым значением, вся строка
-                        # "С.К.С., Вязовский - Режим бога" превратилась бы в proposed_series
-                        # для ВСЕХ файлов подпапки (folder_dataset доверяется безусловно
-                        # дальше по конвейеру, блокируя извлечение серии из имени файла).
-                        # Если экстрактор ничего не вырезал (вернул папку как есть) и в
-                        # имени есть " - ", берём текст ПОСЛЕ последнего тире — он и есть
-                        # настоящее название серии, а всё до тире (включая псевдоним через
-                        # запятую) — это автор(ы), не серия.
-                        if _extracted == _sf and ' - ' in _sf:
-                            _before_dash_ser, _after_dash_ser = _sf.rsplit(' - ', 1)
-                            _before_dash_ser = _before_dash_ser.strip()
-                            _after_dash_ser = _after_dash_ser.strip()
-                            # Баг №109 (продолжение): формат "Серия - Автор1,Автор2,
-                            # Автор3" (серия ПЕРЕД тире) — обратный порядок
-                            # относительно бага №59 ("Автор(ы) - Серия"). Реальный
-                            # случай: "Киндрэт - Пехов,Бычкова, Турчанинова" — текст
-                            # ПОСЛЕ тире это список соавторов (совпадает с уже
-                            # известным `author`), а не название серии — тогда
-                            # настоящая серия — текст ДО тире.
-                            if _after_dash_ser and self._surnames_match_folder(author, _after_dash_ser):
-                                if _before_dash_ser:
-                                    _extracted = _before_dash_ser
-                            elif _after_dash_ser:
-                                _extracted = _after_dash_ser
-                        _auth_norm = self._normalize_name_for_comparison(author)
-                        _extr_norm = self._normalize_name_for_comparison(_extracted) if _extracted else ''
-                        # Если extracted является частью имени автора (или наоборот),
-                        # это всё равно папка автора — псевдоним и реальное имя.
-                        # Пример: автор «Базилио (Риддер Аристарх)», папка «Риддер Аристарх (Базилио)»
-                        # → extracted «Риддер Аристарх», auth_norm «базилио риддер аристарх»
-                        # → «риддер аристарх» is substring of auth_norm → чистая папка автора.
-                        # Проверяем оба порядка слов: нормализованный («Фамилия Имя»)
-                        # и исходный («Имя Фамилия») для западных имён типа «Элин Хильдебранд».
-                        _auth_words = set(_auth_norm.split())
-                        _extr_words = set(_extr_norm.split())
-                        # Баг №115: папка вида «Мозолевский-Павел» (частый паттерн
-                        # самиздата «Фамилия-Имя») не распознавалась как вариант
-                        # автора «Мозолевский Павел» — _normalize_name_for_
-                        # comparison() не разбивает по дефису, поэтому ни подстрочная
-                        # проверка, ни issubset по словам не срабатывали, и папка
-                        # автора ошибочно попадала в series_folders как будто это
-                        # папка серии (реальный случай: «Мантикор-Артемис (Артемис
-                        # Мантикор)\Мир Мельхиора» → серия «Мантикор-Артемис\Мир
-                        # Мельхиора» вместо чистого «Мир Мельхиора»). Сравниваем ещё
-                        # и hyphen-aware вариант (дефис → пробел) — ТОЛЬКО здесь, не
-                        # в самой _normalize_name_for_comparison(): у неё есть другие
-                        # вызывающие места, и golden-снапшот на реальной библиотеке
-                        # показал, что менять её глобально ломает не связанный
-                        # 3-уровневый кейс в другом месте пайплайна (Бессонов
-                        # Алексей/Мир Алекса Королёва/5. Миры Конфедерации).
-                        _auth_words_h = set(_auth_norm.replace('-', ' ').split())
-                        _extr_words_h = set(_extr_norm.replace('-', ' ').split())
-                        _is_author_variant = (_extr_norm and (
-                            _extr_norm in _auth_norm or _auth_norm in _extr_norm
-                            or (_auth_words and _auth_words.issubset(_extr_words))
-                            or (_auth_words_h and _auth_words_h.issubset(_extr_words_h))
-                        ))
-                        if _extracted and _extr_norm != _auth_norm and not _is_author_variant:
-                            # Используем УЖЕ ОЧИЩЕННОЕ значение (_extracted), а не сырое
-                            # имя папки (_sf) — иначе повторное извлечение чуть ниже
-                            # (при финальной сборке series_names) снова вернёт папку
-                            # целиком, т.к. _extract_series_from_folder_name не умеет
-                            # сама по себе резать по псевдониму-через-запятую.
-                            series_folders.append(_extracted)
-                        # иначе — чистая папка автора, пропускаем
-                    # Вариантные папки ("Вариант с СИ", "ЛП" и т.п.) не образуют уровень иерархии.
-                    # Файлы внутри них получают серию из ближайшей не-вариантной папки выше.
-                    # Баг №106: голое `_vk in _sf_lower` матчило короткие ключевые слова
-                    # ("си") как ПОДСТРОКУ где угодно — "Мир Астероид-Сити" содержит "си"
-                    # внутри "Сити" и ложно считался вариантной папкой, из-за чего терялся
-                    # весь уровень серии. `_bl_matches` (как и в folder_classifier.py,
-                    # pass2_series_filename.py._is_variant_folder — тот же класс защиты)
-                    # требует границы слова для коротких (<4 симв.) ключевых слов.
-                    _vkw = getattr(self, '_variant_kw', [])
-                    series_folders_clean = []
-                    for _sf in series_folders:
-                        _sf_lower = _sf.lower().replace('ё', 'е')
-                        if any(_bl_matches(_vk, _sf_lower) for _vk in _vkw):
-                            continue  # вариантная папка — пропускаем
-                        series_folders_clean.append(_sf)
-                    series_folders = _drop_blacklisted(tuple(series_folders_clean))
-                    if series_folders:
-                        if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
-                            result = ('', 'no_series_folder')
-                        else:
-                            _pln = len(series_folders) >= 2
-                            series_names = [self._extract_series_from_folder_name(f, preserve_leading_number=_pln) for f in series_folders]
-                            series_combined = '\\'.join(s for s in series_names if s)
-                            if series_combined:
-                                result = (series_combined, 'folder_dataset')
-
-                else:
-                    # AUTHOR или UNKNOWN — ищем папку автора в пути
-                    author_folder_index = -1
-                    if author:
-                        for idx, part in enumerate(parent_parts):
-                            if self._surnames_match_folder(author, part):
-                                author_folder_index = idx
-                                break
-
-                    # Сканирование запущено ПРЯМО в папке автора (work_dir сам —
-                    # уже признанная папка автора, см. PRECACHE "Work_dir is
-                    # AUTHOR") — тогда сегмент с именем автора уже "съеден"
-                    # work_dir'ом и никогда не встретится внутри parent_parts,
-                    # хотя вся parent_parts целиком и есть подсерия. Реальный
-                    # случай (Пехов Алексей): Compiler/Normalize, запущенные
-                    # прямо на "Пехов Алексей - Сборник", теряли series для
-                    # КАЖДОЙ однократно вложенной подпапки ("Мантикора",
-                    # "Синее пламя", "Вселенная Изнанки" и т.д.) — та же
-                    # структура, что и сканирование из родительской папки
-                    # библиотеки (где автор — часть пути), давало верный
-                    # результат. author_folder_index остаётся -1 (как и был),
-                    # поэтому parent_parts[author_folder_index + 1:] ниже
-                    # естественно берёт ВЕСЬ parent_parts — именно то, что нужно.
-                    _work_dir_is_author = (
-                        author_folder_index < 0 and author
-                        and self._surnames_match_folder(author, self.work_dir.name)
-                    )
-
-                    if author_folder_index >= 0 or _work_dir_is_author:
-                        # Нашли папку автора → всё глубже = серия
-                        series_folders = _drop_blacklisted(parent_parts[author_folder_index + 1:])
-                        if series_folders:
-                            if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
-                                result = ('', 'no_series_folder')
-                            else:
-                                _pln = len(series_folders) >= 2
-                                series_names = [self._extract_series_from_folder_name(f, preserve_leading_number=_pln) for f in series_folders]
-                                series_combined = '\\'.join(s for s in series_names if s)
-                                if series_combined:
-                                    result = (series_combined, 'folder_dataset')
-
-                    elif root_type == FolderType.UNKNOWN and len(parent_parts) > 1:
-                        # Автор не найден, но есть подпапки в UNKNOWN-папке.
-                        # Берём все подпапки (начиная с index 1) как серию —
-                        # кроме папок алфавитного указателя (см. баг №48 выше).
-                        series_folders = _drop_blacklisted(tuple(
-                            f for f in parent_parts[1:] if not self._is_alphabet_index_folder(f)
-                        ))
-                        if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
-                            result = ('', 'no_series_folder')
-                        else:
-                            _pln = len(series_folders) >= 2
-                            series_names = [self._extract_series_from_folder_name(f, preserve_leading_number=_pln) for f in series_folders]
-                            series_combined = '\\'.join(s for s in series_names if s)
-                            if series_combined:
-                                result = (series_combined, 'folder_dataset')
-
-                # Папочный источник — авторитетный (Pass 2 / filename extraction его не
-                # трогает и не проверяет по blacklist, доверяя ему безоговорочно, см.
-                # pass2_series_filename.py). Поэтому blacklist нужно проверить ЗДЕСЬ, до
-                # присвоения source='folder_dataset' — иначе издательский/коллекционный
-                # ярлык вроде "В Серии -Fantasy World" блокирует извлечение из имени файла
-                # на весь пайплайн, и единственный шанс его вычистить — поздний постчек
-                # _postcheck_series_folder_blacklist(), когда Pass 2 уже отработал и
-                # вернулся раньше времени, так и не попробовав имя файла.
-                if result[1] == 'folder_dataset':
-                    _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
-                    if _sfbl is None:
-                        _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
-                        self._series_folder_blacklist_cache = _sfbl
-                    if result[0].lower() in _sfbl:
-                        result = ('', '')
-
-                _series_folder_cache[key] = result
-                return result
-
-            # Предвычисляем части пути один раз
-            _parts_cache: dict = {}
-
-            # Источники по возрастанию приоритета. Папка (3) > файл (2) > мета (1).
-            # VARIANT B всегда перезаписывает источники с приоритетом ниже папочного.
-            # Единое множество из fb2parser_core.evidence — было продублировано
-            # байт-в-байт в нескольких местах (docs/quality-roadmap.md, баг
-            # №109, "хрупкость каскада").
-            _FOLDER_SOURCES = _SHARED_FOLDER_SOURCES
-
-            for record in self.records:
-                # Пропускаем только если уже установлен папочный источник
-                if record.series_source in _FOLDER_SOURCES:
-                    continue
-
-                file_path_parts = _parts_cache.get(record.file_path)
-                if file_path_parts is None:
-                    raw_parts = Path(record.file_path).parts
-                    file_path_parts = tuple(
-                        p for i, p in enumerate(raw_parts)
-                        if i == len(raw_parts) - 1 or p.lower() not in FILE_EXTENSION_FOLDER_NAMES
-                    )
-                    _parts_cache[record.file_path] = file_path_parts
-
-                parent_parts = file_path_parts[:-1]  # без имени файла
-                author = record.proposed_author or ''
-
-                series, source = _compute_folder_series(author, parent_parts)
-                if source and series != author:
-                    record.proposed_series = series
-                    record.series_source = source
-
-                # Если author_folder_index < 0 (папка автора не найдена) —
-                # серия из папок не извлекается; Pass 2 Series и metadata возьмут на себя.
-
-            _log.info(f"[SERIES folders] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] Series extracted from folder structure (Variant B)")
-            def _chk(label):
-                for r in self.records:
-                    if 'Зверь лютый (Бирюк' in r.file_path:
-                        _log.info(f"[{label}] {r.file_path[-35:]} | ser_src={r.series_source!r}")
-                        break
-            _chk("AFTER_VARB")
-
-            # ===== SERIES PASS 2 =====
-            if progress_callback:
-                progress_callback(40, 100, "Извлечение серий из имен файлов")
-            _t = time.perf_counter()
-            _log.info("[SERIES] Extracting series from filenames...")
-            pass2_series = Pass2SeriesFilename(self.logger,
-                                              male_names=precache.male_names,
-                                              female_names=precache.female_names,
-                                              config_path=str(self.config_path))
-            pass2_series.execute(self.records)
-            _log.info(f"[SERIES PASS 2] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] Series PASS 2: Extracted from filenames")
-            _chk("AFTER_P2S")
-
-            # ===== SERIES PASS 3 =====
-            if progress_callback:
-                progress_callback(45, 100, "Нормализация серий")
-            _t = time.perf_counter()
-            _log.info("[SERIES] Normalizing series names...")
-            pass3_series = Pass3SeriesNormalize(self.logger, settings=self.settings)
-            pass3_series.execute(self.records)
-            _log.info(f"[SERIES PASS 3] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] Series PASS 3: Normalized series names")
-            _chk("AFTER_P3S")
-
-            # ===== PASS 3 =====
-            if progress_callback:
-                progress_callback(55, 100, "Pass 3: Нормализация авторов")
-            _t = time.perf_counter()
-            pass3 = Pass3Normalize(self.logger, settings=self.settings)
-            pass3.execute(self.records)
-            _log.info(f"[PASS 3] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] PASS 3: Authors normalized")
-
-            # ===== PASS 4 =====
-            if progress_callback:
-                progress_callback(65, 100, "Pass 4: Консенсус")
-            _t = time.perf_counter()
-            pass4 = Pass4Consensus(self.logger, settings=self.settings,
-                                   series_filename_extractor=pass2_series)
-            pass4.execute(self.records)
-            _log.info(f"[PASS 4] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] PASS 4: Consensus applied")
-            _chk("AFTER_P4")
-
-            # ===== PASS 5 =====
-            if progress_callback:
-                progress_callback(75, 100, "Pass 5: Преобразования")
-            _t = time.perf_counter()
-            pass5 = Pass5Conversions(self.logger, settings=self.settings)
-            pass5.execute(self.records)
-            _log.info(f"[PASS 5] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] PASS 5: Conversions re-applied")
-
-            # ===== PASS 6 =====
-            if progress_callback:
-                progress_callback(85, 100, "Pass 6: Раскрытие аббревиатур")
-            _t = time.perf_counter()
-            pass6 = Pass6Abbreviations(self.logger, settings=self.settings)
-            pass6.execute(self.records)
-            _log.info(f"[PASS 6] → {time.perf_counter()-_t:.2f}s")
-            self.logger.log("[OK] PASS 6: Abbreviations expanded")
-
-            self._postcheck_series_not_equal_author()
-            self._postcheck_metadata_rescue()
-
-            self._postcheck_clear_large_numbers()
-
-            self._postcheck_clear_title_series_fp()
-            self._postcheck_strip_leading_number()
-
-            self._postcheck_trim_to_metadata_prefix()
-            self._postcheck_expand_truncated_series()
-
-            self._postcheck_strip_service_words()
-            self._postcheck_dedup_backslash_hierarchy()
-            self._postcheck_dedup_consecutive_words()
-
-            self._postcheck_enrich_folder_hierarchy()
-            self._postcheck_filename_prefix_pattern()
-            self._postcheck_strip_metadata_coauthors_not_in_filename()
-            self._postcheck_series_folder_blacklist()
-            self._postcheck_normalize_series_arc_number()
-            self._postcheck_clear_author_as_series()
-            self._postcheck_build_subfolder_hierarchy()
-            self._postcheck_strip_author_prefix_from_series()
-            self._postcheck_strip_bracket_annotations_from_series()
-            self._postcheck_expand_truncated_series()  # повторно, после strip-префиксов (РОС. Подсерия → РОС\Подсерия)
-            self._postcheck_strip_leading_number()  # повторно, после backslash-стрипинга
-            self._postcheck_fill_empty_authors()
-            self._postcheck_strip_digit_prefix_author()
-            self._postcheck_link_base_arc_book_into_named_series()
-
-            # Финальный откат к мете (приоритет Папка(3) > Файл(2) > Мета(1)):
-            # к этому моменту и папочный, и файловый источники уже честно
-            # попробованы (включая случаи, где папочное значение забраковано
-            # blacklist'ом в _compute_folder_series и заменено на попытку
-            # извлечения из имени файла). Если оба ничего не дали — метаданные
-            # используются как последний резерв, а не как замена приоритета.
-            # Вызов идемпотентен (трогает только записи с пустым proposed_series).
-            self._postcheck_metadata_rescue()
-
-            # Повторный вызов коррекции series_number из имени файла (Правило 2,
-            # "SeriesRoot N. Title") — ТЕПЕРЬ, когда proposed_series наконец
-            # разрешилась (в т.ч. только что через metadata_rescue выше). Первый
-            # вызов внутри Pass2SeriesFilename.execute() сверяет число в стеме с
-            # УЖЕ известным именем серии — если на тот момент серия была ещё
-            # пустой/неверной, правило не могло сработать и осталось с
-            # результатом из <sequence>. Реальный случай (docs/quality-roadmap.md,
-            # баг №54): "Гришэм. Округ Форд 4. Рассказы (пер. Наталья Рейн).fb2" —
-            # <sequence name="Округ Форд" number="1"/> в метаданных ОШИБОЧНО
-            # даёт "1" (реальная позиция — 4, что ясно видно из имени файла), а
-            # proposed_series разрешилась в "Округ Форд" только здесь, через
-            # metadata_rescue — слишком поздно для первого вызова коррекции.
-            # Идемпотентен: не трогает записи, где число уже совпадает.
-            pass2_series._correct_series_number_from_filename(self.records)
-
-            # Идёт ПОСЛЕ второго вызова коррекции series_number выше (см.
-            # комментарий к нему) — иначе он тут же переигрывает Правило
-            # "filename_prefix" заново и стирает результат этого постчека.
-            self._postcheck_prefer_embedded_series_number_when_consistent()
-
-            # ВАЖНО: очистка голой франшизы-вселенной идёт ПОСЛЕ отката к
-            # метаданным, а не до — иначе _postcheck_metadata_rescue() тут же
-            # восстанавливает только что очищенное значение ОБРАТНО из
-            # metadata_series (реальный случай: "Богданов. Цепные псы.fb2" —
-            # metadata_series="S-T-I-K-S" буквально совпадает с franchise-
-            # keyword; клир до отката давал пустую серию, но следующий же шаг
-            # тут же подставлял её назад из метаданных).
-            self._postcheck_clear_universe_keyword_series()
-
-            # Схлопывает "Корень\Арка" под РАЗНЫМИ по виду корнями (или
-            # "Корень\Арка" + плоскую "Арка") в одну плоскую серию, когда та
-            # же арка встречается у ОДНОГО автора под ≥2 разными корнями —
-            # см. docstring метода. Идёт ПОСЛЕ очистки franchise-обёртки
-            # выше, чтобы уже ОЧИЩЕННАЯ плоская форма (без "(фанфик)" и
-            # т.п.) участвовала в сравнении как канонический вид.
-            self._postcheck_reconcile_diverging_arc_roots()
-
-            # Повторный вызов: после обрезки franchise-обёртки ("S-T-I-K-S\Пройти
-            # через туман" → "Пройти через туман") безномерная книга-1 того же
-            # цикла, чей title совпадает с этим ТЕПЕРЬ ПЛОСКИМ именем, ещё не
-            # была связана первым вызовом (тогда серия соседей была
-            # иерархической, с другим корнем "S-T-I-K-S"). Идемпотентен —
-            # трогает только записи с пустым proposed_series.
-            self._postcheck_link_base_arc_book_into_named_series()
-
-            self._clear_series_for_compilations()
-            self.logger.log("[OK] Series cleared for compilations")
-
-            # ===== Final sanitization: strip folder-illegal chars from all series/authors =====
-            # Backslash (\) сохраняем в series — это разделитель иерархии "Серия\Подсерия".
-            _ILLEGAL_AUTHOR = re.compile(r'[\\/:*?"<>=|]')
-            _ILLEGAL_SERIES = re.compile(r'[/:*?"<>=|]')   # без backslash
-
-            def _replace_colon_in_series(s: str) -> str:
-                """Replace ':' with '. ' and capitalize the next word."""
-                def _repl(m):
-                    rest = m.string[m.end():]
-                    # Find next non-space character
-                    stripped = rest.lstrip(' ')
-                    if stripped:
-                        capitalized = stripped[0].upper() + stripped[1:]
-                        return '. ' + capitalized[:len(stripped)]
-                    return '. '
-                # Replace colon + optional spaces with ". " + capitalized next char
-                result = re.sub(r':\s*([^\s]?)', lambda m: '. ' + m.group(1).upper() if m.group(1) else '.', s)
-                return result
-
-            _abbr_re = re.compile(r'\b[А-ЯЁA-Z][а-яёa-zA-Z]?\.$')
-
-            def _strip_trailing_dot(s: str) -> str:
-                """Strip trailing punctuation except a period that belongs to an abbreviation."""
-                stripped = s.rstrip('.,…;: \t').rstrip('.')
-                # If the original ended with an abbreviated initial (e.g. "Таннер А." or "Бреннан Дж."),
-                # restore the trailing period.
-                if s.endswith('.') and _abbr_re.search(s):
-                    stripped = stripped.rstrip() + '.'
-                return stripped
-
-            # Предкомпилируем publisher-prefix паттерны из series_cleanup_patterns
-            _cleanup_pats_raw = self.settings.settings.get('series_cleanup_patterns', []) \
-                if hasattr(self.settings, 'settings') else []
-            _publisher_prefix_pats = [p for p in _cleanup_pats_raw if p.startswith('^')]
-
-            for rec in self.records:
-                if rec.proposed_series:
-                    # First replace ':' with '. Capitalized'
-                    rec.proposed_series = _replace_colon_in_series(rec.proposed_series)
-                    # Then strip remaining illegal chars (excluding ':' already handled)
-                    rec.proposed_series = re.sub(r'[/*?"<>=|]', '', rec.proposed_series).strip()
-                    rec.proposed_series = _strip_trailing_dot(rec.proposed_series)
-                    # Strip unbalanced closing brackets from broken metadata (e.g. "Тринадцатый)")
-                    _s_open = rec.proposed_series.count('(')
-                    _s_close = rec.proposed_series.count(')')
-                    if _s_close > _s_open:
-                        rec.proposed_series = rec.proposed_series.rstrip(')')
-                        rec.proposed_series = rec.proposed_series.rstrip()
-                    # Capitalize first letter
-                    if rec.proposed_series:
-                        rec.proposed_series = rec.proposed_series[0].upper() + rec.proposed_series[1:]
-                    # Издательские префиксы МИФ: «Романы МИФ. Серия» → «Серия»
-                    # Применяем здесь (финальный шаг) чтобы охватить серии из metadata/Pass4.
-                    if rec.proposed_series:
-                        for _cpat in _publisher_prefix_pats:
-                            _cleaned = re.sub(_cpat, '', rec.proposed_series, flags=re.IGNORECASE).strip()
-                            if _cleaned and _cleaned != rec.proposed_series:
-                                rec.proposed_series = _cleaned[0].upper() + _cleaned[1:]
-                                break
-                if rec.proposed_author:
-                    rec.proposed_author = _ILLEGAL_AUTHOR.sub('', rec.proposed_author).strip()
-                    rec.proposed_author = _strip_trailing_dot(rec.proposed_author)
-                    # Strip dot-as-word-separator: "Конторщиков. Виталий" → "Конторщиков Виталий"
-                    # Applies to metadata-sourced authors where trailing dot survived reordering.
-                    # Rule: word ≥3 chars, ending in lowercase, no internal dots → separator dot.
-                    def _strip_dot_sep(s: str) -> str:
-                        def _r(m):
-                            w = m.group(1)
-                            if len(w) >= 3 and w[-1].islower() and '.' not in w:
-                                return w + ' ' + m.group(2)
-                            return m.group(0)
-                        return re.sub(r'(\S+)\. ([А-ЯЁA-Z])', _r, s)
-                    rec.proposed_author = _strip_dot_sep(rec.proposed_author)
-                    # Balance unmatched opening brackets from broken metadata
-                    _open = rec.proposed_author.count('(')
-                    _close = rec.proposed_author.count(')')
-                    if _open > _close:
-                        rec.proposed_author += ')' * (_open - _close)
-            self.logger.log("[OK] Final sanitization applied")
-
-            # «Том N и M» / «Том N и Том M» в заголовке — файл объединяет два тома,
-            # а series_number на этот момент указывает только на первый (N). Идёт
-            # ДО финального гейта "нет серии", т.к. сам меняет только number, не серию.
-            self._postcheck_combined_volume_title()
-
-            # Единственная книга серии без номера, когда у всех остальных номер ≥2 —
-            # почти наверняка подразумеваемый том 1 (частая практика: первую книгу
-            # издают без явного номера). Идёт после combined_volume, чтобы группы
-            # уже видели финальные series_number (в т.ч. диапазоны "1-2").
-            self._postcheck_infer_first_volume()
-
-            # Финальный гейт: "вне серий"/"без серий" и т.п. — авторитетный маркер
-            # "серии заведомо нет". Идёт последним, чтобы ничего (включая
-            # _postcheck_metadata_rescue) не могло позже подставить серию туда,
-            # где автор/издатель явно её отсутствие пометил.
-            self._postcheck_no_series_marker()
-
-            # ===== Save CSV =====
-            if self._do_save_csv:
-                if progress_callback:
-                    progress_callback(95, 100, "Сохранение CSV")
-                self._save_csv()
-                self.logger.log(f"[OK] CSV saved to {self.output_csv}")
-            
-            _log.info("\n[OK] CSV regeneration completed successfully!")
-            _log.info(f"   Output: {self.output_csv}")
-            _log.info(f"   Records: {len(self.records)}")
-            _log.info("="*80 + "\n")
-            
-            if progress_callback:
-                progress_callback(100, 100, "Завершено")
-            
+            ctx = SimpleNamespace()
+            self._regen_prepare_and_read_files(progress_callback, filter_paths, ctx)
+            self._regen_propagate_folder_authors(progress_callback, ctx)
+            self._regen_filename_authors(progress_callback, ctx)
+            self._regen_series_from_folders(progress_callback, ctx)
+            self._regen_run_passes(progress_callback, ctx)
+            self._regen_postchecks(ctx)
+            self._regen_final_sanitization(ctx)
+            self._regen_save_csv(progress_callback, ctx)
             return True
 
         except InterruptedError:
@@ -1322,6 +481,888 @@ class RegenCSVService:
             import traceback
             traceback.print_exc()
             return False
+
+
+    def _regen_prepare_and_read_files(self, progress_callback, filter_paths, ctx) -> None:
+        """regenerate, шаг 1: Подготовка списков, PRECACHE и PASS 1 (чтение файлов)."""
+        # Пункт 3: compile blacklist once per run with current settings
+        self._compiled_blacklist = self._compile_blacklist_for_run()
+        # Загрузить пользовательский список «без серии» один раз на прогон
+        self._no_series_names = self.settings.get_no_series_folder_names()
+        # Загрузить ключевые слова вариантных папок
+        self._variant_kw = [kw.lower() for kw in (self.settings.get_list('variant_folder_keywords') or [])]
+
+        _log.info("\n" + "="*80)
+        _log.info("  CSV REGENERATION - 6-PASS SYSTEM (Modular)")
+        _log.info(f"  Work folder: {self.work_dir}\n")
+        _log.info("="*80 + "\n")
+
+        self.logger.log("=== Starting CSV regeneration ===")
+        if progress_callback:
+            progress_callback(0, 100, "Инициализация")
+
+        # ===== PRECACHE =====
+        if progress_callback:
+            progress_callback(5, 100, "Кеширование папок авторов")
+        _t = time.perf_counter()
+        precache = Precache(self.work_dir, self.settings, self.logger,
+                           self.folder_parse_limit)
+        self.author_folder_cache = precache.execute(filter_paths=filter_paths)
+        _log.info(f"[PRECACHE] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] Author folder hierarchy cached")
+
+        # ===== PASS 1 =====
+        if progress_callback:
+            progress_callback(10, 100, "Pass 1: Чтение FB2 файлов")
+        _t = time.perf_counter()
+        pass1 = Pass1ReadFiles(self.work_dir, self.author_folder_cache,
+                              self.extractor, self.logger,
+                              self.folder_parse_limit,
+                              filter_paths=filter_paths,
+                              progress_callback=progress_callback)
+        self.records = pass1.execute()
+        _log.info(f"[PASS 1] → {time.perf_counter()-_t:.2f}s")
+
+        if not self.records:
+            raise FileNotFoundError(
+                f"Файлы FB2 не найдены в папке:\n{self.work_dir}\n\n"
+                "Убедитесь, что папка содержит FB2-файлы."
+            )
+
+        self.logger.log(f"[OK] PASS 1: Read {len(self.records)} files")
+        ctx.precache = precache
+
+
+    def _regen_propagate_folder_authors(self, progress_callback, ctx) -> None:
+        """regenerate, шаг 2: PASS 1.5: автор folder_dataset по папкам; сброс у папок переводчиков."""
+        precache = ctx.precache
+        # ===== PASS 1.5: Propagate folder_dataset author within each folder =====
+        # If at least one file in a folder got author_source="folder_dataset",
+        # all other files in the same folder inherit that author.
+        from collections import defaultdict
+        _folder_groups = defaultdict(list)
+        for rec in self.records:
+            parent = str(Path(rec.file_path).parent)
+            _folder_groups[parent].append(rec)
+
+        propagated = 0
+        for parent, group in _folder_groups.items():
+            # Find the best folder_dataset author in this group
+            dataset_rec = next(
+                (r for r in group if r.author_source == 'folder_dataset' and r.proposed_author),
+                None
+            )
+            if dataset_rec:
+                for rec in group:
+                    if rec is not dataset_rec and rec.proposed_author != dataset_rec.proposed_author:
+                        rec.proposed_author = dataset_rec.proposed_author
+                        rec.author_source = 'folder_dataset'
+                        rec.needs_filename_fallback = False
+                        propagated += 1
+
+        if propagated:
+            self.logger.log(f"[OK] PASS 1.5: Propagated folder_dataset author to {propagated} files")
+
+        # PASS 1.5 grandparent propagation: subfolders where all filled siblings
+        # share a folder_dataset author equal to the grandparent folder name —
+        # apply the same author to unfilled sibling-subfolder records.
+        from collections import defaultdict as _defdict15
+        _gp15: dict = _defdict15(list)
+        for rec in self.records:
+            _gp15[str(Path(rec.file_path).parent.parent)].append(rec)
+        _gp_prop = 0
+        for gp_str, grp in _gp15.items():
+            gp_name = Path(gp_str).name
+            if not gp_name:
+                continue
+            _filled15 = [r for r in grp
+                         if r.author_source == 'folder_dataset' and r.proposed_author
+                         and r.proposed_author.lower() == gp_name.lower()]
+            _unfilled15 = [r for r in grp
+                           if r.author_source != 'folder_dataset' or not r.proposed_author]
+            if _filled15 and _unfilled15:
+                _auth15 = _filled15[0].proposed_author
+                for r in _unfilled15:
+                    r.proposed_author = _auth15
+                    r.author_source = 'folder_dataset'
+                    r.needs_filename_fallback = False
+                    _gp_prop += 1
+        if _gp_prop:
+            self.logger.log(f"[OK] PASS 1.5: Grandparent propagation applied to {_gp_prop} files")
+
+        # ===== TRANSLATOR FOLDERS: сброс folder_dataset автора =====
+        # Файлы в папках типа «Переводы Б. Акунина - Г. Чхартишвили» содержат
+        # чужие книги — автором является переводчик (из родительской папки), а не
+        # сам автор произведения. Сбрасываем folder_dataset, чтобы Pass2
+        # извлёк реального автора из имени файла.
+        _tfp = [p.lower() for p in
+                (self.settings.settings.get('translator_folder_prefixes', [])
+                 if hasattr(self.settings, 'settings') else [])]
+        if _tfp:
+            _tr_cleared = 0
+            for _rec in self.records:
+                if _rec.author_source != 'folder_dataset':
+                    continue
+                _parts = Path(_rec.file_path).parts
+                if any(p.lower().startswith(tuple(_tfp)) for p in _parts[:-1]):
+                    _rec.proposed_author = ''
+                    _rec.author_source = ''
+                    _tr_cleared += 1
+            if _tr_cleared:
+                _log.info(f"[TRANSLATOR] Cleared folder_dataset author for {_tr_cleared} files in translator folders")
+
+        if progress_callback:
+            progress_callback(20, 100, "Pass 2: Извлечение авторов")
+        _t = time.perf_counter()
+        pass2 = Pass2Filename(self.settings, self.logger, self.work_dir,
+                            male_names=precache.male_names,
+                            female_names=precache.female_names)
+        pass2.prebuild_author_cache(self.records)
+        pass2.execute(self.records)
+        _log.info(f"[PASS 2] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] PASS 2: Authors extracted from filenames")
+
+
+    def _regen_filename_authors(self, progress_callback, ctx) -> None:
+        """regenerate, шаг 3: PASS 2 (fallback) и 2.5: авторы из имён файлов, расширение сокращений."""
+        # ===== PASS 2 Fallback =====
+        if progress_callback:
+            progress_callback(25, 100, "Pass 2 Fallback: Применение метаданных")
+        _t = time.perf_counter()
+        pass2_fallback = Pass2Fallback(self.logger, settings=self.settings)
+        pass2_fallback.execute(self.records)
+        _log.info(f"[PASS 2 Fallback] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] PASS 2 Fallback: Metadata applied")
+
+
+        # ===== PASS 2.5: Expand abbreviated/plural author from consistent metadata =====
+        _t25 = time.perf_counter()
+        # Случай: папка "Войлошниковы", proposed_author="Войлошниковы" (filename),
+        # но metadata_authors стабильно содержит полные имена авторов. Расширяем.
+
+        # Перестраиваем группы по папкам после Pass 2
+        _folder_groups2: dict = {}
+        for rec in self.records:
+            parent = str(Path(rec.file_path).parent)
+            _folder_groups2.setdefault(parent, []).append(rec)
+
+        def _stem25(s: str) -> str:
+            # Two passes to handle compound endings like 'овы' = 'ов'+'ы'
+            # "Войлошниковы" → "Войлошников" → "Войлошник"
+            s = s.lower().replace('ё', 'е')
+            for _ in range(2):
+                s2 = re.sub(r'(?:ова|ева|ов|ев|ин|ина|ий|ая|ый|ых|ы|а|я)$', '', s)
+                if s2 == s:
+                    break
+                s = s2
+            return s
+
+        def _normalize_meta_author25(name: str) -> str:
+            parts = name.strip().split()
+            if len(parts) == 2:
+                return f"{parts[-1]} {parts[0]}"
+            return name.strip()
+
+        expanded25 = 0
+        for parent, group in _folder_groups2.items():
+            filename_recs = [
+                r for r in group
+                if r.author_source == 'filename' and r.proposed_author
+                and r.metadata_authors and r.metadata_authors != '[unknown]'
+            ]
+            if not filename_recs:
+                continue
+
+            # Проверяем стабильность metadata_authors (≥ 60% файлов согласны)
+            # Нормализуем: разбиваем на авторов и сортируем, чтобы порядок не важен
+            def _meta_key(m):
+                authors = frozenset(a.strip().lower() for a in re.split(r'[;,]+', m) if a.strip())
+                return authors
+
+            meta_counts: dict = {}
+            for r in filename_recs:
+                key = _meta_key(r.metadata_authors.strip())
+                meta_counts[key] = meta_counts.get(key, 0) + 1
+            dominant_key, dominant_count = max(meta_counts.items(), key=lambda x: x[1])
+            if dominant_count / len(filename_recs) < 0.6:
+                continue
+            # Берём первый файл с этим ключом как источник canonical metadata
+            dominant_meta = next(
+                r.metadata_authors for r in filename_recs
+                if _meta_key(r.metadata_authors.strip()) == dominant_key
+            )
+
+            # proposed_author должен быть усечённой формой одного из авторов в meta.
+            # ВАЖНО: Pass 2.5 предназначен только для ОДНОСЛОВНЫХ усечённых форм
+            # (e.g. "Войлошниковы" → "Войлошников Тим"). Если proposed_author уже
+            # содержит 2+ слов — это полное имя, расширение не нужно.
+            proposed = filename_recs[0].proposed_author
+            if len(proposed.split()) >= 2:
+                continue  # Уже полное имя — пропускаем
+            proposed_stem = _stem25(proposed)
+            if len(proposed_stem) < 4:
+                continue
+
+            meta_authors_list = [a.strip() for a in re.split(r'[;,]+', dominant_meta) if a.strip()]
+            matched = any(
+                # bidirectional: either stem contains the other
+                (proposed_stem in _stem25(part) or _stem25(part) in proposed_stem)
+                for a in meta_authors_list
+                for part in a.split()
+                if len(_stem25(part)) >= 4
+            )
+            if not matched:
+                continue
+
+            normalized_authors = ', '.join(_normalize_meta_author25(a) for a in meta_authors_list)
+
+            for rec in group:
+                if rec.proposed_author == proposed and rec.author_source in ('filename', ''):
+                    rec.proposed_author = normalized_authors
+                    rec.author_source = 'metadata'
+                    rec.needs_filename_fallback = False
+                    expanded25 += 1
+
+        _log.info(f"[PASS 2.5] → {time.perf_counter()-_t25:.2f}s")
+        if expanded25:
+            self.logger.log(f"[OK] PASS 2.5: Expanded abbreviated authors in {expanded25} files")
+
+
+    def _regen_series_from_folders(self, progress_callback, ctx) -> None:
+        """regenerate, шаг 4: Серии из структуры папок (_compute_folder_series)."""
+        # ===== SERIES EXTRACTION: From Folders (VARIANT B) =====
+        if progress_callback:
+            progress_callback(30, 100, "Извлечение серий")
+        _t = time.perf_counter()
+        _log.info("\n[SERIES] Extracting series from folder structure...")
+
+        # Кэш нормализации имён для _surnames_match_folder
+        _norm_cache: dict = {}
+
+        def _norm(name: str) -> str:
+            if name not in _norm_cache:
+                _norm_cache[name] = self._normalize_name_for_comparison(name)
+            return _norm_cache[name]
+
+        # Вспомогательная функция: вычислить (proposed_series, series_source)
+        # по частям пути и автору. Результат кэшируется по ключу (author, parent_parts).
+        _series_folder_cache: dict = {}  # (author, parent_parts) → (series, source)
+
+        def _compute_folder_series(author: str, parent_parts: tuple) -> tuple:
+            """Вернуть (proposed_series, series_source) из структуры папок.
+
+            Логика зависит от типа корневой папки (FolderType):
+
+            AUTHOR:
+                Ищем папку автора в пути → всё что глубже = серия/подсерия.
+                Это основной случай: Волков Тим/Дуэлянт/1. Книга.fb2
+
+            PUBLISHER / COLLECTION:
+                Корневая папка НЕ является серией (это издательский каталог).
+                Если файл лежит в подпапке — подпапка = серия, независимо от автора.
+                Если файл лежит прямо в корневой папке — серии из папки нет.
+                Пример: Серия - «Боевая фантастика»/ИмяСерии/1. Книга.fb2
+
+            UNKNOWN:
+                Пробуем найти автора в пути (как AUTHOR).
+                Если автор не найден, но есть подпапки — берём подпапки как серию.
+                Это покрывает случай, когда корневая папка сама является серией.
+
+            VARIANT / NO_SERIES / SKIP:
+                Серию из папки не извлекаем.
+            """
+            key = (author, parent_parts)
+            if key in _series_folder_cache:
+                return _series_folder_cache[key]
+
+            result = ('', '')
+
+            if not parent_parts:
+                _series_folder_cache[key] = result
+                return result
+
+            # series_folder_blacklist: организационные ярлыки-папки
+            # ("Законченные циклы", "Компиляции циклов" и т.п.), которые
+            # нужно вычёркивать из ЛЮБОГО уровня иерархии пути, а не
+            # только когда весь итоговый (уже склеенный через '\') путь
+            # совпадает с ними целиком буквально — иначе такая папка
+            # ложно становится КОРНЕМ иерархической серии вместе с
+            # реальным именем цикла в подпапке. Реальный случай (Евгений
+            # Щепетнов): ".../Компиляции циклов/Законченные циклы/Цикл
+            # «Слава». Книги 1-5/..." — без пофрагментной фильтрации
+            # результат — "Законченные циклы\Цикл «Слава». Книги 1-5"
+            # вместо голого "Цикл «Слава». Книги 1-5".
+            _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
+            if _sfbl is None:
+                _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
+                self._series_folder_blacklist_cache = _sfbl
+
+            _sfbl_set: set = _sfbl
+
+            def _drop_blacklisted(folders: tuple) -> tuple:
+                return tuple(f for f in folders if f.lower() not in _sfbl_set)
+
+            root_type = self.folder_classifier.classify(parent_parts[0])
+
+            if root_type in (FolderType.SKIP, FolderType.VARIANT, FolderType.NO_SERIES):
+                # Не используем папку как источник серии
+                pass
+
+            elif root_type in (FolderType.PUBLISHER, FolderType.COLLECTION):
+                # Корневая папка = издательский каталог.
+                # Серия = подпапки начиная с уровня 2 (index 1+).
+                # Исключаем подпапки, которые являются ЧИСТОЙ папкой автора.
+                # Папка формата "Серия (Автор)" НЕ является чистой папкой автора —
+                # из неё нужно извлечь серию через _extract_series_from_folder_name.
+                subfolders = parent_parts[1:]
+                # Загружаем жанрово-издательские метки один раз
+                _gfp = getattr(self, '_genre_folder_prefixes_cache', None)
+                if _gfp is None:
+                    _gfp = [p.lower() for p in
+                            (self.settings.settings.get('genre_folder_prefixes', [])
+                             if hasattr(self.settings, 'settings') else [])]
+                    self._genre_folder_prefixes_cache = _gfp
+                _tfp_ser = getattr(self, '_translator_folder_prefixes_cache', None)
+                if _tfp_ser is None:
+                    _tfp_ser = [p.lower() for p in
+                                (self.settings.settings.get('translator_folder_prefixes', [])
+                                 if hasattr(self.settings, 'settings') else [])]
+                    self._translator_folder_prefixes_cache = _tfp_ser
+
+                series_folders = []
+                for _sf in subfolders:
+                    # Папка-буква алфавитного указателя («С», «А», «Б»…) — типичная
+                    # структура крупных коллекций (авторы рассортированы по первой
+                    # букве фамилии). Реальный случай (docs/quality-roadmap.md, баг
+                    # №48): "Азбука Социальной Фантастики (833)\С\Стругацки Аркадий\
+                    # ...fb2" — без этого фильтра "С" считалась частью серии.
+                    if self._is_alphabet_index_folder(_sf):
+                        continue
+                    if not author or not self._surnames_match_folder(author, _sf):
+                        # Дополнительная проверка: папка = латинский логин/транслит автора
+                        if self._folder_is_author_login(_sf, author):
+                            continue  # папка автора, не серия
+                        # Дополнительная проверка: папка начинается с жанрово-издательской метки
+                        # («Фэнтези МИФ. ...», «Детектив МИФ. ...») — это sub-collection,
+                        # а не серия. Серия извлекается из имени файла.
+                        _sf_lower = _sf.lower()
+                        _is_genre_collection = any(
+                            _sf_lower.startswith(_gp) for _gp in _gfp
+                        )
+                        if _is_genre_collection:
+                            continue  # жанровый sub-collection — не серия
+                        # Дополнительная проверка: папка-переводчик («Переводы X»)
+                        # — содержит чужие книги, не является серией автора.
+                        _is_translator_folder = any(
+                            _sf_lower.startswith(_tp) for _tp in _tfp_ser
+                        )
+                        if _is_translator_folder:
+                            continue  # папка переводов — не серия
+                        series_folders.append(_sf)
+                        continue
+                    # Даже если автор найден в имени подпапки — жанровая метка
+                    # имеет приоритет: «Fanzon. Кинжал и магия. Фэнтези Браста» — это
+                    # genre-collection несмотря на имя автора в названии.
+                    _sf_lower2 = _sf.lower()
+                    if any(_sf_lower2.startswith(_gp) for _gp in _gfp):
+                        continue  # жанровый sub-collection с упоминанием автора
+                    # Автор найден в имени подпапки.
+                    # Пробуем извлечь серию — если она непустая и не совпадает с автором,
+                    # это формат "Серия (Автор)", используем её.
+                    _extracted = self._extract_series_from_folder_name(_sf)
+                    # Баг №59: "С.К.С., Вязовский - Режим бога" — псевдоним автора для
+                    # части книг серии (через запятую) + реальное имя автора + тире +
+                    # НАСТОЯЩЕЕ название серии. _extract_series_from_folder_name не
+                    # знает про запятую-псевдоним и возвращает папку ЦЕЛИКОМ (ничего не
+                    # вырезано) — если бы это стало итоговым значением, вся строка
+                    # "С.К.С., Вязовский - Режим бога" превратилась бы в proposed_series
+                    # для ВСЕХ файлов подпапки (folder_dataset доверяется безусловно
+                    # дальше по конвейеру, блокируя извлечение серии из имени файла).
+                    # Если экстрактор ничего не вырезал (вернул папку как есть) и в
+                    # имени есть " - ", берём текст ПОСЛЕ последнего тире — он и есть
+                    # настоящее название серии, а всё до тире (включая псевдоним через
+                    # запятую) — это автор(ы), не серия.
+                    if _extracted == _sf and ' - ' in _sf:
+                        _before_dash_ser, _after_dash_ser = _sf.rsplit(' - ', 1)
+                        _before_dash_ser = _before_dash_ser.strip()
+                        _after_dash_ser = _after_dash_ser.strip()
+                        # Баг №109 (продолжение): формат "Серия - Автор1,Автор2,
+                        # Автор3" (серия ПЕРЕД тире) — обратный порядок
+                        # относительно бага №59 ("Автор(ы) - Серия"). Реальный
+                        # случай: "Киндрэт - Пехов,Бычкова, Турчанинова" — текст
+                        # ПОСЛЕ тире это список соавторов (совпадает с уже
+                        # известным `author`), а не название серии — тогда
+                        # настоящая серия — текст ДО тире.
+                        if _after_dash_ser and self._surnames_match_folder(author, _after_dash_ser):
+                            if _before_dash_ser:
+                                _extracted = _before_dash_ser
+                        elif _after_dash_ser:
+                            _extracted = _after_dash_ser
+                    _auth_norm = self._normalize_name_for_comparison(author)
+                    _extr_norm = self._normalize_name_for_comparison(_extracted) if _extracted else ''
+                    # Если extracted является частью имени автора (или наоборот),
+                    # это всё равно папка автора — псевдоним и реальное имя.
+                    # Пример: автор «Базилио (Риддер Аристарх)», папка «Риддер Аристарх (Базилио)»
+                    # → extracted «Риддер Аристарх», auth_norm «базилио риддер аристарх»
+                    # → «риддер аристарх» is substring of auth_norm → чистая папка автора.
+                    # Проверяем оба порядка слов: нормализованный («Фамилия Имя»)
+                    # и исходный («Имя Фамилия») для западных имён типа «Элин Хильдебранд».
+                    _auth_words = set(_auth_norm.split())
+                    _extr_words = set(_extr_norm.split())
+                    # Баг №115: папка вида «Мозолевский-Павел» (частый паттерн
+                    # самиздата «Фамилия-Имя») не распознавалась как вариант
+                    # автора «Мозолевский Павел» — _normalize_name_for_
+                    # comparison() не разбивает по дефису, поэтому ни подстрочная
+                    # проверка, ни issubset по словам не срабатывали, и папка
+                    # автора ошибочно попадала в series_folders как будто это
+                    # папка серии (реальный случай: «Мантикор-Артемис (Артемис
+                    # Мантикор)\Мир Мельхиора» → серия «Мантикор-Артемис\Мир
+                    # Мельхиора» вместо чистого «Мир Мельхиора»). Сравниваем ещё
+                    # и hyphen-aware вариант (дефис → пробел) — ТОЛЬКО здесь, не
+                    # в самой _normalize_name_for_comparison(): у неё есть другие
+                    # вызывающие места, и golden-снапшот на реальной библиотеке
+                    # показал, что менять её глобально ломает не связанный
+                    # 3-уровневый кейс в другом месте пайплайна (Бессонов
+                    # Алексей/Мир Алекса Королёва/5. Миры Конфедерации).
+                    _auth_words_h = set(_auth_norm.replace('-', ' ').split())
+                    _extr_words_h = set(_extr_norm.replace('-', ' ').split())
+                    _is_author_variant = (_extr_norm and (
+                        _extr_norm in _auth_norm or _auth_norm in _extr_norm
+                        or (_auth_words and _auth_words.issubset(_extr_words))
+                        or (_auth_words_h and _auth_words_h.issubset(_extr_words_h))
+                    ))
+                    if _extracted and _extr_norm != _auth_norm and not _is_author_variant:
+                        # Используем УЖЕ ОЧИЩЕННОЕ значение (_extracted), а не сырое
+                        # имя папки (_sf) — иначе повторное извлечение чуть ниже
+                        # (при финальной сборке series_names) снова вернёт папку
+                        # целиком, т.к. _extract_series_from_folder_name не умеет
+                        # сама по себе резать по псевдониму-через-запятую.
+                        series_folders.append(_extracted)
+                    # иначе — чистая папка автора, пропускаем
+                # Вариантные папки ("Вариант с СИ", "ЛП" и т.п.) не образуют уровень иерархии.
+                # Файлы внутри них получают серию из ближайшей не-вариантной папки выше.
+                # Баг №106: голое `_vk in _sf_lower` матчило короткие ключевые слова
+                # ("си") как ПОДСТРОКУ где угодно — "Мир Астероид-Сити" содержит "си"
+                # внутри "Сити" и ложно считался вариантной папкой, из-за чего терялся
+                # весь уровень серии. `_bl_matches` (как и в folder_classifier.py,
+                # pass2_series_filename.py._is_variant_folder — тот же класс защиты)
+                # требует границы слова для коротких (<4 симв.) ключевых слов.
+                _vkw = getattr(self, '_variant_kw', [])
+                series_folders_clean = []
+                for _sf in series_folders:
+                    _sf_lower = _sf.lower().replace('ё', 'е')
+                    if any(_bl_matches(_vk, _sf_lower) for _vk in _vkw):
+                        continue  # вариантная папка — пропускаем
+                    series_folders_clean.append(_sf)
+                series_folders = _drop_blacklisted(tuple(series_folders_clean))
+                if series_folders:
+                    if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
+                        result = ('', 'no_series_folder')
+                    else:
+                        _pln = len(series_folders) >= 2
+                        series_names = [self._extract_series_from_folder_name(f, preserve_leading_number=_pln) for f in series_folders]
+                        series_combined = '\\'.join(s for s in series_names if s)
+                        if series_combined:
+                            result = (series_combined, 'folder_dataset')
+
+            else:
+                # AUTHOR или UNKNOWN — ищем папку автора в пути
+                author_folder_index = -1
+                if author:
+                    for idx, part in enumerate(parent_parts):
+                        if self._surnames_match_folder(author, part):
+                            author_folder_index = idx
+                            break
+
+                # Сканирование запущено ПРЯМО в папке автора (work_dir сам —
+                # уже признанная папка автора, см. PRECACHE "Work_dir is
+                # AUTHOR") — тогда сегмент с именем автора уже "съеден"
+                # work_dir'ом и никогда не встретится внутри parent_parts,
+                # хотя вся parent_parts целиком и есть подсерия. Реальный
+                # случай (Пехов Алексей): Compiler/Normalize, запущенные
+                # прямо на "Пехов Алексей - Сборник", теряли series для
+                # КАЖДОЙ однократно вложенной подпапки ("Мантикора",
+                # "Синее пламя", "Вселенная Изнанки" и т.д.) — та же
+                # структура, что и сканирование из родительской папки
+                # библиотеки (где автор — часть пути), давало верный
+                # результат. author_folder_index остаётся -1 (как и был),
+                # поэтому parent_parts[author_folder_index + 1:] ниже
+                # естественно берёт ВЕСЬ parent_parts — именно то, что нужно.
+                _work_dir_is_author = (
+                    author_folder_index < 0 and author
+                    and self._surnames_match_folder(author, self.work_dir.name)
+                )
+
+                if author_folder_index >= 0 or _work_dir_is_author:
+                    # Нашли папку автора → всё глубже = серия
+                    series_folders = _drop_blacklisted(parent_parts[author_folder_index + 1:])
+                    if series_folders:
+                        if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
+                            result = ('', 'no_series_folder')
+                        else:
+                            _pln = len(series_folders) >= 2
+                            series_names = [self._extract_series_from_folder_name(f, preserve_leading_number=_pln) for f in series_folders]
+                            series_combined = '\\'.join(s for s in series_names if s)
+                            if series_combined:
+                                result = (series_combined, 'folder_dataset')
+
+                elif root_type == FolderType.UNKNOWN and len(parent_parts) > 1:
+                    # Автор не найден, но есть подпапки в UNKNOWN-папке.
+                    # Берём все подпапки (начиная с index 1) как серию —
+                    # кроме папок алфавитного указателя (см. баг №48 выше).
+                    series_folders = _drop_blacklisted(tuple(
+                        f for f in parent_parts[1:] if not self._is_alphabet_index_folder(f)
+                    ))
+                    if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
+                        result = ('', 'no_series_folder')
+                    else:
+                        _pln = len(series_folders) >= 2
+                        series_names = [self._extract_series_from_folder_name(f, preserve_leading_number=_pln) for f in series_folders]
+                        series_combined = '\\'.join(s for s in series_names if s)
+                        if series_combined:
+                            result = (series_combined, 'folder_dataset')
+
+            # Папочный источник — авторитетный (Pass 2 / filename extraction его не
+            # трогает и не проверяет по blacklist, доверяя ему безоговорочно, см.
+            # pass2_series_filename.py). Поэтому blacklist нужно проверить ЗДЕСЬ, до
+            # присвоения source='folder_dataset' — иначе издательский/коллекционный
+            # ярлык вроде "В Серии -Fantasy World" блокирует извлечение из имени файла
+            # на весь пайплайн, и единственный шанс его вычистить — поздний постчек
+            # _postcheck_series_folder_blacklist(), когда Pass 2 уже отработал и
+            # вернулся раньше времени, так и не попробовав имя файла.
+            if result[1] == 'folder_dataset':
+                _sfbl = getattr(self, '_series_folder_blacklist_cache', None)
+                if _sfbl is None:
+                    _sfbl = {s.lower() for s in (self.settings.get_series_folder_blacklist() or [])}
+                    self._series_folder_blacklist_cache = _sfbl
+                if result[0].lower() in _sfbl:
+                    result = ('', '')
+
+            _series_folder_cache[key] = result
+            return result
+
+        # Предвычисляем части пути один раз
+        _parts_cache: dict = {}
+
+        # Источники по возрастанию приоритета. Папка (3) > файл (2) > мета (1).
+        # VARIANT B всегда перезаписывает источники с приоритетом ниже папочного.
+        # Единое множество из fb2parser_core.evidence — было продублировано
+        # байт-в-байт в нескольких местах (docs/quality-roadmap.md, баг
+        # №109, "хрупкость каскада").
+        _FOLDER_SOURCES = _SHARED_FOLDER_SOURCES
+
+        for record in self.records:
+            # Пропускаем только если уже установлен папочный источник
+            if record.series_source in _FOLDER_SOURCES:
+                continue
+
+            file_path_parts = _parts_cache.get(record.file_path)
+            if file_path_parts is None:
+                raw_parts = Path(record.file_path).parts
+                file_path_parts = tuple(
+                    p for i, p in enumerate(raw_parts)
+                    if i == len(raw_parts) - 1 or p.lower() not in FILE_EXTENSION_FOLDER_NAMES
+                )
+                _parts_cache[record.file_path] = file_path_parts
+
+            parent_parts = file_path_parts[:-1]  # без имени файла
+            author = record.proposed_author or ''
+
+            series, source = _compute_folder_series(author, parent_parts)
+            if source and series != author:
+                record.proposed_series = series
+                record.series_source = source
+
+            # Если author_folder_index < 0 (папка автора не найдена) —
+            # серия из папок не извлекается; Pass 2 Series и metadata возьмут на себя.
+
+        _log.info(f"[SERIES folders] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] Series extracted from folder structure (Variant B)")
+        def _chk(label):
+            for r in self.records:
+                if 'Зверь лютый (Бирюк' in r.file_path:
+                    _log.info(f"[{label}] {r.file_path[-35:]} | ser_src={r.series_source!r}")
+                    break
+        _chk("AFTER_VARB")
+        ctx._chk = _chk
+
+
+    def _regen_run_passes(self, progress_callback, ctx) -> None:
+        """regenerate, шаг 5: SERIES PASS 2/3 и PASS 3-6."""
+        _chk = ctx._chk
+        precache = ctx.precache
+        # ===== SERIES PASS 2 =====
+        if progress_callback:
+            progress_callback(40, 100, "Извлечение серий из имен файлов")
+        _t = time.perf_counter()
+        _log.info("[SERIES] Extracting series from filenames...")
+        pass2_series = Pass2SeriesFilename(self.logger,
+                                          male_names=precache.male_names,
+                                          female_names=precache.female_names,
+                                          config_path=str(self.config_path))
+        pass2_series.execute(self.records)
+        _log.info(f"[SERIES PASS 2] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] Series PASS 2: Extracted from filenames")
+        _chk("AFTER_P2S")
+
+        # ===== SERIES PASS 3 =====
+        if progress_callback:
+            progress_callback(45, 100, "Нормализация серий")
+        _t = time.perf_counter()
+        _log.info("[SERIES] Normalizing series names...")
+        pass3_series = Pass3SeriesNormalize(self.logger, settings=self.settings)
+        pass3_series.execute(self.records)
+        _log.info(f"[SERIES PASS 3] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] Series PASS 3: Normalized series names")
+        _chk("AFTER_P3S")
+
+        # ===== PASS 3 =====
+        if progress_callback:
+            progress_callback(55, 100, "Pass 3: Нормализация авторов")
+        _t = time.perf_counter()
+        pass3 = Pass3Normalize(self.logger, settings=self.settings)
+        pass3.execute(self.records)
+        _log.info(f"[PASS 3] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] PASS 3: Authors normalized")
+
+        # ===== PASS 4 =====
+        if progress_callback:
+            progress_callback(65, 100, "Pass 4: Консенсус")
+        _t = time.perf_counter()
+        pass4 = Pass4Consensus(self.logger, settings=self.settings,
+                               series_filename_extractor=pass2_series)
+        pass4.execute(self.records)
+        _log.info(f"[PASS 4] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] PASS 4: Consensus applied")
+        _chk("AFTER_P4")
+
+        # ===== PASS 5 =====
+        if progress_callback:
+            progress_callback(75, 100, "Pass 5: Преобразования")
+        _t = time.perf_counter()
+        pass5 = Pass5Conversions(self.logger, settings=self.settings)
+        pass5.execute(self.records)
+        _log.info(f"[PASS 5] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] PASS 5: Conversions re-applied")
+
+        # ===== PASS 6 =====
+        if progress_callback:
+            progress_callback(85, 100, "Pass 6: Раскрытие аббревиатур")
+        _t = time.perf_counter()
+        pass6 = Pass6Abbreviations(self.logger, settings=self.settings)
+        pass6.execute(self.records)
+        _log.info(f"[PASS 6] → {time.perf_counter()-_t:.2f}s")
+        self.logger.log("[OK] PASS 6: Abbreviations expanded")
+
+        self._postcheck_series_not_equal_author()
+        self._postcheck_metadata_rescue()
+
+        self._postcheck_clear_large_numbers()
+
+        self._postcheck_clear_title_series_fp()
+        self._postcheck_strip_leading_number()
+
+        self._postcheck_trim_to_metadata_prefix()
+        self._postcheck_expand_truncated_series()
+
+        self._postcheck_strip_service_words()
+        self._postcheck_dedup_backslash_hierarchy()
+        self._postcheck_dedup_consecutive_words()
+
+        self._postcheck_enrich_folder_hierarchy()
+        self._postcheck_filename_prefix_pattern()
+        self._postcheck_strip_metadata_coauthors_not_in_filename()
+        self._postcheck_series_folder_blacklist()
+        self._postcheck_normalize_series_arc_number()
+        self._postcheck_clear_author_as_series()
+        self._postcheck_build_subfolder_hierarchy()
+        self._postcheck_strip_author_prefix_from_series()
+        self._postcheck_strip_bracket_annotations_from_series()
+        self._postcheck_expand_truncated_series()  # повторно, после strip-префиксов (РОС. Подсерия → РОС\Подсерия)
+        self._postcheck_strip_leading_number()  # повторно, после backslash-стрипинга
+        self._postcheck_fill_empty_authors()
+        self._postcheck_strip_digit_prefix_author()
+        self._postcheck_link_base_arc_book_into_named_series()
+        ctx.pass2_series = pass2_series
+
+
+    def _regen_postchecks(self, ctx) -> None:
+        """regenerate, шаг 6: Пост-проверки: откат к мете, номера, вселенные, корни арок."""
+        pass2_series = ctx.pass2_series
+        # Финальный откат к мете (приоритет Папка(3) > Файл(2) > Мета(1)):
+        # к этому моменту и папочный, и файловый источники уже честно
+        # попробованы (включая случаи, где папочное значение забраковано
+        # blacklist'ом в _compute_folder_series и заменено на попытку
+        # извлечения из имени файла). Если оба ничего не дали — метаданные
+        # используются как последний резерв, а не как замена приоритета.
+        # Вызов идемпотентен (трогает только записи с пустым proposed_series).
+        self._postcheck_metadata_rescue()
+
+        # Повторный вызов коррекции series_number из имени файла (Правило 2,
+        # "SeriesRoot N. Title") — ТЕПЕРЬ, когда proposed_series наконец
+        # разрешилась (в т.ч. только что через metadata_rescue выше). Первый
+        # вызов внутри Pass2SeriesFilename.execute() сверяет число в стеме с
+        # УЖЕ известным именем серии — если на тот момент серия была ещё
+        # пустой/неверной, правило не могло сработать и осталось с
+        # результатом из <sequence>. Реальный случай (docs/quality-roadmap.md,
+        # баг №54): "Гришэм. Округ Форд 4. Рассказы (пер. Наталья Рейн).fb2" —
+        # <sequence name="Округ Форд" number="1"/> в метаданных ОШИБОЧНО
+        # даёт "1" (реальная позиция — 4, что ясно видно из имени файла), а
+        # proposed_series разрешилась в "Округ Форд" только здесь, через
+        # metadata_rescue — слишком поздно для первого вызова коррекции.
+        # Идемпотентен: не трогает записи, где число уже совпадает.
+        pass2_series._correct_series_number_from_filename(self.records)
+
+        # Идёт ПОСЛЕ второго вызова коррекции series_number выше (см.
+        # комментарий к нему) — иначе он тут же переигрывает Правило
+        # "filename_prefix" заново и стирает результат этого постчека.
+        self._postcheck_prefer_embedded_series_number_when_consistent()
+
+        # ВАЖНО: очистка голой франшизы-вселенной идёт ПОСЛЕ отката к
+        # метаданным, а не до — иначе _postcheck_metadata_rescue() тут же
+        # восстанавливает только что очищенное значение ОБРАТНО из
+        # metadata_series (реальный случай: "Богданов. Цепные псы.fb2" —
+        # metadata_series="S-T-I-K-S" буквально совпадает с franchise-
+        # keyword; клир до отката давал пустую серию, но следующий же шаг
+        # тут же подставлял её назад из метаданных).
+        self._postcheck_clear_universe_keyword_series()
+
+        # Схлопывает "Корень\Арка" под РАЗНЫМИ по виду корнями (или
+        # "Корень\Арка" + плоскую "Арка") в одну плоскую серию, когда та
+        # же арка встречается у ОДНОГО автора под ≥2 разными корнями —
+        # см. docstring метода. Идёт ПОСЛЕ очистки franchise-обёртки
+        # выше, чтобы уже ОЧИЩЕННАЯ плоская форма (без "(фанфик)" и
+        # т.п.) участвовала в сравнении как канонический вид.
+        self._postcheck_reconcile_diverging_arc_roots()
+
+        # Повторный вызов: после обрезки franchise-обёртки ("S-T-I-K-S\Пройти
+        # через туман" → "Пройти через туман") безномерная книга-1 того же
+        # цикла, чей title совпадает с этим ТЕПЕРЬ ПЛОСКИМ именем, ещё не
+        # была связана первым вызовом (тогда серия соседей была
+        # иерархической, с другим корнем "S-T-I-K-S"). Идемпотентен —
+        # трогает только записи с пустым proposed_series.
+        self._postcheck_link_base_arc_book_into_named_series()
+
+        self._clear_series_for_compilations()
+        self.logger.log("[OK] Series cleared for compilations")
+
+
+    def _regen_final_sanitization(self, ctx) -> None:
+        """regenerate, шаг 7: Финальная очистка серий и последние гейты."""
+        # ===== Final sanitization: strip folder-illegal chars from all series/authors =====
+        # Backslash (\) сохраняем в series — это разделитель иерархии "Серия\Подсерия".
+        _ILLEGAL_AUTHOR = re.compile(r'[\\/:*?"<>=|]')
+        _ILLEGAL_SERIES = re.compile(r'[/:*?"<>=|]')   # без backslash
+
+        def _replace_colon_in_series(s: str) -> str:
+            """Replace ':' with '. ' and capitalize the next word."""
+            def _repl(m):
+                rest = m.string[m.end():]
+                # Find next non-space character
+                stripped = rest.lstrip(' ')
+                if stripped:
+                    capitalized = stripped[0].upper() + stripped[1:]
+                    return '. ' + capitalized[:len(stripped)]
+                return '. '
+            # Replace colon + optional spaces with ". " + capitalized next char
+            result = re.sub(r':\s*([^\s]?)', lambda m: '. ' + m.group(1).upper() if m.group(1) else '.', s)
+            return result
+
+        _abbr_re = re.compile(r'\b[А-ЯЁA-Z][а-яёa-zA-Z]?\.$')
+
+        def _strip_trailing_dot(s: str) -> str:
+            """Strip trailing punctuation except a period that belongs to an abbreviation."""
+            stripped = s.rstrip('.,…;: \t').rstrip('.')
+            # If the original ended with an abbreviated initial (e.g. "Таннер А." or "Бреннан Дж."),
+            # restore the trailing period.
+            if s.endswith('.') and _abbr_re.search(s):
+                stripped = stripped.rstrip() + '.'
+            return stripped
+
+        # Предкомпилируем publisher-prefix паттерны из series_cleanup_patterns
+        _cleanup_pats_raw = self.settings.settings.get('series_cleanup_patterns', []) \
+            if hasattr(self.settings, 'settings') else []
+        _publisher_prefix_pats = [p for p in _cleanup_pats_raw if p.startswith('^')]
+
+        for rec in self.records:
+            if rec.proposed_series:
+                # First replace ':' with '. Capitalized'
+                rec.proposed_series = _replace_colon_in_series(rec.proposed_series)
+                # Then strip remaining illegal chars (excluding ':' already handled)
+                rec.proposed_series = re.sub(r'[/*?"<>=|]', '', rec.proposed_series).strip()
+                rec.proposed_series = _strip_trailing_dot(rec.proposed_series)
+                # Strip unbalanced closing brackets from broken metadata (e.g. "Тринадцатый)")
+                _s_open = rec.proposed_series.count('(')
+                _s_close = rec.proposed_series.count(')')
+                if _s_close > _s_open:
+                    rec.proposed_series = rec.proposed_series.rstrip(')')
+                    rec.proposed_series = rec.proposed_series.rstrip()
+                # Capitalize first letter
+                if rec.proposed_series:
+                    rec.proposed_series = rec.proposed_series[0].upper() + rec.proposed_series[1:]
+                # Издательские префиксы МИФ: «Романы МИФ. Серия» → «Серия»
+                # Применяем здесь (финальный шаг) чтобы охватить серии из metadata/Pass4.
+                if rec.proposed_series:
+                    for _cpat in _publisher_prefix_pats:
+                        _cleaned = re.sub(_cpat, '', rec.proposed_series, flags=re.IGNORECASE).strip()
+                        if _cleaned and _cleaned != rec.proposed_series:
+                            rec.proposed_series = _cleaned[0].upper() + _cleaned[1:]
+                            break
+            if rec.proposed_author:
+                rec.proposed_author = _ILLEGAL_AUTHOR.sub('', rec.proposed_author).strip()
+                rec.proposed_author = _strip_trailing_dot(rec.proposed_author)
+                # Strip dot-as-word-separator: "Конторщиков. Виталий" → "Конторщиков Виталий"
+                # Applies to metadata-sourced authors where trailing dot survived reordering.
+                # Rule: word ≥3 chars, ending in lowercase, no internal dots → separator dot.
+                def _strip_dot_sep(s: str) -> str:
+                    def _r(m):
+                        w = m.group(1)
+                        if len(w) >= 3 and w[-1].islower() and '.' not in w:
+                            return w + ' ' + m.group(2)
+                        return m.group(0)
+                    return re.sub(r'(\S+)\. ([А-ЯЁA-Z])', _r, s)
+                rec.proposed_author = _strip_dot_sep(rec.proposed_author)
+                # Balance unmatched opening brackets from broken metadata
+                _open = rec.proposed_author.count('(')
+                _close = rec.proposed_author.count(')')
+                if _open > _close:
+                    rec.proposed_author += ')' * (_open - _close)
+        self.logger.log("[OK] Final sanitization applied")
+
+        # «Том N и M» / «Том N и Том M» в заголовке — файл объединяет два тома,
+        # а series_number на этот момент указывает только на первый (N). Идёт
+        # ДО финального гейта "нет серии", т.к. сам меняет только number, не серию.
+        self._postcheck_combined_volume_title()
+
+        # Единственная книга серии без номера, когда у всех остальных номер ≥2 —
+        # почти наверняка подразумеваемый том 1 (частая практика: первую книгу
+        # издают без явного номера). Идёт после combined_volume, чтобы группы
+        # уже видели финальные series_number (в т.ч. диапазоны "1-2").
+        self._postcheck_infer_first_volume()
+
+        # Финальный гейт: "вне серий"/"без серий" и т.п. — авторитетный маркер
+        # "серии заведомо нет". Идёт последним, чтобы ничего (включая
+        # _postcheck_metadata_rescue) не могло позже подставить серию туда,
+        # где автор/издатель явно её отсутствие пометил.
+        self._postcheck_no_series_marker()
+
+
+    def _regen_save_csv(self, progress_callback, ctx) -> None:
+        """regenerate, шаг 8: Сохранение CSV."""
+        # ===== Save CSV =====
+        if self._do_save_csv:
+            if progress_callback:
+                progress_callback(95, 100, "Сохранение CSV")
+            self._save_csv()
+            self.logger.log(f"[OK] CSV saved to {self.output_csv}")
+
+        _log.info("\n[OK] CSV regeneration completed successfully!")
+        _log.info(f"   Output: {self.output_csv}")
+        _log.info(f"   Records: {len(self.records)}")
+        _log.info("="*80 + "\n")
+
+        if progress_callback:
+            progress_callback(100, 100, "Завершено")
     
     def _postcheck_strip_metadata_coauthors_not_in_filename(self) -> None:
         """Убирает соавторов из metadata-автора если их фамилия не встречается в имени файла.
