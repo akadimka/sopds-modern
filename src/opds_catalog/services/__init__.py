@@ -24,45 +24,6 @@ class SearchType(StrEnum):
     BY_USER = "u"  # Поиск по пользователю (книжная полка)
     DOUBLES = "d"  # Поиск дубликатов
     BY_ID = "i"  # Поиск по ID книги
-    #
-    # # Классовые переменные для группировки
-    # COMMON_TYPES = (BY_SUBSTRING, BY_START_WITH, BY_EXACT_MATCH)
-    #
-    # BOOK_SEARCH_TYPES = (
-    #     BY_AUTHOR,
-    #     BY_SERIES,
-    #     BY_AUTHOR_AND_SERIES,
-    #     BY_GENRE,
-    #     BY_USER,
-    #     DOUBLES,
-    #     BY_ID,
-    # )
-    #
-    # @classmethod
-    # def is_valid(cls, value: str) -> bool:
-    #     """Проверяет, является ли значение допустимым типом поиска."""
-    #     try:
-    #         cls(value)
-    #         return True
-    #     except ValueError:
-    #         return False
-    #
-    # @property
-    # def description(self) -> str:
-    #     """Возвращает человеко-читаемое описание типа поиска."""
-    #     descriptions = {
-    #         self.BY_SUBSTRING: "Поиск по подстроке",
-    #         self.BY_START_WITH: "Поиск по началу строки",
-    #         self.BY_EXACT_MATCH: "Точное совпадение",
-    #         self.BY_AUTHOR: "Поиск по автору",
-    #         self.BY_SERIES: "Поиск по серии",
-    #         self.BY_AUTHOR_AND_SERIES: "Поиск по автору и серии",
-    #         self.BY_GENRE: "Поиск по жанру",
-    #         self.BY_USER: "Поиск по книжной полке пользователя",
-    #         self.DOUBLES: "Поиск дубликатов",
-    #         self.BY_ID: "Поиск по ID книги",
-    #     }
-    #     return descriptions.get(self, "Неизвестный тип поиска")
 
 
 def extract_fb2_cover(
@@ -72,7 +33,6 @@ def extract_fb2_cover(
         parser = FB2sax(file, original_filename)
     else:
         parser = FB2(file)
-    # parser.parse()
     return parser.extract_cover()
 
 

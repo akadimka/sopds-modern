@@ -1,8 +1,6 @@
 import logging
 
 from django.conf import settings
-
-# import os
 from django.db.backends.signals import connection_created
 from django.dispatch import receiver
 

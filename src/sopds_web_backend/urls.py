@@ -1,4 +1,3 @@
-# from django.conf.urls import url
 from django.urls import re_path
 
 from sopds_web_backend import views
@@ -34,4 +33,3 @@ urlpatterns = [
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/restart/$", views.ratings_restart_cycle, name="ratings_restart"),
 ]
 
-# handler403 = 'views.handler403'

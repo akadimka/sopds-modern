@@ -267,12 +267,5 @@ def daemonize():
     os.dup2(std_out.fileno(), sys.stdout.fileno())
     os.dup2(std_out.fileno(), sys.stderr.fileno())
 
-    #    null = os.open("/dev/null", os.O_RDWR)
-    #    for i in range(3):
-    #        try:
-    #            os.dup2(null, i)
-    #        except OSError as e:
-    #            if e.errno != errno.EBADF:
-    #                raise
     os.close(std_in.fileno())
     os.close(std_out.fileno())

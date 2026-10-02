@@ -158,7 +158,6 @@ class opdsFeed(Atom1Feed):
             for a in item["authors"]:
                 handler.startElement("author", {})
                 handler.addQuickElement("name", a.full_name)
-                # handler.addQuickElement("uri", item['author_link'])
                 handler.endElement("author")
                 self._add_link(
                     handler,

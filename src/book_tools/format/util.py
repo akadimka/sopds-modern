@@ -1,5 +1,3 @@
-# import PythonMagick
-# from PIL import Image, ImageFile
 import re
 
 from lxml import etree

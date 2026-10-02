@@ -5,7 +5,6 @@ Created on 14 нояб. 2016 г.
 """
 
 # -*- coding: utf-8 -*-
-# from opds_catalog import settings
 import logging
 import os
 import zipfile
@@ -109,11 +108,6 @@ class Inpx:
                 sLang,
             ]
 
-        # здесь читаем список архивов в коллекции, если указано явно
-        # эту информацию надо как-то использовать, чтобы протестировать наличие zip
-        # if 'archives.info' in filelist:
-        #    self.inpx_archive = True
-        #    self.inpx_arch_fnames = finpx.open('archives.info').readlines()
 
         for inp_file in filelist:
             (inp_name, inp_ext) = os.path.splitext(inp_file)

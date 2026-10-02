@@ -208,7 +208,6 @@ def SearchBooksView(request):
                     {"label": _("Bookshelf"), "url": ""},
                     {"label": args["user"], "url": ""},
                 ]
-                # books = bookshelf.objects.filter(user=request.user).select_related('book')
             else:
                 books = Book.objects.filter(id=0)
                 args["breadcrumbs"] = [_books_root, {"label": _("Bookshelf"), "url": ""}]
@@ -271,7 +270,6 @@ def SearchSeriesView(request):
     if request.GET:
         searchtype = request.GET.get("searchtype", "m")
         searchterms = request.GET.get("searchterms", "")
-        # searchterms0 = int(request.POST.get('searchterms0', ''))
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
@@ -335,7 +333,6 @@ def SearchAuthorsView(request):
     if request.GET:
         searchtype = request.GET.get("searchtype", "m")
         searchterms = request.GET.get("searchterms", "")
-        # searchterms0 = int(request.POST.get('searchterms0', ''))
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 

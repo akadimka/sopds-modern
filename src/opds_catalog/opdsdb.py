@@ -194,7 +194,6 @@ def getlangcode(s):
 def avail_check_prepare():
     """Для всех книг, кроме удаленных, устанавливается признак наличия "1" """
     # Используется только в sopdscan
-    # Book.objects.filter(~Q(avail=0)).update(avail=1)
     Book.objects.exclude(avail=0).update(avail=1)
 
 

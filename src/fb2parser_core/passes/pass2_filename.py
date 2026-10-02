@@ -1023,12 +1023,10 @@ class Pass2Filename:
             
             # Need minimum score threshold to proceed
             if best_score < 0.6:  # Threshold for block matching
-                #self.logger.log(f"[PASS 2] Block score too low: {best_score:.2f} < 0.6 for '{filename}'")
                 return ""
             
             # Validate extracted author
             if not author or not author.strip():
-                #self.logger.log(f"[PASS 2] No author block extracted for '{filename}'")
                 return ""
             
             author = author.strip()
@@ -1109,7 +1107,6 @@ class Pass2Filename:
                 self.logger.log(f"[PASS 2] ✓ Extracted '{author}' from '{filename}' (block-level)")
                 return author
             else:
-                #self.logger.log(f"[PASS 2] Block extraction failed validation for '{author}' from '{filename}'")
                 return ""
         
         except ImportError as e:

@@ -7,7 +7,6 @@ import re
 import time
 import zipfile
 
-# from django.db import transaction
 from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
@@ -22,7 +21,6 @@ class opdsScanner:
             self.logger = logger
         else:
             self.logger = logging.getLogger("scanner")
-            # self.logger.setLevel(logging.INFO)
         self.init_stats()
 
     def init_stats(self) -> None:

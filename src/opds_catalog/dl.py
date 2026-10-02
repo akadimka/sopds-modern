@@ -126,7 +126,6 @@ def Cover(
     logger.info("Book meta loaded")
     logger.debug(f"Book title = {book.title}")
     response = HttpResponse()
-    # full_path = get_fs_book_path(book)
 
     try:
         logger.info(f"Extract cover for book in {book.format} format")

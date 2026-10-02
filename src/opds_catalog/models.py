@@ -64,7 +64,6 @@ class Book(models.Model):
     cat_type = models.IntegerField(null=False, default=0)
     registerdate = models.DateTimeField(null=False, default=timezone.now)
     docdate = models.CharField(max_length=SIZE_BOOK_DOCDATE, db_index=True)
-    # favorite = models.IntegerField(null=False, default=0)
     lang = models.CharField(max_length=SIZE_BOOK_LANG)
     title = models.CharField(max_length=SIZE_BOOK_TITLE, db_index=True)
     search_title = models.CharField(
@@ -120,10 +119,6 @@ class bauthor(models.Model):
     author = models.ForeignKey("Author", db_index=True, on_delete=models.CASCADE)
 
 
-#    class Meta:
-#        index_together = [
-#            ["book", "author"],
-#        ]
 
 
 class Genre(models.Model):
@@ -168,10 +163,6 @@ class bseries(models.Model):
     ser_no = models.IntegerField(null=False, default=0)
 
 
-#    class Meta:
-#        index_together = [
-#            ["book", "ser"],
-#        ]
 
 
 class bookshelf(models.Model):
