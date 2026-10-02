@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>detective</genre>
+   <author>
+    <first-name>Наталья </first-name>
+    <middle-name>Николаевна</middle-name>
+    <last-name>Александрова</last-name>
+   </author>
+   <book-title>Венец Чингисхана. Проклятие Осириса (сборник)</book-title>
+   <annotation>
+    <p><emphasis>Венец Чингисхана</emphasis></p>
+    <p>По преданию молодому Чингисхану покорить обширные территории помог всесильный артефакт – венец, обладающий необыкновенной властью и позволяющий повелевать целыми народами. После его смерти следы венца затерялись в истории. В наши дни прикоснуться к тайнам прошлого пришлось бывшему менеджеру по рекламе Дине Гузеевой, которая мистическим образом оказывается втянутой в поиски древнего артефакта…</p>
+    <p><emphasis>Проклятие Осириса</emphasis></p>
+    <p>Знаменитый Эрмитаж подвергся дерзкому нападению - ничего не было украдено, но злоумышленник зачем-то сдвинул с места каменную статую египетского писца. Кто-то разыскивает древнейшую математическую формулу и не остановится ни перед чем для ее обладания. Реставратору Дмитрию Старыгину необходимо первому найти таинственный папирус, именно в нем зашифровано послание египтян к своим потомкам…</p>
+   </annotation>
+   <date>2012</date>
+   <coverpage>
+    <image l:href="#cover1__w6009.jpg"/></coverpage>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2017-09-14">14 September 2017</date>
+   <id>41C2E2E0-5558-4106-93B8-BE05E534AD39</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Венец Чингисхана. Проклятие Осириса</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2012</year>
+   <isbn>978-5-699-60376-3</isbn>
+   <sequence name="Двойной артефакт-детектив" number="11"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

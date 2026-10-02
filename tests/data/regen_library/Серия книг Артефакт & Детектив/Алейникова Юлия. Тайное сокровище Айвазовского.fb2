@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>det_history</genre>
+    <author>
+      <first-name>Юлия</first-name>
+      <middle-name>Владимировна</middle-name>
+      <last-name>Алейникова</last-name>
+    </author>
+    <book-title>Тайное сокровище Айвазовского</book-title>
+    <annotation>
+      <p>Кто знает, какие тайны хранят картины, известные нам с детства в каждой линии и детали? Вдруг и «Девятый вал» Айвазовского — не просто рассказ о встрече человека и стихии, а зашифрованное послание, где верхушка мачты служит стрелкой компаса, а число людей на плоту указывает на метры или ступеньки, которые нужно преодолеть, чтобы добраться до тайника с кладом? Три поколения семьи, увлекаясь и разочаровываясь, проходя через преступления и измены, будут искать ответ, чтобы открыть наконец заветную шкатулку Ивана Айвазовского…</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#img55BC.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Артефакт-детектив"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Aleks_Sim</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-11-01">01.11.2016</date>
+    <src-url>https://www.litres.ru/uliya-aleynikova/taynoe-sokrovische-ayvazovskogo/</src-url>
+    <id>EC665808-7D15-4F22-9DC4-5D9E4984791F</id>
+    <version>1.0</version>
+    <history>
+      <p>1.0 — создание</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <publisher>Эксмо</publisher>
+    <city>М.</city>
+    <year>2016</year>
+    <isbn>978-5-699-90737-3</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

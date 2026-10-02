@@ -827,3 +827,38 @@ class TestDecisionLogTracesRescueMechanisms:
         log = evidence.format_decision_log(rec)
         assert "пуста" in log
         assert "восстановил" not in log
+
+
+class TestTwoInOneVolumeIsNotASeries:
+    """Баг №125 — «Автор. A.fb2» (роман A) и «Автор. A. B.fb2» (сборник
+    «два в одном»: A + B) в одной папке. _postcheck_filename_prefix_pattern
+    считал A серией обоих файлов («Венец Чингисхана» и т.п.); на Test2 все
+    45 таких пар были ложными. Серия по префиксу теперь требует как минимум
+    два файла-продолжения."""
+
+    FOLDER = ("Серия книг Артефакт & Детектив",)
+
+    @pytest.mark.parametrize("filename", [
+        "Александрова Наталья. Венец Чингисхана.fb2",
+        "Александрова Наталья. Венец Чингисхана. Проклятие Осириса.fb2",
+        "Алейникова Юлия. Тайное сокровище Айвазовского.fb2",
+        "Алейникова Юлия. Тайное сокровище Айвазовского. Проклятие Ивана Грозного и его сына Ивана.fb2",
+    ])
+    def test_no_series_from_single_two_in_one_volume(self, records, filename):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.series_source != "filename_prefix_pattern"
+        assert rec.proposed_series == ""
+
+
+class TestMakIsAFirstNameNotAParticle:
+    """«мак» стоял в name_particles, поэтому автор «Рейнольдс Мак» (Mack
+    Reynolds, Мак — имя) не переводился в формат «Фамилия Имя» и
+    оставался «Мак Рейнольдс». Частицы теперь одна настройка на весь
+    пайплайн, без «мак»/«о» (они на реальных данных только вредили)."""
+
+    def test_reynolds_mack(self, records):
+        rec = _by_suffix(
+            records, "Азбука Социальной Фантастики (833)", "Р", "Рейнольдс Мак",
+            "Рейнольдс Мак - Наемник.fb2",
+        )
+        assert rec.proposed_author == "Рейнольдс Мак"

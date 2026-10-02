@@ -82,6 +82,9 @@ class Pass3Normalize:
         except Exception:
             self.settings = None
         self.normalizer = AuthorNormalizer(self.settings)
+        # Частицы имён (де, ван, фон, de, van…) — одна настройка name_particles
+        # на весь пайплайн (раньше здесь было три собственных копии списка).
+        self.name_particles = self.settings.get_name_particles() if self.settings else frozenset()
     
     def execute(self, records: List) -> None:
         """Execute PASS 3: Normalize author names.
@@ -279,12 +282,7 @@ class Pass3Normalize:
                 # If metadata contains a noble/foreign particle (де, van, фон…),
                 # normalize_format will reorder the name wrongly (e.g. "Берньер Луи де").
                 # Skip normalize_format entirely and use the metadata form directly.
-                _PARTICLES_EARLY = frozenset({
-                    'де', 'ди', 'дю', 'ду', 'да', 'дер', 'ден', 'дель', 'дела', 'делла',
-                    'дос', 'дас', 'ван', 'фон', 'ля', 'ле', 'ла',
-                    'de', 'di', 'du', 'da', 'der', 'den', 'van', 'von',
-                    'la', 'le', 'les', 'del', 'della', 'dos', 'das',
-                })
+                _PARTICLES_EARLY = self.name_particles
                 _meta_words_lower = [
                     w.lower() for w in metadata_for_normalization.split()
                 ] if metadata_for_normalization else []
@@ -401,12 +399,7 @@ class Pass3Normalize:
         # Капитализация: каждое слово в proposed_author начинается с заглавной буквы.
         # Исключения: "Соавторство", "Сборник" — уже корректны.
         # Частицы имён (де, ван, фон…) всегда остаются строчными.
-        _PARTICLES_LOWER = frozenset({
-            'де', 'ди', 'дю', 'ду', 'да', 'дер', 'ден', 'дель', 'дела', 'делла',
-            'дос', 'дас', 'ван', 'фон', 'ля', 'ле', 'ла', 'о',
-            'de', 'di', 'du', 'da', 'der', 'den', 'van', 'von',
-            'la', 'le', 'les', 'del', 'della', 'dos', 'das',
-        })
+        _PARTICLES_LOWER = self.name_particles
         for record in records:
             if not record.proposed_author:
                 continue
@@ -515,12 +508,7 @@ class Pass3Normalize:
                 if len(words) > 2:
                     # Names with particles (де, ван, фон, ла, …) form compound surnames
                     # and must NOT be truncated — "де ла Мотт Андерс" must stay intact.
-                    _SURNAME_PARTICLES = frozenset({
-                        'де', 'ди', 'дю', 'ду', 'да', 'дер', 'ден', 'дель', 'дела', 'делла',
-                        'дос', 'дас', 'ван', 'фон', 'ля', 'ле', 'ла',
-                        'de', 'di', 'du', 'da', 'der', 'den', 'van', 'von',
-                        'la', 'le', 'les', 'del', 'della', 'dos', 'das',
-                    })
+                    _SURNAME_PARTICLES = self.name_particles
                     words_lower = [w.lower() for w in words]
                     if any(w in _SURNAME_PARTICLES for w in words_lower):
                         pass  # compound surname — keep all words as-is

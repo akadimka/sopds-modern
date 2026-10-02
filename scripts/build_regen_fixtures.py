@@ -20,7 +20,9 @@ from pathlib import Path
 
 DST_ROOT = Path(__file__).resolve().parent.parent / "tests" / "data" / "regen_library"
 
-# (относительный путь папки-источника, лимит файлов или None = все, recursive)
+# (относительный путь папки-источника, отбор файлов, recursive)
+# Отбор: None — все файлы, число — первые N по имени, список — только эти имена
+# (для большой папки, где для кейса нужны конкретные файлы).
 SOURCES = [
     (r"Романович (Пастырь) Роман - Сборник\Пасть [=Обманувший смерть] (завершён)", None, False),
     (r"Романович (Пастырь) Роман - Сборник\Вне циклов", None, False),
@@ -118,6 +120,20 @@ SOURCES = [
     # разрывом позиций (тома IX-X отсутствуют вовсе), нужен как контрольный
     # случай (отдельная группа компиляции, не расширяющая первую).
     (r"Тайниковский\Хроники демонического ремесленника", None, False),
+    # Баг №125 — «Автор. A.fb2» + «Автор. A. B.fb2» (роман A и сборник «два
+    # в одном» A + B) давали обоим файлам ложную серию A через
+    # _postcheck_filename_prefix_pattern. Две такие пары из папки на 367
+    # файлов; соседи не нужны (проверка группирует по папке и автору).
+    (r"Серия книг Артефакт & Детектив", [
+        "Александрова Наталья. Венец Чингисхана.fb2",
+        "Александрова Наталья. Венец Чингисхана. Проклятие Осириса.fb2",
+        "Алейникова Юлия. Тайное сокровище Айвазовского.fb2",
+        "Алейникова Юлия. Тайное сокровище Айвазовского. Проклятие Ивана Грозного и его сына Ивана.fb2",
+    ], False),
+    # Частицы имён (name_particles): «мак» считался частицей, и автор
+    # «Рейнольдс Мак» (Mack Reynolds, Мак — имя) не переставлялся в формат
+    # «Фамилия Имя», оставаясь «Мак Рейнольдс».
+    (r"Азбука Социальной Фантастики (833)\Р\Рейнольдс Мак", None, False),
 ]
 
 _BODY_RE = re.compile(r"<body\b[^>]*>.*?</body>", re.DOTALL | re.IGNORECASE)
@@ -161,7 +177,12 @@ def main():
             print("MISSING SOURCE:", src_dir)
             continue
         fb2_files = sorted((src_dir.rglob if recursive else src_dir.glob)("*.fb2"))
-        if limit:
+        if isinstance(limit, (list, tuple)):
+            fb2_files = [f for f in fb2_files if f.name in limit]
+            missing = set(limit) - {f.name for f in fb2_files}
+            if missing:
+                print("MISSING FILES in", rel, ":", sorted(missing))
+        elif limit:
             fb2_files = fb2_files[:limit]
         dst_dir = DST_ROOT / rel
         dst_dir.mkdir(parents=True, exist_ok=True)

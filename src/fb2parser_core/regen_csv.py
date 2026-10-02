@@ -15,6 +15,7 @@ import csv
 import re
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 from .author_normalizer_extended import AuthorNormalizer
@@ -176,7 +177,9 @@ class RegenCSVService:
         normalized = re.sub(r'[;,()[\].]', ' ', name)
         # Удаляем лишние пробелы
         normalized = re.sub(r'\s+', ' ', normalized.strip().lower())
-        return normalized
+        # ё→е (и NFC до этого), как во всех остальных сравнениях пайплайна:
+        # иначе папка «Швырёв Владимир» не совпадала с автором «Швырев Владимир».
+        return unicodedata.normalize('NFC', normalized).replace('ё', 'е')
     
     def _surnames_match_folder(self, proposed_author: str, folder_name: str) -> bool:
         """Проверить, является ли папка папкой автора с учётом склонения и формы.
@@ -2960,27 +2963,32 @@ class RegenCSVService:
                 ratio = SequenceMatcher(None, ta, cut).ratio()
                 return ratio >= 0.85
 
-            # Ищем пары A, B где title_A — префикс title_B (разделитель '. ')
+            # Ищем A, где title_A — префикс title_B (разделитель '. ') хотя бы
+            # у ДВУХ разных B. Одна пара «Автор. A.fb2» + «Автор. A. B.fb2» —
+            # это почти всегда роман A и сборник «два в одном» (A + B), а не
+            # серия A: на Test2 все 45 таких пар были ложными серийными
+            # (Александрова «Венец Чингисхана. Проклятие Осириса», Сойер
+            # «Старплекс. Конец эры» и т.п.) — баг №125.
             for rec_a, title_a in titled:
                 if not title_a:
                     continue
                 ta_norm = self._norm_for_series_cmp(title_a)
-                for rec_b, title_b in titled:
-                    if rec_b is rec_a or not title_b:
-                        continue
-                    tb_norm = self._norm_for_series_cmp(title_b)
-                    if _is_prefix_match(ta_norm, tb_norm):
-                        # Canonical series name: prefer existing proposed_series (e.g. from "filename")
-                        canonical = rec_a.proposed_series or rec_b.proposed_series or title_a
-                        if not rec_a.proposed_series:
-                            rec_a.proposed_series = canonical
-                            rec_a.series_source = 'filename_prefix_pattern'
-                            _prefix_series_count += 1
-                        if not rec_b.proposed_series:
-                            rec_b.proposed_series = canonical
-                            rec_b.series_source = 'filename_prefix_pattern'
-                            _prefix_series_count += 1
-                        break
+                matches = [
+                    rec_b for rec_b, title_b in titled
+                    if rec_b is not rec_a and title_b
+                    and _is_prefix_match(ta_norm, self._norm_for_series_cmp(title_b))
+                ]
+                if len(matches) < 2:
+                    continue
+                # Canonical series name: prefer existing proposed_series (e.g. from "filename")
+                canonical = (rec_a.proposed_series
+                             or next((r.proposed_series for r in matches if r.proposed_series), '')
+                             or title_a)
+                for rec in [rec_a] + matches:
+                    if not rec.proposed_series:
+                        rec.proposed_series = canonical
+                        rec.series_source = 'filename_prefix_pattern'
+                        _prefix_series_count += 1
         if _prefix_series_count:
             print(f"[POST-CHECK] Assigned series via filename prefix pattern: {_prefix_series_count} records")
             self.logger.log(f"[OK] POST-CHECK: filename prefix pattern → {_prefix_series_count} series assigned")

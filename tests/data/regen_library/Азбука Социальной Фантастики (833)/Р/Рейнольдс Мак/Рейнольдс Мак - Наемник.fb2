@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+<title-info>
+<genre>sf_social</genre>
+<author>
+<first-name>Мак</first-name>
+<last-name>Рейнольдс</last-name>
+</author>
+<book-title>Наемник</book-title>
+<date></date>
+<lang>ru</lang>
+<translator>
+<first-name>А.</first-name>
+<middle-name>Н.</middle-name>
+<last-name>Гриценко</last-name>
+</translator>
+</title-info>
+<document-info>
+<author>
+<first-name></first-name>
+<last-name></last-name>
+<nickname>Zebottendorf</nickname>
+</author>
+<program-used>Book Designer 5.0</program-used>
+<date value="2008-11-03">03.11.2008</date>
+<src-url></src-url>
+<src-ocr></src-ocr>
+<id>BD-0B0C34-2902-5D45-A69E-2350-864B-F2F3DD</id>
+<version>1.0</version>
+</document-info>
+<publish-info>
+<book-name>Авантюрная фантастика вып.2</book-name>
+<publisher>СП "СВЕНАС"</publisher>
+<city>Киев</city>
+<year>1994</year>
+<isbn>5-85722-066-1</isbn>
+</publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+</FictionBook>

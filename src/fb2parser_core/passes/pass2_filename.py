@@ -59,9 +59,7 @@ class Pass2Filename:
         self.name_particles = (
             settings.get_name_particles()
             if hasattr(settings, 'get_name_particles')
-            else frozenset({'де', 'ди', 'дю', 'ду', 'да', 'дер', 'ден', 'дель', 'дела',
-                            'делла', 'дэлла', 'дос', 'дас', 'дэ', 'ван', 'фон',
-                            'ля', 'ле', 'ла', 'мак', 'о'})
+            else frozenset()
         )
         self.patterns = self._load_patterns()
         # Precomputed lowercase set of collection keywords for fast lookup in _looks_like_author_name
@@ -326,12 +324,7 @@ class Pass2Filename:
                             # EXCEPTION: if the metadata contains a noble particle (де, van, фон…),
                             # do NOT reorder — the particle belongs next to its word.
                             # "Луи де Берньер" must stay "Луи де Берньер", not "Берньер Луи де".
-                            _PARTICLES_P2 = frozenset({
-                                'де', 'ди', 'дю', 'ду', 'да', 'дер', 'ден', 'дель', 'дела', 'делла',
-                                'дос', 'дас', 'ван', 'фон', 'ля', 'ле', 'ла',
-                                'de', 'di', 'du', 'da', 'der', 'den', 'van', 'von',
-                                'la', 'le', 'les', 'del', 'della', 'dos', 'das',
-                            })
+                            _PARTICLES_P2 = self.name_particles
                             _has_particle = any(w in _PARTICLES_P2 for w in fb2_words_list)
                             match_idx = fb2_words_list.index(extracted_lower)
                             if match_idx > 0 and not _has_particle:
