@@ -336,5 +336,17 @@ LOGGING = {
             "level": SOPDS_SERVER_LOG_LEVEL,
             "propagate": False,
         },
+        # Пайплайн нормализации/синхронизации (раньше писал прогресс через print
+        # в stdout). INFO — сводки проходов, WARNING — сбои отдельных файлов.
+        "fb2parser_core": {
+            "handlers": ["console", "file"],
+            "level": SOPDS_SERVER_LOG_LEVEL,
+            "propagate": False,
+        },
+        "fb2parser_web": {
+            "handlers": ["console", "file"],
+            "level": SOPDS_SERVER_LOG_LEVEL,
+            "propagate": False,
+        },
     },
 }

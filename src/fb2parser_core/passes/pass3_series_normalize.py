@@ -3,6 +3,7 @@ PASS 3 для СЕРИЙ: Нормализация названий серий.
 Аналог pass3_normalize.py (для авторов) но для СЕРИЙ.
 """
 
+import logging
 import re
 from typing import List
 
@@ -11,6 +12,8 @@ from ..logger import Logger
 from ..series_normalizer import _nfc_lower_yo
 from ..settings_manager import SettingsManager
 from .pass1_read_files import BookRecord
+
+_log = logging.getLogger(__name__)
 
 
 class Pass3SeriesNormalize:
@@ -192,7 +195,7 @@ class Pass3SeriesNormalize:
                 unified += 1
 
         if unified:
-            print(f'[SERIES PASS 3] Unified {unified} series names by punct-normalization')
+            _log.info(f'[SERIES PASS 3] Unified {unified} series names by punct-normalization')
 
     def _normalize_series_name(self, series: str) -> str:
         """Нормализовать формат названия серии."""

@@ -2,6 +2,7 @@
 PASS 4: Apply consensus author to files in same folder.
 """
 
+import logging
 import unicodedata
 from pathlib import Path
 from typing import Dict, List
@@ -12,6 +13,8 @@ from ..series_normalizer import _nfc_lower_yo
 from ..series_processor import SeriesProcessor
 from ..settings_manager import SettingsManager
 from .pass2_series_filename import _TOM_WORD_RE
+
+_log = logging.getLogger(__name__)
 
 
 class Pass4Consensus:
@@ -105,12 +108,12 @@ class Pass4Consensus:
         Args:
             records: List of BookRecord objects to process
         """
-        print("[PASS 4] Applying consensus...")
+        _log.info("[PASS 4] Applying consensus...")
 
         # CLEANUP: Remove false "series" that are actually just titles/subtitles
         # These are single-appearance series with no numbering/service words markers
         # Example: "Осень 93-го" or "Баржа Т-36" (no other files in author's catalog with these series)
-        print("[PASS 4] Cleaning up false series (single-file titles)...")
+        _log.info("[PASS 4] Cleaning up false series (single-file titles)...")
         false_series_count = 0
         
         # Build series frequency map by author
@@ -306,7 +309,7 @@ class Pass4Consensus:
         # METADATA SERIES CONSENSUS: For depth 2 files (Author/File)
         # Apply metadata_series consensus to files without proposed_series
         # This handles files that have metadata_series but it was rejected/empty
-        print("[PASS 4] Applying metadata series consensus...")
+        _log.info("[PASS 4] Applying metadata series consensus...")
         metadata_series_consensus_count = 0
         
         for folder, group_records in groups.items():
@@ -349,7 +352,7 @@ class Pass4Consensus:
         # PROPOSED SERIES CONSENSUS: For files without extracted_series_candidate
         # Apply proposed_series from other files in same folder when multiple files agree
         # This handles series folders where some files don't have extractable series names
-        print("[PASS 4] Applying proposed series fallback consensus...")
+        _log.info("[PASS 4] Applying proposed series fallback consensus...")
         proposed_consensus_count = 0
         
         for folder, group_records in groups.items():
@@ -433,7 +436,7 @@ class Pass4Consensus:
         #   - Ипатова appears 3 times → Not unique
         #   - Metadata confirms "Ипатова" is Ипатова → Safeguard 1 should skip
         #   Result: UNCHANGED (by Safeguard 1 - metadata confirmation)
-        print("[PASS 4] Applying series author consensus...")
+        _log.info("[PASS 4] Applying series author consensus...")
         series_author_consensus_count = 0
         
         # Group records by proposed_series
@@ -542,7 +545,7 @@ class Pass4Consensus:
         # содержат Y как первый сегмент заголовка после "X N." в имени файла.
         # Если < 2 → Y это название книги, не подсерия → схлопываем в "X".
         # Запускаем ДО hierarchical unification, чтобы ложная подсерия не распространялась.
-        print("[PASS 4] Validating filename-based subseries before consensus...")
+        _log.info("[PASS 4] Validating filename-based subseries before consensus...")
         filename_subseries_fix_count = 0
 
         # Группируем записи по автору
@@ -615,7 +618,7 @@ class Pass4Consensus:
         # Конвертируем "А. Б" → "А\Б" по конвенции backslash.
         # Пример: "Рожденные в СССР" + "Рожденные в СССР. Личности"
         #          → файлы подсерии получают "Рожденные в СССР\Личности"
-        print("[PASS 4] Applying hierarchical series unification...")
+        _log.info("[PASS 4] Applying hierarchical series unification...")
         hierarchical_unification_count = 0
 
         # Group by author
@@ -883,7 +886,7 @@ class Pass4Consensus:
 
         # FOLDER_HIERARCHY CLEANUP
         # Fall back to metadata_series if available, otherwise clear.
-        print("[PASS 4] Cleaning up folder_hierarchy series with embedded author names...")
+        _log.info("[PASS 4] Cleaning up folder_hierarchy series with embedded author names...")
         folder_hierarchy_cleanup_count = 0
 
         for record in records:
@@ -1085,7 +1088,7 @@ class Pass4Consensus:
             f"[PASS 4] Cleared {multiauthor_series_cleared} publisher-imprint series "
             f"from multi-author folders"
         )
-        print(f"[PASS 4] Cleared {multiauthor_series_cleared} publisher-imprint series from multi-author folders")
+        _log.info(f"[PASS 4] Cleared {multiauthor_series_cleared} publisher-imprint series from multi-author folders")
 
         # FILENAME RESCUE (баг №56): перед откатом на metadata_series сначала
         # пробуем заново извлечь серию из имени файла — в рамках ОДНОГО автора
@@ -1217,10 +1220,10 @@ class Pass4Consensus:
             meta_rescue_count += 1
         if filename_rescue_count:
             self.logger.log(f"[PASS 4] Rescued {filename_rescue_count} series from filename (per-author) after publisher-imprint cleanup")
-            print(f"[PASS 4] Rescued {filename_rescue_count} series from filename after publisher-imprint cleanup")
+            _log.info(f"[PASS 4] Rescued {filename_rescue_count} series from filename after publisher-imprint cleanup")
         if meta_rescue_count:
             self.logger.log(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")
-            print(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")
+            _log.info(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")
 
         # FILENAME SEQUENCE + METADATA DUAL CONFIRMATION (финальный шаг)
         #
@@ -1819,7 +1822,7 @@ class Pass4Consensus:
                 r.author_folder_root = _best_cand
 
         if _folder_author_widened:
-            print(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")
+            _log.info(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")
 
         # Унификация автора по серии с общим соавтором.
         # Если у всех записей одной серии есть хотя бы один общий автор-токен,
@@ -1971,7 +1974,7 @@ class Pass4Consensus:
                     _author_unified += 1
 
         if _author_unified:
-            print(f"[PASS 4] Unified {_author_unified} author values by series+common-author consensus")
+            _log.info(f"[PASS 4] Unified {_author_unified} author values by series+common-author consensus")
 
         # Апгрейд folder_dataset серий до filename_named_arc подсерий.
         # Когда filename_named_arc даёт «Серия\Подсерия», а folder_dataset —
@@ -2020,7 +2023,7 @@ class Pass4Consensus:
                 _subseries_upgraded += 1
 
         if _subseries_upgraded:
-            print(f"[PASS 4] Upgraded {_subseries_upgraded} folder_dataset series to named_arc subseries")
+            _log.info(f"[PASS 4] Upgraded {_subseries_upgraded} folder_dataset series to named_arc subseries")
 
         # Финальная нормализация ё→е во всех proposed_series.
         # Pass3SeriesNormalize делает это до Pass4, но Pass4 может перезаписать

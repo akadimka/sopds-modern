@@ -3,6 +3,7 @@ PASS 1: Read FB2 files and determine initial authors from folder hierarchy.
 """
 
 import concurrent.futures
+import logging
 import multiprocessing
 import re
 import sys
@@ -15,6 +16,8 @@ import tqdm
 
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES
 from ..fb2_utils import fb2_rglob
+
+_log = logging.getLogger(__name__)
 
 
 def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
@@ -108,7 +111,7 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
         return record.to_tuple()
 
     except Exception as e:
-        print(f"[WORKER ERROR] {fb2_file_path_str}: {e}")
+        _log.warning(f"[WORKER ERROR] {fb2_file_path_str}: {e}")
         return None
 
 
@@ -365,7 +368,7 @@ class Pass1ReadFiles:
         Returns:
             List of BookRecord objects
         """
-        print("[PASS 1] Reading FB2 files...")
+        _log.info("[PASS 1] Reading FB2 files...")
 
         if self.filter_paths:
             # Гоняем rglob() ТОЛЬКО по выбранным папкам, а не по всей work_dir с
@@ -391,7 +394,7 @@ class Pass1ReadFiles:
             self.logger.log("[PASS 1] No FB2 files found")
             return []
 
-        print(f"[PASS 1] Found {total} files, processing in parallel...")
+        _log.info(f"[PASS 1] Found {total} files, processing in parallel...")
 
         # Serialize cache for hierarchy lookup
         author_folder_cache_serialized = {}
@@ -411,7 +414,7 @@ class Pass1ReadFiles:
             )
             if author:
                 folder_author_map[str(folder)] = (author, source)
-        print(f"[PASS 1] Precomputed authors for {len(folder_author_map)} folders "
+        _log.info(f"[PASS 1] Precomputed authors for {len(folder_author_map)} folders "
               f"({len(unique_folders)} unique)")
 
         settings_dict = getattr(self.extractor.settings, 'settings', {}) if hasattr(self.extractor, 'settings') else {}
@@ -420,9 +423,9 @@ class Pass1ReadFiles:
 
         # Use ProcessPoolExecutor for CPU-bound XML parsing
         max_workers = min(multiprocessing.cpu_count() or 4, max(1, total // 20))
-        print(f"[PASS 1] Using {max_workers} processes for CPU-bound XML parsing...")
+        _log.info(f"[PASS 1] Using {max_workers} processes for CPU-bound XML parsing...")
         if use_cache:
-            print("[PASS 1] Metadata caching enabled")
+            _log.info("[PASS 1] Metadata caching enabled")
             # Каждый воркер создаёт свой MetadataCache() (по одному на файл —
             # см. process_file_worker), и его __init__ проверяет, не изменились
             # ли исходники парсера (_check_parser_version) — если да, чистит
@@ -446,7 +449,7 @@ class Pass1ReadFiles:
                 MetadataCache()
             except Exception:
                 pass
-        print(f"[PASS 1] Using {'SAX' if use_sax_parser else 'ElementTree'} parser")
+        _log.info(f"[PASS 1] Using {'SAX' if use_sax_parser else 'ElementTree'} parser")
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             # Submit all tasks

@@ -12,6 +12,7 @@ Reference: REGEN_CSV_ARCHITECTURE.md
 """
 
 import csv
+import logging
 import re
 import sys
 import time
@@ -41,6 +42,8 @@ from .pattern_converter import compile_patterns
 from .precache import Precache
 from .series_helpers import _bl_matches
 from .settings_manager import SettingsManager
+
+_log = logging.getLogger(__name__)
 
 
 class RegenCSVService:
@@ -462,10 +465,10 @@ class RegenCSVService:
             # Загрузить ключевые слова вариантных папок
             self._variant_kw = [kw.lower() for kw in (self.settings.get_list('variant_folder_keywords') or [])]
 
-            print("\n" + "="*80)
-            print("  CSV REGENERATION - 6-PASS SYSTEM (Modular)")
-            print(f"  Work folder: {self.work_dir}\n")
-            print("="*80 + "\n")
+            _log.info("\n" + "="*80)
+            _log.info("  CSV REGENERATION - 6-PASS SYSTEM (Modular)")
+            _log.info(f"  Work folder: {self.work_dir}\n")
+            _log.info("="*80 + "\n")
 
             self.logger.log("=== Starting CSV regeneration ===")
             if progress_callback:
@@ -478,7 +481,7 @@ class RegenCSVService:
             precache = Precache(self.work_dir, self.settings, self.logger,
                                self.folder_parse_limit)
             self.author_folder_cache = precache.execute(filter_paths=filter_paths)
-            print(f"[PRECACHE] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PRECACHE] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] Author folder hierarchy cached")
 
             # ===== PASS 1 =====
@@ -491,7 +494,7 @@ class RegenCSVService:
                                   filter_paths=filter_paths,
                                   progress_callback=progress_callback)
             self.records = pass1.execute()
-            print(f"[PASS 1] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 1] → {time.perf_counter()-_t:.2f}s")
             
             if not self.records:
                 raise FileNotFoundError(
@@ -574,7 +577,7 @@ class RegenCSVService:
                         _rec.author_source = ''
                         _tr_cleared += 1
                 if _tr_cleared:
-                    print(f"[TRANSLATOR] Cleared folder_dataset author for {_tr_cleared} files in translator folders")
+                    _log.info(f"[TRANSLATOR] Cleared folder_dataset author for {_tr_cleared} files in translator folders")
 
             if progress_callback:
                 progress_callback(20, 100, "Pass 2: Извлечение авторов")
@@ -584,7 +587,7 @@ class RegenCSVService:
                                 female_names=precache.female_names)
             pass2.prebuild_author_cache(self.records)
             pass2.execute(self.records)
-            print(f"[PASS 2] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 2] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 2: Authors extracted from filenames")
 
             # ===== PASS 2 Fallback =====
@@ -593,7 +596,7 @@ class RegenCSVService:
             _t = time.perf_counter()
             pass2_fallback = Pass2Fallback(self.logger, settings=self.settings)
             pass2_fallback.execute(self.records)
-            print(f"[PASS 2 Fallback] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 2 Fallback] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 2 Fallback: Metadata applied")
 
 
@@ -685,7 +688,7 @@ class RegenCSVService:
                         rec.needs_filename_fallback = False
                         expanded25 += 1
 
-            print(f"[PASS 2.5] → {time.perf_counter()-_t25:.2f}s")
+            _log.info(f"[PASS 2.5] → {time.perf_counter()-_t25:.2f}s")
             if expanded25:
                 self.logger.log(f"[OK] PASS 2.5: Expanded abbreviated authors in {expanded25} files")
 
@@ -693,7 +696,7 @@ class RegenCSVService:
             if progress_callback:
                 progress_callback(30, 100, "Извлечение серий")
             _t = time.perf_counter()
-            print("\n[SERIES] Extracting series from folder structure...")
+            _log.info("\n[SERIES] Extracting series from folder structure...")
 
             # Кэш нормализации имён для _surnames_match_folder
             _norm_cache: dict = {}
@@ -1035,12 +1038,12 @@ class RegenCSVService:
                 # Если author_folder_index < 0 (папка автора не найдена) —
                 # серия из папок не извлекается; Pass 2 Series и metadata возьмут на себя.
 
-            print(f"[SERIES folders] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[SERIES folders] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] Series extracted from folder structure (Variant B)")
             def _chk(label):
                 for r in self.records:
                     if 'Зверь лютый (Бирюк' in r.file_path:
-                        print(f"[{label}] {r.file_path[-35:]} | ser_src={r.series_source!r}")
+                        _log.info(f"[{label}] {r.file_path[-35:]} | ser_src={r.series_source!r}")
                         break
             _chk("AFTER_VARB")
 
@@ -1048,13 +1051,13 @@ class RegenCSVService:
             if progress_callback:
                 progress_callback(40, 100, "Извлечение серий из имен файлов")
             _t = time.perf_counter()
-            print("[SERIES] Extracting series from filenames...")
+            _log.info("[SERIES] Extracting series from filenames...")
             pass2_series = Pass2SeriesFilename(self.logger,
                                               male_names=precache.male_names,
                                               female_names=precache.female_names,
                                               config_path=str(self.config_path))
             pass2_series.execute(self.records)
-            print(f"[SERIES PASS 2] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[SERIES PASS 2] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] Series PASS 2: Extracted from filenames")
             _chk("AFTER_P2S")
 
@@ -1062,10 +1065,10 @@ class RegenCSVService:
             if progress_callback:
                 progress_callback(45, 100, "Нормализация серий")
             _t = time.perf_counter()
-            print("[SERIES] Normalizing series names...")
+            _log.info("[SERIES] Normalizing series names...")
             pass3_series = Pass3SeriesNormalize(self.logger, settings=self.settings)
             pass3_series.execute(self.records)
-            print(f"[SERIES PASS 3] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[SERIES PASS 3] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] Series PASS 3: Normalized series names")
             _chk("AFTER_P3S")
 
@@ -1075,7 +1078,7 @@ class RegenCSVService:
             _t = time.perf_counter()
             pass3 = Pass3Normalize(self.logger, settings=self.settings)
             pass3.execute(self.records)
-            print(f"[PASS 3] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 3] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 3: Authors normalized")
 
             # ===== PASS 4 =====
@@ -1085,7 +1088,7 @@ class RegenCSVService:
             pass4 = Pass4Consensus(self.logger, settings=self.settings,
                                    series_filename_extractor=pass2_series)
             pass4.execute(self.records)
-            print(f"[PASS 4] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 4] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 4: Consensus applied")
             _chk("AFTER_P4")
 
@@ -1095,7 +1098,7 @@ class RegenCSVService:
             _t = time.perf_counter()
             pass5 = Pass5Conversions(self.logger, settings=self.settings)
             pass5.execute(self.records)
-            print(f"[PASS 5] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 5] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 5: Conversions re-applied")
 
             # ===== PASS 6 =====
@@ -1104,7 +1107,7 @@ class RegenCSVService:
             _t = time.perf_counter()
             pass6 = Pass6Abbreviations(self.logger, settings=self.settings)
             pass6.execute(self.records)
-            print(f"[PASS 6] → {time.perf_counter()-_t:.2f}s")
+            _log.info(f"[PASS 6] → {time.perf_counter()-_t:.2f}s")
             self.logger.log("[OK] PASS 6: Abbreviations expanded")
 
             self._postcheck_series_not_equal_author()
@@ -1298,10 +1301,10 @@ class RegenCSVService:
                 self._save_csv()
                 self.logger.log(f"[OK] CSV saved to {self.output_csv}")
             
-            print("\n[OK] CSV regeneration completed successfully!")
-            print(f"   Output: {self.output_csv}")
-            print(f"   Records: {len(self.records)}")
-            print("="*80 + "\n")
+            _log.info("\n[OK] CSV regeneration completed successfully!")
+            _log.info(f"   Output: {self.output_csv}")
+            _log.info(f"   Records: {len(self.records)}")
+            _log.info("="*80 + "\n")
             
             if progress_callback:
                 progress_callback(100, 100, "Завершено")
@@ -1346,7 +1349,7 @@ class RegenCSVService:
             record.proposed_author = ', '.join(kept)
             _count += 1
         if _count:
-            print(f"[POST-CHECK] Stripped {_count} metadata co-authors absent from filename")
+            _log.info(f"[POST-CHECK] Stripped {_count} metadata co-authors absent from filename")
             self.logger.log(f"[OK] POST-CHECK: Stripped {_count} metadata co-authors not in filename")
 
     def _strip_series_folder_prefix(self, s: str) -> str:
@@ -1458,7 +1461,7 @@ class RegenCSVService:
             _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Linked {_count} base-arc books into named series")
+            _log.info(f"[POST-CHECK] Linked {_count} base-arc books into named series")
             self.logger.log(f"[OK] POST-CHECK: Linked {_count} base-arc books into named series")
 
     def _postcheck_clear_universe_keyword_series(self) -> None:
@@ -1688,21 +1691,21 @@ class RegenCSVService:
                 _qualifier_stripped += 1
 
         if _qualifier_stripped:
-            print(f"[POST-CHECK] Unified {_qualifier_stripped} series values with a qualifier suffix "
+            _log.info(f"[POST-CHECK] Unified {_qualifier_stripped} series values with a qualifier suffix "
                   f"against a sibling record of the same author")
             self.logger.log(f"[OK] POST-CHECK: Unified {_qualifier_stripped} qualifier-suffixed series values")
 
         if _title_recovered:
-            print(f"[POST-CHECK] Recovered {_title_recovered} named-arc series by title match against confirmed sibling arc")
+            _log.info(f"[POST-CHECK] Recovered {_title_recovered} named-arc series by title match against confirmed sibling arc")
             self.logger.log(f"[OK] POST-CHECK: Recovered {_title_recovered} named-arc series by title match")
         if _recovered:
-            print(f"[POST-CHECK] Recovered {_recovered} named-arc series from metadata after franchise-keyword extraction failure")
+            _log.info(f"[POST-CHECK] Recovered {_recovered} named-arc series from metadata after franchise-keyword extraction failure")
             self.logger.log(f"[OK] POST-CHECK: Recovered {_recovered} named-arc series from metadata")
         if _count:
-            print(f"[POST-CHECK] Cleared {_count} bare universe-keyword series values")
+            _log.info(f"[POST-CHECK] Cleared {_count} bare universe-keyword series values")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_count} bare universe-keyword series values")
         if _stripped:
-            print(f"[POST-CHECK] Stripped universe-keyword root from {_stripped} named-arc series")
+            _log.info(f"[POST-CHECK] Stripped universe-keyword root from {_stripped} named-arc series")
             self.logger.log(f"[OK] POST-CHECK: Stripped universe-keyword root from {_stripped} named-arc series")
 
     def _postcheck_reconcile_diverging_arc_roots(self) -> None:
@@ -1814,7 +1817,7 @@ class RegenCSVService:
                     reconciled += 1
 
         if reconciled:
-            print(f"[POST-CHECK] Reconciled {reconciled} records with diverging arc roots into a flat series")
+            _log.info(f"[POST-CHECK] Reconciled {reconciled} records with diverging arc roots into a flat series")
             self.logger.log(f"[OK] POST-CHECK: Reconciled {reconciled} diverging arc-root series values")
 
     def _postcheck_series_folder_blacklist(self) -> None:
@@ -1880,10 +1883,10 @@ class RegenCSVService:
                 cleared += 1
 
         if cleared:
-            print(f"[POST-CHECK] Cleared {cleared} organizational folder series (blacklist)")
+            _log.info(f"[POST-CHECK] Cleared {cleared} organizational folder series (blacklist)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {cleared} organizational series from blacklist")
         if stripped:
-            print(f"[POST-CHECK] Stripped folder prefix from {stripped} series values")
+            _log.info(f"[POST-CHECK] Stripped folder prefix from {stripped} series values")
             self.logger.log(f"[OK] POST-CHECK: Stripped folder prefix from {stripped} series values")
 
     def _postcheck_no_series_marker(self) -> None:
@@ -1908,7 +1911,7 @@ class RegenCSVService:
                 record.series_source = 'no_series_folder'
                 cleared += 1
         if cleared:
-            print(f"[POST-CHECK] Cleared {cleared} series values ('вне серий'/'без серии' marker)")
+            _log.info(f"[POST-CHECK] Cleared {cleared} series values ('вне серий'/'без серии' marker)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {cleared} series values marked 'no series'")
 
     def _clear_series_for_compilations(self) -> None:
@@ -2002,7 +2005,7 @@ class RegenCSVService:
             )
             _count += 1
         if _count:
-            print(f"[POST-CHECK] Rescued {_count} series from metadata after series==author cleanup")
+            _log.info(f"[POST-CHECK] Rescued {_count} series from metadata after series==author cleanup")
             self.logger.log(f"[OK] POST-CHECK: Rescued {_count} series from metadata")
 
     def _postcheck_fill_empty_authors(self) -> None:
@@ -2030,7 +2033,7 @@ class RegenCSVService:
                 record.author_source = 'fallback'
             filled += 1
         if filled:
-            print(f"[POST-CHECK] Filled {filled} empty author records (fallback)")
+            _log.info(f"[POST-CHECK] Filled {filled} empty author records (fallback)")
             self.logger.log(f"[OK] POST-CHECK: Filled {filled} empty authors")
 
     def _postcheck_strip_digit_prefix_author(self) -> None:
@@ -2067,7 +2070,7 @@ class RegenCSVService:
                 _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Stripped digit prefix from {_count} author values (confirmed by metadata)")
+            _log.info(f"[POST-CHECK] Stripped digit prefix from {_count} author values (confirmed by metadata)")
             self.logger.log(f"[OK] POST-CHECK: Stripped digit prefix from {_count} author values")
 
     def _postcheck_strip_leading_number(self) -> None:
@@ -2083,7 +2086,7 @@ class RegenCSVService:
                 record.series_source = 'metadata' if record.metadata_series else record.series_source
                 _count += 1
         if _count:
-            print(f"[POST-CHECK] Stripped digit prefix from {_count} series values")
+            _log.info(f"[POST-CHECK] Stripped digit prefix from {_count} series values")
             self.logger.log(f"[OK] POST-CHECK: Stripped digit prefix from {_count} series")
 
     def _postcheck_normalize_series_arc_number(self) -> None:
@@ -2123,7 +2126,7 @@ class RegenCSVService:
                 _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Normalized series+arc-number → base series: {_count} records")
+            _log.info(f"[POST-CHECK] Normalized series+arc-number → base series: {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Normalized series+arc-number in {_count} records")
 
     def _postcheck_prefer_embedded_series_number_when_consistent(self) -> None:
@@ -2221,7 +2224,7 @@ class RegenCSVService:
                 _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Preferred embedded series number over folder position for {_count} records")
+            _log.info(f"[POST-CHECK] Preferred embedded series number over folder position for {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Preferred embedded series number for {_count} records")
 
     def _postcheck_strip_author_prefix_from_series(self) -> None:
@@ -2305,10 +2308,10 @@ class RegenCSVService:
                         _cleared += 1
 
         if _count:
-            print(f"[POST-CHECK] Stripped author prefix from series in {_count} records")
+            _log.info(f"[POST-CHECK] Stripped author prefix from series in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Stripped author prefix from series in {_count} records")
         if _cleared:
-            print(f"[POST-CHECK] Cleared {_cleared} series values that became blacklisted after author-prefix strip")
+            _log.info(f"[POST-CHECK] Cleared {_cleared} series values that became blacklisted after author-prefix strip")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_cleared} series values that became blacklisted after author-prefix strip")
 
     def _postcheck_strip_bracket_annotations_from_series(self) -> None:
@@ -2342,7 +2345,7 @@ class RegenCSVService:
                 _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Stripped bracket annotations from series in {_count} records")
+            _log.info(f"[POST-CHECK] Stripped bracket annotations from series in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Stripped bracket annotations in {_count} records")
 
     def _postcheck_clear_author_as_series(self) -> None:
@@ -2381,7 +2384,7 @@ class RegenCSVService:
                 _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Cleared series == author/author-folder in {_count} records")
+            _log.info(f"[POST-CHECK] Cleared series == author/author-folder in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Cleared series == author/author-folder in {_count} records")
 
     def _postcheck_build_subfolder_hierarchy(self) -> None:
@@ -2607,7 +2610,7 @@ class RegenCSVService:
                     _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Built subfolder hierarchy for {_count} series values")
+            _log.info(f"[POST-CHECK] Built subfolder hierarchy for {_count} series values")
             self.logger.log(f"[OK] POST-CHECK: Built subfolder hierarchy in {_count} records")
 
     def _postcheck_enrich_folder_hierarchy(self) -> None:
@@ -2654,7 +2657,7 @@ class RegenCSVService:
                 record.series_source = record.series_source + '+filename_enriched'
                 _count += 1
         if _count:
-            print(f"[POST-CHECK] Enriched {_count} folder_hierarchy series with filename prefix")
+            _log.info(f"[POST-CHECK] Enriched {_count} folder_hierarchy series with filename prefix")
             self.logger.log(f"[OK] POST-CHECK: Enriched {_count} folder_hierarchy series")
 
     def _postcheck_series_not_equal_author(self) -> None:
@@ -2792,7 +2795,7 @@ class RegenCSVService:
                 _series_eq_author_cleared += 1
 
         if _series_eq_author_cleared:
-            print(f"[POST-CHECK] Cleared {_series_eq_author_cleared} records where series == author")
+            _log.info(f"[POST-CHECK] Cleared {_series_eq_author_cleared} records where series == author")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_series_eq_author_cleared} series==author conflicts")
 
     def _postcheck_clear_title_series_fp(self) -> None:
@@ -2864,7 +2867,7 @@ class RegenCSVService:
                     record.series_number_source = ''
                     _ac_cleared += 1
         if _ac_cleared:
-            print(f"[POST-CHECK] Cleared {_ac_cleared} author-consensus series==title (no metadata)")
+            _log.info(f"[POST-CHECK] Cleared {_ac_cleared} author-consensus series==title (no metadata)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_ac_cleared} author-consensus series==title")
 
         for record in self.records:
@@ -2908,7 +2911,7 @@ class RegenCSVService:
             record.series_number_source = ''
             _title_series_fp_count += 1
         if _title_series_fp_count:
-            print(f"[POST-CHECK] Cleared {_title_series_fp_count} false-positive series (series+number==title)")
+            _log.info(f"[POST-CHECK] Cleared {_title_series_fp_count} false-positive series (series+number==title)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_title_series_fp_count} series==title false positives")
 
     def _postcheck_filename_prefix_pattern(self) -> None:
@@ -2990,7 +2993,7 @@ class RegenCSVService:
                         rec.series_source = 'filename_prefix_pattern'
                         _prefix_series_count += 1
         if _prefix_series_count:
-            print(f"[POST-CHECK] Assigned series via filename prefix pattern: {_prefix_series_count} records")
+            _log.info(f"[POST-CHECK] Assigned series via filename prefix pattern: {_prefix_series_count} records")
             self.logger.log(f"[OK] POST-CHECK: filename prefix pattern → {_prefix_series_count} series assigned")
 
     def _postcheck_clear_large_numbers(self) -> None:
@@ -3003,7 +3006,7 @@ class RegenCSVService:
                 record.series_number_source = ''
                 _count += 1
         if _count:
-            print(f"[POST-CHECK] Cleared {_count} oversized series numbers (>=100)")
+            _log.info(f"[POST-CHECK] Cleared {_count} oversized series numbers (>=100)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_count} oversized series numbers")
 
     def _postcheck_combined_volume_title(self) -> None:
@@ -3039,7 +3042,7 @@ class RegenCSVService:
             record.series_number_source = 'consensus_combined_volume_title'
             _count += 1
         if _count:
-            print(f"[POST-CHECK] Expanded series_number to a range for {_count} combined-volume titles")
+            _log.info(f"[POST-CHECK] Expanded series_number to a range for {_count} combined-volume titles")
             self.logger.log(f"[OK] POST-CHECK: Expanded series_number to range for {_count} combined volumes")
 
     def _postcheck_infer_first_volume(self) -> None:
@@ -3092,7 +3095,7 @@ class RegenCSVService:
             _count += 1
 
         if _count:
-            print(f"[POST-CHECK] Inferred series_number=1 for {_count} unnumbered first volumes")
+            _log.info(f"[POST-CHECK] Inferred series_number=1 for {_count} unnumbered first volumes")
             self.logger.log(f"[OK] POST-CHECK: Inferred first-volume number for {_count} records")
 
     def _postcheck_strip_service_words(self) -> None:
@@ -3130,7 +3133,7 @@ class RegenCSVService:
                 record.proposed_series = cleaned
                 _count += 1
         if _count:
-            print(f"[POST-CHECK] Stripped trailing service words from {_count} series values")
+            _log.info(f"[POST-CHECK] Stripped trailing service words from {_count} series values")
             self.logger.log(f"[OK] POST-CHECK: Stripped service words from {_count} series")
 
     def _postcheck_dedup_backslash_hierarchy(self) -> None:
@@ -3146,7 +3149,7 @@ class RegenCSVService:
                     record.proposed_series = parts[0].strip()
                     _count += 1
         if _count:
-            print(f"[POST-CHECK] Deduplicated identical backslash series in {_count} records")
+            _log.info(f"[POST-CHECK] Deduplicated identical backslash series in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Deduplicated backslash series in {_count} records")
 
     def _postcheck_dedup_consecutive_words(self) -> None:
@@ -3161,7 +3164,7 @@ class RegenCSVService:
                 record.proposed_series = cleaned.strip()
                 _count += 1
         if _count:
-            print(f"[POST-CHECK] Deduplicated words in {_count} series values")
+            _log.info(f"[POST-CHECK] Deduplicated words in {_count} series values")
             self.logger.log(f"[OK] POST-CHECK: Deduplicated words in {_count} series")
 
     def _postcheck_trim_to_metadata_prefix(self) -> None:
@@ -3187,7 +3190,7 @@ class RegenCSVService:
                 record.series_source = 'metadata'
                 _count += 1
         if _count:
-            print(f"[POST-CHECK] Trimmed filename series to metadata prefix in {_count} records")
+            _log.info(f"[POST-CHECK] Trimmed filename series to metadata prefix in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Trimmed series to metadata prefix in {_count} records")
 
     def _postcheck_expand_truncated_series(self) -> None:
@@ -3237,7 +3240,7 @@ class RegenCSVService:
                     record.series_source = record.series_source + '+meta_expanded'
                     _count += 1
         if _count:
-            print(f"[POST-CHECK] Expanded truncated filename series via metadata in {_count} records")
+            _log.info(f"[POST-CHECK] Expanded truncated filename series via metadata in {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Expanded series via metadata in {_count} records")
 
     def _clear_collection_folder_series(self) -> None:
@@ -3294,7 +3297,7 @@ class RegenCSVService:
                     cleared += 1
 
         if cleared:
-            print(f"[POST-CHECK] Cleared {cleared} collection-folder series (multi-author folders)")
+            _log.info(f"[POST-CHECK] Cleared {cleared} collection-folder series (multi-author folders)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {cleared} series from multi-author collection folders")
 
     def _save_csv(self) -> None:
@@ -3345,7 +3348,7 @@ class RegenCSVService:
                         _meta_expand2_count += 1
                         break
         if _meta_expand2_count:
-            print(f"[POST-CHECK] Expanded {_meta_expand2_count} truncated metadata series via author group")
+            _log.info(f"[POST-CHECK] Expanded {_meta_expand2_count} truncated metadata series via author group")
             self.logger.log(f"[OK] POST-CHECK: Expanded {_meta_expand2_count} truncated metadata series via author group")
 
         # ===== Post-check: одиночная metadata-серия без подтверждения в пути =====
@@ -3385,7 +3388,7 @@ class RegenCSVService:
             _rec.series_source = ''
             _meta_singleton_count += 1
         if _meta_singleton_count:
-            print(f"[POST-CHECK] Cleared {_meta_singleton_count} singleton metadata series not found in file path")
+            _log.info(f"[POST-CHECK] Cleared {_meta_singleton_count} singleton metadata series not found in file path")
             self.logger.log(f"[OK] POST-CHECK: Cleared {_meta_singleton_count} uncorroborated singleton metadata series")
 
         # Sort by file_path

@@ -11,10 +11,13 @@ Files with author_source="folder_dataset" are NEVER modified in this pass.
 This reflects the user's explicit folder structure which is the most reliable source.
 """
 
+import logging
 from pathlib import Path
 from typing import List, Optional
 
 from ..name_normalizer import validate_author_name
+
+_log = logging.getLogger(__name__)
 
 
 class Pass2Filename:
@@ -144,7 +147,7 @@ class Pass2Filename:
         Args:
             records: List of BookRecord objects
         """
-        print("[PASS 2] Pre-building author cache from FB2 metadata...")
+        _log.info("[PASS 2] Pre-building author cache from FB2 metadata...")
         cached_count = 0
 
         # Two-pass caching: regular metadata first, then folder_dataset authors last.
@@ -220,7 +223,7 @@ class Pass2Filename:
             if author:
                 _cache_author_str(author, is_folder_source=True)
 
-        print(f"[PASS 2] Pre-cache built: {len(self.author_cache)} entries from {cached_count} authors")
+        _log.info(f"[PASS 2] Pre-cache built: {len(self.author_cache)} entries from {cached_count} authors")
 
     def _validate_and_expand_author(self, extracted_author: str, metadata_authors_str: Optional[str]) -> str:
         """Validate and potentially expand author name using FB2 metadata and cache.
@@ -693,7 +696,7 @@ class Pass2Filename:
         Args:
             records: List of BookRecord objects to process
         """
-        print("[PASS 2] Extracting authors from filenames (structural analysis)...")
+        _log.info("[PASS 2] Extracting authors from filenames (structural analysis)...")
         
         processed_count = 0
         skipped_count = 0
@@ -853,7 +856,7 @@ class Pass2Filename:
                     processed_count += 1
                 # else: keep existing (might be metadata or empty)
         
-        print(f"[PASS 2] Extracted {processed_count} authors from filenames, skipped {skipped_count} folder_dataset records, errors: {error_count}")
+        _log.info(f"[PASS 2] Extracted {processed_count} authors from filenames, skipped {skipped_count} folder_dataset records, errors: {error_count}")
 
         # SECOND PASS: upgrade short author forms to longer ones now in cache.
         # Needed because processing order is unpredictable: a file with short surname-only

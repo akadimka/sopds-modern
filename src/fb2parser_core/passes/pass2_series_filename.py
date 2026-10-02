@@ -22,6 +22,7 @@ PASS 2 для СЕРИЙ: Извлечение серий из имён файл
     File 3: series_source="filename" ✅
 """
 
+import logging
 import re
 import unicodedata
 from pathlib import Path
@@ -39,6 +40,8 @@ from ..roman_numerals import roman_to_int as _roman_to_int
 from ..series_normalizer import _nfc_lower_yo
 from ..settings_manager import SettingsManager
 from .pass1_read_files import BookRecord
+
+_log = logging.getLogger(__name__)
 
 
 def _norm_s(s: str) -> str:
@@ -509,7 +512,7 @@ class Pass2SeriesFilename:
                         break
             if _count:
                 self.logger.log(f"[PASS 2] Applied folder patterns to {_count} records")
-                print(f"[PASS 2] Applied folder Series(Author) patterns to {_count} records")
+                _log.info(f"[PASS 2] Applied folder Series(Author) patterns to {_count} records")
 
         # Шаг 3: унификация автора внутри папок
         self._unify_series_folder_authors(records)
@@ -2796,7 +2799,7 @@ class Pass2SeriesFilename:
                     r.delete_flag = True
                     marked += 1
         if marked:
-            print(f"[PASS 2] Marked {marked} records as duplicate (superseded by newer variant)")
+            _log.info(f"[PASS 2] Marked {marked} records as duplicate (superseded by newer variant)")
 
     def _fix_multiauthor_folders(self, records: List[BookRecord]) -> None:
         """Финальный костыль: папки "Серия (Фамилия и др)" → автор всех файлов = "Фамилия Имя и другие".
@@ -3294,7 +3297,7 @@ class Pass2SeriesFilename:
 
         if cleared:
             self.logger.log(f"[PASS 2] Cleared {cleared} series matching collection folder name")
-            print(f"[PASS 2] Cleared {cleared} series from multi-author collection folders")
+            _log.info(f"[PASS 2] Cleared {cleared} series from multi-author collection folders")
 
     def _unify_series_folder_authors(self, records: List[BookRecord]) -> None:
         """Унифицировать авторов в папках типа 'Серия (Автор)'.
@@ -3365,7 +3368,7 @@ class Pass2SeriesFilename:
 
         if unified:
             self.logger.log(f"[PASS 2] Unified authors in Series(Author) folders: {unified} records")
-            print(f"[PASS 2] Unified {unified} records with Series(Author) folder authors")
+            _log.info(f"[PASS 2] Unified {unified} records with Series(Author) folder authors")
 
     def _apply_folder_consensus(self, records: List[BookRecord]) -> None:
         """

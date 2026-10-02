@@ -2,12 +2,15 @@
 PASS 3: Normalize author names to standard format.
 """
 
+import logging
 import re
 import unicodedata
 from typing import List
 
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
+
+_log = logging.getLogger(__name__)
 
 
 def _nfc_yo_to_ye(s: str) -> str:
@@ -95,7 +98,7 @@ class Pass3Normalize:
         Args:
             records: List of BookRecord objects to process
         """
-        print("[PASS 3] Normalizing author names...")
+        _log.info("[PASS 3] Normalizing author names...")
 
         normalized_count = 0
 

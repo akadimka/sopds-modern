@@ -2,10 +2,13 @@
 PASS 5: Re-apply author surname conversions.
 """
 
+import logging
 from typing import List
 
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
+
+_log = logging.getLogger(__name__)
 
 
 class Pass5Conversions:
@@ -42,7 +45,7 @@ class Pass5Conversions:
         Args:
             records: List of BookRecord objects to process
         """
-        print("[PASS 5] Re-applying conversions...")
+        _log.info("[PASS 5] Re-applying conversions...")
         
         conversions_count = 0
         

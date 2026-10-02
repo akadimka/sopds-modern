@@ -2,10 +2,13 @@
 PASS 6: Expand author abbreviations to full names.
 """
 
+import logging
 from typing import Dict, List
 
 from ..author_normalizer_extended import AuthorNormalizer
 from ..settings_manager import SettingsManager
+
+_log = logging.getLogger(__name__)
 
 _APOSTROPHE_VARIANTS = str.maketrans({
     '‘': "'",  # LEFT SINGLE QUOTATION MARK
@@ -62,7 +65,7 @@ class Pass6Abbreviations:
         Args:
             records: List of BookRecord objects to process
         """
-        print("[PASS 6] Expanding abbreviations and incomplete names...")
+        _log.info("[PASS 6] Expanding abbreviations and incomplete names...")
 
         # PRE-PASS: Expand single-word surnames using the record's OWN metadata_authors.
         # Handles cases like «О'Рейлли» (filename) + metadata «Брайан О'Рейлли» → «О'Рейлли Брайан».
@@ -136,11 +139,11 @@ class Pass6Abbreviations:
                 record.author_source = record.author_source + '+meta_expanded'
                 meta_expand_count += 1
         if meta_expand_count:
-            print(f"[PASS 6] Expanded {meta_expand_count} single-word surnames using record metadata")
+            _log.info(f"[PASS 6] Expanded {meta_expand_count} single-word surnames using record metadata")
             self.logger.log(f"[PASS 6] Expanded {meta_expand_count} single-word surnames via metadata")
 
         # PASS 1: Build complete authors map from ALL records
-        print("[PASS 6]   Building author cache from all records...")
+        _log.info("[PASS 6]   Building author cache from all records...")
         authors_map = self._build_authors_map(records)
 
         # PASS 2: Expand abbreviations and incomplete names

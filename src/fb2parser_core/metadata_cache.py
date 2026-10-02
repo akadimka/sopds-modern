@@ -1,9 +1,12 @@
 import hashlib
 import json
+import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+
+_log = logging.getLogger(__name__)
 
 _CONTENT_HASH_BYTES = 256 * 1024  # 256 KB — совпадает с gui_duplicate_finder._file_hash
 
@@ -58,13 +61,13 @@ class MetadataCache:
             # (гонка с другим воркером, делающим то же самое одновременно) —
             # просто отключаем кэш для этого экземпляра, пайплайн продолжает
             # работать без него (все методы ниже проверяют self._disabled).
-            print(f"[CACHE] Повреждена БД кэша метаданных ({e}) — пересоздаю")
+            _log.info(f"[CACHE] Повреждена БД кэша метаданных ({e}) — пересоздаю")
             try:
                 self._recreate_cache_file()
                 self._init_db()
                 self._check_parser_version()
             except sqlite3.Error as e2:
-                print(f"[CACHE] Не удалось восстановить кэш ({e2}) — кэш отключён для этого воркера")
+                _log.info(f"[CACHE] Не удалось восстановить кэш ({e2}) — кэш отключён для этого воркера")
                 self._disabled = True
 
     def _recreate_cache_file(self) -> None:
@@ -132,7 +135,7 @@ class MetadataCache:
                 conn.commit()
                 if stored_version is not None:
                     # Не первый запуск — сообщаем о сбросе
-                    print("[CACHE] Парсер обновлён — кэш метаданных сброшен")
+                    _log.info("[CACHE] Парсер обновлён — кэш метаданных сброшен")
 
     def get_cached_metadata(self, file_path: Path) -> Tuple[Optional[Dict[str, Any]], str]:
         """Get cached metadata if file hasn't changed.

@@ -2,12 +2,15 @@
 PRECACHE Phase: Build author folder hierarchy before PASS 1.
 """
 
+import logging
 import re
 from pathlib import Path
 from typing import Dict, Optional, Set, Tuple
 
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES
 from .passes.folder_author_parser import parse_author_from_folder_name
+
+_log = logging.getLogger(__name__)
 
 _FIRST_NAME_RE = re.compile(r'<(?:fb:)?first-name>(.*?)</(?:fb:)?first-name>', re.DOTALL)
 _LAST_NAME_RE = re.compile(r'<(?:fb:)?last-name>(.*?)</(?:fb:)?last-name>', re.DOTALL)
@@ -95,11 +98,11 @@ class Precache:
             # Load names and convert to lowercase for case-insensitive validation
             self.male_names = set(name.lower() for name in self.settings.get_male_names())
             self.female_names = set(name.lower() for name in self.settings.get_female_names())
-            print(f"[PRECACHE] Loaded {len(self.male_names)} male names, "
+            _log.info(f"[PRECACHE] Loaded {len(self.male_names)} male names, "
                   f"{len(self.female_names)} female names for validation")
         except Exception as e:
             self.logger.log(f"[PRECACHE] Failed to load name sets: {e}")
-            print(f"[PRECACHE] WARNING: Failed to load name sets: {e}")
+            _log.warning(f"[PRECACHE] WARNING: Failed to load name sets: {e}")
     
     def _contains_valid_name(self, author_name: str) -> bool:
         """Check if author_name contains at least one valid person name.
@@ -159,7 +162,7 @@ class Precache:
         except (AttributeError, Exception):
             pass
 
-        print("[PRECACHE] Building author folder hierarchy...")
+        _log.info("[PRECACHE] Building author folder hierarchy...")
         
         conversions = self.settings.get_author_surname_conversions()
         collection_names = {
@@ -205,7 +208,7 @@ class Precache:
                 if wd_is_author:
                     # Cache work_dir as author so Pass1 assigns folder_dataset to ALL files
                     self.author_folder_cache[folder] = (wd_author, "high")
-                    print(f"[CACHE] Work_dir is AUTHOR: {wd_name} → '{wd_author}'")
+                    _log.info(f"[CACHE] Work_dir is AUTHOR: {wd_name} → '{wd_author}'")
                 if not _no_recurse:
                     try:
                         for subdir in folder.iterdir():
@@ -317,7 +320,7 @@ class Precache:
                     if pattern_author and depth > 0:
                         result = (pattern_author, 'high')
                         self.author_folder_cache[folder] = result
-                        print(f"[CACHE] Pattern match: {folder.name} → '{pattern_author}'")
+                        _log.info(f"[CACHE] Pattern match: {folder.name} → '{pattern_author}'")
                         if not _no_recurse:
                             try:
                                 for subdir in folder.iterdir():
@@ -408,7 +411,7 @@ class Precache:
                 # иначе result остаётся неопределён и return result падает с UnboundLocalError.
                 result = (author_name, "high")
                 self.author_folder_cache[folder] = result
-                print(f"[CACHE] Added HIGH: {folder.name} → '{author_name}'")
+                _log.info(f"[CACHE] Added HIGH: {folder.name} → '{author_name}'")
                 if not _no_recurse:
                     try:
                         for subdir in folder.iterdir():
@@ -422,7 +425,7 @@ class Precache:
             # If name parses as author but fails validation → skip caching
             elif author_name and has_fb2_files and not self._contains_valid_name(author_name):
                 if depth > 0:
-                    print(f"[CACHE] Skipped (no valid names): {folder.name} → '{author_name}'")
+                    _log.info(f"[CACHE] Skipped (no valid names): {folder.name} → '{author_name}'")
                 # Don't cache, allow parent inheritance to work
 
             # If folder is not author but name parses → cache for inheritance (no FB2 files).
@@ -490,7 +493,7 @@ class Precache:
                     scan_folder_hierarchy(target, depth=depth)
             else:
                 scan_folder_hierarchy(self.work_dir, depth=0)
-            print(f"[PRECACHE] Cached {len(self.author_folder_cache)} author folders\n")
+            _log.info(f"[PRECACHE] Cached {len(self.author_folder_cache)} author folders\n")
             self.logger.log(f"[PRECACHE] Cached {len(self.author_folder_cache)} author folders")
         except Exception as e:
             self.logger.log(f"[PRECACHE] Error: {e}")

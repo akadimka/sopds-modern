@@ -3,10 +3,13 @@ PASS 2 Fallback: Apply metadata as last resort for records without author.
 Detects collections when 3+ authors present and filename contains collection keywords.
 """
 
+import logging
 import os
 from typing import List
 
 from ..settings_manager import SettingsManager
+
+_log = logging.getLogger(__name__)
 
 
 class Pass2Fallback:
@@ -29,7 +32,7 @@ class Pass2Fallback:
             self.settings = settings or SettingsManager('config.json')
             self.collection_keywords = self.settings.get_list('collection_keywords') or []
         except Exception as e:
-            print(f"[PASS 2 Fallback] Warning: Could not load collection_keywords: {e}")
+            _log.warning(f"[PASS 2 Fallback] Warning: Could not load collection_keywords: {e}")
             self.collection_keywords = []
     
     def _is_collection_file(self, filename: str) -> bool:
@@ -83,7 +86,7 @@ class Pass2Fallback:
         Args:
             records: List of BookRecord objects to process
         """
-        print("[PASS 2 Fallback] Applying metadata as last resort...")
+        _log.info("[PASS 2 Fallback] Applying metadata as last resort...")
         
         fallback_count = 0
         collection_count = 0

@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from tempfile import mkdtemp
@@ -59,7 +60,7 @@ class Mobipocket(BookFile):
         try:
             image = BookMobi(self.file).unpackMobiCover()
         except Exception as err:
-            print(err)
+            logging.getLogger(__name__).warning("MOBI cover extraction failed: %s", err)
             image = None
 
         return image
