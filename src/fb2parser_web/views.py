@@ -137,6 +137,18 @@ def _ctx(page_id, title, **kwargs):
     return {"fb2_page": page_id, "fb2_title": title, **kwargs}
 
 
+def _job_pct(state) -> int:
+    """Процент выполнения фоновой задачи (JobState) для прогресс-бара."""
+    total = state.get("total") or 0
+    return min(100, int(state["processed"] / total * 100)) if total > 0 else 0
+
+
+def _render_job(template, state, **extra):
+    """HTML-фрагмент статуса фоновой задачи: state + pct + доп. контекст."""
+    from django.template.loader import render_to_string
+    return HttpResponse(render_to_string(template, {"state": state, "pct": _job_pct(state), **extra}))
+
+
 @staff_member_required(login_url="/web/login/")
 def dashboard(request):
     root = request.session.get('dashboard_root') or config.SOPDS_ROOT_LIB or ""
@@ -231,12 +243,7 @@ def scan_status(request):
 
 
 def _render_status(state):
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    from django.template.loader import render_to_string
-    html = render_to_string("fb2parser/scan_status.html", {"state": state, "pct": pct})
-    return HttpResponse(html)
+    return _render_job("fb2parser/scan_status.html", state)
 
 
 # ── Сканирование жанровых наборов ────────────────────────────────────────────
@@ -719,12 +726,7 @@ def compress_status(request):
 
 
 def _render_compress_status(state):
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    from django.template.loader import render_to_string
-    html = render_to_string("fb2parser/compress_status.html", {"state": state, "pct": pct})
-    return HttpResponse(html)
+    return _render_job("fb2parser/compress_status.html", state)
 
 
 # ── Браузер папок ────────────────────────────────────────────────────────────
@@ -1125,12 +1127,7 @@ def main_scan_status(request):
 
 
 def _render_main_status(state):
-    from django.template.loader import render_to_string
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    html = render_to_string("fb2parser/main_scan_statusbar.html", {"state": state, "pct": pct})
-    return HttpResponse(html)
+    return _render_job("fb2parser/main_scan_statusbar.html", state)
 
 
 @staff_member_required(login_url="/web/login/")
@@ -1645,12 +1642,7 @@ def normalize_status(request):
 
 
 def _render_norm_status(state):
-    from django.template.loader import render_to_string
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    html = render_to_string("fb2parser/normalize_bar.html", {"state": state, "pct": pct})
-    return HttpResponse(html)
+    return _render_job("fb2parser/normalize_bar.html", state)
 
 
 @staff_member_required(login_url="/web/login/")
@@ -2147,15 +2139,10 @@ def broken_files_status(request):
 
 
 def _render_broken_files_status(state):
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    from django.template.loader import render_to_string
-    html = render_to_string(
-        "fb2parser/broken_files_status.html",
-        {"state": state, "pct": pct, "rows": state.get("rows", []), "folder": state.get("folder", "")},
+    return _render_job(
+        "fb2parser/broken_files_status.html", state,
+        rows=state.get("rows", []), folder=state.get("folder", ""),
     )
-    return HttpResponse(html)
 
 
 @staff_member_required(login_url="/web/login/")
@@ -2858,9 +2845,7 @@ def sync(request):
         # its leftover "complete"/error summary as if it belonged to a run
         # that hasn't started yet.
         state = sync_job.reset()
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
+    pct = _job_pct(state)
     scan_path = request.GET.get("scan_path", "").strip()
     assignments = _get_clean_genre_assignments()
     from fb2parser_core.settings_manager import SettingsManager
@@ -3326,12 +3311,7 @@ def sync_stop(request):
 
 
 def _render_sync_status(state):
-    from django.template.loader import render_to_string
-    pct = 0
-    if state["total"] > 0:
-        pct = min(100, int(state["processed"] / state["total"] * 100))
-    html = render_to_string("fb2parser/sync_status.html", {"state": state, "pct": pct})
-    return HttpResponse(html)
+    return _render_job("fb2parser/sync_status.html", state)
 
 
 @staff_member_required(login_url="/web/login/")
