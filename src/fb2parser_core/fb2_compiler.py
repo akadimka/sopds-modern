@@ -732,6 +732,21 @@ class FB2CompilerService:
             base_key = _punct_norm(root_no_num) if root_no_num else _punct_norm(series)
             return f'{base_key}|{sub_key}' if sub_key else base_key
 
+        ctx = SimpleNamespace(_punct_norm=_punct_norm, _series_group_key=_series_group_key)
+        self._build_series_buckets(records, ctx)
+        self._merge_series_buckets(ctx)
+        self._emit_groups_from_buckets(work_dir, on_group, ctx)
+        self._suppress_covered_groups(ctx)
+        groups = ctx.groups
+        groups.sort(key=lambda g: (g.author.lower(), g.series.lower()))
+        self._log(f"Найдено групп для компиляции: {len(groups)}")
+        return groups
+
+
+    def _build_series_buckets(self, records, ctx) -> None:
+        r"""find_groups, шаг 1: Бакеты (автор, серия), включая предпроход иерархических «Корень\Подсерия»."""
+        _punct_norm = ctx._punct_norm
+        _series_group_key = ctx._series_group_key
         # Предпроход: иерархические серии «Корень\Подсерия», где КОРЕНЬ без
         # числа, а ВСЕ записи подсерии делят ОДИН и тот же series_number —
         # это "гостевой" под-цикл, занимающий РОВНО один слот в общей
@@ -799,7 +814,14 @@ class FB2CompilerService:
                 sk = _series_group_key(series)
             key = (_norm_key(author), sk)
             buckets.setdefault(key, []).append(rec)
+        ctx._single_slot_by_root = _single_slot_by_root
+        ctx.buckets = buckets
 
+
+    def _merge_series_buckets(self, ctx) -> None:
+        r"""find_groups, шаг 2: Слияние бакетов (вариации автора/серии, «Серия» + «Серия\Арка»)."""
+        _punct_norm = ctx._punct_norm
+        buckets = ctx.buckets
         # Комбинированное слияние бакетов: работает когда автор И/ИЛИ серия отличаются.
         # Условия слияния пары бакетов (ak1,sk1) и (ak2,sk2):
         #   • авторы: words(ak1) ⊆ words(ak2) или равны
@@ -951,6 +973,12 @@ class FB2CompilerService:
                     # sk — plain umbrella, sk2 — её подсерия, подтверждено metadata → сливаем
                     buckets[(ak, sk)].extend(buckets.pop((ak2, sk2)))
 
+
+    def _emit_groups_from_buckets(self, work_dir, on_group, ctx) -> None:
+        """find_groups, шаг 3: Группа компиляции по каждому бакету (_build_group_from_bucket)."""
+        _punct_norm = ctx._punct_norm
+        _single_slot_by_root = ctx._single_slot_by_root
+        buckets = ctx.buckets
         groups: List[CompilationGroup] = []
 
         def _emit(g: CompilationGroup) -> None:
@@ -997,7 +1025,12 @@ class FB2CompilerService:
 
         for (_, _), recs in buckets.items():
             self._build_group_from_bucket(recs, work_dir, _emit, _punct_norm, _single_slot_by_root)
+        ctx.groups = groups
 
+
+    def _suppress_covered_groups(self, ctx) -> None:
+        """find_groups, шаг 4: POST-PASS: подавить группы, полностью покрытые другой группой."""
+        groups = ctx.groups
         # ── POST-PASS: подавить compile-группы, полностью покрытые другой группой.
         #
         # Случай A (parent-child): серия малой группы — подсерия большой (prefix + '\\')
@@ -1112,10 +1145,6 @@ class FB2CompilerService:
                                 _small.books = []
                                 _suppressed.add(id(_small))
                                 break
-
-        groups.sort(key=lambda g: (g.author.lower(), g.series.lower()))
-        self._log(f"Найдено групп для компиляции: {len(groups)}")
-        return groups
 
 
     def _build_group_from_bucket(self, recs, work_dir, _emit, _punct_norm, _single_slot_by_root) -> None:
