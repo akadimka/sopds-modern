@@ -5,6 +5,7 @@ PASS 4: Apply consensus author to files in same folder.
 import logging
 import unicodedata
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Dict, List
 
 from ..author_normalizer_extended import AuthorNormalizer
@@ -110,6 +111,36 @@ class Pass4Consensus:
         """
         _log.info("[PASS 4] Applying consensus...")
 
+        ctx = SimpleNamespace()
+        self._clear_single_title_series(records, ctx)
+        self._apply_priority_metadata_series(records, ctx)
+        self._folder_author_and_series_consensus(records, ctx)
+        self._metadata_series_consensus(records, ctx)
+        self._proposed_series_consensus(records, ctx)
+        self._series_author_consensus(records, ctx)
+        self._validate_subseries_by_filenames(records, ctx)
+        self._dotted_series_to_subseries(records, ctx)
+        self._numbered_series_to_known_subseries(records, ctx)
+        self._drop_single_book_subseries(records, ctx)
+        self._strip_trailing_series_number(records, ctx)
+        self._resolve_series_number_collisions(records, ctx)
+        self._cleanup_folder_hierarchy_series(records, ctx)
+        self._author_from_filename_prefix(records, ctx)
+        self._cleanup_multi_author_series_folders(records, ctx)
+        self._filename_sequence_metadata_confirmation(records, ctx)
+        self._correct_series_suffix(records, ctx)
+        self._folder_metadata_series_majority(records, ctx)
+        self._propagate_folder_series(records, ctx)
+        self._filename_phrase_metadata_confirmation(records, ctx)
+        self._dotted_series_to_subseries_if_in_filename(records, ctx)
+        self._expand_folder_dataset_coauthors(records, ctx)
+        self._unify_series_author_with_common_coauthor(records, ctx)
+        self._upgrade_folder_series_to_named_arc(records, ctx)
+        self._normalize_series_yo(records, ctx)
+
+
+    def _clear_single_title_series(self, records, ctx) -> None:
+        """PASS 4, шаг 1: Убрать «серии», которые на деле — заголовок одной книги автора."""
         # CLEANUP: Remove false "series" that are actually just titles/subtitles
         # These are single-appearance series with no numbering/service words markers
         # Example: "Осень 93-го" or "Баржа Т-36" (no other files in author's catalog with these series)
@@ -247,7 +278,10 @@ class Pass4Consensus:
 
         
         self.logger.log(f"[PASS 4] Removed {false_series_count} false series (single-file titles)")
-        
+
+
+    def _apply_priority_metadata_series(self, records, ctx) -> None:
+        """PASS 4, шаг 2: Особые значения metadata_series имеют абсолютный приоритет."""
         # SPECIAL HANDLING: If metadata contains specific series values, they take absolute priority
         # These values override all other extraction methods
         special_series_values = self.settings.get_list('special_series_values') if self.settings else []
@@ -276,7 +310,10 @@ class Pass4Consensus:
         #    - folder_dataset → Final and should never be changed
         #    - filename → Can check metadata only if extraction is incomplete
         #    - metadata → Sufficient on its own, no need to cross-check
-        
+
+
+    def _folder_author_and_series_consensus(self, records, ctx) -> None:
+        """PASS 4, шаг 3: Консенсус автора и серии по папке (SeriesProcessor)."""
         # Group by folder
         groups: Dict[Path, List] = {}
         for record in records:
@@ -305,7 +342,13 @@ class Pass4Consensus:
         # Apply series consensus using SeriesProcessor
         series_consensus_count = self.series_processor.apply_series_consensus(records)
         self.logger.log(f"[PASS 4] Applied author-based series consensus to {series_consensus_count} records")
-        
+        ctx.author_groups = author_groups
+        ctx.groups = groups
+
+
+    def _metadata_series_consensus(self, records, ctx) -> None:
+        """PASS 4, шаг 4: Консенсус metadata_series для файлов Автор/Файл без серии."""
+        groups = ctx.groups
         # METADATA SERIES CONSENSUS: For depth 2 files (Author/File)
         # Apply metadata_series consensus to files without proposed_series
         # This handles files that have metadata_series but it was rejected/empty
@@ -348,7 +391,11 @@ class Pass4Consensus:
                     metadata_series_consensus_count += 1
         
         self.logger.log(f"[PASS 4] Applied metadata series consensus to {metadata_series_consensus_count} records")
-        
+
+
+    def _proposed_series_consensus(self, records, ctx) -> None:
+        """PASS 4, шаг 5: Серия соседей по папке для файлов без кандидата серии."""
+        groups = ctx.groups
         # PROPOSED SERIES CONSENSUS: For files without extracted_series_candidate
         # Apply proposed_series from other files in same folder when multiple files agree
         # This handles series folders where some files don't have extractable series names
@@ -404,7 +451,10 @@ class Pass4Consensus:
                     proposed_consensus_count += 1
         
         self.logger.log(f"[PASS 4] Applied proposed series consensus to {proposed_consensus_count} records")
-        
+
+
+    def _series_author_consensus(self, records, ctx) -> None:
+        """PASS 4, шаг 6: Самый частый автор серии — всем её файлам (вариант 5)."""
         # SERIES AUTHOR CONSENSUS (Variant 5: Combined Protective Approach)
         # For each series with multiple files, apply the most common author to all files
         # in that series. This handles cases where a multi-author series has inconsistent
@@ -538,7 +588,11 @@ class Pass4Consensus:
                         continue
         
         self.logger.log(f"[PASS 4] Applied series author consensus to {series_author_consensus_count} records")
-        
+
+
+    def _validate_subseries_by_filenames(self, records, ctx) -> None:
+        """PASS 4, шаг 7: Иерархическая унификация: проверка подсерий по именам файлов."""
+        import re
         # HIERARCHICAL SERIES UNIFICATION
         # Валидация подсерий по именам файлов ДО консенсуса.
         # Если proposed_series = "X\Y" (из filename), проверяем сколько файлов автора
@@ -614,6 +668,9 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Collapsed {filename_subseries_fix_count} unconfirmed filename subseries")
 
+
+    def _dotted_series_to_subseries(self, records, ctx) -> None:
+        r"""PASS 4, шаг 8: «А. Б» при наличии «А» у того же автора → подсерия «А\Б»."""
         # Если у одного автора есть серии "А" и "А. Б" (с точкой), вторая — подсерия первой.
         # Конвертируем "А. Б" → "А\Б" по конвенции backslash.
         # Пример: "Рожденные в СССР" + "Рожденные в СССР. Личности"
@@ -665,7 +722,13 @@ class Pass4Consensus:
                     hierarchical_unification_count += 1
 
         self.logger.log(f"[PASS 4] Unified {hierarchical_unification_count} hierarchical series variants")
+        ctx.author_groups = author_groups
 
+
+    def _numbered_series_to_known_subseries(self, records, ctx) -> None:
+        r"""PASS 4, шаг 9: «X N» при подсерии «X\Y» у автора → «X\Y», номер N."""
+        import re
+        author_groups = ctx.author_groups
         # Если у автора есть подсерия "X\Y" и запись с proposed_series="X N" (пробел+число),
         # конвертируем "X N" → "X\Y", а series_number устанавливаем в N.
         # Пример: "Фортуна Эрика Минца 1" + подсерия "Фортуна Эрика Минца\Пилот ракетоносца"
@@ -706,6 +769,10 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Fixed {subseries_num_fix_count} trailing-number series into subseries")
 
+
+    def _drop_single_book_subseries(self, records, ctx) -> None:
+        r"""PASS 4, шаг 10: Подсерия «X\Y», встречающаяся у одной книги, — это название, сбросить."""
+        author_groups = ctx.author_groups
         # Подсерия "X\Y" считается настоящей только если Y встречается у ≥2 книг одного автора.
         # Если Y уникален — это название книги, попавшее в иерархию ошибочно. Сбрасываем в "X".
         singleton_subseries_fix_count = 0
@@ -743,6 +810,10 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Collapsed {singleton_subseries_fix_count} singleton subseries to base series")
 
+
+    def _strip_trailing_series_number(self, records, ctx) -> None:
+        """PASS 4, шаг 11: «X N» (короткое число, не год) → серия «X», номер N."""
+        import re
         # Если proposed_series = "X N" (хвостовое число ≤ 3 цифр, не год) — стрипим N.
         # series_number обновляем только если он пустой (не перебиваем уже выставленный).
         # Ранее проверяли sn == num, но это пропускало случаи когда блок-матчер добавлял
@@ -849,6 +920,9 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Re-fixed series_number from filename for {fn_sn_refix_count} records")
 
+
+    def _resolve_series_number_collisions(self, records, ctx) -> None:
+        """PASS 4, шаг 12: Коллизия номеров: файл вне нумерации с чужим series_number."""
         # Разрешаем коллизию: файл без ведущего номера в имени (например,
         # спецвыпуск/сборник вне общей нумерации), чей series_number взят
         # из меты/консенсуса, может случайно совпасть с номером, УЖЕ занятым
@@ -884,6 +958,9 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Cleared {conflict_clear_count} series_number conflicting with filename_prefix")
 
+
+    def _cleanup_folder_hierarchy_series(self, records, ctx) -> None:
+        """PASS 4, шаг 13: Чистка серий folder_hierarchy с именем автора внутри."""
         # FOLDER_HIERARCHY CLEANUP
         # Fall back to metadata_series if available, otherwise clear.
         _log.info("[PASS 4] Cleaning up folder_hierarchy series with embedded author names...")
@@ -965,6 +1042,10 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Cleaned up {folder_hierarchy_cleanup_count} folder_hierarchy series with embedded author names")
 
+
+    def _author_from_filename_prefix(self, records, ctx) -> None:
+        """PASS 4, шаг 14: Автор [unknown] — по префиксу имени файла соседа."""
+        groups = ctx.groups
         # FILENAME PREFIX AUTHOR CONSENSUS
         # For records with [unknown] or empty author, check if the filename starts with
         # a known author name from another file in the same folder.
@@ -1010,6 +1091,11 @@ class Pass4Consensus:
 
         self.logger.log(f"[PASS 4] Fixed {prefix_fixed_count} [unknown] authors via filename prefix")
 
+
+    def _cleanup_multi_author_series_folders(self, records, ctx) -> None:
+        """PASS 4, шаг 15: Многоавторская папка «Серия - «X»» — издательская серия; rescue-каскад."""
+        import re
+        groups = ctx.groups
         # MULTI-AUTHOR SERIES FOLDER CLEANUP
         # Если тематическая папка "Серия - «X»" содержит книги разных авторов,
         # X — это издательская/жанровая серия, а не авторская.
@@ -1225,6 +1311,9 @@ class Pass4Consensus:
             self.logger.log(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")
             _log.info(f"[PASS 4] Rescued {meta_rescue_count} series from metadata after publisher-imprint cleanup")
 
+
+    def _filename_sequence_metadata_confirmation(self, records, ctx) -> None:
+        """PASS 4, шаг 16: Серия, подтверждённая и последовательностью имён, и метаданными."""
         # FILENAME SEQUENCE + METADATA DUAL CONFIRMATION (финальный шаг)
         #
         # Исправляем записи с низкодоверительной серией (consensus / author-consensus),
@@ -1307,7 +1396,14 @@ class Pass4Consensus:
                     seq_correction_count += 1
 
         self.logger.log(f"[PASS 4] Filename+meta dual confirmations: {seq_correction_count}")
+        ctx._auth_groups = _auth_groups
+        ctx._is_strong_series_source = _is_strong_series_source
 
+
+    def _correct_series_suffix(self, records, ctx) -> None:
+        """PASS 4, шаг 17: Коррекция суффикса серии."""
+        _auth_groups = ctx._auth_groups
+        _is_strong_series_source = ctx._is_strong_series_source
         # SERIES SUFFIX CORRECTION
         #
         # Парсер может срезать префикс серии через " - " как разделитель.
@@ -1373,6 +1469,8 @@ class Pass4Consensus:
         self.logger.log(f"[PASS 4] Series suffix corrections: {suffix_fix_count}")
 
 
+    def _folder_metadata_series_majority(self, records, ctx) -> None:
+        """PASS 4, шаг 18: Большинство файлов папки с одной metadata_series."""
         #
         # Если в папке большинство файлов имеют одинаковую metadata_series (после
         # стрипания суффиксов вида "(Автор)" и "[Автор]"), используем её для ВСЕХ
@@ -1486,7 +1584,13 @@ class Pass4Consensus:
                 folder_meta_correction_count += 1
 
         self.logger.log(f"[PASS 4] Folder metadata consensus corrections: {folder_meta_correction_count}")
+        ctx._folder_groups_meta = _folder_groups_meta
+        ctx._strip_author_suffix = _strip_author_suffix
 
+
+    def _propagate_folder_series(self, records, ctx) -> None:
+        """PASS 4, шаг 19: Папочная серия одного файла — всем файлам папки."""
+        _folder_groups_meta = ctx._folder_groups_meta
         # FOLDER SERIES PROPAGATION
         # Если хоть один файл в папке получил серию из папки (любой папочный источник),
         # все остальные файлы в той же папке без серии получают ту же серию автоматически.
@@ -1522,6 +1626,10 @@ class Pass4Consensus:
                 _folder_prop_count += 1
         self.logger.log(f"[PASS 4] Folder series propagation: {_folder_prop_count} records updated")
 
+
+    def _filename_phrase_metadata_confirmation(self, records, ctx) -> None:
+        """PASS 4, шаг 20: Фраза из имени файла, подтверждённая метаданными."""
+        _strip_author_suffix = ctx._strip_author_suffix
         # FILENAME PHRASE + METADATA CONFIRMATION
         #
         # Для каждого автора: ищем словосочетания из имён файлов,
@@ -1628,6 +1736,8 @@ class Pass4Consensus:
         self.logger.log(f"[PASS 4] Filename phrase+meta confirmations: {phrase_fix_count}")
 
 
+    def _dotted_series_to_subseries_if_in_filename(self, records, ctx) -> None:
+        r"""PASS 4, шаг 21: Повторно «А. Б» → «А\Б», но только если «Б» есть в имени файла."""
         # Если у одного автора есть серии "А" и "А. Б" (с точкой), вторая — подсерия первой.
         # Конвертируем "А. Б" → "А\Б" по конвенции backslash.
         # Пример: "Рожденные в СССР" + "Рожденные в СССР. Личности"
@@ -1686,7 +1796,13 @@ class Pass4Consensus:
         for rec in records:
             if rec.proposed_series and rec.proposed_author:
                 _series_author_groups[_nfc_lower_yo(rec.proposed_series.strip())].append(rec)
+        ctx._series_author_groups = _series_author_groups
 
+
+    def _expand_folder_dataset_coauthors(self, records, ctx) -> None:
+        """PASS 4, шаг 22: Автор из папки → полный список соавторов по метаданным серии."""
+        import re
+        _series_author_groups = ctx._series_author_groups
         # Расширение author_source=folder_dataset до полного списка
         # соавторов, если МЕТАДАННЫЕ БОЛЬШИНСТВА записей той же серии
         # согласованно подтверждают более широкий список, чем осталось
@@ -1824,6 +1940,12 @@ class Pass4Consensus:
         if _folder_author_widened:
             _log.info(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")
 
+
+    def _unify_series_author_with_common_coauthor(self, records, ctx) -> None:
+        """PASS 4, шаг 23: Унификация автора серии с общим соавтором."""
+        import re
+        from collections import Counter as _Cnt
+        from collections import defaultdict as _dd
         # Унификация автора по серии с общим соавтором.
         # Если у всех записей одной серии есть хотя бы один общий автор-токен,
         # но proposed_author различается → назначаем автора большинства.
@@ -1976,6 +2098,10 @@ class Pass4Consensus:
         if _author_unified:
             _log.info(f"[PASS 4] Unified {_author_unified} author values by series+common-author consensus")
 
+
+    def _upgrade_folder_series_to_named_arc(self, records, ctx) -> None:
+        """PASS 4, шаг 24: Серия из папки → подсерия filename_named_arc."""
+        import re
         # Апгрейд folder_dataset серий до filename_named_arc подсерий.
         # Когда filename_named_arc даёт «Серия\Подсерия», а folder_dataset —
         # только «Серия» (корень), обновляем folder_dataset записи до полного пути.
@@ -2025,6 +2151,9 @@ class Pass4Consensus:
         if _subseries_upgraded:
             _log.info(f"[PASS 4] Upgraded {_subseries_upgraded} folder_dataset series to named_arc subseries")
 
+
+    def _normalize_series_yo(self, records, ctx) -> None:
+        """PASS 4, шаг 25: Финальная нормализация ё→е во всех proposed_series."""
         # Финальная нормализация ё→е во всех proposed_series.
         # Pass3SeriesNormalize делает это до Pass4, но Pass4 может перезаписать
         # proposed_series значениями с ё (через консенсус). Делаем NFC + ё→е здесь,
