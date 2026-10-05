@@ -257,6 +257,10 @@ class GenresManager:
             yield node
             stack.extend(reversed(node.children))
 
+    def all_genre_names(self):
+        """Имена всех узлов дерева жанров в порядке обхода."""
+        return [n.name for n in self._all_nodes()]
+
     def exact_genres(self, code):
         """Жанры, к которым код привязан точной ассоциацией, в порядке дерева.
         Больше одного — противоречие: побеждает первый (см. `resolve_code`)."""

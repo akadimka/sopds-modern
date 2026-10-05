@@ -90,6 +90,29 @@ class SettingsManager:
         self.settings[key] = value
         self.save()
 
+    AUTOSYNC_DEFAULTS = {
+        "mode": "off",            # off | dry_run | auto
+        "watch_folder": "",
+        "confidence": 0.8,
+        "quiet_minutes": 30,
+        "telegram_token": "",
+        "telegram_channel": "",
+        "telegram_admin_chat": "",
+        "telegram_proxy": "",
+        "public_url": "",
+    }
+
+    def get_autosync_settings(self) -> dict:
+        """Раздел `autosync` config.json (машинно-локальный) с умолчаниями —
+        см. docs/watch-folder-autosync-design.md, «Настройки»."""
+        stored = self.settings.get("autosync") or {}
+        return {**self.AUTOSYNC_DEFAULTS, **{k: v for k, v in stored.items() if k in self.AUTOSYNC_DEFAULTS}}
+
+    def set_autosync_settings(self, values: dict) -> None:
+        current = self.get_autosync_settings()
+        current.update({k: v for k, v in values.items() if k in self.AUTOSYNC_DEFAULTS})
+        self.set("autosync", current)
+
     def set_library_path(self, path):
         """Set library path / Установить путь к библиотеке."""
         self.settings['library_path'] = path

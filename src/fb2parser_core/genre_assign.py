@@ -48,9 +48,17 @@ class GenreAssignmentService:
     # Namespaces для FB2
     FB2_NAMESPACE = 'http://www.gribuser.ru/xml/fictionbook/2.0'
     
-    def __init__(self, logger=None):
-        """Инициализация сервиса."""
+    def __init__(self, logger=None, codes_recorder=None):
+        """Инициализация сервиса.
+
+        codes_recorder(fb2_path, content, batch) — вызывается с исходным
+        текстом файла ПЕРЕД переписыванием <genre>: память автосинхронизации
+        (library_memory) запоминает исходные коды, которые после этого
+        в файле уже не восстановить. batch — папка, которой назначают жанр
+        (None при назначении отдельным файлам).
+        """
         self.logger = logger if logger is not None else Logger()
+        self.codes_recorder = codes_recorder
         self.processed_count = 0
     
     def assign_genre_to_folder(
@@ -124,7 +132,7 @@ class GenreAssignmentService:
         lock = threading.Lock()
 
         def _process(fb2_path: Path):
-            ok = self._assign_genre_to_file(fb2_path, genre_name)
+            ok = self._assign_genre_to_file(fb2_path, genre_name, batch=folder_path_normalized)
             with lock:
                 completed[0] += 1
                 idx = completed[0]
@@ -204,7 +212,7 @@ class GenreAssignmentService:
 
         return results
 
-    def _assign_genre_to_file(self, fb2_path: Path, genre_name: str) -> bool:
+    def _assign_genre_to_file(self, fb2_path: Path, genre_name: str, batch: Optional[str] = None) -> bool:
         """
         Присвоить жанр одному FB2 файлу.
         
@@ -333,6 +341,12 @@ class GenreAssignmentService:
                 self.logger.log(f"ОШИБКА: {fb2_path} - не валидный XML файл")
                 return False
             
+            if self.codes_recorder is not None:
+                try:
+                    self.codes_recorder(fb2_path, content, batch)
+                except Exception as e:  # память — не повод срывать назначение жанра
+                    self.logger.log(f"Не записаны исходные коды {fb2_path.name}: {e}")
+
             # Используем чистый regex подход вместо ElementTree, чтобы избежать проблем
             # с undefined namespace prefixes - это более надежно для malformed FB2 файлов
             has_bom = content.startswith('\ufeff')
