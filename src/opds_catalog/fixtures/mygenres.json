@@ -2206,9 +2206,18 @@
   },
   {
     "model": "opds_catalog.genre",
+    "pk": 612,
+    "fields": {
+      "genre": "19_vek",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
     "pk": 613,
     "fields": {
-      "genre": "adv_military",
+      "genre": "action",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2217,7 +2226,16 @@
     "model": "opds_catalog.genre",
     "pk": 614,
     "fields": {
-      "genre": "child_su",
+      "genre": "adv_all",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 615,
+    "fields": {
+      "genre": "adv_military",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2226,7 +2244,16 @@
     "model": "opds_catalog.genre",
     "pk": 616,
     "fields": {
-      "genre": "foreign_contemporary",
+      "genre": "adv_su",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 617,
+    "fields": {
+      "genre": "adv_western",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2235,7 +2262,7 @@
     "model": "opds_catalog.genre",
     "pk": 618,
     "fields": {
-      "genre": "foreign_sf",
+      "genre": "adventure_fantasy",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2244,7 +2271,7 @@
     "model": "opds_catalog.genre",
     "pk": 619,
     "fields": {
-      "genre": "literature_21",
+      "genre": "age_elementary",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2253,7 +2280,7 @@
     "model": "opds_catalog.genre",
     "pk": 620,
     "fields": {
-      "genre": "literary_fairy_tale",
+      "genre": "aphorism_quote",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2262,7 +2289,7 @@
     "model": "opds_catalog.genre",
     "pk": 621,
     "fields": {
-      "genre": "sf_su",
+      "genre": "apocalypse",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2271,7 +2298,7 @@
     "model": "opds_catalog.genre",
     "pk": 622,
     "fields": {
-      "genre": "child_rus",
+      "genre": "au",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2280,7 +2307,16 @@
     "model": "opds_catalog.genre",
     "pk": 623,
     "fields": {
-      "genre": "sf_rus",
+      "genre": "back_to_ussr",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 624,
+    "fields": {
+      "genre": "beginning_authors",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2289,7 +2325,7 @@
     "model": "opds_catalog.genre",
     "pk": 625,
     "fields": {
-      "genre": "naturalist_notes",
+      "genre": "boyar-anime",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2298,7 +2334,7 @@
     "model": "opds_catalog.genre",
     "pk": 626,
     "fields": {
-      "genre": "non-fiction",
+      "genre": "boyar_anime",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2307,7 +2343,7 @@
     "model": "opds_catalog.genre",
     "pk": 627,
     "fields": {
-      "genre": "foreign_publicism",
+      "genre": "child_baby",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2316,7 +2352,7 @@
     "model": "opds_catalog.genre",
     "pk": 628,
     "fields": {
-      "genre": "foreign_edu",
+      "genre": "child_rus",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2325,7 +2361,7 @@
     "model": "opds_catalog.genre",
     "pk": 629,
     "fields": {
-      "genre": "foreign_detective",
+      "genre": "child_su",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2334,7 +2370,7 @@
     "model": "opds_catalog.genre",
     "pk": 630,
     "fields": {
-      "genre": "foreign_fantasy",
+      "genre": "city_fantasy",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2343,7 +2379,7 @@
     "model": "opds_catalog.genre",
     "pk": 631,
     "fields": {
-      "genre": "foreign_desc",
+      "genre": "cyberpunk",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
@@ -2352,7 +2388,1312 @@
     "model": "opds_catalog.genre",
     "pk": 632,
     "fields": {
+      "genre": "dark-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 633,
+    "fields": {
+      "genre": "dark_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 634,
+    "fields": {
+      "genre": "det_cozy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 635,
+    "fields": {
+      "genre": "det_rus",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 636,
+    "fields": {
+      "genre": "detective-science-fiction",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 637,
+    "fields": {
+      "genre": "devushkimonstry",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 638,
+    "fields": {
+      "genre": "dragon_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 639,
+    "fields": {
+      "genre": "dystopia",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 640,
+    "fields": {
+      "genre": "ebook",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 641,
+    "fields": {
       "genre": "entert_humor",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 642,
+    "fields": {
+      "genre": "epic-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 643,
+    "fields": {
+      "genre": "epic_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 644,
+    "fields": {
+      "genre": "erotic_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 645,
+    "fields": {
+      "genre": "erotica",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 646,
+    "fields": {
+      "genre": "essays",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 647,
+    "fields": {
+      "genre": "fanfiction-erotika",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 648,
+    "fields": {
+      "genre": "fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 649,
+    "fields": {
+      "genre": "fantasy-action",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 650,
+    "fields": {
+      "genre": "fantasy-erotika",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 651,
+    "fields": {
+      "genre": "fantasy_action",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 652,
+    "fields": {
+      "genre": "fantasy_alt_hist",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 653,
+    "fields": {
+      "genre": "fantasy_epic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 654,
+    "fields": {
+      "genre": "fantasy_fight",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 655,
+    "fields": {
+      "genre": "fantasy_heroic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 656,
+    "fields": {
+      "genre": "foreign_adventure",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 657,
+    "fields": {
+      "genre": "foreign_contemporary",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 658,
+    "fields": {
+      "genre": "foreign_desc",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 659,
+    "fields": {
+      "genre": "foreign_detective",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 660,
+    "fields": {
+      "genre": "foreign_dramaturgy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 661,
+    "fields": {
+      "genre": "foreign_edu",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 662,
+    "fields": {
+      "genre": "foreign_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 663,
+    "fields": {
+      "genre": "foreign_home",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 664,
+    "fields": {
+      "genre": "foreign_humor",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 665,
+    "fields": {
+      "genre": "foreign_love",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 666,
+    "fields": {
+      "genre": "foreign_poetry",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 667,
+    "fields": {
+      "genre": "foreign_psychology",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 668,
+    "fields": {
+      "genre": "foreign_publicism",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 669,
+    "fields": {
+      "genre": "foreign_sf",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 670,
+    "fields": {
+      "genre": "garem",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 671,
+    "fields": {
+      "genre": "geroicheskoe_fentezi",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 672,
+    "fields": {
+      "genre": "heroic-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 673,
+    "fields": {
+      "genre": "historical-adventure",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 674,
+    "fields": {
+      "genre": "historical-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 675,
+    "fields": {
+      "genre": "historical_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 676,
+    "fields": {
+      "genre": "history_europe",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 677,
+    "fields": {
+      "genre": "horror",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 678,
+    "fields": {
+      "genre": "horror_vampires",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 679,
+    "fields": {
+      "genre": "humor_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 680,
+    "fields": {
+      "genre": "hurtcomfort",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 681,
+    "fields": {
+      "genre": "ironical-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 682,
+    "fields": {
+      "genre": "literary_fairy_tale",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 683,
+    "fields": {
+      "genre": "literature",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 684,
+    "fields": {
+      "genre": "literature_21",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 685,
+    "fields": {
+      "genre": "literature_short",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 686,
+    "fields": {
+      "genre": "litprg",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 687,
+    "fields": {
+      "genre": "litrpg",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 688,
+    "fields": {
+      "genre": "love_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 689,
+    "fields": {
+      "genre": "lubov",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 690,
+    "fields": {
+      "genre": "magic_school",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 691,
+    "fields": {
+      "genre": "magician_book",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 692,
+    "fields": {
+      "genre": "modern-prose",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 693,
+    "fields": {
+      "genre": "music_dancing",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 694,
+    "fields": {
+      "genre": "narrative",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 695,
+    "fields": {
+      "genre": "naturalist_notes",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 696,
+    "fields": {
+      "genre": "non-fiction",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 697,
+    "fields": {
+      "genre": "none",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 698,
+    "fields": {
+      "genre": "nonf_biography_writers",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 699,
+    "fields": {
+      "genre": "novel",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 700,
+    "fields": {
+      "genre": "null",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 701,
+    "fields": {
+      "genre": "paranormal",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 702,
+    "fields": {
+      "genre": "personal_finance",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 703,
+    "fields": {
+      "genre": "political-fiction",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 704,
+    "fields": {
+      "genre": "popadancy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 705,
+    "fields": {
+      "genre": "popadanec",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 706,
+    "fields": {
+      "genre": "popadantsy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 707,
+    "fields": {
+      "genre": "popadantsy-v-kosmos",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 708,
+    "fields": {
+      "genre": "popadantsy-v-magicheskie-miry",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 709,
+    "fields": {
+      "genre": "popadantsy-vo-vremeni",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 710,
+    "fields": {
+      "genre": "popadantsy_v_kosmos",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 711,
+    "fields": {
+      "genre": "popadantsy_v_magicheskie_miry",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 712,
+    "fields": {
+      "genre": "popadantsy_vo_vremeni",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 713,
+    "fields": {
+      "genre": "postapocalyptic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 714,
+    "fields": {
+      "genre": "pov",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 715,
+    "fields": {
+      "genre": "prose_sentimental",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 716,
+    "fields": {
+      "genre": "psy_alassic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 717,
+    "fields": {
+      "genre": "psy_generic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 718,
+    "fields": {
+      "genre": "psy_personal",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 719,
+    "fields": {
+      "genre": "psy_social",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 720,
+    "fields": {
+      "genre": "psy_theraphy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 721,
+    "fields": {
+      "genre": "razvitie-lichnosti",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 722,
+    "fields": {
+      "genre": "realrpg",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 723,
+    "fields": {
+      "genre": "religion_rel",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 724,
+    "fields": {
+      "genre": "roman",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 725,
+    "fields": {
+      "genre": "romance",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 726,
+    "fields": {
+      "genre": "romance_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 727,
+    "fields": {
+      "genre": "romance_sf",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 728,
+    "fields": {
+      "genre": "romantic-erotika",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 729,
+    "fields": {
+      "genre": "romantic-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 730,
+    "fields": {
+      "genre": "rus_publication",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 731,
+    "fields": {
+      "genre": "russian",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 732,
+    "fields": {
+      "genre": "russian_contemporary",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 733,
+    "fields": {
+      "genre": "sagas",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 734,
+    "fields": {
+      "genre": "samizdat",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 735,
+    "fields": {
+      "genre": "sci-fi",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 736,
+    "fields": {
+      "genre": "sci_fi",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 737,
+    "fields": {
+      "genre": "sci_psychology_popular",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 738,
+    "fields": {
+      "genre": "science fiction",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 739,
+    "fields": {
+      "genre": "science-fiction",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 740,
+    "fields": {
+      "genre": "sem'ya",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 741,
+    "fields": {
+      "genre": "sf-action",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 742,
+    "fields": {
+      "genre": "sf-erotika",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 743,
+    "fields": {
+      "genre": "sf-heroic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 744,
+    "fields": {
+      "genre": "sf-history",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 745,
+    "fields": {
+      "genre": "sf-humor",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 746,
+    "fields": {
+      "genre": "sf-social",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 747,
+    "fields": {
+      "genre": "sf-space",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 748,
+    "fields": {
+      "genre": "sf_cyber_punk",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 749,
+    "fields": {
+      "genre": "sf_irony",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 750,
+    "fields": {
+      "genre": "sf_litrp",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 751,
+    "fields": {
+      "genre": "sf_litrpg",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 752,
+    "fields": {
+      "genre": "sf_realrpg",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 753,
+    "fields": {
+      "genre": "sf_rus",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 754,
+    "fields": {
+      "genre": "sf_space_opera",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 755,
+    "fields": {
+      "genre": "sf_su",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 756,
+    "fields": {
+      "genre": "short_story",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 757,
+    "fields": {
+      "genre": "sketch",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 758,
+    "fields": {
+      "genre": "slash",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 759,
+    "fields": {
+      "genre": "slavic_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 760,
+    "fields": {
+      "genre": "songfic",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 761,
+    "fields": {
+      "genre": "spy-mystery",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 762,
+    "fields": {
+      "genre": "steampunk",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 763,
+    "fields": {
+      "genre": "story-book",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 764,
+    "fields": {
+      "genre": "teen-prose",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 765,
+    "fields": {
+      "genre": "teens_history",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 766,
+    "fields": {
+      "genre": "thriller_mystery",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 767,
+    "fields": {
+      "genre": "translation",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 768,
+    "fields": {
+      "genre": "umoristicheskoe",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 769,
+    "fields": {
+      "genre": "unrecognised",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 770,
+    "fields": {
+      "genre": "urban-fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 771,
+    "fields": {
+      "genre": "urban_fantasy",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 772,
+    "fields": {
+      "genre": "vampire_book",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 773,
+    "fields": {
+      "genre": "visual_arts",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 774,
+    "fields": {
+      "genre": "vrmmorpg",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 775,
+    "fields": {
+      "genre": "wuxia",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 776,
+    "fields": {
+      "genre": "ya",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 777,
+    "fields": {
+      "genre": "zarubezhnaya_klassika",
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
