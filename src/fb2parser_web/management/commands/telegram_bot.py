@@ -15,9 +15,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from fb2parser_core.telegram_bot import AdminBot
         from fb2parser_web.fb2parser_bridge import get_autosync_service
+        from sopds_web_backend.telegram_library import LibraryHandler
 
         self.stdout.write("Telegram-бот запущен (Ctrl+C — остановить).")
         try:
-            AdminBot(get_autosync_service).run_forever()
+            AdminBot(get_autosync_service, extra_handler=LibraryHandler()).run_forever()
         except KeyboardInterrupt:
             self.stdout.write("Остановлен.")

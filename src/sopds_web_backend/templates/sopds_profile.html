@@ -78,6 +78,41 @@
   </form>
 </div>
 
+<!-- ── Telegram (бот и канал библиотеки) ─────────────────────── -->
+<div class="s-section" style="margin-bottom:1.5rem;">
+  <div class="s-section-title">Telegram</div>
+  {% if not telegram_enabled %}
+  <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "The library's Telegram bot is not set up yet." %}</p>
+  {% elif tg_link and tg_link.linked %}
+  <p style="margin-bottom:0.5rem;">{% blocktrans with name=tg_link.telegram_name %}Linked to {{ name }}.{% endblocktrans %}</p>
+  <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
+    {% trans "In the bot you can search for books and download them; new books are announced in the library channel (the bot sent you the link to join it)." %}
+  </p>
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0;"
+        onsubmit="return confirm('{% trans "Unlink Telegram? You will also be removed from the library channel." %}');">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="tg_unlink">
+    <button type="submit" class="button secondary" style="margin:0;">{% trans "Unlink Telegram" %}</button>
+  </form>
+  {% else %}
+  <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
+    {% trans "Link your Telegram to search and download books in the library bot and to join the channel with new books. It does not affect signing in to the site." %}
+  </p>
+  {% if tg_code %}
+  <div class="callout success" style="padding:0.6rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">
+    {% if tg_url %}<div>{% trans "Open this link in Telegram:" %} <a href="{{ tg_url }}" target="_blank" rel="noopener">{{ tg_url }}</a></div>{% endif %}
+    <div>{% blocktrans with code=tg_code %}or send this code to the bot: <strong>{{ code }}</strong>{% endblocktrans %}{% if tg_bot %} (<a href="https://t.me/{{ tg_bot }}" target="_blank" rel="noopener">@{{ tg_bot }}</a>){% endif %}</div>
+    <div style="font-size:0.82rem; color:var(--text-muted);">{% trans "The code is valid for 24 hours." %}</div>
+  </div>
+  {% endif %}
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="tg_code">
+    <button type="submit" class="button" style="margin:0;">{% if tg_code %}{% trans "Get a new code" %}{% else %}{% trans "Get a link code" %}{% endif %}</button>
+  </form>
+  {% endif %}
+</div>
+
 <!-- ── Удаление аккаунта ──────────────────────────────────────── -->
 <div class="s-section" style="border-color:#ef4444; margin-bottom:1.5rem;">
   <div class="s-section-title" style="color:#ef4444;">{% trans "Delete account" %}</div>

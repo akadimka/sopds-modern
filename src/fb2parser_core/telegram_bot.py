@@ -45,8 +45,13 @@ class AdminBot:
     def __init__(self, service_factory: Callable[[], Any],
                  client_factory: Optional[Callable[[dict], Any]] = None,
                  executor: Optional[Executor] = None,
-                 sleep: Callable[[float], None] = time.sleep):
+                 sleep: Callable[[float], None] = time.sleep,
+                 extra_handler: Optional[Callable[[Any, Any, dict], bool]] = None):
+        """extra_handler(service, client, update) -> обработано ли событие —
+        читательская часть бота (поиск, скачивание, привязка аккаунтов,
+        заявки в канал — sopds_web_backend/telegram_library.py)."""
         self.service_factory = service_factory
+        self.extra_handler = extra_handler
         self.client_factory = client_factory or (
             lambda cfg: TelegramClient(cfg["telegram_token"], cfg["telegram_proxy"]))
         # решения выполняются по одному, не задерживая опрос
@@ -83,8 +88,10 @@ class AdminBot:
         for upd in updates:
             offset = upd["update_id"] + 1
             try:
-                if "callback_query" in upd:
+                if (upd.get("callback_query") or {}).get("data", "").startswith("d:"):
                     self.on_callback(service, client, upd["callback_query"])
+                elif self.extra_handler is not None and self.extra_handler(service, client, upd):
+                    pass
                 elif "message" in upd:
                     self.on_message(client, upd["message"])
             except TelegramError as e:

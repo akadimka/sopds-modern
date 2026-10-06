@@ -29,6 +29,8 @@ urlpatterns = [
     re_path(r"^settings/users/create/$", views.user_create, name="user_create"),
     re_path(r"^settings/users/(?P<user_id>\d+)/edit/$", views.user_edit, name="user_edit"),
     re_path(r"^settings/users/(?P<user_id>\d+)/delete/$", views.user_delete, name="user_delete"),
+    re_path(r"^settings/users/(?P<user_id>\d+)/telegram-unlink/$", views.user_telegram_unlink,
+            name="user_telegram_unlink"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/progress/$", views.ratings_progress, name="ratings_progress"),

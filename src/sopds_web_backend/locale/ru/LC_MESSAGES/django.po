@@ -998,11 +998,11 @@ msgstr ""
 "токен."
 
 msgid ""
-"2. Create a channel and add the bot to it as an administrator allowed to "
-"post messages."
+"2. Create a channel and add the bot to it as an administrator with the "
+"rights to post messages, add subscribers and remove subscribers."
 msgstr ""
-"2. Создайте канал и добавьте в него бота администратором с правом "
-"«Публикация сообщений»."
+"2. Создайте канал и добавьте в него бота администратором с правами "
+"«Публикация сообщений», «Добавление подписчиков» и удаления подписчиков."
 
 msgid ""
 "3. Open your bot and press Start; post anything to the channel; then press "
@@ -1135,6 +1135,70 @@ msgstr "Входящие"
 
 msgid "Autosync of the watch folder..."
 msgstr "Автосинхронизация папки наблюдения..."
+
+msgid "The library's Telegram bot is not set up yet."
+msgstr "Telegram-бот библиотеки пока не настроен."
+
+msgid "Linked to %(name)s."
+msgstr "Привязан к %(name)s."
+
+msgid ""
+"In the bot you can search for books and download them; new books are "
+"announced in the library channel (the bot sent you the link to join it)."
+msgstr ""
+"В боте можно искать и скачивать книги; новинки публикуются в канале "
+"библиотеки (ссылку на вступление бот прислал вам при привязке)."
+
+msgid "Unlink Telegram? You will also be removed from the library channel."
+msgstr "Отвязать Telegram? Вы также будете удалены из канала библиотеки."
+
+msgid "Unlink Telegram"
+msgstr "Отвязать Telegram"
+
+msgid ""
+"Link your Telegram to search and download books in the library bot and to "
+"join the channel with new books. It does not affect signing in to the site."
+msgstr ""
+"Привяжите Telegram, чтобы искать и скачивать книги в боте библиотеки и "
+"вступить в канал с новинками. На вход на сайт это не влияет."
+
+msgid "Open this link in Telegram:"
+msgstr "Откройте эту ссылку в Telegram:"
+
+msgid "or send this code to the bot: <strong>%(code)s</strong>"
+msgstr "или отправьте боту код: <strong>%(code)s</strong>"
+
+msgid "The code is valid for 24 hours."
+msgstr "Код действует 24 часа."
+
+msgid "Get a new code"
+msgstr "Получить новый код"
+
+msgid "Get a link code"
+msgstr "Получить код"
+
+msgid "in channel"
+msgstr "в канале"
+
+msgid "Unlink Telegram of"
+msgstr "Отвязать Telegram пользователя"
+
+msgid "Unlink Telegram and remove from the channel"
+msgstr "Отвязать Telegram и удалить из канала"
+
+msgid ""
+"the bot lacks the “Add subscribers” right — it cannot let readers in by join"
+" requests"
+msgstr ""
+"боту не хватает права «Добавление подписчиков» — он не сможет пускать "
+"читателей по заявкам"
+
+msgid ""
+"the bot lacks the right to remove subscribers — it cannot remove readers "
+"whose Telegram was unlinked or whose account was blocked"
+msgstr ""
+"боту не хватает права удалять подписчиков — он не сможет убирать из канала "
+"тех, кто отвязал Telegram или чей аккаунт заблокирован"
 
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"

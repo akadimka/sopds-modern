@@ -22,6 +22,7 @@
         <th>{% trans "Username" %}</th>
         <th>{% trans "Role" %}</th>
         <th>{% trans "Active" %}</th>
+        <th>Telegram</th>
         <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
@@ -37,6 +38,16 @@
           {% endif %}
         </td>
         <td>{% if u.is_active %}✓{% else %}✗{% endif %}</td>
+        <td>
+          {% if u.telegram.telegram_id %}
+          {{ u.telegram.telegram_name|default:u.telegram.telegram_id }}{% if u.telegram.in_channel %} · {% trans "in channel" %}{% endif %}
+          <form method="post" action="{% url 'web:user_telegram_unlink' u.pk %}" style="display:inline;"
+                onsubmit="return confirm('{% trans "Unlink Telegram of" %} «{{ u.username|escapejs }}»?');">
+            {% csrf_token %}
+            <button type="submit" class="button tiny secondary" style="margin:0;" title="{% trans "Unlink Telegram and remove from the channel" %}">✕</button>
+          </form>
+          {% else %}—{% endif %}
+        </td>
         <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
           {% if u.is_superuser and not request.user.is_superuser %}
           <span style="color:var(--text-muted); font-size:0.82rem;">{% trans "Superuser: only another superuser can change it" %}</span>
@@ -69,7 +80,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
+      <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

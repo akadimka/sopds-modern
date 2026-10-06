@@ -207,3 +207,19 @@ def test_find_chat_id_while_bot_process_runs_shows_remembered_chats(client, env,
     body = _login(client, True).post(reverse("web:telegram_chats"),
                                      {"autosync_telegram_token": "9:T"}).content.decode("utf-8")
     assert "<code>-1001</code>" in body and "Новинки" in body
+
+
+@pytest.mark.django_db
+def test_test_message_reports_missing_channel_rights(client, env, monkeypatch):
+    import fb2parser_core.telegram_notify as tn
+
+    class _NoRights(_FakeClient):
+        def call(self, method, **params):
+            assert method == "getChatMember" and params["user_id"] == 9
+            return {"status": "administrator", "can_post_messages": True,
+                    "can_invite_users": False, "can_restrict_members": True}
+
+    monkeypatch.setattr(tn, "TelegramClient", _NoRights)
+    body = _login(client, True).post(reverse("web:telegram_test"),
+                                     _tg(env, autosync_telegram_token="9:T")).content.decode("utf-8")
+    assert body.count("⚠") == 1 and "Add subscribers" in body

@@ -840,7 +840,29 @@ def telegram_test(request):
             lines.append(f'{escape(str(label))}: ✅ {escape(str(_("sent")))}')
         except TelegramError as err:
             lines.append(f'{escape(str(label))}: {_telegram_error_html(err)}')
+            continue
+        if key == 'telegram_channel':
+            lines += _telegram_channel_rights_warnings(client, cfg[key])
     return HttpResponse('<br>'.join(lines))
+
+
+_CHANNEL_RIGHTS = (
+    ('can_invite_users', _lazy('the bot lacks the “Add subscribers” right — it cannot let readers in by join '
+                               'requests')),
+    ('can_restrict_members', _lazy('the bot lacks the right to remove subscribers — it cannot remove readers '
+                                   'whose Telegram was unlinked or whose account was blocked')),
+)
+
+
+def _telegram_channel_rights_warnings(client, channel):
+    """Каких прав администратора канала не хватает боту для пропуска читателей."""
+    from fb2parser_core.telegram_notify import TelegramError
+    try:
+        bot_id = int(client.token.split(':', 1)[0])
+        member = client.call('getChatMember', chat_id=channel, user_id=bot_id) or {}
+    except (TelegramError, ValueError, AttributeError):
+        return []
+    return [f'⚠ {escape(str(text))}' for right, text in _CHANNEL_RIGHTS if not member.get(right)]
 
 
 def _exec_field_error(user, field, value):
@@ -1324,6 +1346,19 @@ def user_profile(request):
                     update_session_auth_hash(request, user)
                     success = "password"
 
+        elif action == "tg_code":
+            from .telegram_users import new_link_code
+            new_link_code(user)
+            success = "telegram"
+
+        elif action == "tg_unlink":
+            from .models import TelegramLink
+            from .telegram_users import unlink
+            link = TelegramLink.objects.filter(user=user).first()
+            if link is not None and link.linked:
+                unlink(link)
+            success = "telegram"
+
         elif action == "delete":
             confirm_pw = request.POST.get("confirm_password", "")
             if not user.check_password(confirm_pw):
@@ -1337,7 +1372,30 @@ def user_profile(request):
         "profile": profile,
         "errors": errors,
         "success": success,
+        **_profile_telegram_context(user),
     })
+
+
+def _profile_telegram_context(user):
+    """Раздел «Telegram» профиля: привязан ли, действующий код и ссылка на бота."""
+    from django.utils import timezone
+
+    from .models import TelegramLink
+    from .telegram_users import LINK_PREFIX, bot_username, telegram
+    client, service = telegram()
+    link = TelegramLink.objects.filter(user=user).first()
+    ctx = {"telegram_enabled": client is not None, "tg_link": link, "tg_code": "", "tg_url": "", "tg_bot": ""}
+    if client is None or link is None or link.linked:
+        return ctx
+    if link.code and link.code_expires and link.code_expires > timezone.now():
+        ctx["tg_code"] = link.code
+        try:
+            ctx["tg_bot"] = bot_username(client, service)
+        except Exception:  # без сети — останется только код
+            logging.getLogger(__name__).warning("telegram: имя бота не получено", exc_info=True)
+        if ctx["tg_bot"]:
+            ctx["tg_url"] = f"https://t.me/{ctx['tg_bot']}?start={LINK_PREFIX}{link.code}"
+    return ctx
 
 
 # ── Управление пользователями (только Admin) ──────────────────────────────────
@@ -1412,6 +1470,23 @@ def user_edit(request, user_id):
         user.set_password(password)
     user.is_staff = (role == "admin")
     user.save()
+    return redirect(reverse("web:users_list"))
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def user_telegram_unlink(request, user_id):
+    """Админ отвязывает Telegram пользователя (и удаляет его из канала)."""
+    from django.contrib.auth.models import User as DjangoUser
+
+    from .models import TelegramLink
+    from .telegram_users import unlink
+    user = get_object_or_404(DjangoUser, pk=user_id)
+    if not _can_manage_user(request.user, user):
+        return HttpResponseForbidden()
+    link = TelegramLink.objects.filter(user=user).first()
+    if link is not None and link.linked:
+        unlink(link)
     return redirect(reverse("web:users_list"))
 
 
