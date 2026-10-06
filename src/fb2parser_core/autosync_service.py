@@ -15,7 +15,7 @@ import logging
 import os
 import sqlite3
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -101,6 +101,9 @@ CREATE TABLE IF NOT EXISTS autosync_books (
 );
 CREATE INDEX IF NOT EXISTS autosync_books_run ON autosync_books(run_id);
 CREATE TABLE IF NOT EXISTS autosync_state (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS autosync_tg_actions (
+    key TEXT PRIMARY KEY, batch TEXT, genre TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
@@ -178,6 +181,21 @@ class AutosyncJournal:
     def set_state(self, key: str, value: str) -> None:
         with self._connect() as conn:
             conn.execute("INSERT OR REPLACE INTO autosync_state(key, value) VALUES (?, ?)", (key, value))
+
+    def add_action(self, batch: str, genre: str) -> str:
+        """Действие кнопки Telegram (callback_data — до 64 байт, поэтому в
+        кнопке только короткий ключ)."""
+        key = hashlib.sha1(f"{batch}\x1f{genre}\x1f{time.time()}".encode("utf-8")).hexdigest()[:10]
+        with self._connect() as conn:
+            conn.execute("INSERT OR REPLACE INTO autosync_tg_actions(key, batch, genre) VALUES (?, ?, ?)",
+                         (key, batch, genre))
+            conn.execute("DELETE FROM autosync_tg_actions WHERE created < datetime('now', '-60 days')")
+        return key
+
+    def get_action(self, key: str) -> Optional[Dict[str, str]]:
+        with self._connect() as conn:
+            row = conn.execute("SELECT batch, genre FROM autosync_tg_actions WHERE key = ?", (key,)).fetchone()
+        return {"batch": row[0], "genre": row[1]} if row else None
 
     def last_run(self, modes: Optional[tuple] = None) -> Optional[Dict[str, Any]]:
         sql, args = "SELECT * FROM autosync_runs", ()
@@ -519,6 +537,14 @@ class AutosyncService:
             b.units.sort(key=lambda u: (-len(u.files), u.author, u.series))
         return sorted(batches.values(), key=lambda b: b.name.lower())
 
+    def decide_all(self, batch: str, genre: str,
+                   progress: Optional[Callable[[str], None]] = None) -> RunResult:
+        """Один жанр всей порции (кнопка в Telegram, «Применить ко всем»)."""
+        current = {b.name: b for b in self.inbox()}.get(batch)
+        if current is None:
+            return RunResult(MODE_MANUAL, RUN_ERROR, error=f"порции «{batch}» уже нет во «Входящих»")
+        return self.decide(batch, {u.uid: genre for u in current.units}, progress)
+
     def decide(self, batch: str, choices: Dict[str, str],
                progress: Optional[Callable[[str], None]] = None) -> RunResult:
         """Решения человека по порции из «Входящих»: {id единицы: жанр}.
@@ -614,7 +640,60 @@ def notify(service: "AutosyncService", result: RunResult,
             except TelegramError as e:
                 sent["admin"] = explain_error(e)
                 _log.warning("autosync: отчёт админу не отправлен: %s", e.description)
+        _send_batch_prompts(service, client, sent)
     return sent
+
+
+MAX_PROMPTS = 10   # сообщений с кнопками за один запуск
+ALTERNATIVES = 3   # жанров-альтернатив под подсказкой
+
+
+def batch_genre_options(batch: InboxBatch) -> List[str]:
+    """Подсказка порции (жанр большинства её книг) и альтернативы из сигналов."""
+    votes: Counter = Counter()
+    for u in batch.units:
+        if u.genre:
+            votes[u.genre] += len(u.files)
+    weights: Counter = Counter()
+    for u in batch.units:
+        for key, w in (u.signals or {}).items():
+            weights[key.partition(":")[2]] += w * len(u.files)
+    options = [g for g, _n in votes.most_common(1)]
+    options += [g for g, _w in weights.most_common() if g and g not in options][:ALTERNATIVES]
+    return options
+
+
+def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str]) -> None:
+    """Каждой НОВОЙ спорной порции — сообщение админу с кнопками жанров.
+    Нажатие обрабатывает процесс бота (telegram_bot) — decide_all."""
+    from .telegram_notify import TelegramError, build_batch_prompt, explain_error
+
+    cfg, journal = service.cfg, service.journal
+    batches = service.inbox()
+    prompted = set(json.loads(journal.get_state("tg_prompted") or "[]"))
+    current = {b.name for b in batches}
+    base = (cfg["public_url"] or "").rstrip("/")
+    count = 0
+    for b in batches:
+        if b.name in prompted or count >= MAX_PROMPTS:
+            continue
+        options = batch_genre_options(b)
+        rows = [[{"text": ("✅ " if i == 0 else "") + g, "callback_data": "d:" + journal.add_action(b.name, g)}]
+                for i, g in enumerate(options)]
+        if base:
+            rows.append([{"text": "📥 Во «Входящие»", "url": f"{base}/fb2parser/inbox/"}])
+        try:
+            client.send_message(cfg["telegram_admin_chat"], build_batch_prompt(b, options),
+                                reply_markup={"inline_keyboard": rows} if rows else None)
+        except TelegramError as e:
+            sent["prompts"] = explain_error(e)
+            break
+        prompted.add(b.name)
+        count += 1
+    if count:
+        sent["prompts"] = sent.get("prompts", "ok")
+    # забываем решённые порции — если такая папка придёт снова, спросим снова
+    journal.set_state("tg_prompted", json.dumps(sorted(prompted & current), ensure_ascii=False))
 
 
 class _LogAdapter:

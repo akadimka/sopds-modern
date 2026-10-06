@@ -910,6 +910,47 @@ systemctl status sopds-watch
    systemctl restart sopds-scan
    ```
 
+6. (Опционально) **Кнопки решений в Telegram.** По каждой новой спорной
+   порции админу приходит сообщение с кнопками жанров; нажатие назначает
+   жанр всей порции и синхронизирует её. Кнопки обрабатывает отдельный
+   процесс бота (long polling — HTTPS и входящие подключения не нужны):
+
+   ```bash
+   nano /etc/systemd/system/sopds-telegram.service
+   ```
+
+   ```ini
+   [Unit]
+   Description=SOPDS Telegram bot (autosync decisions)
+   After=network-online.target sopds-modern.service
+
+   [Service]
+   User=www-data
+   Group=www-data
+   WorkingDirectory=/opt/sopds-modern/src
+   EnvironmentFile=/opt/sopds-modern/src/.env
+   Environment=DJANGO_SETTINGS_MODULE=sopds.settings.base
+   Environment=PYTHONUNBUFFERED=1
+   Environment=SOPDS_MANAGED_BY_SYSTEMD=1
+   ExecStart=/opt/sopds-modern/.venv/bin/python manage.py telegram_bot
+   Restart=always
+   RestartSec=10
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   ```bash
+   systemctl daemon-reload
+   systemctl enable --now sopds-telegram
+   ```
+
+   Токен и chat id бот перечитывает из настроек сам — после их смены
+   перезапуск не нужен (после обновления кода — нужен:
+   `systemctl restart sopds-telegram`). Пока бот работает, кнопка «Найти
+   chat id» показывает чаты, которые он видел; свой chat id можно узнать,
+   отправив боту `/id`.
+
 Проверка вручную — что было бы сделано с каждой порцией, ничего не трогая:
 
 ```bash

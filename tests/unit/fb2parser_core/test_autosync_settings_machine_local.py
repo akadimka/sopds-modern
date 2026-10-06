@@ -25,3 +25,17 @@ def test_autosync_settings_saved_to_config_json_only(tmp_path):
     assert loaded["mode"] == "auto" and loaded["watch_folder"] == "/mnt/in"
     assert loaded["confidence"] == 0.8  # умолчание для незаданного ключа
     assert "unknown" not in loaded
+
+
+def test_save_keeps_key_order_of_shared_app_settings(tmp_path):
+    # иначе каждое сохранение настроек переставляет ключи файла, который коммитится
+    config = tmp_path / "config.json"
+    app = tmp_path / "app_settings.json"
+    config.write_text('{"library_path": "/lib"}', encoding="utf-8")
+    original = '{\n  "genre_association_method": "context_menu",\n  "performance": {\n    "enable_caching": true\n  }\n}'
+    app.write_text(original, encoding="utf-8")
+
+    SettingsManager(str(config)).set_autosync_settings({"mode": "dry_run"})
+
+    keys = list(json.loads(app.read_text(encoding="utf-8")))
+    assert keys[:2] == ["genre_association_method", "performance"]

@@ -789,17 +789,26 @@ def telegram_chats(request):
     from fb2parser_core.telegram_notify import TelegramClient, TelegramError
     if not request.user.is_superuser:
         return HttpResponse(status=403)
+    from fb2parser_core.telegram_notify import ERR_CONFLICT, error_kind
     cfg = _telegram_form_settings(request)
+    note = ''
     try:
         chats = TelegramClient(cfg['telegram_token'], cfg['telegram_proxy']).chats()
     except TelegramError as err:
-        return HttpResponse(_telegram_error_html(err))
+        if error_kind(err) != ERR_CONFLICT:
+            return HttpResponse(_telegram_error_html(err))
+        # события забирает запущенный процесс бота — показываем запомненные им чаты
+        from fb2parser_core.telegram_bot import known_chats
+        from fb2parser_web.fb2parser_bridge import get_autosync_service
+        chats = known_chats(get_autosync_service().journal)
+        note = escape(str(_('The bot process is running — showing the chats it has seen. You can also send '
+                            '/id to the bot.'))) + '<br>'
     if not chats:
         return HttpResponse(escape(str(_('Nobody has written to the bot yet — press Start in the bot (and post '
                                          'anything to the channel), then try again.'))))
     rows = "".join(f'<tr><td><code>{escape(c["id"])}</code></td><td>{escape(c["type"])}</td>'
                    f'<td>{escape(c["title"])}</td></tr>' for c in chats)
-    return HttpResponse(f'<table class="unstriped" style="font-size:0.85rem; max-width:40rem;">{rows}</table>')
+    return HttpResponse(f'{note}<table class="unstriped" style="font-size:0.85rem; max-width:40rem;">{rows}</table>')
 
 
 @sopds_admin(url="web:login")

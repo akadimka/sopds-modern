@@ -50,7 +50,7 @@ class TelegramClient:
             handlers = [urllib.request.ProxyHandler({"http": proxy, "https": proxy})] if proxy else []
             self._open = urllib.request.build_opener(*handlers).open
 
-    def call(self, method: str, **params) -> Any:
+    def call(self, method: str, _timeout: Optional[float] = None, **params) -> Any:
         if not self.token:
             raise TelegramError("token is empty")
         req = urllib.request.Request(
@@ -59,7 +59,7 @@ class TelegramClient:
             headers={"Content-Type": "application/json"},
         )
         try:
-            with self._open(req, timeout=self.timeout) as resp:
+            with self._open(req, timeout=_timeout or self.timeout) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:  # Telegram отвечает JSON-ом и с кодом ошибки
             try:
@@ -72,30 +72,59 @@ class TelegramClient:
             raise TelegramError(body.get("description", "unknown error"), body.get("error_code", 0))
         return body.get("result")
 
-    def send_message(self, chat_id: str, text: str) -> None:
-        for chunk in split_message(text):
-            self.call("sendMessage", chat_id=chat_id, text=chunk, parse_mode="HTML",
-                      disable_web_page_preview=True)
+    def send_message(self, chat_id: str, text: str, reply_markup: Optional[dict] = None) -> Optional[dict]:
+        """Отправить (длинный текст — несколькими сообщениями); кнопки — у
+        последнего. Возвращает последнее отправленное сообщение."""
+        chunks = split_message(text)
+        sent = None
+        for i, chunk in enumerate(chunks):
+            params: Dict[str, Any] = {"chat_id": chat_id, "text": chunk, "parse_mode": "HTML",
+                                      "disable_web_page_preview": True}
+            if reply_markup and i == len(chunks) - 1:
+                params["reply_markup"] = reply_markup
+            sent = self.call("sendMessage", **params)
+        return sent
+
+    def edit_message(self, chat_id, message_id: int, text: str, reply_markup: Optional[dict] = None) -> None:
+        params: Dict[str, Any] = {"chat_id": chat_id, "message_id": message_id, "text": text[:MAX_MESSAGE],
+                                  "parse_mode": "HTML", "disable_web_page_preview": True}
+        if reply_markup is not None:
+            params["reply_markup"] = reply_markup
+        self.call("editMessageText", **params)
+
+    def answer_callback(self, callback_id: str, text: str = "") -> None:
+        self.call("answerCallbackQuery", callback_query_id=callback_id, text=text)
+
+    def get_updates(self, offset: Optional[int] = None, timeout: int = 0) -> List[dict]:
+        """Long polling: ждать новые события до timeout секунд."""
+        params: Dict[str, Any] = {"timeout": timeout}
+        if offset is not None:
+            params["offset"] = offset
+        return self.call("getUpdates", _timeout=timeout + 15, **params) or []
 
     def chats(self) -> List[Dict[str, str]]:
         """Кто писал боту и в каких каналах он публиковал/видел сообщения —
         подсказка для поля chat id (getUpdates хранит последние ~24 часа)."""
-        found: "OrderedDict[str, Dict[str, str]]" = OrderedDict()
-        for upd in self.call("getUpdates") or []:
-            for key in ("message", "channel_post", "my_chat_member", "edited_message"):
-                chat = (upd.get(key) or {}).get("chat")
-                if chat:
-                    title = chat.get("title") or " ".join(
-                        x for x in (chat.get("first_name"), chat.get("last_name")) if x)
-                    if chat.get("username"):
-                        title += f" (@{chat['username']})"
-                    found.setdefault(str(chat["id"]), {"id": str(chat["id"]), "type": chat.get("type", ""),
-                                                       "title": title})
-        return list(found.values())
+        return chats_from_updates(self.call("getUpdates") or [])
 
 
-ERR_TOKEN, ERR_CHAT, ERR_START, ERR_RIGHTS, ERR_NETWORK, ERR_OTHER = (
-    "token", "chat", "start", "rights", "network", "other")
+def chats_from_updates(updates: List[dict]) -> List[Dict[str, str]]:
+    found: "OrderedDict[str, Dict[str, str]]" = OrderedDict()
+    for upd in updates:
+        for key in ("message", "channel_post", "my_chat_member", "edited_message"):
+            chat = (upd.get(key) or {}).get("chat")
+            if chat:
+                title = chat.get("title") or " ".join(
+                    x for x in (chat.get("first_name"), chat.get("last_name")) if x)
+                if chat.get("username"):
+                    title += f" (@{chat['username']})"
+                found.setdefault(str(chat["id"]), {"id": str(chat["id"]), "type": chat.get("type", ""),
+                                                   "title": title})
+    return list(found.values())
+
+
+ERR_TOKEN, ERR_CHAT, ERR_START, ERR_RIGHTS, ERR_NETWORK, ERR_CONFLICT, ERR_OTHER = (
+    "token", "chat", "start", "rights", "network", "conflict", "other")
 
 
 def error_kind(err: TelegramError) -> str:
@@ -111,6 +140,8 @@ def error_kind(err: TelegramError) -> str:
         return ERR_RIGHTS
     if d.startswith("network:"):
         return ERR_NETWORK
+    if err.code == 409 or "conflict" in d:  # события уже забирает работающий процесс бота
+        return ERR_CONFLICT
     return ERR_OTHER
 
 
@@ -208,4 +239,25 @@ def build_admin_report(summary: Dict[str, Any], pending: List[Dict[str, Any]], i
         lines += [f"• {_e(p['batch'])}: {p['books']}" for p in pending]
     if inbox_url and (pending or notes.get("reconciliation_notes") or notes.get("genre_conflict_notes")):
         lines += ["", f'<a href="{_e(inbox_url)}">Открыть «Входящие»</a>']
+    return "\n".join(lines)
+
+
+PROMPT_UNITS = 8
+
+
+def build_batch_prompt(batch, options: List[str]) -> str:
+    """Сообщение админу о спорной порции (кнопки жанров — под ним).
+
+    batch — InboxBatch (name, books, units с author/series/files)."""
+    lines = [f"📥 <b>Ждёт решения:</b> {_e(batch.name)} — {batch.books} кн."]
+    for u in batch.units[:PROMPT_UNITS]:
+        who = _e(u.author or "—") + (f" / «{_e(u.series)}»" if u.series else "")
+        lines.append(f"• {who}: {len(u.files)} кн.")
+    if len(batch.units) > PROMPT_UNITS:
+        lines.append(f"… и ещё {len(batch.units) - PROMPT_UNITS}")
+    if options:
+        lines += ["", "Выберите жанр — он будет назначен <b>всей порции</b>, книги уйдут в библиотеку. "
+                      "Разные жанры для разных книг — во «Входящих»."]
+    else:
+        lines += ["", "Подсказки нет — выберите жанр во «Входящих»."]
     return "\n".join(lines)

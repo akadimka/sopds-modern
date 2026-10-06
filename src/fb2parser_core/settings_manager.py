@@ -54,13 +54,22 @@ class SettingsManager:
         self.load()
 
     def load(self):
-        """Load settings from config.json and app_settings.json."""
+        """Load settings from config.json and app_settings.json.
+
+        Порядок ключей — как в файлах, умолчания — в конец: иначе каждое
+        сохранение переставляло ключи общего (коммитящегося) app_settings.json
+        и оставляло в git бессмысленный дифф.
+        """
+        merged: Dict[str, Any] = {}
         if self.app_settings_path.exists():
             with open(self.app_settings_path, 'r', encoding='utf-8') as f:
-                self.settings.update(json.load(f))
+                merged.update(json.load(f))
         if self.config_path.exists():
             with open(self.config_path, 'r', encoding='utf-8') as f:
-                self.settings.update(json.load(f))
+                merged.update(json.load(f))
+        for key, value in self.settings.items():
+            merged.setdefault(key, value)
+        self.settings = merged
         self._loaded_settings = copy.deepcopy(self.settings)
 
     def _has_changes(self):

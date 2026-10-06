@@ -183,3 +183,27 @@ def test_token_field_is_not_a_password_field(client, env):
     # иначе менеджер паролей браузера подставляет логин сайта в соседние поля
     page = _login(client, True).get(reverse("web:settings")).content.decode("utf-8")
     assert 'type="password"' not in page and 'name="autosync_telegram_token"' in page
+
+
+@pytest.mark.django_db
+def test_find_chat_id_while_bot_process_runs_shows_remembered_chats(client, env, monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    import fb2parser_core.telegram_notify as tn
+    import fb2parser_web.fb2parser_bridge as bridge
+    from fb2parser_core.autosync_service import AutosyncJournal
+    from fb2parser_core.telegram_bot import remember_chats
+
+    class _Busy(_FakeClient):
+        def chats(self):
+            raise tn.TelegramError("Conflict: terminated by other getUpdates request", 409)
+
+    journal = AutosyncJournal(tmp_path / "journal.db")
+    remember_chats(journal, [{"update_id": 1, "channel_post": {"chat": {"id": -1001, "type": "channel",
+                                                                         "title": "Новинки"}}}])
+    monkeypatch.setattr(tn, "TelegramClient", _Busy)
+    monkeypatch.setattr(bridge, "get_autosync_service", lambda: SimpleNamespace(journal=journal))
+
+    body = _login(client, True).post(reverse("web:telegram_chats"),
+                                     {"autosync_telegram_token": "9:T"}).content.decode("utf-8")
+    assert "<code>-1001</code>" in body and "Новинки" in body

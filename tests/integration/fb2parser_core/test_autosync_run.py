@@ -90,6 +90,9 @@ def _setup(tmp_path, monkeypatch, mode):
     )
     monkeypatch.setattr(svc.settings, "get_library_path", lambda: str(lib))
     svc.cfg.update(mode=mode, watch_folder=str(watch), quiet_minutes=30, confidence=0.8)
+    # настоящий config.json может содержать токен и канал пользователя — тесты
+    # не должны их видеть (и тем более писать в его Telegram)
+    svc.cfg.update(telegram_token="", telegram_channel="", telegram_admin_chat="", telegram_proxy="", public_url="")
     return svc, lib, watch, sure, doubtful, compiled
 
 
@@ -234,7 +237,7 @@ class _FakeTelegram:
         self.sent = []
         self.fail = fail
 
-    def send_message(self, chat, text):
+    def send_message(self, chat, text, reply_markup=None):
         if self.fail:
             from fb2parser_core.telegram_notify import TelegramError
             raise TelegramError("network: timed out")
@@ -255,7 +258,7 @@ def test_notify_digest_once_and_admin_only_on_changes(tmp_path, monkeypatch):
 
     sent = notify(svc, svc.run(), client=tg)
 
-    assert sent == {"channel": "ok", "admin": "ok"}
+    assert sent == {"channel": "ok", "admin": "ok", "prompts": "ok"}
     channel = [t for c, t in tg.sent if c == "@news"]
     admin = [t for c, t in tg.sent if c == "42"]
     assert len(channel) == 1 and "Иванов Иван" in channel[0] and "Звезды" in channel[0]
@@ -299,3 +302,119 @@ def test_notify_does_nothing_without_token(tmp_path, monkeypatch):
     from fb2parser_core.autosync_service import notify
     svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
     assert notify(svc, svc.run(), client=_FakeTelegram()) == {}
+
+
+# ---------- Кнопки решений в Telegram (этап 5) ----------
+
+class _FakeBotAPI(_FakeTelegram):
+    def __init__(self, updates=None):
+        super().__init__()
+        self.updates = list(updates or [])
+        self.markups, self.edits, self.answers = [], [], []
+
+    def send_message(self, chat, text, reply_markup=None):
+        super().send_message(chat, text)
+        self.markups.append(reply_markup)
+        return {"message_id": len(self.sent), "chat": {"id": chat}, "text": text}
+
+    def edit_message(self, chat_id, message_id, text, reply_markup=None):
+        self.edits.append((chat_id, message_id, text, reply_markup))
+
+    def answer_callback(self, callback_id, text=""):
+        self.answers.append(text)
+
+    def get_updates(self, offset=None, timeout=0):
+        ups, self.updates = self.updates, []
+        return ups
+
+
+class _SyncExecutor:
+    def submit(self, fn, *args):
+        fn(*args)
+
+
+def _detective_batch(watch):
+    # тег уже содержит имя жанра — есть подсказка «Детектив», но нет якоря в библиотеке
+    return _book(watch / "Новая порция" / "Сидоров Сидор - Загадка.fb2", "Детектив", "Сидор", "Сидоров",
+                 "Загадка", 1)
+
+
+def _prompt_button(tg, genre):
+    for markup in tg.markups:
+        for row in (markup or {}).get("inline_keyboard", []):
+            for button in row:
+                if button["text"].endswith(genre) and "callback_data" in button:
+                    return button["callback_data"]
+    return None
+
+
+def test_prompt_with_genre_buttons_sent_once_per_batch(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    _detective_batch(watch)
+    tg = _FakeBotAPI()
+
+    notify(svc, svc.run(), client=tg)
+
+    prompts = [t for (c, t) in tg.sent if c == "42" and "Ждёт решения" in t]
+    assert any("Новая порция" in t for t in prompts)
+    assert _prompt_button(tg, "Детектив", ).startswith("d:")
+    assert any("Во «Входящие»" in b["text"] for m in tg.markups if m for row in m["inline_keyboard"] for b in row)
+
+    tg2 = _FakeBotAPI()
+    notify(svc, svc.run(), client=tg2)
+    assert not [t for (c, t) in tg2.sent if "Ждёт решения" in t]  # уже спрашивали
+
+
+def test_admin_button_press_syncs_whole_batch(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    from fb2parser_core.telegram_bot import AdminBot
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    book = _detective_batch(watch)
+    tg = _FakeBotAPI()
+    notify(svc, svc.run(), client=tg)
+    data = _prompt_button(tg, "Детектив")
+
+    bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
+    bot.on_callback(svc, tg, {"id": "cb1", "from": {"id": 42}, "data": data,
+                              "message": {"message_id": 7, "chat": {"id": 42}, "text": "Ждёт решения: Новая порция"}})
+
+    assert not book.exists()
+    assert any(p.relative_to(lib).parts[0] == "Детектив" for p in lib.rglob("*.fb2"))
+    final = tg.edits[-1]
+    assert final[1] == 7 and "✅" in final[2] and final[3] == {"inline_keyboard": []}
+
+
+def test_button_press_from_stranger_or_stale_key_does_nothing(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    from fb2parser_core.telegram_bot import AdminBot
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    book = _detective_batch(watch)
+    tg = _FakeBotAPI()
+    notify(svc, svc.run(), client=tg)
+    data = _prompt_button(tg, "Детектив")
+    bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
+
+    bot.on_callback(svc, tg, {"id": "1", "from": {"id": 999}, "data": data, "message": {}})
+    bot.on_callback(svc, tg, {"id": "2", "from": {"id": 42}, "data": "d:0000000000", "message": {}})
+
+    assert book.exists() and not tg.edits
+    assert "только администратор" in tg.answers[0] and "устарела" in tg.answers[1]
+
+
+def test_poll_answers_start_with_chat_id_and_remembers_chats(tmp_path, monkeypatch):
+    from fb2parser_core.telegram_bot import AdminBot, known_chats
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    tg = _FakeBotAPI(updates=[
+        {"update_id": 10, "message": {"chat": {"id": 555, "type": "private", "first_name": "Гость"}, "text": "/start"}},
+        {"update_id": 11, "channel_post": {"chat": {"id": -1009, "type": "channel", "title": "Новинки"}}},
+    ])
+    bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
+
+    assert bot.poll_once(None) == 12
+    assert tg.sent[0][0] == "555" and "<code>555</code>" in tg.sent[0][1]
+    assert {c["id"] for c in known_chats(svc.journal)} == {"555", "-1009"}

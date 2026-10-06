@@ -1108,6 +1108,13 @@ msgstr ""
 "Это не похоже на токен бота (цифры, двоеточие и длинный код, например "
 "123456789:AAH…) — скопируйте его из сообщения @BotFather."
 
+msgid ""
+"The bot process is running — showing the chats it has seen. You can also "
+"send /id to the bot."
+msgstr ""
+"Процесс бота запущен — показаны чаты, которые он видел. Свой chat id можно "
+"узнать, отправив боту /id."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
