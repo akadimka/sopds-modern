@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import logging
+import re
 from concurrent.futures import Executor, ThreadPoolExecutor
 from typing import Any, Dict, Optional
 
@@ -30,6 +31,8 @@ INTRO = ("Это бот библиотеки SOPDS — он ищет и прис
          "(или просто откройте ссылку оттуда).")
 HELP = "Напишите название книги, автора или серии — я поищу в библиотеке."
 NAV_PREFIXES = ("q", "a", "s", "b")  # экраны поиска — telegram_search.screen_for
+# переход из сводки канала: t.me/<бот>?start=s<id серии> / b<id книги>
+DEEP_LINK_RE = re.compile(r"^[sb]\d+$")
 
 
 def _e(s: str) -> str:
@@ -71,7 +74,11 @@ class LibraryHandler:
             if payload.lower().startswith("link_"):
                 self.link(service, client, chat_id, tg_user, payload)
                 return
-            client.send_message(chat_id, HELP if linked_user(tg_user["id"]) else INTRO)
+            reader = linked_user(tg_user["id"])
+            if reader is not None and DEEP_LINK_RE.match(payload):
+                self.open_deep_link(client, chat_id, payload)
+                return
+            client.send_message(chat_id, HELP if reader else INTRO)
             return
         user = linked_user(tg_user["id"])
         if user is None:
@@ -106,6 +113,16 @@ class LibraryHandler:
         screen = results_screen(store_query(text), 0)
         if screen is not None:
             client.send_message(chat_id, screen[0], reply_markup=screen[1])
+
+    def open_deep_link(self, client, chat_id, payload: str) -> None:
+        """Серия или книга из ссылки в сводке новинок — с кнопками скачивания."""
+        from .telegram_search import book_screen, series_screen
+        object_id = int(payload[1:])
+        screen = series_screen(object_id) if payload[0] == "s" else book_screen(object_id)
+        if screen is None:
+            client.send_message(chat_id, "Не нашлось — возможно, книга уже убрана из библиотеки. " + HELP)
+            return
+        client.send_message(chat_id, screen[0], reply_markup=screen[1])
 
     def on_callback(self, client, cq: Dict[str, Any]) -> None:
         """Переход по экранам поиска — в том же сообщении."""

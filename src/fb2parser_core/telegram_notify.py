@@ -229,12 +229,14 @@ def build_digest(rows: List[Dict[str, Any]], link: Optional[Callable[[Dict[str, 
             for series, books in sorted(tree[genre][author].items()):
                 if series:
                     label = f"«{_e(series)}»" + (f" — {len(books)} кн." if len(books) > 1 else "")
-                    url = link({"kind": "series", "series": series, "author": author, "genre": genre}) if link else None
+                    url = link({"kind": "series", "series": series, "author": author, "genre": genre,
+                                "path": books[0].get("library_path") or ""}) if link else None
                     lines.append(f"• {_e(author)}: " + (f'<a href="{_e(url)}">{label}</a>' if url else label))
                 else:
                     for b in books:
                         title = _e(b.get("title") or "")
-                        url = link({"kind": "book", "title": b.get("title") or "", "author": author}) if link else None
+                        url = link({"kind": "book", "title": b.get("title") or "", "author": author,
+                                    "path": b.get("library_path") or ""}) if link else None
                         shown = f'<a href="{_e(url)}">{title}</a>' if url and title else title
                         lines.append(f"• {_e(author)}" + (f": {shown}" if shown else ""))
     return "\n".join(lines)
