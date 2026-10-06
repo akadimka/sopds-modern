@@ -11,6 +11,7 @@ import html
 import json
 import logging
 import re
+import secrets
 import urllib.error
 import urllib.request
 from collections import OrderedDict, defaultdict
@@ -20,6 +21,8 @@ _log = logging.getLogger(__name__)
 
 API_URL = "https://api.telegram.org/bot{token}/{method}"
 MAX_MESSAGE = 4000  # лимит Telegram — 4096 символов; запас на разметку
+MAX_UPLOAD = 50 * 1024 * 1024  # лимит Bot API на отправку файла ботом
+UPLOAD_TIMEOUT = 300.0
 
 
 _TOKEN_RE = re.compile(r"\b\d{5,}:[A-Za-z0-9_-]{30,}\b")
@@ -51,12 +54,15 @@ class TelegramClient:
             self._open = urllib.request.build_opener(*handlers).open
 
     def call(self, method: str, _timeout: Optional[float] = None, **params) -> Any:
+        return self._post(method, json.dumps(params).encode("utf-8"), "application/json", _timeout)
+
+    def _post(self, method: str, body: bytes, content_type: str, _timeout: Optional[float] = None) -> Any:
         if not self.token:
             raise TelegramError("token is empty")
         req = urllib.request.Request(
             API_URL.format(token=self.token, method=method),
-            data=json.dumps(params).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            data=body,
+            headers={"Content-Type": content_type},
         )
         try:
             with self._open(req, timeout=_timeout or self.timeout) as resp:
@@ -91,6 +97,28 @@ class TelegramClient:
         if reply_markup is not None:
             params["reply_markup"] = reply_markup
         self.call("editMessageText", **params)
+
+    def send_document(self, chat_id, filename: str, data: bytes, caption: str = "") -> dict:
+        """Загрузить файл (multipart/form-data). Возвращает сообщение —
+        в нём document.file_id для повторной отправки без загрузки."""
+        boundary = "----sopds" + secrets.token_hex(12)
+        crlf = "\r\n"
+        parts = []
+        for name, value in (("chat_id", str(chat_id)), ("caption", caption), ("parse_mode", "HTML")):
+            if value:
+                parts.append((f'--{boundary}{crlf}Content-Disposition: form-data; name="{name}"'
+                              f'{crlf}{crlf}{value}{crlf}').encode("utf-8"))
+        safe_name = " ".join(filename.replace('"', "'").split())
+        head = (f'--{boundary}{crlf}Content-Disposition: form-data; name="document"; filename="{safe_name}"'
+                f'{crlf}Content-Type: application/octet-stream{crlf}{crlf}')
+        parts.append(head.encode("utf-8") + data + crlf.encode("ascii"))
+        parts.append(f"--{boundary}--{crlf}".encode("ascii"))
+        return self._post("sendDocument", b"".join(parts), f"multipart/form-data; boundary={boundary}",
+                          UPLOAD_TIMEOUT)
+
+    def send_document_id(self, chat_id, file_id: str, caption: str = "") -> dict:
+        """Повторная отправка уже загруженного в Telegram файла — мгновенно."""
+        return self.call("sendDocument", chat_id=chat_id, document=file_id, caption=caption, parse_mode="HTML")
 
     def answer_callback(self, callback_id: str, text: str = "") -> None:
         self.call("answerCallbackQuery", callback_query_id=callback_id, text=text)

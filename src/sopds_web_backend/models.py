@@ -39,3 +39,20 @@ class TelegramLink(models.Model):
     @property
     def linked(self) -> bool:
         return self.telegram_id is not None
+
+
+class TelegramFile(models.Model):
+    """Файл книги, уже загруженный в Telegram ботом библиотеки: повторно та
+    же книга в том же формате уходит по file_id мгновенно, без загрузки и
+    конвертации. filesize — чтобы заменённый файл книги не подменялся старым."""
+
+    book = models.ForeignKey("opds_catalog.Book", on_delete=models.CASCADE, related_name="telegram_files")
+    fmt = models.CharField(max_length=8)
+    filesize = models.IntegerField(default=0)
+    file_id = models.CharField(max_length=255)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Telegram file"
+        verbose_name_plural = "Telegram files"
+        constraints = [models.UniqueConstraint(fields=["book", "fmt"], name="telegram_file_book_fmt")]

@@ -270,6 +270,119 @@ def SaveProgress(request, book_id):
 # без авторизации даже при включённом SOPDS_AUTH; проверка на строке
 # ниже (`config.SOPDS_AUTH and request.user.is_authenticated`) только
 # решала, писать ли запись в bookshelf, а не пускать ли на сам эндпоинт.
+CONVERT_FORMATS = ("epub", "mobi", "azw3")
+
+
+class ConversionUnavailable(Exception):
+    """Формат не настроен (нет конвертера/временной папки) или книга не FB2."""
+
+
+class ConversionFailed(Exception):
+    """Конвертер не дал результата (ошибка, таймаут) или книгу не прочитать."""
+
+
+def _converter_path(convert_type: str) -> str:
+    return {
+        "epub": config.SOPDS_FB2TOEPUB,
+        "mobi": config.SOPDS_FB2TOMOBI,
+        "azw3": config.SOPDS_FB2TOAZW3,
+    }.get(convert_type) or ""
+
+
+def available_formats(book: Book) -> list:
+    """Форматы, в которых книгу можно получить — как кнопки на странице книги:
+    исходный, плюс EPUB/MOBI/AZW3 для FB2, если настроены конвертер и
+    временная папка."""
+    formats = [book.format]
+    if book.format == "fb2" and config.SOPDS_TEMP_DIR:
+        formats += [fmt for fmt in CONVERT_FORMATS if _converter_path(fmt)]
+    return formats
+
+
+def original_file(book: Book) -> tuple:
+    """(имя файла, содержимое) книги в исходном формате — как Download без zip."""
+    data = getFileData(book)
+    if data is None:
+        raise ConversionFailed("book file not found")
+    return os.path.basename(getFileName(book)), data.getvalue()
+
+
+def converted_filename(book: Book, convert_type: str) -> str:
+    # Баг №96: getFileName(book) может вернуть book.title (свободный текст
+    # из FB2-метаданных самой книги, если включён SOPDS_TITLE_AS_FILENAME)
+    # или book.filename (для CAT_ZIP/CAT_INP — сырое имя записи из ZIP,
+    # см. sopdscan.processzip) — ни то, ни другое не гарантированно чистое
+    # имя файла без каталожных компонентов. os.path.basename() гарантирует
+    # это перед использованием ниже как части пути.
+    base_name = os.path.splitext(os.path.basename(getFileName(book)))[0]
+    return f"{base_name}.{convert_type}"
+
+
+def convert_book(book: Book, convert_type: str) -> tuple:
+    """(имя файла, содержимое) книги, сконвертированной в EPUB/MOBI/AZW3.
+
+    Общая для страницы книги (ConvertFB2) и Telegram-бота библиотеки.
+    """
+    converter_path = _converter_path(convert_type)
+    if book.format != "fb2" or not converter_path or not config.SOPDS_TEMP_DIR:
+        raise ConversionUnavailable(convert_type)
+    dlfilename = converted_filename(book, convert_type)
+
+    # Читаем через общий utils.getFileData/get_fs_book_path — тот же хелпер,
+    # которым пользуются Download/Cover/ViewHtml. Раньше здесь путь для
+    # CAT_INP разбирался вручную (дублируя get_fs_book_path), а для
+    # CAT_ZIP/CAT_INP файл извлекался через z.extract(book.filename, ...)
+    # без запасного поиска имени в некорректной кодировке (get_infolist_filename),
+    # который есть в read_from_zipped_file — при несовпадении имени это
+    # падало необработанным KeyError вместо аккуратного 404.
+    tmp_fb2_path = None
+    if book.cat_type == opdsdb.CAT_NORMAL:
+        file_path = os.path.join(get_fs_book_path(book), os.path.basename(book.filename))
+    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+        file_data = getFileData(book)
+        if file_data is None:
+            raise ConversionFailed("book file not found")
+        # Баг №96: book.filename — сырое имя записи внутри ZIP/INP-архива,
+        # не гарантированно безопасное (см. sopdscan.processzip: имя берётся
+        # прямо из z.namelist()) — os.path.basename() перед вставкой во
+        # временный путь, иначе '../../../x' записал бы файл ЗА пределами
+        # SOPDS_TEMP_DIR.
+        tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, os.path.basename(book.filename))
+        with open(tmp_fb2_path, "wb") as f:
+            f.write(file_data.read())
+        file_path = tmp_fb2_path
+    else:
+        raise ConversionUnavailable(f"catalog type {book.cat_type}")
+
+    tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
+    try:
+        proc = subprocess.Popen(
+            [converter_path, file_path, tmp_conv_path],
+            stdout=subprocess.PIPE,
+        )
+        try:
+            proc.communicate(timeout=CONVERT_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.communicate()
+            logger.error(f"Converter {converter_path} timed out on {file_path}")
+            # Недописанный результат не отдаём.
+            if os.path.isfile(tmp_conv_path):
+                os.remove(tmp_conv_path)
+        if not os.path.isfile(tmp_conv_path):
+            raise ConversionFailed(f"{converter_path} produced no {convert_type}")
+        with open(tmp_conv_path, "rb") as fo:
+            return dlfilename, fo.read()
+    finally:
+        # временные файлы — и при успехе, и при сбое конвертации
+        for path in (tmp_fb2_path, tmp_conv_path):
+            if path:
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+
 @sopds_auth_validate
 def ConvertFB2(request, book_id, convert_type):
     """Выдача файла книги после конвертации в EPUB, MOBI или AZW3."""
@@ -282,95 +395,19 @@ def ConvertFB2(request, book_id, convert_type):
     if config.SOPDS_AUTH and request.user.is_authenticated:
         bookshelf.objects.get_or_create(user=request.user, book=book)
 
-    # Баг №96: getFileName(book) может вернуть book.title (свободный текст
-    # из FB2-метаданных самой книги, если включён SOPDS_TITLE_AS_FILENAME)
-    # или book.filename (для CAT_ZIP/CAT_INP — сырое имя записи из ZIP,
-    # см. sopdscan.processzip) — ни то, ни другое не гарантированно чистое
-    # имя файла без каталожных компонентов. os.path.basename() гарантирует
-    # это перед использованием ниже как части пути.
-    base_name = os.path.splitext(os.path.basename(getFileName(book)))[0]
-    dlfilename = f"{base_name}.{convert_type}"
+    try:
+        dlfilename, s = convert_book(book, convert_type)
+    except (ConversionUnavailable, ConversionFailed):
+        raise Http404 from None
 
-    if convert_type == "epub":
-        converter_path = config.SOPDS_FB2TOEPUB
-    elif convert_type == "mobi":
-        converter_path = config.SOPDS_FB2TOMOBI
-    elif convert_type == "azw3":
-        converter_path = config.SOPDS_FB2TOAZW3
-    else:
-        raise Http404
-    if not converter_path:
-        raise Http404
-
-    if not config.SOPDS_TEMP_DIR:
-        raise Http404
-
-    content_type = mime_detector.fmt(convert_type)
-
-    # Читаем через общий utils.getFileData/get_fs_book_path — тот же хелпер,
-    # которым пользуются Download/Cover/ViewHtml. Раньше здесь путь для
-    # CAT_INP разбирался вручную (дублируя get_fs_book_path), а для
-    # CAT_ZIP/CAT_INP файл извлекался через z.extract(book.filename, ...)
-    # без запасного поиска имени в некорректной кодировке (get_infolist_filename),
-    # который есть в read_from_zipped_file — при несовпадении имени это
-    # падало необработанным KeyError вместо аккуратного 404.
-    if book.cat_type == opdsdb.CAT_NORMAL:
-        tmp_fb2_path = None
-        file_path = os.path.join(get_fs_book_path(book), os.path.basename(book.filename))
-    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-        file_data = getFileData(book)
-        if file_data is None:
-            raise Http404
-        # Баг №96: book.filename — сырое имя записи внутри ZIP/INP-архива,
-        # не гарантированно безопасное (см. sopdscan.processzip: имя берётся
-        # прямо из z.namelist()) — os.path.basename() перед вставкой во
-        # временный путь, иначе '../../../x' записал бы файл ЗА пределами
-        # SOPDS_TEMP_DIR.
-        tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, os.path.basename(book.filename))
-        with open(tmp_fb2_path, "wb") as f:
-            f.write(file_data.read())
-        file_path = tmp_fb2_path
-
-    tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
-    proc = subprocess.Popen(
-        [converter_path, file_path, tmp_conv_path],
-        stdout=subprocess.PIPE,
+    encoded_name = quote(dlfilename, safe='')
+    ascii_name = dlfilename.encode('ascii', 'replace').decode()
+    response = HttpResponse()
+    response["Content-Type"] = mime_detector.fmt(convert_type)
+    response["Content-Disposition"] = (
+        f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded_name}'
     )
-    try:
-        proc.communicate(timeout=CONVERT_TIMEOUT_SECONDS)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.communicate()
-        logger.error(f"Converter {converter_path} timed out on {file_path}")
-        # Недописанный результат не отдаём.
-        if os.path.isfile(tmp_conv_path):
-            os.remove(tmp_conv_path)
-
-    if os.path.isfile(tmp_conv_path):
-        fo = codecs.open(tmp_conv_path, "rb")
-        s = fo.read()
-        encoded_name = quote(dlfilename, safe='')
-        ascii_name = dlfilename.encode('ascii', 'replace').decode()
-        response = HttpResponse()
-        response["Content-Type"] = content_type
-        response["Content-Disposition"] = (
-            f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded_name}'
-        )
-        response["Content-Transfer-Encoding"] = "binary"
-        response["Content-Length"] = str(len(s))
-        response.write(s)
-        fo.close()
-    else:
-        raise Http404
-
-    try:
-        if tmp_fb2_path:
-            os.remove(tmp_fb2_path)
-    except OSError:
-        pass
-    try:
-        os.remove(tmp_conv_path)
-    except OSError:
-        pass
-
+    response["Content-Transfer-Encoding"] = "binary"
+    response["Content-Length"] = str(len(s))
+    response.write(s)
     return response
