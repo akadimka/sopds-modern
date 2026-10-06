@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -28,6 +29,7 @@ from .sync_lock import SyncBusy, sync_lock
 _log = logging.getLogger(__name__)
 
 MODE_OFF, MODE_DRY_RUN, MODE_AUTO = "off", "dry_run", "auto"
+MODE_MANUAL = "manual"  # решения человека во «Входящих» (в журнале)
 
 # Итог запуска
 RUN_OFF = "off"
@@ -143,11 +145,44 @@ class AutosyncJournal:
             conn.row_factory = sqlite3.Row
             return [dict(r) for r in conn.execute(sql, (run_id, outcome) if outcome else (run_id,))]
 
-    def last_run(self) -> Optional[Dict[str, Any]]:
+    def last_run(self, modes: Optional[tuple] = None) -> Optional[Dict[str, Any]]:
+        sql, args = "SELECT * FROM autosync_runs", ()
+        if modes:
+            sql += f" WHERE mode IN ({', '.join('?' * len(modes))})"
+            args = tuple(modes)
         with self._connect() as conn:
             conn.row_factory = sqlite3.Row
-            row = conn.execute("SELECT * FROM autosync_runs ORDER BY id DESC LIMIT 1").fetchone()
+            row = conn.execute(sql + " ORDER BY id DESC LIMIT 1", args).fetchone()
             return dict(row) if row else None
+
+
+@dataclass
+class InboxUnit:
+    """Единица во «Входящих»: книги одной серии (или одна книга) порции."""
+    batch: str
+    author: str
+    series: str
+    genre: Optional[str]   # подсказка
+    share: float
+    blocker: str
+    signals: Dict[str, float]
+    files: List[str] = field(default_factory=list)
+
+    @property
+    def uid(self) -> str:
+        """Устойчивый id для формы: те же книги — тот же id между показом и отправкой."""
+        key = "\x1f".join([self.batch, self.author, self.series, *sorted(self.files)])
+        return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+
+
+@dataclass
+class InboxBatch:
+    name: str
+    units: List[InboxUnit] = field(default_factory=list)
+
+    @property
+    def books(self) -> int:
+        return sum(len(u.files) for u in self.units)
 
 
 def _signals_json(d: UnitDecision) -> Dict[str, float]:
@@ -322,51 +357,61 @@ class AutosyncService:
                                  "share": d.share, "signals": _signals_json(d)})
         return rows
 
-    def _make_assigner(self, root: Path):
+    def _make_assigner(self, root: Path, decided_by: str):
         from .genre_assign import GenreAssignmentService
 
         def record(fb2_path, content, _batch):
             batch = Path(fb2_path).resolve().relative_to(root).parts[0]
-            self.memory.record_from_text(content, batch, "auto")
+            self.memory.record_from_text(content, batch, decided_by)
 
         return GenreAssignmentService(logger=_LogAdapter(), codes_recorder=record)
 
     def _apply(self, folder: str, ready: List[BatchReport], result: RunResult, progress) -> List[Dict[str, Any]]:
         """Переписать жанр уверенных книг и синхронизировать их; спорные — оставить."""
         root = Path(folder)
-        decision_of: Dict[str, tuple] = {}
+        items: List[Dict[str, Any]] = []
         by_genre: Dict[str, List[str]] = defaultdict(list)
         hold: set = set()
         batches_to_sync = set()
         for r in ready:
             for d in r.decisions:
                 for f in d.files:
-                    decision_of[f] = (r.name, d)
+                    items.append({"batch": r.name, "source": f, "author": d.author, "series": d.series,
+                                  "genre": d.genre, "blocker": d.blocker, "share": d.share,
+                                  "signals": _signals_json(d), "decided": d.auto})
                 if d.auto and d.genre:
                     by_genre[d.genre].extend(d.files)
                     batches_to_sync.add(r.path)
                 else:
                     hold.update(d.files)
+        stats, failed = self._assign_and_sync(root, by_genre, hold, batches_to_sync, "auto", progress)
+        return self._outcome_rows(root, items, stats, failed, result)
 
+    def _assign_and_sync(self, root: Path, by_genre: Dict[str, List[str]], hold: set, batches: set,
+                         decided_by: str, progress) -> tuple:
+        """Жанр в файлы → обычная синхронизация порций → автокомпиляция.
+
+        Файлы — пути относительно root (как record.file_path у regen); hold —
+        файлы порций, которые остаются на месте. Возвращает (статистика
+        синхронизации, файлы, которым не удалось записать жанр).
+        """
         # 1) Жанр в файлы. Исходные коды запоминаются перед переписыванием.
-        assigner = self._make_assigner(root)
+        assigner = self._make_assigner(root, decided_by)
         failed = set()
         for genre, files in by_genre.items():
             done = assigner.assign_genre_to_files([str(root / f) for f in files], genre)
             failed |= {f for f in files if not done.get(str(root / f))}
-        hold |= failed
 
-        # 2) Обычная синхронизация порций, где есть уверенные книги.
+        # 2) Обычная синхронизация порций.
         if progress:
-            progress(f"Синхронизация {len(batches_to_sync)} порций…")
+            progress(f"Синхронизация {len(batches)} порций…")
         if self._sync_factory:
             sync = self._sync_factory()
         else:
             from .synchronization import SynchronizationService
             sync = SynchronizationService(self.config_path)
         sync.last_scan_path = root
-        stats = sync.synchronize(log_callback=_log.info, allowed_folders=batches_to_sync, hold_files=hold) or {}
-        result.notes = {k: stats.get(k) or [] for k in ("reconciliation_notes", "genre_conflict_notes")}
+        stats = sync.synchronize(log_callback=_log.info, allowed_folders=batches, hold_files=hold | failed) or {}
 
         # 3) Автокомпиляция серий у затронутых авторов — как в ручной синхронизации.
         touched = stats.get("touched_author_dirs") or set()
@@ -380,19 +425,24 @@ class AutosyncService:
                 compile_fn(str(sync.library_path), config_path=self.config_path, filter_paths=touched)
             except Exception:
                 _log.exception("autosync: сбой автокомпиляции")
+        return stats, failed
 
-        # 4) Журнал.
+    @staticmethod
+    def _outcome_rows(root: Path, items: List[Dict[str, Any]], stats: dict, failed: set,
+                      result: RunResult) -> List[Dict[str, Any]]:
+        """Строки журнала: судьба каждой книги после синхронизации."""
+        result.notes = {k: stats.get(k) or [] for k in ("reconciliation_notes", "genre_conflict_notes")}
         moved = {m["source"]: m for m in stats.get("moved_books") or []}
         rows = []
-        for f, (batch, d) in decision_of.items():
-            row = {"batch": batch, "source": f, "author": d.author, "series": d.series, "genre": d.genre,
-                   "blocker": d.blocker, "share": d.share, "signals": _signals_json(d)}
+        for item in items:
+            row = {k: v for k, v in item.items() if k != "decided"}
+            f = item["source"]
             m = moved.get(f)
             if m:
                 row.update(outcome=OUTCOME_MOVED, library_path=m["path"], title=m.get("title") or "",
-                           author=m.get("author") or d.author, series=m.get("series") or d.series)
+                           author=m.get("author") or item["author"], series=m.get("series") or item["series"])
                 result.moved.append(row)
-            elif not d.auto:
+            elif not item["decided"]:
                 row["outcome"] = OUTCOME_PENDING
                 result.pending += 1
             elif (root / f).exists():
@@ -403,6 +453,77 @@ class AutosyncService:
                 result.removed += 1
             rows.append(row)
         return rows
+
+    # ---------- «Входящие» ----------
+    def inbox(self) -> List[InboxBatch]:
+        """Книги последнего запуска (авто или пробного), ждущие человека и
+        всё ещё лежащие в папке наблюдения, — по порциям и единицам."""
+        folder = self.cfg["watch_folder"]
+        run = self.journal.last_run(modes=(MODE_DRY_RUN, MODE_AUTO))
+        if not folder or not run:
+            return []
+        root = Path(folder).resolve()
+        units: Dict[tuple, InboxUnit] = {}
+        for row in self.journal.books(run["id"]):
+            if row["outcome"] not in (OUTCOME_PENDING, OUTCOME_KEPT):
+                continue
+            if not (root / row["source"]).exists():
+                continue  # уже решено (перемещено) или убрано вручную
+            key = (row["batch"], row["author"], row["series"], row["genre"], row["blocker"])
+            unit = units.get(key)
+            if unit is None:
+                unit = units[key] = InboxUnit(batch=row["batch"], author=row["author"], series=row["series"],
+                                              genre=row["genre"], share=row["share"] or 0.0,
+                                              blocker=row["blocker"], signals=json.loads(row["signals"] or "{}"))
+            unit.files.append(row["source"])
+        batches: Dict[str, InboxBatch] = {}
+        for unit in units.values():
+            unit.files.sort()
+            batches.setdefault(unit.batch, InboxBatch(unit.batch)).units.append(unit)
+        for b in batches.values():
+            b.units.sort(key=lambda u: (-len(u.files), u.author, u.series))
+        return sorted(batches.values(), key=lambda b: b.name.lower())
+
+    def decide(self, batch: str, choices: Dict[str, str],
+               progress: Optional[Callable[[str], None]] = None) -> RunResult:
+        """Решения человека по порции из «Входящих»: {id единицы: жанр}.
+        Выбранные единицы получают жанр и синхронизируются; остальные книги
+        порции остаются на месте."""
+        result = RunResult(MODE_MANUAL, RUN_DONE)
+        inbox = {b.name: b for b in self.inbox()}
+        if batch not in inbox:
+            result.status, result.error = RUN_ERROR, f"порция «{batch}» не найдена во «Входящих»"
+            return result
+        root = Path(self.cfg["watch_folder"]).resolve()
+        units = {u.uid: u for u in inbox[batch].units}
+        chosen = {uid: g for uid, g in choices.items() if g and uid in units}
+        if not chosen:
+            result.status, result.error = RUN_ERROR, "не выбран ни один жанр"
+            return result
+        try:
+            with sync_lock(self.lock_path, "inbox"):
+                result.run_id = self.journal.start_run(MODE_MANUAL)
+                by_genre: Dict[str, List[str]] = defaultdict(list)
+                items: List[Dict[str, Any]] = []
+                for uid, genre in chosen.items():
+                    u = units[uid]
+                    by_genre[genre].extend(u.files)
+                    items += [{"batch": batch, "source": f, "author": u.author, "series": u.series, "genre": genre,
+                               "blocker": "", "share": u.share, "signals": u.signals, "decided": True}
+                              for f in u.files]
+                decided = {i["source"] for i in items}
+                batch_dir = root / batch
+                hold = {os.path.relpath(os.path.join(d, n), root)
+                        for d, _s, names in os.walk(batch_dir) for n in names if is_book_file(n)} - decided
+                stats, failed = self._assign_and_sync(root, by_genre, hold, {str(batch_dir)}, "user", progress)
+                rows = self._outcome_rows(root, items, stats, failed, result)
+                self.journal.add_books(result.run_id, rows)
+                self.journal.finish_run(result.run_id, result.status, {
+                    "batch": batch, "moved": len(result.moved), "kept": result.kept,
+                    "removed": result.removed, "notes": result.notes})
+        except SyncBusy as busy:
+            result.status, result.error = RUN_BUSY, f"синхронизацию сейчас выполняет: {busy.owner}"
+        return result
 
 
 class _LogAdapter:

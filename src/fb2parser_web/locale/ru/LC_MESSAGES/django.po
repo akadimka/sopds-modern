@@ -1542,3 +1542,134 @@ msgstr ""
 msgid ""
 "Automatic synchronization is running right now — try again in a few minutes."
 msgstr "Сейчас идёт автосинхронизация — повторите через несколько минут."
+
+msgid "Inbox"
+msgstr "Входящие"
+
+msgid "📥 Inbox"
+msgstr "📥 Входящие"
+
+msgid ""
+"Books from the watch folder that autosync could not decide on with "
+"confidence. The suggested genre is preselected: check it, change it where "
+"needed and synchronize the batch. Books left at “keep” stay in the watch "
+"folder."
+msgstr ""
+"Книги из папки наблюдения, по которым автосинхронизация не смогла уверенно "
+"принять решение. Предлагаемый жанр уже выбран: проверьте его, где нужно — "
+"поменяйте, и синхронизируйте порцию. Книги, оставленные на «оставить», "
+"остаются в папке наблюдения."
+
+msgid "Mode:"
+msgstr "Режим:"
+
+msgid "Automatic"
+msgstr "Автоматический"
+
+msgid "Dry run"
+msgstr "Пробный"
+
+msgid "Off"
+msgstr "Выключено"
+
+msgid "Watch folder:"
+msgstr "Папка наблюдения:"
+
+msgid "Last run:"
+msgstr "Последний запуск:"
+
+msgid "Autosync is off."
+msgstr "Автосинхронизация выключена."
+
+msgid "▶ Process now"
+msgstr "▶ Обработать сейчас"
+
+msgid "Nothing is waiting for a decision."
+msgstr "Решения ничего не ждёт."
+
+msgid "For every row:"
+msgstr "Для всех строк:"
+
+msgid "— keep in the watch folder —"
+msgstr "— оставить в папке наблюдения —"
+
+msgid "Apply to all"
+msgstr "Применить ко всем"
+
+msgid "Author / series"
+msgstr "Автор / серия"
+
+msgid "Why not automatic"
+msgstr "Почему не автоматически"
+
+msgid "suggested: %(genre)s"
+msgstr "предлагается: %(genre)s"
+
+msgid "Synchronize the batch"
+msgstr "Синхронизировать порцию"
+
+msgid "⏳ Processing the watch folder..."
+msgstr "⏳ Обработка папки наблюдения..."
+
+msgid "⏳ Synchronizing the batch..."
+msgstr "⏳ Синхронизация порции..."
+
+msgid ""
+"Another synchronization is running right now — try again in a few minutes."
+msgstr "Сейчас идёт другая синхронизация — повторите через несколько минут."
+
+msgid "Autosync is off — choose a mode in the settings."
+msgstr "Автосинхронизация выключена — выберите режим в настройках."
+
+msgid ""
+"Done: moved %(moved)s, waiting for a decision %(pending)s, kept by the "
+"synchronization %(kept)s, removed as duplicates %(removed)s."
+msgstr ""
+"Готово: перемещено %(moved)s, ждут решения %(pending)s, оставлено "
+"синхронизацией %(kept)s, удалено как дубликаты %(removed)s."
+
+msgid "Refresh the page"
+msgstr "Обновить страницу"
+
+msgid "Choose a genre for at least one book."
+msgstr "Выберите жанр хотя бы для одной книги."
+
+msgid "no genre signals at all"
+msgstr "нет никаких сигналов о жанре"
+
+msgid "the genre votes are split"
+msgstr "голоса за жанр разделились"
+
+msgid "the genre signals are too weak"
+msgstr "сигналы о жанре слишком слабые"
+
+msgid "new batch: nothing in the library to rely on yet"
+msgstr "новая порция: в библиотеке пока не на что опереться"
+
+msgid "could not write the genre into the file"
+msgstr "не удалось записать жанр в файл"
+
+msgid "kept by the synchronization (author check or series genre conflict)"
+msgstr "оставлено синхронизацией (сверка автора или конфликт жанра серии)"
+
+msgid "series in the library"
+msgstr "серия в библиотеке"
+
+msgid "publisher series"
+msgstr "издательская серия"
+
+msgid "genre codes"
+msgstr "коды жанра"
+
+msgid "author profile"
+msgstr "профиль автора"
+
+msgid "whole batch"
+msgstr "вся порция"
+
+msgid "%(n)s book"
+msgid_plural "%(n)s books"
+msgstr[0] "%(n)s книга"
+msgstr[1] "%(n)s книги"
+msgstr[2] "%(n)s книг"
+msgstr[3] "%(n)s книги"

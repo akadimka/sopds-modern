@@ -1,0 +1,32 @@
+{% load i18n %}
+{% if state.running %}
+<div id="inbox-status"
+     hx-get="{% url 'fb2parser:inbox_status' %}"
+     hx-trigger="every 2s"
+     hx-target="#inbox-status"
+     hx-swap="outerHTML">
+    <div class="callout primary">
+        <strong>{% if state.kind == 'run' %}{% trans "⏳ Processing the watch folder..." %}{% else %}{% trans "⏳ Synchronizing the batch..." %}{% endif %}</strong>
+        {% if state.current %}
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; overflow-wrap:anywhere;">{{ state.current }}</div>
+        {% endif %}
+    </div>
+</div>
+{% elif state.done %}
+<div id="inbox-status">
+    {% if state.status == 'error' %}
+    <div class="callout alert">❌ {{ state.error }}</div>
+    {% elif state.status == 'busy' %}
+    <div class="callout warning">{% trans "Another synchronization is running right now — try again in a few minutes." %}</div>
+    {% elif state.status == 'off' %}
+    <div class="callout warning">{% trans "Autosync is off — choose a mode in the settings." %}</div>
+    {% else %}
+    <div class="callout success">
+        ✅ {% blocktrans with moved=state.moved pending=state.pending kept=state.kept removed=state.removed %}Done: moved {{ moved }}, waiting for a decision {{ pending }}, kept by the synchronization {{ kept }}, removed as duplicates {{ removed }}.{% endblocktrans %}
+        <a href="{% url 'fb2parser:inbox' %}">{% trans "Refresh the page" %}</a>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div id="inbox-status"></div>
+{% endif %}

@@ -10,6 +10,9 @@ import os
 import sqlite3
 import time
 import zipfile
+from types import SimpleNamespace
+
+import pytest
 
 from fb2parser_core.autosync_service import (
     MODE_AUTO,
@@ -144,3 +147,81 @@ def test_run_is_skipped_while_manual_sync_holds_the_lock(tmp_path, monkeypatch):
 
     assert result.status == RUN_BUSY and "web" in result.error
     assert sure.exists()
+
+
+# ---------- «Входящие» (этап 3) ----------
+
+def test_inbox_lists_doubtful_book_and_decision_syncs_it(tmp_path, monkeypatch):
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    svc.run()
+
+    batches = svc.inbox()
+    assert [b.name for b in batches] == ["Чужая порция"]
+    unit = batches[0].units[0]
+    assert unit.files == [str(doubtful.relative_to(watch))] and unit.blocker
+
+    result = svc.decide("Чужая порция", {unit.uid: "Детектив"})
+
+    assert result.status == RUN_DONE, result.error
+    assert len(result.moved) == 1 and not doubtful.exists()
+    moved = lib / result.moved[0]["library_path"]
+    assert moved.relative_to(lib).parts[0] == "Детектив" and _genre_of(moved) == "Детектив"
+    assert svc.inbox() == []
+    with sqlite3.connect(svc.memory.db_path) as conn:
+        assert ("unknown_code", "Чужая порция", "user") in conn.execute(
+            "SELECT codes, batch, decided_by FROM orig_codes").fetchall()
+
+
+def test_decision_keeps_unchosen_books_of_the_batch(tmp_path, monkeypatch):
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    second = _book(watch / "Чужая порция" / "Сидоров Сидор - Другое.fb2", "unknown_code", "Сидор", "Сидоров",
+                   "Другое", 1)
+    svc.run()
+    units = {u.files[0]: u for u in svc.inbox()[0].units}
+    chosen = units[str(doubtful.relative_to(watch))]
+
+    svc.decide("Чужая порция", {chosen.uid: "Детектив"})
+
+    assert not doubtful.exists() and second.exists()
+    assert [u.files for b in svc.inbox() for u in b.units] == [[str(second.relative_to(watch))]]
+
+
+def test_decision_for_unknown_batch_is_an_error(tmp_path, monkeypatch):
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    assert svc.decide("Нет такой", {"x": "Детектив"}).status == "error"
+
+
+@pytest.mark.django_db
+def test_inbox_page_and_decide_view(tmp_path, monkeypatch, client, settings):
+    from django.contrib.auth.models import User
+    from django.urls import reverse
+
+    import fb2parser_web.fb2parser_bridge as bridge
+    import fb2parser_web.views as views
+
+    settings.STORAGES = {**settings.STORAGES,
+                         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    svc.run()
+    monkeypatch.setattr(bridge, "get_autosync_service", lambda: svc)
+    client.force_login(User.objects.create_user("staff", password="Kx7#vQ2!mLp9", is_staff=True))
+
+    page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+    unit = svc.inbox()[0].units[0]
+    assert "Чужая порция" in page and f'name="unit_{unit.uid}"' in page
+
+    empty = client.post(reverse("fb2parser:inbox_decide"), {"batch": "Чужая порция"}).content.decode("utf-8")
+    assert "callout alert" in empty and doubtful.exists()
+
+    # фоновую задачу выполняем синхронно — проверяем её связку с ядром
+    class _SyncThread:
+        def __init__(self, target, args=(), daemon=None):
+            self.target, self.args = target, args
+
+        def start(self):
+            self.target(*self.args)
+
+    monkeypatch.setattr(views, "threading", SimpleNamespace(Thread=_SyncThread))
+    client.post(reverse("fb2parser:inbox_decide"), {"batch": "Чужая порция", f"unit_{unit.uid}": "Детектив"})
+    assert not doubtful.exists()
+    assert views.inbox_job.get()["moved"] == 1

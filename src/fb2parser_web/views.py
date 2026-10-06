@@ -3491,3 +3491,129 @@ def settings_conv_op(request):
     else:
         return JsonResponse({'error': 'unknown action'}, status=400)
     return JsonResponse({'ok': True, 'conversions': convs})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# «Входящие» автосинхронизации — docs/watch-folder-autosync-design.md
+# ═══════════════════════════════════════════════════════════════════════════
+
+inbox_job = JobState("fb2parser:inbox", {
+    "running": False, "done": False, "kind": "", "current": "", "log": [],
+    "status": "", "error": "", "mode": "", "moved": 0, "pending": 0, "kept": 0, "removed": 0,
+})
+
+_INBOX_BLOCKERS = {
+    "no_signal": _lazy("no genre signals at all"),
+    "low_share": _lazy("the genre votes are split"),
+    "low_score": _lazy("the genre signals are too weak"),
+    "no_anchor": _lazy("new batch: nothing in the library to rely on yet"),
+    "assign_failed": _lazy("could not write the genre into the file"),
+    "sync_kept": _lazy("kept by the synchronization (author check or series genre conflict)"),
+}
+
+_INBOX_SIGNALS = {
+    "series": _lazy("series in the library"),
+    "pub": _lazy("publisher series"),
+    "codes": _lazy("genre codes"),
+    "profile": _lazy("author profile"),
+    "batch": _lazy("whole batch"),
+}
+
+
+def _inbox_genre_choices(svc):
+    """Жанры для выбора: дерево жанров, затем жанровые папки библиотеки,
+    которых нет в дереве (их тоже выбирал пользователь)."""
+    from fb2parser_core.library_memory import NO_GENRE_FOLDER
+    names = list(svc.gm.all_genre_names())
+    library = svc.settings.get_library_path()
+    if library and os.path.isdir(library):
+        extra = sorted(e.name for e in os.scandir(library)
+                       if e.is_dir() and e.name not in names and e.name != NO_GENRE_FOLDER)
+        names += extra
+    return names
+
+
+def _inbox_signal_text(signals):
+    shown = sorted(((w, k) for k, w in signals.items() if w >= 0.5), reverse=True)[:3]
+    parts = []
+    for w, key in shown:
+        kind, _sep, genre = key.partition(":")
+        parts.append(f"{_INBOX_SIGNALS.get(kind, kind)} → {genre} ({w:.1f})")
+    return "; ".join(parts)
+
+
+@staff_member_required(login_url="/web/login/")
+def inbox(request):
+    from .fb2parser_bridge import get_autosync_service
+    svc = get_autosync_service()
+    batches = svc.inbox()
+    for b in batches:
+        for u in b.units:
+            u.blocker_text = _INBOX_BLOCKERS.get(u.blocker, u.blocker)
+            u.signal_text = _inbox_signal_text(u.signals)
+            u.title = u.series or (os.path.basename(u.files[0]) if len(u.files) == 1 else "")
+    last = svc.journal.last_run(modes=("dry_run", "auto"))
+    state = inbox_job.get()
+    if state.get("done") and not state.get("running"):
+        inbox_job.reset()  # итог прошлой задачи показываем один раз
+    return render(request, "fb2parser/inbox.html", _ctx(
+        "inbox", _("Inbox"), batches=batches, genres=_inbox_genre_choices(svc),
+        autosync=svc.cfg, last_run=last, state=state,
+    ))
+
+
+def _run_inbox_thread(kind, batch=None, choices=None):
+    from django import db
+
+    from .fb2parser_bridge import get_autosync_service
+    db.connections.close_all()
+    try:
+        log = []
+
+        def progress(msg):
+            log.append(msg)
+            inbox_job.update(current=msg, log=log[-50:])
+
+        svc = get_autosync_service()
+        res = svc.run(progress=progress) if kind == "run" else svc.decide(batch, choices or {}, progress=progress)
+        inbox_job.update(done=True, running=False, status=res.status, error=res.error, mode=res.mode,
+                         moved=len(res.moved), pending=res.pending, kept=res.kept, removed=res.removed)
+    except Exception as exc:
+        logging.getLogger(__name__).exception("inbox job failed")
+        inbox_job.update(done=True, running=False, status="error", error=str(exc))
+    finally:
+        db.connections.close_all()
+        inbox_job.finish()
+
+
+def _render_inbox_status(state):
+    return _render_job("fb2parser/inbox_status.html", state)
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def inbox_run(request):
+    """«Обработать сейчас»: запуск автосинхронизации вне расписания."""
+    if not inbox_job.try_start(kind="run"):
+        return _render_inbox_status(inbox_job.get())
+    threading.Thread(target=_run_inbox_thread, args=("run",), daemon=True).start()
+    return _render_inbox_status(inbox_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def inbox_decide(request):
+    """Решение по порции: жанр каждой выбранной единицы → синхронизация."""
+    batch = request.POST.get("batch", "")
+    choices = {k[len("unit_"):]: v.strip() for k, v in request.POST.items() if k.startswith("unit_") and v.strip()}
+    if not batch or not choices:
+        return _render_inbox_status({"done": True, "status": "error", "error": _("Choose a genre for at least one book.")})
+    if not inbox_job.try_start(kind="decide", current=batch):
+        return _render_inbox_status(inbox_job.get())
+    threading.Thread(target=_run_inbox_thread, args=("decide", batch, choices), daemon=True).start()
+    return _render_inbox_status(inbox_job.get())
+
+
+@staff_member_required(login_url="/web/login/")
+def inbox_status(request):
+    return _render_inbox_status(inbox_job.get())

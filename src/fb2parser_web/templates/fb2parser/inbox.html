@@ -1,0 +1,105 @@
+{% extends "fb2parser/base.html" %}
+{% load i18n %}
+{% block content %}
+<h2>{% trans "📥 Inbox" %}</h2>
+<p style="color:var(--text-muted); font-size:0.88rem; margin-top:-0.5rem;">
+    {% trans "Books from the watch folder that autosync could not decide on with confidence. The suggested genre is preselected: check it, change it where needed and synchronize the batch. Books left at “keep” stay in the watch folder." %}
+</p>
+
+<div class="card">
+    <div class="card-section" style="display:flex; flex-wrap:wrap; align-items:center; gap:1rem;">
+        {% csrf_token %}
+        <div style="flex:1; min-width:16rem; font-size:0.9rem;">
+            <div>{% trans "Mode:" %}
+                <strong>{% if autosync.mode == 'auto' %}{% trans "Automatic" %}{% elif autosync.mode == 'dry_run' %}{% trans "Dry run" %}{% else %}{% trans "Off" %}{% endif %}</strong>
+            </div>
+            <div>{% trans "Watch folder:" %} <code style="overflow-wrap:anywhere;">{{ autosync.watch_folder|default:"—" }}</code></div>
+            <div>{% trans "Last run:" %} {{ last_run.finished|default:"—" }}</div>
+            {% if autosync.mode == 'off' %}
+            <div style="color:#c0392b;">{% trans "Autosync is off." %} <a href="{% url 'web:settings' %}">{% trans "Settings" %}</a></div>
+            {% endif %}
+        </div>
+        <button class="button" style="margin:0;"
+                hx-post="{% url 'fb2parser:inbox_run' %}"
+                hx-target="#inbox-status"
+                hx-swap="outerHTML">
+            {% trans "▶ Process now" %}
+        </button>
+    </div>
+</div>
+
+{% include "fb2parser/inbox_status.html" %}
+
+{% if not batches %}
+<div class="callout secondary">{% trans "Nothing is waiting for a decision." %}</div>
+{% endif %}
+
+{% for b in batches %}
+<div class="card">
+    <div class="card-divider">
+        <strong>{{ b.name }}</strong>&nbsp;—&nbsp;{% blocktrans count n=b.books %}{{ n }} book{% plural %}{{ n }} books{% endblocktrans %}
+    </div>
+    <div class="card-section">
+        <form hx-post="{% url 'fb2parser:inbox_decide' %}" hx-target="#inbox-status" hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="batch" value="{{ b.name }}">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
+                <span>{% trans "For every row:" %}</span>
+                <select class="inbox-all" style="max-width:20rem; margin:0;">
+                    <option value="">{% trans "— keep in the watch folder —" %}</option>
+                    {% for g in genres %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+                </select>
+                <button type="button" class="button secondary tiny" style="margin:0;" onclick="inboxSetAll(this)">{% trans "Apply to all" %}</button>
+            </div>
+            <div style="overflow-x:auto;">
+            <table class="unstriped" style="font-size:0.88rem;">
+                <thead>
+                    <tr>
+                        <th>{% trans "Author / series" %}</th>
+                        <th>{% trans "Books" %}</th>
+                        <th>{% trans "Why not automatic" %}</th>
+                        <th>{% trans "Genre" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for u in b.units %}
+                    <tr>
+                        <td>
+                            {{ u.author|default:"—" }}{% if u.title %} / {{ u.title }}{% endif %}
+                            {% if u.signal_text %}<div style="color:var(--text-muted); font-size:0.8rem;">{{ u.signal_text }}</div>{% endif %}
+                        </td>
+                        <td>
+                            <details>
+                                <summary>{{ u.files|length }}</summary>
+                                {% for f in u.files %}<div style="font-size:0.78rem; overflow-wrap:anywhere;">{{ f }}</div>{% endfor %}
+                            </details>
+                        </td>
+                        <td>
+                            {{ u.blocker_text }}
+                            {% if u.genre %}<div style="color:var(--text-muted); font-size:0.8rem;">{% blocktrans with genre=u.genre %}suggested: {{ genre }}{% endblocktrans %} ({% widthratio u.share 1 100 %}%)</div>{% endif %}
+                        </td>
+                        <td>
+                            <select name="unit_{{ u.uid }}" style="min-width:12rem; margin:0;">
+                                <option value="">{% trans "— keep in the watch folder —" %}</option>
+                                {% for g in genres %}<option value="{{ g }}"{% if g == u.genre %} selected{% endif %}>{{ g }}</option>{% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            <button type="submit" class="button" style="margin:0.5rem 0 0;">{% trans "Synchronize the batch" %}</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function inboxSetAll(btn) {
+    var form = btn.closest('form');
+    var value = form.querySelector('select.inbox-all').value;
+    form.querySelectorAll('select[name^="unit_"]').forEach(function(s) { s.value = value; });
+}
+</script>
+{% endblock %}
