@@ -1,4 +1,5 @@
 import logging
+import re
 import threading
 from random import randint
 from typing import Any
@@ -16,8 +17,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.html import escape
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _lazy
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
 
@@ -715,8 +718,104 @@ def _apply_autosync_settings(sm, post):
         values['quiet_minutes'] = min(1440, max(1, int(post.get('autosync_quiet_minutes', values['quiet_minutes']))))
     except ValueError:
         pass
+
+    # Telegram. Токен в страницу не выводится: пустое поле — оставить сохранённый.
+    token = post.get('autosync_telegram_token', '').strip()
+    if token:
+        values['telegram_token'] = token
+    elif post.get('autosync_telegram_token_clear'):
+        values['telegram_token'] = ''
+    for key, label in (('telegram_channel', _('Channel for new books')),
+                       ('telegram_admin_chat', _('Administrator chat id'))):
+        value = post.get(f'autosync_{key}', '').strip()
+        if value and not _TELEGRAM_CHAT_RE.match(value):
+            errors.append(_('%(field)s: expected @name or a numeric id.') % {'field': label})
+            continue
+        values[key] = value
+    values['telegram_proxy'] = post.get('autosync_telegram_proxy', '').strip()
+    url = post.get('autosync_public_url', '').strip().rstrip('/')
+    if url and not url.startswith(('http://', 'https://')):
+        errors.append(_('The site address must start with http:// or https://.'))
+    else:
+        values['public_url'] = url
     sm.settings['autosync'] = values
     return errors
+
+
+_TELEGRAM_CHAT_RE = re.compile(r'^(-?\d+|@[A-Za-z]\w{3,})$')
+
+
+def _telegram_form_settings(request):
+    """Токен/чаты/прокси из формы (ещё не сохранённые), иначе — сохранённые."""
+    import os
+
+    from fb2parser_core.settings_manager import SettingsManager
+    cfg = SettingsManager(os.path.normpath(os.path.join(
+        os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json"))).get_autosync_settings()
+    for key in ('telegram_token', 'telegram_channel', 'telegram_admin_chat', 'telegram_proxy'):
+        value = request.POST.get(f'autosync_{key}', '').strip()
+        if value:
+            cfg[key] = value
+    return cfg
+
+
+_TELEGRAM_HINTS = {
+    'token': _lazy('Wrong bot token — copy it again from the @BotFather message.'),
+    'start': _lazy('The bot cannot write first — open the bot in Telegram and press Start.'),
+    'chat': _lazy('Chat not found — check the id; for a private chat press Start in the bot first.'),
+    'rights': _lazy('The bot cannot post to the channel — add it as an administrator allowed to post messages.'),
+    'network': _lazy('The server cannot reach api.telegram.org — check the network or set a proxy.'),
+}
+
+
+def _telegram_error_html(err):
+    from fb2parser_core.telegram_notify import error_kind
+    hint = _TELEGRAM_HINTS.get(error_kind(err), '')
+    return f'❌ {escape(str(hint))} <span style="color:var(--text-muted);">({escape(err.description)})</span>'
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def telegram_chats(request):
+    """«Найти chat id»: кто писал боту и где он видел сообщения (getUpdates)."""
+    from fb2parser_core.telegram_notify import TelegramClient, TelegramError
+    if not request.user.is_superuser:
+        return HttpResponse(status=403)
+    cfg = _telegram_form_settings(request)
+    try:
+        chats = TelegramClient(cfg['telegram_token'], cfg['telegram_proxy']).chats()
+    except TelegramError as err:
+        return HttpResponse(_telegram_error_html(err))
+    if not chats:
+        return HttpResponse(escape(str(_('Nobody has written to the bot yet — press Start in the bot (and post '
+                                         'anything to the channel), then try again.'))))
+    rows = "".join(f'<tr><td><code>{escape(c["id"])}</code></td><td>{escape(c["type"])}</td>'
+                   f'<td>{escape(c["title"])}</td></tr>' for c in chats)
+    return HttpResponse(f'<table class="unstriped" style="font-size:0.85rem; max-width:40rem;">{rows}</table>')
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def telegram_test(request):
+    """«Отправить тестовое сообщение» — в канал и админу."""
+    from fb2parser_core.telegram_notify import TelegramClient, TelegramError
+    if not request.user.is_superuser:
+        return HttpResponse(status=403)
+    cfg = _telegram_form_settings(request)
+    client = TelegramClient(cfg['telegram_token'], cfg['telegram_proxy'])
+    text = str(_('✅ SOPDS: test message. Autosync notifications will arrive here.'))
+    lines = []
+    for key, label in (('telegram_channel', _('Channel for new books')),
+                       ('telegram_admin_chat', _('Administrator chat id'))):
+        if not cfg[key]:
+            lines.append(f'{escape(str(label))}: {escape(str(_("not set")))}')
+            continue
+        try:
+            client.send_message(cfg[key], text)
+            lines.append(f'{escape(str(label))}: ✅ {escape(str(_("sent")))}')
+        except TelegramError as err:
+            lines.append(f'{escape(str(label))}: {_telegram_error_html(err)}')
+    return HttpResponse('<br>'.join(lines))
 
 
 def _exec_field_error(user, field, value):
@@ -812,6 +911,7 @@ def sopds_settings(request):
 
     sopds = sm.settings.get('sopds', {})
     comments = sopds.get('_comments', {})
+    autosync = sm.get_autosync_settings()
     args = {
         'breadcrumbs': [_('Settings')],
         'saved': request.GET.get('saved') == '1',
@@ -819,7 +919,8 @@ def sopds_settings(request):
         'can_edit_exec_fields': request.user.is_superuser,
         'sopds': sopds,
         'comments': comments,
-        'autosync': sm.get_autosync_settings(),
+        'autosync': {k: v for k, v in autosync.items() if k != 'telegram_token'},
+        'telegram_token_tail': autosync['telegram_token'][-4:],
     }
     return render(request, 'sopds_settings.html', args)
 

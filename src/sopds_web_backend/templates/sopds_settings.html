@@ -402,6 +402,69 @@
         <div class="s-hint">{% trans "A batch whose files changed more recently than this (or that still has unfinished downloads) waits for the next run." %}</div>
     </div>
 
+    <div class="s-section-title">{% trans "Telegram notifications" %}</div>
+
+    <div class="s-field">
+        <div class="s-hint" style="line-height:1.5;">
+            {% trans "New books go to a channel as one digest after each scheduled scan; the administrator gets a private message when something needs a decision or the run failed." %}<br>
+            {% trans "1. In Telegram, create a bot with @BotFather (/newbot) and paste its token here." %}<br>
+            {% trans "2. Create a channel and add the bot to it as an administrator allowed to post messages." %}<br>
+            {% trans "3. Open your bot and press Start; post anything to the channel; then press “Find chat id”." %}<br>
+            {% trans "4. Save and press “Send a test message”." %}
+        </div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Bot token" %}</label>
+        <input type="password" name="autosync_telegram_token" id="autosync-telegram-token" value="" autocomplete="off"
+               placeholder="{% if telegram_token_tail %}{% blocktrans with tail=telegram_token_tail %}saved (…{{ tail }}) — leave empty to keep{% endblocktrans %}{% else %}123456789:AA…{% endif %}"
+               {% if not can_edit_exec_fields %} readonly{% endif %}>
+        {% if telegram_token_tail and can_edit_exec_fields %}
+        <label class="s-check"><input type="checkbox" name="autosync_telegram_token_clear"> <span>{% trans "Remove the saved token" %}</span></label>
+        {% endif %}
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Channel for new books" %}</label>
+        <input type="text" name="autosync_telegram_channel" value="{{ autosync.telegram_channel }}"
+               placeholder="@my_library_news / -100…"{% if not can_edit_exec_fields %} readonly{% endif %}>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Administrator chat id" %}</label>
+        <input type="text" name="autosync_telegram_admin_chat" value="{{ autosync.telegram_admin_chat }}"
+               placeholder="123456789"{% if not can_edit_exec_fields %} readonly{% endif %}>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Proxy (optional)" %}</label>
+        <input type="text" name="autosync_telegram_proxy" value="{{ autosync.telegram_proxy }}"
+               placeholder="http://user:password@host:3128"{% if not can_edit_exec_fields %} readonly{% endif %}>
+        <div class="s-hint">{% trans "Only if the server cannot reach api.telegram.org directly." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Site address for links" %}</label>
+        <input type="text" name="autosync_public_url" value="{{ autosync.public_url }}"
+               placeholder="https://books.example.org"{% if not can_edit_exec_fields %} readonly{% endif %}>
+        <div class="s-hint">{% trans "Used for links to the new books and to the Inbox in the messages. Without it the messages have no links." %}</div>
+    </div>
+
+    {% if can_edit_exec_fields %}
+    <div class="s-field">
+        <div class="s-row" style="gap:0.5rem;">
+            <button type="button" class="button secondary tiny" style="margin:0;"
+                    hx-post="{% url 'web:telegram_chats' %}" hx-include="#autosync-telegram-token, [name='autosync_telegram_proxy']"
+                    hx-target="#telegram-result">{% trans "Find chat id" %}</button>
+            <button type="button" class="button secondary tiny" style="margin:0;"
+                    hx-post="{% url 'web:telegram_test' %}"
+                    hx-include="#autosync-telegram-token, [name='autosync_telegram_channel'], [name='autosync_telegram_admin_chat'], [name='autosync_telegram_proxy']"
+                    hx-target="#telegram-result">{% trans "Send a test message" %}</button>
+        </div>
+        <div id="telegram-result" style="margin-top:0.5rem;"></div>
+    </div>
+    {% endif %}
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 

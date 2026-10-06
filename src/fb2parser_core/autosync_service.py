@@ -83,6 +83,7 @@ class RunResult:
     pending: int = 0
     kept: int = 0
     removed: int = 0
+    would_move: int = 0  # пробный режим: столько уехало бы
     error: str = ""
     # заметки синхронизации, требующие человека (сверка автора, конфликт жанра серии)
     notes: Dict[str, list] = field(default_factory=dict)
@@ -99,6 +100,7 @@ CREATE TABLE IF NOT EXISTS autosync_books (
     outcome TEXT, blocker TEXT, share REAL, signals TEXT
 );
 CREATE INDEX IF NOT EXISTS autosync_books_run ON autosync_books(run_id);
+CREATE TABLE IF NOT EXISTS autosync_state (key TEXT PRIMARY KEY, value TEXT);
 """
 
 
@@ -109,6 +111,10 @@ class AutosyncJournal:
         self.db_path = str(db_path)
         with self._connect() as conn:
             conn.executescript(_JOURNAL_SCHEMA)
+            try:  # журналы этапа 2 — без отметки «объявлено в канале»
+                conn.execute("ALTER TABLE autosync_runs ADD COLUMN announced INTEGER DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass
 
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path, timeout=30)
@@ -144,6 +150,34 @@ class AutosyncJournal:
         with self._connect() as conn:
             conn.row_factory = sqlite3.Row
             return [dict(r) for r in conn.execute(sql, (run_id, outcome) if outcome else (run_id,))]
+
+    def unannounced(self) -> tuple:
+        """Перемещённые книги завершённых запусков, ещё не объявленные в
+        канале, и id этих запусков (включая запуски без перемещений)."""
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            run_ids = [r["id"] for r in conn.execute(
+                "SELECT id FROM autosync_runs WHERE finished IS NOT NULL AND COALESCE(announced, 0) = 0")]
+            if not run_ids:
+                return [], []
+            marks = ", ".join("?" * len(run_ids))
+            rows = [dict(r) for r in conn.execute(
+                f"SELECT * FROM autosync_books WHERE outcome = ? AND run_id IN ({marks})",
+                (OUTCOME_MOVED, *run_ids))]
+        return rows, run_ids
+
+    def mark_announced(self, run_ids: List[int]) -> None:
+        with self._connect() as conn:
+            conn.executemany("UPDATE autosync_runs SET announced = 1 WHERE id = ?", [(i,) for i in run_ids])
+
+    def get_state(self, key: str) -> Optional[str]:
+        with self._connect() as conn:
+            row = conn.execute("SELECT value FROM autosync_state WHERE key = ?", (key,)).fetchone()
+            return row[0] if row else None
+
+    def set_state(self, key: str, value: str) -> None:
+        with self._connect() as conn:
+            conn.execute("INSERT OR REPLACE INTO autosync_state(key, value) VALUES (?, ?)", (key, value))
 
     def last_run(self, modes: Optional[tuple] = None) -> Optional[Dict[str, Any]]:
         sql, args = "SELECT * FROM autosync_runs", ()
@@ -333,13 +367,14 @@ class AutosyncService:
             else:
                 rows = self._decision_rows(ready, MODE_DRY_RUN if mode == MODE_DRY_RUN else MODE_AUTO)
                 result.pending = sum(1 for r in rows if r["outcome"] == OUTCOME_PENDING)
+                result.would_move = sum(1 for r in rows if r["outcome"] == OUTCOME_WOULD_MOVE)
             self.journal.add_books(run_id, rows)
         except Exception as e:  # журнал фиксирует сбой; уведомление админу — по result.status
             _log.exception("autosync: сбой запуска")
             result.status, result.error = RUN_ERROR, str(e)
         self.journal.finish_run(run_id, result.status, {
             "moved": len(result.moved), "pending": result.pending, "kept": result.kept,
-            "removed": result.removed, "error": result.error,
+            "removed": result.removed, "would_move": result.would_move, "error": result.error,
             "batches": {r.name: r.status for r in result.reports},
             "notes": result.notes,
         })
@@ -524,6 +559,62 @@ class AutosyncService:
         except SyncBusy as busy:
             result.status, result.error = RUN_BUSY, f"синхронизацию сейчас выполняет: {busy.owner}"
         return result
+
+
+def notify(service: "AutosyncService", result: RunResult,
+           link: Optional[Callable[[Dict[str, Any]], Optional[str]]] = None,
+           client=None) -> Dict[str, str]:
+    """Telegram после планового запуска (и скана библиотеки): новинки — в
+    канал, итог — админу. Ошибки Telegram не пробрасываются: их видно в
+    логе и в возвращаемом {адресат: "ok" | причина}."""
+    from .telegram_notify import (
+        TelegramClient,
+        TelegramError,
+        build_admin_report,
+        build_digest,
+        explain_error,
+    )
+
+    cfg = service.cfg
+    if not cfg["telegram_token"] or result.status in (RUN_OFF, RUN_BUSY):
+        return {}
+    client = client or TelegramClient(cfg["telegram_token"], cfg["telegram_proxy"])
+    sent: Dict[str, str] = {}
+    journal = service.journal
+
+    # Канал: всё перемещённое и ещё не объявленное (в т.ч. решения из «Входящих»).
+    if cfg["telegram_channel"]:
+        rows, run_ids = journal.unannounced()
+        try:
+            if rows:
+                client.send_message(cfg["telegram_channel"], build_digest(rows, link))
+                sent["channel"] = "ok"
+            journal.mark_announced(run_ids)
+        except TelegramError as e:
+            sent["channel"] = explain_error(e)
+            _log.warning("autosync: сводка в канал не отправлена: %s", e.description)
+
+    # Админ: только когда есть что сказать — иначе каждую ночь одно и то же.
+    if cfg["telegram_admin_chat"]:
+        pending = [{"batch": b.name, "books": b.books} for b in service.inbox()]
+        signature = json.dumps(sorted((p["batch"], p["books"]) for p in pending), ensure_ascii=False)
+        notes = result.notes or {}
+        worth = (result.status == RUN_ERROR or result.moved or result.kept or result.would_move
+                 or any(notes.values()) or signature != journal.get_state("admin_pending"))
+        if worth:
+            base = (cfg["public_url"] or "").rstrip("/")
+            summary = {"status": result.status, "mode": result.mode, "moved": len(result.moved),
+                       "kept": result.kept, "removed": result.removed, "would_move": result.would_move,
+                       "error": result.error, "notes": notes}
+            try:
+                client.send_message(cfg["telegram_admin_chat"],
+                                    build_admin_report(summary, pending, f"{base}/fb2parser/inbox/" if base else ""))
+                journal.set_state("admin_pending", signature)
+                sent["admin"] = "ok"
+            except TelegramError as e:
+                sent["admin"] = explain_error(e)
+                _log.warning("autosync: отчёт админу не отправлен: %s", e.description)
+    return sent
 
 
 class _LogAdapter:

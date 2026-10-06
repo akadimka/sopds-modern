@@ -225,3 +225,77 @@ def test_inbox_page_and_decide_view(tmp_path, monkeypatch, client, settings):
     client.post(reverse("fb2parser:inbox_decide"), {"batch": "Чужая порция", f"unit_{unit.uid}": "Детектив"})
     assert not doubtful.exists()
     assert views.inbox_job.get()["moved"] == 1
+
+
+# ---------- Telegram (этап 4) ----------
+
+class _FakeTelegram:
+    def __init__(self, fail=False):
+        self.sent = []
+        self.fail = fail
+
+    def send_message(self, chat, text):
+        if self.fail:
+            from fb2parser_core.telegram_notify import TelegramError
+            raise TelegramError("network: timed out")
+        self.sent.append((chat, text))
+
+
+def _with_telegram(svc):
+    svc.cfg.update(telegram_token="1:A", telegram_channel="@news", telegram_admin_chat="42",
+                   public_url="https://books.example.org")
+    return svc
+
+
+def test_notify_digest_once_and_admin_only_on_changes(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    tg = _FakeTelegram()
+
+    sent = notify(svc, svc.run(), client=tg)
+
+    assert sent == {"channel": "ok", "admin": "ok"}
+    channel = [t for c, t in tg.sent if c == "@news"]
+    admin = [t for c, t in tg.sent if c == "42"]
+    assert len(channel) == 1 and "Иванов Иван" in channel[0] and "Звезды" in channel[0]
+    assert "Ждут решения: 1" in admin[0] and "https://books.example.org/fb2parser/inbox/" in admin[0]
+
+    tg.sent.clear()
+    assert notify(svc, svc.run(), client=tg) == {}  # ничего нового — тишина
+    assert tg.sent == []
+
+
+def test_notify_announces_inbox_decisions_in_next_digest(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    notify(svc, svc.run(), client=_FakeTelegram())
+    unit = svc.inbox()[0].units[0]
+    svc.decide("Чужая порция", {unit.uid: "Детектив"})
+
+    tg = _FakeTelegram()
+    notify(svc, svc.run(), client=tg)
+
+    channel = [t for c, t in tg.sent if c == "@news"]
+    assert len(channel) == 1 and "Детектив" in channel[0] and "Петров" in channel[0]
+    assert "Иванов Иван" not in channel[0]  # уже объявлено в прошлый раз
+
+
+def test_telegram_failure_does_not_break_and_retries_later(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+
+    sent = notify(svc, svc.run(), client=_FakeTelegram(fail=True))
+    assert "нет связи" in sent["channel"]
+
+    tg = _FakeTelegram()
+    notify(svc, svc.run(), client=tg)
+    assert any(c == "@news" and "Иванов Иван" in t for c, t in tg.sent)
+
+
+def test_notify_does_nothing_without_token(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    assert notify(svc, svc.run(), client=_FakeTelegram()) == {}

@@ -977,6 +977,130 @@ msgstr ""
 msgid "Choose the watch folder to enable autosync."
 msgstr "Чтобы включить автосинхронизацию, выберите папку наблюдения."
 
+msgid "Telegram notifications"
+msgstr "Уведомления в Telegram"
+
+msgid ""
+"New books go to a channel as one digest after each scheduled scan; the "
+"administrator gets a private message when something needs a decision or the "
+"run failed."
+msgstr ""
+"Новые книги публикуются в канале одной сводкой после каждого планового "
+"скана; администратор получает личное сообщение, когда что-то требует решения"
+" или запуск завершился сбоем."
+
+msgid ""
+"1. In Telegram, create a bot with @BotFather (/newbot) and paste its token "
+"here."
+msgstr ""
+"1. В Telegram создайте бота через @BotFather (/newbot) и вставьте сюда его "
+"токен."
+
+msgid ""
+"2. Create a channel and add the bot to it as an administrator allowed to "
+"post messages."
+msgstr ""
+"2. Создайте канал и добавьте в него бота администратором с правом "
+"«Публикация сообщений»."
+
+msgid ""
+"3. Open your bot and press Start; post anything to the channel; then press "
+"“Find chat id”."
+msgstr ""
+"3. Откройте своего бота и нажмите «Старт»; опубликуйте в канале любое "
+"сообщение; затем нажмите «Найти chat id»."
+
+msgid "4. Save and press “Send a test message”."
+msgstr "4. Сохраните и нажмите «Отправить тестовое сообщение»."
+
+msgid "Bot token"
+msgstr "Токен бота"
+
+msgid "saved (…%(tail)s) — leave empty to keep"
+msgstr "сохранён (…%(tail)s) — оставьте пустым, чтобы не менять"
+
+msgid "Remove the saved token"
+msgstr "Удалить сохранённый токен"
+
+msgid "Channel for new books"
+msgstr "Канал для новинок"
+
+msgid "Administrator chat id"
+msgstr "Chat id администратора"
+
+msgid "Proxy (optional)"
+msgstr "Прокси (необязательно)"
+
+msgid "Only if the server cannot reach api.telegram.org directly."
+msgstr "Только если сервер не может напрямую достучаться до api.telegram.org."
+
+msgid "Site address for links"
+msgstr "Адрес сайта для ссылок"
+
+msgid ""
+"Used for links to the new books and to the Inbox in the messages. Without it"
+" the messages have no links."
+msgstr ""
+"Используется для ссылок на новые книги и на «Входящие» в сообщениях. Без "
+"него сообщения будут без ссылок."
+
+msgid "Find chat id"
+msgstr "Найти chat id"
+
+msgid "Send a test message"
+msgstr "Отправить тестовое сообщение"
+
+msgid "%(field)s: expected @name or a numeric id."
+msgstr "%(field)s: нужен @адрес или числовой id."
+
+msgid "The site address must start with http:// or https://."
+msgstr "Адрес сайта должен начинаться с http:// или https://."
+
+msgid "Wrong bot token — copy it again from the @BotFather message."
+msgstr "Неверный токен бота — скопируйте его заново из сообщения @BotFather."
+
+msgid "The bot cannot write first — open the bot in Telegram and press Start."
+msgstr ""
+"Бот не может написать первым — откройте бота в Telegram и нажмите «Старт»."
+
+msgid ""
+"Chat not found — check the id; for a private chat press Start in the bot "
+"first."
+msgstr ""
+"Чат не найден — проверьте id; для личного чата сначала нажмите «Старт» у "
+"бота."
+
+msgid ""
+"The bot cannot post to the channel — add it as an administrator allowed to "
+"post messages."
+msgstr ""
+"Бот не может публиковать в канале — добавьте его администратором с правом "
+"«Публикация сообщений»."
+
+msgid ""
+"The server cannot reach api.telegram.org — check the network or set a proxy."
+msgstr ""
+"Сервер не может достучаться до api.telegram.org — проверьте сеть или укажите"
+" прокси."
+
+msgid ""
+"Nobody has written to the bot yet — press Start in the bot (and post "
+"anything to the channel), then try again."
+msgstr ""
+"Боту ещё никто не писал — нажмите «Старт» у бота (и опубликуйте что-нибудь в"
+" канале), затем повторите."
+
+msgid "✅ SOPDS: test message. Autosync notifications will arrive here."
+msgstr ""
+"✅ SOPDS: тестовое сообщение. Сюда будут приходить уведомления "
+"автосинхронизации."
+
+msgid "not set"
+msgstr "не задан"
+
+msgid "sent"
+msgstr "отправлено"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
