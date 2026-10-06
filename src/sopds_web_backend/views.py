@@ -720,9 +720,16 @@ def _apply_autosync_settings(sm, post):
         pass
 
     # Telegram. Токен в страницу не выводится: пустое поле — оставить сохранённый.
-    token = post.get('autosync_telegram_token', '').strip()
-    if token:
-        values['telegram_token'] = token
+    from fb2parser_core.telegram_notify import extract_token
+    pasted = post.get('autosync_telegram_token', '').strip()
+    if pasted:
+        # часто вставляют всё сообщение @BotFather — берём из него сам токен
+        token = extract_token(pasted)
+        if token:
+            values['telegram_token'] = token
+        else:
+            errors.append(_('This does not look like a bot token (digits, a colon and a long code, e.g. '
+                            '123456789:AAH…) — copy it from the @BotFather message.'))
     elif post.get('autosync_telegram_token_clear'):
         values['telegram_token'] = ''
     for key, label in (('telegram_channel', _('Channel for new books')),
@@ -752,10 +759,11 @@ def _telegram_form_settings(request):
     from fb2parser_core.settings_manager import SettingsManager
     cfg = SettingsManager(os.path.normpath(os.path.join(
         os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json"))).get_autosync_settings()
+    from fb2parser_core.telegram_notify import extract_token
     for key in ('telegram_token', 'telegram_channel', 'telegram_admin_chat', 'telegram_proxy'):
         value = request.POST.get(f'autosync_{key}', '').strip()
         if value:
-            cfg[key] = value
+            cfg[key] = (extract_token(value) or value) if key == 'telegram_token' else value
     return cfg
 
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 from collections import OrderedDict, defaultdict
@@ -19,6 +20,16 @@ _log = logging.getLogger(__name__)
 
 API_URL = "https://api.telegram.org/bot{token}/{method}"
 MAX_MESSAGE = 4000  # лимит Telegram — 4096 символов; запас на разметку
+
+
+_TOKEN_RE = re.compile(r"\b\d{5,}:[A-Za-z0-9_-]{30,}\b")
+
+
+def extract_token(text: str) -> str:
+    """Токен бота из вставленного текста: в поле часто вставляют всё
+    сообщение @BotFather целиком. '' — токена в тексте нет."""
+    m = _TOKEN_RE.search(text or "")
+    return m.group(0) if m else ""
 
 
 class TelegramError(Exception):
@@ -31,7 +42,7 @@ class TelegramError(Exception):
 class TelegramClient:
     def __init__(self, token: str, proxy: str = "", timeout: float = 20.0,
                  opener: Optional[Callable[..., Any]] = None):
-        self.token = token.strip()
+        self.token = extract_token(token) or token.strip()
         self.timeout = timeout
         if opener is not None:
             self._open = opener

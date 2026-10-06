@@ -103,16 +103,16 @@ def _tg(env, **extra):
 @pytest.mark.django_db
 def test_telegram_token_saved_but_never_rendered(client, env):
     c = _login(client, True)
-    _post(c, **_tg(env, autosync_telegram_token="777:SECRETTOKEN"))
+    _post(c, **_tg(env, autosync_telegram_token="7770001:SECRETTOKENxxxxxxxxxxxxxxxxxxxxxxxxxx"))
     saved = env["autosync"]()
-    assert saved["telegram_token"] == "777:SECRETTOKEN" and saved["telegram_channel"] == "@library_news"
+    assert saved["telegram_token"] == "7770001:SECRETTOKENxxxxxxxxxxxxxxxxxxxxxxxxxx" and saved["telegram_channel"] == "@library_news"
     assert saved["public_url"] == "https://books.example.org"
 
     page = c.get(reverse("web:settings")).content.decode("utf-8")
-    assert "SECRETTOKEN" not in page and "OKEN" in page  # только хвост в подсказке
+    assert "SECRETTOKEN" not in page and "…xxxx" in page  # только хвост в подсказке
 
     _post(c, **_tg(env))  # пустое поле — токен остаётся
-    assert env["autosync"]()["telegram_token"] == "777:SECRETTOKEN"
+    assert env["autosync"]()["telegram_token"] == "7770001:SECRETTOKENxxxxxxxxxxxxxxxxxxxxxxxxxx"
     _post(c, **_tg(env, autosync_telegram_token_clear="on"))
     assert env["autosync"]()["telegram_token"] == ""
 
@@ -155,3 +155,31 @@ def test_telegram_buttons_superuser_only(client, env, monkeypatch):
     assert _FakeClient.sent == [("9:T", "@library_news"), ("9:T", "123456789")]
     chats = su.post(reverse("web:telegram_chats"), {"autosync_telegram_token": "9:T"}).content.decode("utf-8")
     assert "<code>42</code>" in chats and "Дмитрий" in chats
+
+
+_BOTFATHER = ("Done! Congratulations on your new bot. You will find it at t.me/my_news_bot. "
+              "Use this token to access the HTTP API:\n"
+              "7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw\n"
+              "Keep your token secure and store it safely, it can be used by anyone to control your bot.")
+
+
+@pytest.mark.django_db
+def test_whole_botfather_message_pasted_saves_only_the_token(client, env):
+    _post(_login(client, True), **_tg(env, autosync_telegram_token=_BOTFATHER))
+    assert env["autosync"]()["telegram_token"] == "7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+
+
+@pytest.mark.django_db
+def test_text_without_token_is_rejected_and_old_token_kept(client, env):
+    c = _login(client, True)
+    _post(c, **_tg(env, autosync_telegram_token="7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"))
+    response = _post(c, **_tg(env, autosync_telegram_token="admin-password"))
+    assert response.status_code == 200
+    assert env["autosync"]()["telegram_token"] == "7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+
+
+@pytest.mark.django_db
+def test_token_field_is_not_a_password_field(client, env):
+    # иначе менеджер паролей браузера подставляет логин сайта в соседние поля
+    page = _login(client, True).get(reverse("web:settings")).content.decode("utf-8")
+    assert 'type="password"' not in page and 'name="autosync_telegram_token"' in page

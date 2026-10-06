@@ -108,3 +108,10 @@ def test_admin_report_variants():
     notes = build_admin_report({"status": "done", "mode": "auto", "moved": 2,
                                 "notes": {"reconciliation_notes": [1, 2]}}, [])
     assert "Перемещено: 2" in notes and "сверка автора: 2" in notes
+
+
+def test_extract_token_from_botfather_message():
+    from fb2parser_core.telegram_notify import extract_token
+    msg = "Use this token to access the HTTP API:\n7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw\nKeep it secure"
+    assert extract_token(msg) == "7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
+    assert extract_token("admin") == ""

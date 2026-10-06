@@ -416,7 +416,10 @@
 
     <div class="s-field">
         <label>{% trans "Bot token" %}</label>
-        <input type="password" name="autosync_telegram_token" id="autosync-telegram-token" value="" autocomplete="off"
+        {% comment %}Не type="password": иначе менеджер паролей браузера считает страницу формой входа
+           и подставляет логин/пароль сайта в соседние поля и в токен.{% endcomment %}
+        <input type="text" name="autosync_telegram_token" id="autosync-telegram-token" value=""
+               autocomplete="off" spellcheck="false" data-lpignore="true" data-1p-ignore
                placeholder="{% if telegram_token_tail %}{% blocktrans with tail=telegram_token_tail %}saved (…{{ tail }}) — leave empty to keep{% endblocktrans %}{% else %}123456789:AA…{% endif %}"
                {% if not can_edit_exec_fields %} readonly{% endif %}>
         {% if telegram_token_tail and can_edit_exec_fields %}
