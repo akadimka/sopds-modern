@@ -117,12 +117,17 @@ WSGI_APPLICATION = "sopds.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 ENGINE = env("SOPDS_DB_ENGINE")
+# Несколько процессов (gunicorn, sopds-scan/watch, фетчеры рейтингов) пишут
+# в одну базу. Отложенная транзакция «чтение, потом запись» (update_or_create)
+# при чужой записи в промежутке падает с «database is locked» сразу, без
+# ожидания timeout; IMMEDIATE берёт блокировку записи в начале atomic.
+SQLITE_OPTIONS = {"timeout": 30, "transaction_mode": "IMMEDIATE"}
 if ENGINE == "sqlite":
     default_database = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / env("SOPDS_DB_NAME", default="sopds.db"),
         # WAL-режим: позволяет веб-серверу и сканеру работать одновременно без блокировок
-        "OPTIONS": {"timeout": 30},
+        "OPTIONS": SQLITE_OPTIONS,
     }
 elif ENGINE == "postgres":
     default_database = {
