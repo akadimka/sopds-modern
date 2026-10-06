@@ -7,7 +7,7 @@
      hx-swap="outerHTML">
 
     <div class="callout primary" style="margin-bottom:1rem;">
-        <strong>{% trans "⏳ Scanning..." %}</strong>
+        <strong>{% if state.stage == 'autosync' %}{% trans "⏳ Autosync of the watch folder..." %}{% else %}{% trans "⏳ Scanning..." %}{% endif %}</strong>
         {% if state.current %}
         <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
             {% trans "File:" %} {{ state.current }}
@@ -36,6 +36,9 @@
         <tr><td>{% trans "Errors:" %}</td><td style="color:{% if state.bad_books %}#c0392b{% else %}inherit{% endif %}">{{ state.bad_books }}</td></tr>
         <tr><td>{% trans "Total processed:" %}</td><td>{{ state.processed }}</td></tr>
     </table>
+    {% if state.autosync %}
+    <div class="callout secondary" style="margin-top:0.8rem; font-size:0.9rem;">{% include "autosync_scan_summary.html" with a=state.autosync %}</div>
+    {% endif %}
     {% if state.bad_list %}
     <details style="margin-top:1rem;">
         <summary style="cursor:pointer; font-size:0.9rem; color:#c0392b;">▶ {% trans "Show errors" %} ({{ state.bad_list|length }})</summary>

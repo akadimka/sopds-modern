@@ -33,6 +33,8 @@ scan_job = JobState("fb2parser:scan", {
     "books_skipped": 0,
     "bad_books": 0,
     "bad_list": [],   # [(rel_path/name, error_msg), ...]
+    "stage": "",      # "autosync" | "scan" — см. opds_catalog/autosync_hooks.py
+    "autosync": None,  # итог автосинхронизации перед полным сканом
 })
 
 
@@ -73,12 +75,32 @@ def _count_files(root_path):
         return 0
 
 
+def _is_scoped_scan(root_path) -> bool:
+    """Точечный пересмотр подпапки библиотеки (а не всей библиотеки)."""
+    if not config.SOPDS_ROOT_LIB:
+        return False
+    norm_root = os.path.normcase(os.path.normpath(root_path))
+    norm_lib_root = os.path.normcase(os.path.normpath(config.SOPDS_ROOT_LIB))
+    rel_path = os.path.relpath(root_path, config.SOPDS_ROOT_LIB)
+    return norm_root != norm_lib_root and not rel_path.startswith("..")
+
+
 def _run_scan_thread(root_path):
     """Тело фонового потока сканирования."""
     from django import db
 
     db.connections.close_all()
+    autosync = None
     try:
+        # Полный скан — как плановый: сначала автосинхронизация папки
+        # наблюдения (книги попадут в этот же скан), Telegram — после скана.
+        # Точечный пересмотр подпапки её не запускает: автосинхронизация
+        # раскладывает книги по всей библиотеке, а такой скан их не увидит.
+        if not _is_scoped_scan(root_path):
+            from opds_catalog.autosync_hooks import run_autosync, summary
+            scan_job.update(stage="autosync")
+            autosync = run_autosync()
+            scan_job.update(stage="scan", autosync=summary(autosync))
         total = _count_files(root_path)
         scan_job.update(total=total, processed=0, current="")
 
@@ -104,14 +126,8 @@ def _run_scan_thread(root_path):
         # scan_path + books_del_phisical_scoped + cleanup_orphan_entities) —
         # переиспользуем тот же приём здесь, когда root_path — настоящая
         # подпапка библиотеки (не сам её корень).
-        norm_root = os.path.normcase(os.path.normpath(root_path))
-        norm_lib_root = os.path.normcase(os.path.normpath(config.SOPDS_ROOT_LIB or ""))
         rel_path = os.path.relpath(root_path, config.SOPDS_ROOT_LIB) if config.SOPDS_ROOT_LIB else None
-        is_scoped = bool(
-            config.SOPDS_ROOT_LIB and norm_root != norm_lib_root
-            and rel_path and not rel_path.startswith("..")
-        )
-        if is_scoped:
+        if _is_scoped_scan(root_path):
             opdsdb.avail_check_prepare_scoped(rel_path)
             scanner.scan_path(root_path)
             opdsdb.books_del_scoped(rel_path, config.SOPDS_DELETE_LOGICAL)
@@ -125,6 +141,9 @@ def _run_scan_thread(root_path):
                          books_added=scanner.books_added,
                          books_skipped=scanner.books_skipped,
                          bad_books=scanner.bad_books)
+        if autosync is not None:
+            from opds_catalog.autosync_hooks import notify_autosync
+            notify_autosync(autosync)
     except Exception as exc:
         scan_job.update(error=str(exc), running=False)
     finally:

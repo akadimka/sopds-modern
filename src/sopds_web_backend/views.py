@@ -50,7 +50,8 @@ from opds_catalog.utils import to_int
 logger = logging.getLogger(__name__)
 
 # ── Состояние сканирования SOPDS (общий кэш — виден всем worker-процессам) ───
-sopds_scan_job = JobState("sopds:scan", {"running": False, "done": False, "error": None})
+sopds_scan_job = JobState("sopds:scan", {"running": False, "done": False, "error": None,
+                                        "stage": "", "autosync": None})
 
 
 def _run_sopds_scan():
@@ -65,7 +66,7 @@ def _run_sopds_scan():
     root = _cfg.SOPDS_ROOT_LIB
     sopds_scan_job.update(running=True, done=False, error=None,
                            root=root, added=0, bad=0, deleted=0,
-                           first_error=None)
+                           first_error=None, stage="", autosync=None)
 
     # Capture first error from scanner logger
     _first_err = []
@@ -78,6 +79,12 @@ def _run_sopds_scan():
     _log.addHandler(_handler)
 
     try:
+        # Как плановый скан: сначала автосинхронизация папки наблюдения
+        # (книги попадут в этот же скан), Telegram — после скана.
+        from opds_catalog.autosync_hooks import notify_autosync, run_autosync, summary
+        sopds_scan_job.update(stage="autosync")
+        autosync = run_autosync()
+        sopds_scan_job.update(stage="scan", autosync=summary(autosync))
         scanner = opdsScanner()
         scanner.scan_all()
         Counter.objects.update_known_counters()
@@ -92,6 +99,7 @@ def _run_sopds_scan():
         if scanner.books_added:
             from opds_catalog.ratings_fetchers import poke_fetchers_for_new_books
             poke_fetchers_for_new_books()
+        notify_autosync(autosync)
     except Exception as e:
         sopds_scan_job.update(
             running=False, done=True,

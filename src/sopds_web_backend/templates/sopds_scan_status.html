@@ -7,7 +7,7 @@
   style="background:#1e293b; border:2px solid #10b981; border-radius:8px;
          padding:0.7rem 1rem; color:#e2e8f0;
          box-shadow:0 4px 20px rgba(0,0,0,0.5);">
-  <span style="color:#10b981; font-weight:700;">⏳ {% trans "Scanning..." %}</span>
+  <span style="color:#10b981; font-weight:700;">⏳ {% if state.stage == 'autosync' %}{% trans "Autosync of the watch folder..." %}{% else %}{% trans "Scanning..." %}{% endif %}</span>
   {% if state.root %}<div style="color:#94a3b8; font-size:0.75rem; margin-top:0.3rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:320px;">{{ state.root }}</div>{% endif %}
 </div>
 <script>sessionStorage._sopdsWasRunning = '1';</script>
@@ -27,6 +27,7 @@
     {% trans "Added" %}: <strong>{{ state.added }}</strong> &nbsp;
     {% trans "Errors" %}: <strong>{{ state.bad }}</strong>
   </div>
+  {% if state.autosync %}<div style="color:#a7f3d0; margin-top:0.25rem; font-size:0.8rem;">{% include "autosync_scan_summary.html" with a=state.autosync %}</div>{% endif %}
 </div>
 <script>
 if (sessionStorage._sopdsWasRunning === '1') {

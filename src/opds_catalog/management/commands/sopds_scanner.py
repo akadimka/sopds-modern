@@ -44,30 +44,6 @@ class _SafeFileHandler(_SafeMixin, logging.FileHandler):
 
 
 
-def _catalog_link(public_url):
-    """Ссылки сводки новинок на страницы сайта: серия — по id в каталоге,
-    книга без серии — поиск по названию. Без адреса сайта ссылок нет."""
-    base = (public_url or "").rstrip("/")
-    if not base:
-        return None
-    from urllib.parse import urlencode
-
-    from django.urls import reverse
-
-    from opds_catalog.models import Series
-
-    search = base + reverse("web:searchbooks")
-
-    def link(item):
-        if item["kind"] == "series":
-            series = Series.objects.filter(ser=item["series"]).first()
-            return f"{search}?{urlencode({'searchtype': 's', 'searchterms': series.id})}" if series else None
-        title = item.get("title")
-        return f"{search}?{urlencode({'searchtype': 'm', 'searchterms': title})}" if title else None
-
-    return link
-
-
 def _cron_day(day):
     """0 = "каждый день" (см. комментарий scan_shed_day в config.json) — APScheduler
     понимает это как wildcard '*', а не как буквальный day=0 (невалидный, диапазон 1-31)."""
@@ -186,36 +162,14 @@ class Command(BaseCommand):
     def run_autosync(self):
         """Первый шаг планового скана: разложить книги из папки наблюдения,
         чтобы следующий за ним скан библиотеки уже их увидел
-        (docs/watch-folder-autosync-design.md). Сбой автосинхронизации
-        скан библиотеки не срывает."""
-        try:
-            from fb2parser_web.fb2parser_bridge import get_autosync_service
-
-            service = get_autosync_service()
-            result = service.run()
-        except Exception:
-            self.logger.exception("Autosync failed")
-            return None
-        if result.status != "off":
-            self.logger.info(
-                "Autosync (%s): %s, moved=%d, pending=%d, kept=%d, removed=%d%s",
-                result.mode, result.status, len(result.moved), result.pending,
-                result.kept, result.removed, f", error: {result.error}" if result.error else "",
-            )
-        return service, result
+        (docs/watch-folder-autosync-design.md, opds_catalog/autosync_hooks.py)."""
+        from opds_catalog.autosync_hooks import run_autosync
+        return run_autosync(self.logger)
 
     def notify_autosync(self, service, result):
-        """Telegram — уже после скана: новые книги есть в каталоге, на их
-        серии можно дать ссылки."""
-        try:
-            from fb2parser_core.autosync_service import notify
-
-            sent = notify(service, result, link=_catalog_link(service.cfg.get("public_url", "")))
-        except Exception:
-            self.logger.exception("Autosync notification failed")
-            return
-        if sent:
-            self.logger.info("Autosync notifications: %s", sent)
+        """Telegram — уже после скана: новые книги есть в каталоге."""
+        from opds_catalog.autosync_hooks import notify_autosync
+        notify_autosync((service, result), self.logger)
 
     def update_shedule(self):
         self.SCAN_SHED_DAY = config.SOPDS_SCAN_SHED_DAY

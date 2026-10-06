@@ -1673,3 +1673,20 @@ msgstr[0] "%(n)s книга"
 msgstr[1] "%(n)s книги"
 msgstr[2] "%(n)s книг"
 msgstr[3] "%(n)s книги"
+
+msgid "⏳ Autosync of the watch folder..."
+msgstr "⏳ Автосинхронизация папки наблюдения..."
+
+msgid "Autosync failed: %(error)s"
+msgstr "Автосинхронизация: сбой — %(error)s"
+
+msgid "Autosync skipped: another synchronization is running."
+msgstr "Автосинхронизация пропущена: идёт другая синхронизация."
+
+msgid "Autosync (dry run): would move %(n)s, waiting for a decision %(p)s."
+msgstr ""
+"Автосинхронизация (пробный режим): было бы перемещено %(n)s, ждут решения "
+"%(p)s."
+
+msgid "Autosync: moved %(n)s, waiting for a decision %(p)s."
+msgstr "Автосинхронизация: перемещено %(n)s, ждут решения %(p)s."
