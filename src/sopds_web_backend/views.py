@@ -667,6 +667,57 @@ def _render_sopds_scan_status(request):
 # указал бы /bin/sh как «конвертер» и выполнял команды на сервере.
 _EXEC_FIELDS = ('fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir')
 
+_AUTOSYNC_MODES = ('off', 'dry_run', 'auto')
+
+
+def _paths_overlap(a, b):
+    import os
+    try:
+        common = os.path.commonpath([a, b])
+    except ValueError:  # разные диски Windows
+        return False
+    return common in (a, b)
+
+
+def _apply_autosync_settings(sm, post):
+    """Раздел autosync из формы настроек (docs/watch-folder-autosync-design.md).
+
+    Папка наблюдения определяет, откуда автосинхронизация перемещает и
+    удаляет файлы, — поэтому меняет её только суперпользователь (вызывающий
+    код), и она не может пересекаться с библиотекой.
+    """
+    import os
+    errors = []
+    values = sm.get_autosync_settings()
+    mode = post.get('autosync_mode', values['mode'])
+    if mode in _AUTOSYNC_MODES:
+        values['mode'] = mode
+    folder = post.get('autosync_watch_folder', '').strip()
+    if folder:
+        real = os.path.realpath(folder)
+        libraries = [os.path.realpath(p) for p in (sm.get_library_path(), sm.settings.get('sopds', {}).get('root_lib'))
+                     if p]
+        if not os.path.isdir(real):
+            errors.append(_('Watch folder not found: %(path)s') % {'path': folder})
+            folder = values['watch_folder']
+        elif any(_paths_overlap(real, lib) for lib in libraries):
+            errors.append(_('The watch folder and the library must not contain each other.'))
+            folder = values['watch_folder']
+    values['watch_folder'] = folder
+    if values['mode'] != 'off' and not values['watch_folder']:
+        errors.append(_('Choose the watch folder to enable autosync.'))
+        values['mode'] = 'off'
+    try:
+        values['confidence'] = min(0.99, max(0.5, float(post.get('autosync_confidence', values['confidence']))))
+    except ValueError:
+        pass
+    try:
+        values['quiet_minutes'] = min(1440, max(1, int(post.get('autosync_quiet_minutes', values['quiet_minutes']))))
+    except ValueError:
+        pass
+    sm.settings['autosync'] = values
+    return errors
+
 
 def _exec_field_error(user, field, value):
     import os
@@ -724,6 +775,8 @@ def sopds_settings(request):
                     errors.append(error)
                     continue
             sopds[f] = value
+        if request.user.is_superuser:
+            errors.extend(_apply_autosync_settings(sm, request.POST))
         sm.save()
 
         # Сохранение настроек с включённой галочкой гарантирует, что фоновый сбор
@@ -766,6 +819,7 @@ def sopds_settings(request):
         'can_edit_exec_fields': request.user.is_superuser,
         'sopds': sopds,
         'comments': comments,
+        'autosync': sm.get_autosync_settings(),
     }
     return render(request, 'sopds_settings.html', args)
 

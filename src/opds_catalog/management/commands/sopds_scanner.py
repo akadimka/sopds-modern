@@ -134,6 +134,8 @@ class Command(BaseCommand):
         if connection.connection and not connection.is_usable():
             del connections._connections.default
 
+        self.run_autosync()
+
         self.logger.debug("Creating scanner object")
         scanner = opdsScanner(logging.getLogger("scanner"))
         with transaction.atomic():
@@ -154,6 +156,25 @@ class Command(BaseCommand):
             poke_fetchers_for_new_books()
         self.logger.debug("Releasing lock")
         self.scan_is_active = False
+
+    def run_autosync(self):
+        """Первый шаг планового скана: разложить книги из папки наблюдения,
+        чтобы следующий за ним скан библиотеки уже их увидел
+        (docs/watch-folder-autosync-design.md). Сбой автосинхронизации
+        скан библиотеки не срывает."""
+        try:
+            from fb2parser_web.fb2parser_bridge import get_autosync_service
+
+            result = get_autosync_service().run()
+        except Exception:
+            self.logger.exception("Autosync failed")
+            return
+        if result.status != "off":
+            self.logger.info(
+                "Autosync (%s): %s, moved=%d, pending=%d, kept=%d, removed=%d%s",
+                result.mode, result.status, len(result.moved), result.pending,
+                result.kept, result.removed, f", error: {result.error}" if result.error else "",
+            )
 
     def update_shedule(self):
         self.SCAN_SHED_DAY = config.SOPDS_SCAN_SHED_DAY

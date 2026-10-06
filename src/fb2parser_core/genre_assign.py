@@ -12,11 +12,12 @@ import html
 import os
 import re
 import threading
+import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
+from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE, fb2_rglob
 from .logger import Logger
 
 
@@ -106,7 +107,7 @@ class GenreAssignmentService:
         self.logger.log("Поиск файлов (рекурсивно)...")
         
         # Найти все FB2 файлы (*.fb2 покрывает оба случая на Windows)
-        fb2_files = list(folder.rglob('*.fb2')) + list(folder.rglob('*.FBZ'))
+        fb2_files = list(dict.fromkeys(fb2_rglob(folder) + list(folder.rglob('*.FBZ'))))
         
         self.logger.log(f"Найдено файлов: {len(fb2_files)}")
         
@@ -231,44 +232,37 @@ class GenreAssignmentService:
             True если успешно, False при ошибке
         """
         try:
-            # Сначала проверить, не ZIP ли это (FBZ или архивированный FB2)
+            # ZIP (FBZ или .fb2.zip) — работаем с XML внутри архива и пишем
+            # его обратно в тот же архив; иначе — с самим файлом.
             content = None
             content_encoding = 'utf-8'  # default; overridden below
-            
-            try:
-                import zipfile
-                if zipfile.is_zipfile(fb2_path):
-                    # Это ZIP архив
-                    with zipfile.ZipFile(fb2_path, 'r') as zf:
-                        # Найти XML файл внутри архива
-                        xml_files = [f for f in zf.namelist() if f.endswith('.xml') or f.endswith('.fb2')]
-                        if not xml_files:
-                            self.logger.log(f"ОШИБКА: {fb2_path} - в архиве не найдены XML файлы")
-                            return False
-                        
-                        # Баг №97: без проверки размера крошечный по
-                        # размеру .fb2.zip с огромным заявленным
-                        # распакованным размером (zip-bomb) полностью
-                        # разворачивался бы в память через f.read().
-                        info = zf.getinfo(xml_files[0])
-                        if info.file_size > MAX_FB2_UNCOMPRESSED_SIZE:
-                            self.logger.log(
-                                f"ОШИБКА: {fb2_path} - '{xml_files[0]}' в архиве "
-                                f"объявляет {info.file_size} байт распакованным "
-                                f"(> {MAX_FB2_UNCOMPRESSED_SIZE}) - похоже на zip-bomb, отказ"
-                            )
-                            return False
+            zip_inner = None
+            if zipfile.is_zipfile(fb2_path):
+                with zipfile.ZipFile(fb2_path, 'r') as zf:
+                    xml_files = [f for f in zf.namelist() if f.lower().endswith(('.xml', '.fb2'))]
+                    if not xml_files:
+                        self.logger.log(f"ОШИБКА: {fb2_path} - в архиве не найдены XML файлы")
+                        return False
 
-                        # Прочитать первый XML файл
-                        with zf.open(xml_files[0]) as f:
-                            content = f.read().decode('utf-8-sig', errors='replace')
-                            content_encoding = 'utf-8'
-            except (zipfile.BadZipFile, ImportError):
-                pass
-            
-            # Если не ZIP, читаем как обычный текстовый файл
-            if content is None:
+                    # Баг №97: без проверки размера крошечный по
+                    # размеру .fb2.zip с огромным заявленным
+                    # распакованным размером (zip-bomb) полностью
+                    # разворачивался бы в память.
+                    info = zf.getinfo(xml_files[0])
+                    if info.file_size > MAX_FB2_UNCOMPRESSED_SIZE:
+                        self.logger.log(
+                            f"ОШИБКА: {fb2_path} - '{xml_files[0]}' в архиве "
+                            f"объявляет {info.file_size} байт распакованным "
+                            f"(> {MAX_FB2_UNCOMPRESSED_SIZE}) - похоже на zip-bomb, отказ"
+                        )
+                        return False
+                    zip_inner = xml_files[0]
+                    raw_bytes = zf.read(zip_inner)
+            else:
                 raw_bytes = fb2_path.read_bytes()
+
+            # Декодирование (одинаково для файла и XML из архива)
+            if content is None:
 
                 # Определение кодировки из XML declaration, если указана
                 declared_encoding = None
@@ -397,10 +391,20 @@ class GenreAssignmentService:
             # если процесс прервётся посреди записи (например, ассайн жанра
             # на большой папке не уложился в таймаут воркера gunicorn),
             # оригинальный файл останется целым вместо усечённого/битого.
+            #
+            # Пишем байты, а не текст: текстовый режим на Windows превращал
+            # каждый "\r\n" исходника в "\r\r\n".
+            if has_bom:
+                result_text = result_text.lstrip('\ufeff')
+            data = result_text.encode(encoding_to_write, errors='replace')
             tmp_path = fb2_path.with_name(fb2_path.name + '.tmp')
             try:
-                with open(tmp_path, 'w', encoding=encoding_to_write, errors='replace') as out:
-                    out.write(result_text)
+                with open(tmp_path, 'wb') as out:
+                    if zip_inner is not None:
+                        with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+                            zf.writestr(zip_inner, data)
+                    else:
+                        out.write(data)
                 os.replace(tmp_path, fb2_path)
             except Exception:
                 tmp_path.unlink(missing_ok=True)

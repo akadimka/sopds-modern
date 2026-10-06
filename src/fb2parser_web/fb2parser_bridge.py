@@ -34,6 +34,11 @@ def _memory_path() -> str:
     return os.path.join(_FB2_SETTINGS_DIR, "library_memory.db")
 
 
+def _sync_lock_path() -> str:
+    """Общая блокировка ручной синхронизации и автосинхронизации (sync_lock)."""
+    return os.path.join(_FB2_SETTINGS_DIR, "sync.lock")
+
+
 def get_library_memory():
     from fb2parser_core.library_memory import LibraryMemory
     return LibraryMemory(_memory_path())
@@ -65,7 +70,8 @@ def get_genre_assignment_service(logger=None):
 
 def get_autosync_service():
     from fb2parser_core.autosync_service import AutosyncService
-    return AutosyncService(_config_path(), get_library_memory(), get_genres_manager())
+    return AutosyncService(_config_path(), get_library_memory(), get_genres_manager(),
+                           lock_path=_sync_lock_path())
 
 
 def get_sync_service():

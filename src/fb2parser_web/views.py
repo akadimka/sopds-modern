@@ -3101,7 +3101,9 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
 def _run_sync_thread():
     from django import db
 
-    from .fb2parser_bridge import get_sync_service
+    from fb2parser_core.sync_lock import SyncBusy, sync_lock
+
+    from .fb2parser_bridge import _sync_lock_path, get_sync_service
     db.connections.close_all()
     try:
         svc = get_sync_service()
@@ -3125,45 +3127,46 @@ def _run_sync_thread():
 
         compiled_groups = compile_errors = 0
 
-        stats = dict(svc.synchronize(
-            progress_callback=on_progress,
-            log_callback=on_log,
-            allowed_folders=allowed_folders,
-        ) or {})
+        with sync_lock(_sync_lock_path(), "web"):
+            stats = dict(svc.synchronize(
+                progress_callback=on_progress,
+                log_callback=on_log,
+                allowed_folders=allowed_folders,
+            ) or {})
 
-        files_moved = stats.get("files_moved", 0)
-        if auto_compile and files_moved > 0:
-            # Компилируем ПОСЛЕ перемещения в библиотеку — так find_groups()
-            # видит все тома серии разом, в т.ч. одиночные тома, лежавшие в
-            # библиотеке ещё до этой синхронизации, и корректно решает,
-            # завершена ли серия (см. series_complete в fb2_compiler.py).
-            #
-            # Раньше здесь был ещё один проход "до перемещения", сканировавший
-            # только свежую входящую папку — это экономило запись+удаление
-            # файла в библиотеке для серий, целиком приехавших одним заходом,
-            # но был слеп к уже лежащим в библиотеке одиночным томам той же
-            # серии: свежую партию (например тома 1-8) он видел "завершённой"
-            # (нет тома 10 в его поле зрения) и называл файл по числу томов
-            # ("Окталогия"), хотя на самом деле серия неполная и должна
-            # называться диапазоном ("т. 1-8") — ровно как при ручной
-            # компиляции, которая сканирует библиотеку целиком.
-            #
-            # Ограничиваем этот проход папками genre/author, куда РЕАЛЬНО
-            # переместился хотя бы один файл (touched_author_dirs, см.
-            # SynchronizationService._move_files) — не всей библиотекой.
-            # Корректность не страдает: серия принадлежит ровно одному автору,
-            # так что все её тома (включая уже лежавшие там раньше) находятся
-            # внутри той же папки автора — сканировать остальных авторов не
-            # нужно. При синхронизации 5-10 файлов одного автора это сотни, а
-            # не тысячи файлов на прогон, если в библиотеке есть другие,
-            # никак не связанные авторы.
-            touched_dirs = stats.get("touched_author_dirs") or set()
-            ok, fail = _run_compile_pass(
-                svc.library_path, on_log, "по затронутым авторам",
-                filter_paths=touched_dirs or None,
-            )
-            compiled_groups += ok
-            compile_errors += fail
+            files_moved = stats.get("files_moved", 0)
+            if auto_compile and files_moved > 0:
+                # Компилируем ПОСЛЕ перемещения в библиотеку — так find_groups()
+                # видит все тома серии разом, в т.ч. одиночные тома, лежавшие в
+                # библиотеке ещё до этой синхронизации, и корректно решает,
+                # завершена ли серия (см. series_complete в fb2_compiler.py).
+                #
+                # Раньше здесь был ещё один проход "до перемещения", сканировавший
+                # только свежую входящую папку — это экономило запись+удаление
+                # файла в библиотеке для серий, целиком приехавших одним заходом,
+                # но был слеп к уже лежащим в библиотеке одиночным томам той же
+                # серии: свежую партию (например тома 1-8) он видел "завершённой"
+                # (нет тома 10 в его поле зрения) и называл файл по числу томов
+                # ("Окталогия"), хотя на самом деле серия неполная и должна
+                # называться диапазоном ("т. 1-8") — ровно как при ручной
+                # компиляции, которая сканирует библиотеку целиком.
+                #
+                # Ограничиваем этот проход папками genre/author, куда РЕАЛЬНО
+                # переместился хотя бы один файл (touched_author_dirs, см.
+                # SynchronizationService._move_files) — не всей библиотекой.
+                # Корректность не страдает: серия принадлежит ровно одному автору,
+                # так что все её тома (включая уже лежавшие там раньше) находятся
+                # внутри той же папки автора — сканировать остальных авторов не
+                # нужно. При синхронизации 5-10 файлов одного автора это сотни, а
+                # не тысячи файлов на прогон, если в библиотеке есть другие,
+                # никак не связанные авторы.
+                touched_dirs = stats.get("touched_author_dirs") or set()
+                ok, fail = _run_compile_pass(
+                    svc.library_path, on_log, "по затронутым авторам",
+                    filter_paths=touched_dirs or None,
+                )
+                compiled_groups += ok
+                compile_errors += fail
 
         stats["compiled_groups"] = compiled_groups
         stats["compile_errors"] = compile_errors
@@ -3172,6 +3175,7 @@ def _run_sync_thread():
         # (см. комментарий выше) — не предназначен для показа пользователю
         # в отчёте синхронизации (sync_status.html рендерит все ключи stats).
         stats.pop("touched_author_dirs", None)
+        stats.pop("moved_books", None)
 
         # Список файлов, требующих ручной сверки автора (баг №72 доп.,
         # docs/quality-roadmap.md) — список словарей, не годится для общей
@@ -3229,6 +3233,9 @@ def _run_sync_thread():
                         genre_unified_notes=genre_unified_notes,
                         genre_conflict_notes=genre_conflict_notes)
 
+    except SyncBusy:
+        sync_job.update(error=str(_("Automatic synchronization is running right now — try again in a few minutes.")),
+                        running=False)
     except Exception as exc:
         sync_job.update(error=str(exc), running=False)
     finally:

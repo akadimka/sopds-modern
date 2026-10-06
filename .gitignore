@@ -19,6 +19,7 @@ src/fb2parser_web/_genre_scan_cache/
 src/fb2_data/settings/config.json
 # память автосинхронизации (docs/watch-folder-autosync-design.md) — машинно-локальная
 src/fb2_data/settings/library_memory.db*
+src/fb2_data/settings/sync.lock
 
 ### Python template
 # Byte-compiled / optimized / DLL files

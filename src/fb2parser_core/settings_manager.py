@@ -17,6 +17,9 @@ _MACHINE_KEYS = frozenset({
     'test_window_path', 'duplicate_finder_path', 'compiler_scan_dir', 'last_csv_dir',
     'window_sizes', 'genre_tree_state', 'generate_csv', 'settings_file_path',
     'sopds', 'last_normalize_path',
+    # автосинхронизация: путь к папке наблюдения и токен Telegram-бота —
+    # только для этой машины, в общий app_settings.json (в git) не попадают
+    'autosync',
 })
 
 

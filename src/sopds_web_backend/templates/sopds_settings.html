@@ -353,6 +353,55 @@
         </div>
     </div>
 
+    <div class="s-section-title">{% trans "Watch folder autosync" %}</div>
+
+    <div class="s-field">
+        <div class="s-hint" style="margin-bottom:0.5rem;">
+            {% trans "Runs as the first step of the scheduled scan: each subfolder of the watch folder is one downloaded batch. Books whose author, series and genre are determined with confidence are synchronized into the library automatically (their source files are removed); the rest stay in the watch folder and wait for your decision." %}
+        </div>
+        {% if not can_edit_exec_fields %}
+        <div class="s-hint">{% trans "Only a superuser can change these settings." %}</div>
+        {% endif %}
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Mode" %}</label>
+        <select name="autosync_mode" style="max-width:420px;"{% if not can_edit_exec_fields %} disabled{% endif %}>
+            <option value="off" {% if autosync.mode == 'off' %}selected{% endif %}>{% trans "Off" %}</option>
+            <option value="dry_run" {% if autosync.mode == 'dry_run' %}selected{% endif %}>{% trans "Dry run — only report what would be done, move nothing" %}</option>
+            <option value="auto" {% if autosync.mode == 'auto' %}selected{% endif %}>{% trans "Automatic" %}</option>
+        </select>
+        <div class="s-hint">{% trans "Start with the dry run: compare its reports with your own decisions for a while before switching to automatic mode." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Watch folder" %}</label>
+        <div class="s-row">
+            <input type="text" name="autosync_watch_folder" id="autosync-watch-folder" value="{{ autosync.watch_folder }}"
+                   placeholder="/mnt/media/incoming"{% if not can_edit_exec_fields %} readonly{% endif %}>
+            {% if can_edit_exec_fields %}
+            <button type="button" class="button secondary tiny" style="margin:0; white-space:nowrap;"
+                    onclick="openBrowser('autosync-watch-folder')">{% trans "Browse" %}</button>
+            {% endif %}
+        </div>
+        <div class="fb-browser-wrap" id="fb-browser-autosync-watch-folder" style="display:none; position:absolute; z-index:500;"></div>
+        <div class="s-hint">{% trans "Must not be inside the library (and the library must not be inside it)." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Confidence threshold" %}</label>
+        <input type="number" name="autosync_confidence" value="{{ autosync.confidence|stringformat:'s' }}" min="0.5" max="0.99" step="0.01"
+               style="max-width:100px;"{% if not can_edit_exec_fields %} readonly{% endif %}>
+        <div class="s-hint">{% trans "Share of the genre votes the winning genre needs for an automatic decision. 0.8 is the safe default found on a real library; lower values decide more books automatically and make more mistakes." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Quiet period (minutes)" %}</label>
+        <input type="number" name="autosync_quiet_minutes" value="{{ autosync.quiet_minutes }}" min="1" max="1440"
+               style="max-width:100px;"{% if not can_edit_exec_fields %} readonly{% endif %}>
+        <div class="s-hint">{% trans "A batch whose files changed more recently than this (or that still has unfinished downloads) waits for the next run." %}</div>
+    </div>
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 

@@ -160,6 +160,7 @@ class SynchronizationService:
             # Серии, у томов которых разные жанры: см. _unify_series_genres().
             'genre_unified_notes': [],
             'genre_conflict_notes': [],
+            'moved_books': [],
         }
     
     def _log(self, msg: str):
@@ -265,12 +266,18 @@ class SynchronizationService:
     
     def synchronize(self, progress_callback: Optional[Callable] = None,
                     log_callback: Optional[Callable] = None,
-                    allowed_folders: Optional[set] = None) -> Dict:
+                    allowed_folders: Optional[set] = None,
+                    hold_files: Optional[set] = None) -> Dict:
         """Execute full synchronization process.
         
         Args:
             progress_callback: Function(current, total, status_str) for progress updates
             log_callback: Function(message_str) for logging messages to UI
+            allowed_folders: папки внутри last_scan_path, которые синхронизировать
+            hold_files: файлы (пути относительно last_scan_path, как
+                record.file_path), которые остаются на месте нетронутыми —
+                автосинхронизация так придерживает книги, жанр которых ещё
+                не решён (docs/watch-folder-autosync-design.md)
             
         Returns:
             Dictionary with statistics
@@ -407,9 +414,23 @@ class SynchronizationService:
             _needs_reconciliation |= {
                 f['file_path'] for n in genre_conflict_notes for f in n['files']
             }
+            _needs_reconciliation |= set(hold_files or ())
             _records_to_move = [r for r in records if r.file_path not in _needs_reconciliation]
+            _source_of = {id(r): r.file_path for r in _records_to_move}
 
             moved_records = self._move_files(_records_to_move, folder_structure, progress_callback)
+            # Что куда переехало (источник → библиотека) — для журнала
+            # автосинхронизации и сводки новинок.
+            self.stats['moved_books'] = [
+                {
+                    'source': _source_of[id(r)],
+                    'path': r.file_path,
+                    'author': r.proposed_author,
+                    'series': r.proposed_series,
+                    'title': r.file_title,
+                }
+                for r in moved_records
+            ]
 
             self._log(f"Всего перемещено: {len(moved_records)} файлов")
             self._log(f"Готово к внесению в БД: {len(moved_records)} записей")
