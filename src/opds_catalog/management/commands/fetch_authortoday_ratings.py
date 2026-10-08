@@ -149,7 +149,12 @@ class Command(BaseCommand):
             self.stdout.write("  Книга не найдена на author.today")
             result = "not_found"
 
-        self._save_rating(book, likes, awards, reads, url, error)
+        from opds_catalog.ratings_fetchers import save_retrying_while_db_busy
+        save_retrying_while_db_busy(
+            "authortoday",
+            lambda: self._save_rating(book, likes, awards, reads, url, error),
+            self.stdout.write,
+        )
 
         # Detect throttle HTTP status
         if error and url:

@@ -155,7 +155,12 @@ class Command(BaseCommand):
             self.stdout.write("  Рейтинг не найден")
             result = "not_found"
 
-        self._save_rating(book, rating, votes, url, error, individual)
+        from opds_catalog.ratings_fetchers import save_retrying_while_db_busy
+        save_retrying_while_db_busy(
+            "samlib",
+            lambda: self._save_rating(book, rating, votes, url, error, individual),
+            self.stdout.write,
+        )
 
         # Detect throttle HTTP status
         if error and url:

@@ -148,7 +148,12 @@ class Command(BaseCommand):
             self.stdout.write("  Книга не найдена на litmarket.ru")
             result = "not_found"
 
-        self._save_rating(book, likes, reads, url, error)
+        from opds_catalog.ratings_fetchers import save_retrying_while_db_busy
+        save_retrying_while_db_busy(
+            "litmarket",
+            lambda: self._save_rating(book, likes, reads, url, error),
+            self.stdout.write,
+        )
 
         if error and url:
             return None, result

@@ -137,7 +137,12 @@ class Command(BaseCommand):
             self.stdout.write("  Книга не найдена на fantlab.ru")
             result = "not_found"
 
-        self._save_rating(book, rating, votes, url, error)
+        from opds_catalog.ratings_fetchers import save_retrying_while_db_busy
+        save_retrying_while_db_busy(
+            "fantlab",
+            lambda: self._save_rating(book, rating, votes, url, error),
+            self.stdout.write,
+        )
 
         if error and url:
             return None, result

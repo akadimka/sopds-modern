@@ -108,6 +108,40 @@ def sleep_or_stop(source: str, seconds: float, chunk: float = 3.0) -> bool:
     return stop_requested(source)
 
 
+DB_BUSY_RETRY_SECONDS = 60
+DB_BUSY_MAX_WAIT_SECONDS = 30 * 60
+
+
+def save_retrying_while_db_busy(source: str, save, log) -> bool:
+    """Записать результат фетчера, переждав занятую SQLite-базу.
+
+    Ночной sopds-scan держит одну транзакцию на весь скан (минуты) — дольше
+    SQLite timeout, и запись падает с «database is locked». Раньше это
+    завершало процесс фетчера. Повторяем запись, не запрашивая сайт заново.
+
+    Returns:
+        True — записано; False — бросили по запросу остановки (книга
+        останется без результата и будет обработана в следующий раз).
+    Raises:
+        OperationalError — не блокировка, или база занята дольше
+        DB_BUSY_MAX_WAIT_SECONDS (тогда пусть процесс упадёт и это будет видно).
+    """
+    from django.db import OperationalError
+
+    waited = 0
+    while True:
+        try:
+            save()
+            return True
+        except OperationalError as exc:
+            if "locked" not in str(exc).lower() or waited >= DB_BUSY_MAX_WAIT_SECONDS:
+                raise
+            log(f"  База занята ({exc}) — повтор записи через {DB_BUSY_RETRY_SECONDS} с.")
+            if sleep_or_stop(source, DB_BUSY_RETRY_SECONDS) and stop_requested(source):
+                return False
+            waited += DB_BUSY_RETRY_SECONDS
+
+
 def is_running(source: str) -> bool:
     with _lock:
         t = _threads.get(source)
