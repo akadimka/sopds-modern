@@ -3117,17 +3117,61 @@ class FB2CompilerService:
 
         _BINARY_BLOCK_RE = re.compile(rb'<binary\b[^>]*>.*?</binary>', re.DOTALL | re.IGNORECASE)
 
+        TEXT_TIE = 0.01        # тексты в пределах 1% — одно и то же издание по содержанию
+        ILLUSTRATED_MIN = 10   # «заметно больше иллюстраций» — не обложка-другая
+        _ENCODING_RE = re.compile(rb'encoding\s*=\s*["\']([A-Za-z0-9_\-]+)')
+        _TAG_RE = re.compile(r'<[^>]+>')
+        _SPACE_RE = re.compile(r'\s+')
+
         def _file_size(b: CompilationBook) -> int:
-            # Распакованное содержимое БЕЗ встроенных <binary> (иллюстраций) —
-            # иначе файл с картинками (например, обложка+иллюстрации одного
-            # издания) побеждал бы файл с реально бОльшим текстом (например,
-            # тот же роман плюс дополнительная повесть) только из-за веса
-            # base64-картинок, никак не связанного с текстовым содержимым.
-            try:
-                raw = read_fb2_bytes(b.abs_path)
-            except OSError:
-                return 0
-            return len(_BINARY_BLOCK_RE.sub(b'', raw))
+            # Объём ТЕКСТА в символах без пробелов: без встроенных <binary> (иллюстраций) —
+            # иначе файл с картинками побеждал бы файл с реально бОльшим текстом
+            # (тот же роман плюс дополнительная повесть) из-за веса base64 — и
+            # без разметки. Именно символы, не байты: русская буква в UTF-8
+            # занимает 2 байта, в windows-1251 — 1, и тот же текст в UTF-8
+            # «весил» бы почти вдвое больше. Реальный случай (Большаков Валерий,
+            # «Закон меча», том 1): издание 2008 года в 1251 и переиздание 2016
+            # года в UTF-8 — побеждала кодировка, а не содержимое; издание в 1251
+            # с дополнительной повестью проиграло бы более короткому в UTF-8 и
+            # удалилось вместе с повестью. Та же ошибка ложно срабатывала в
+            # защите «проигравший заметно крупнее» ниже (1,9× на одинаковом тексте).
+            # Пробелы, переносы и отступы разметки не считаются: у того же тома
+            # 2008 года их было больше, и по символам с пробелами он ложно
+            # «перевешивал» переиздание, в котором на деле больше слов.
+            return _measure(b)[0]
+
+        _measured: Dict[int, Tuple[int, int]] = {}
+
+        def _measure(b: CompilationBook) -> Tuple[int, int]:
+            """(объём текста в символах без пробелов, число иллюстраций <binary>)."""
+            if id(b) not in _measured:
+                try:
+                    raw = read_fb2_bytes(b.abs_path)
+                except OSError:
+                    _measured[id(b)] = (0, 0)
+                    return _measured[id(b)]
+                images = len(re.findall(rb'<binary\b', raw, re.IGNORECASE))
+                raw = _BINARY_BLOCK_RE.sub(b'', raw)
+                m = _ENCODING_RE.search(raw[:200])
+                encoding = m.group(1).decode('ascii') if m else 'utf-8'
+                try:
+                    text = raw.decode(encoding, errors='replace')
+                except LookupError:
+                    text = raw.decode('utf-8', errors='replace')
+                _measured[id(b)] = (len(_SPACE_RE.sub('', _TAG_RE.sub('', text))), images)
+            return _measured[id(b)]
+
+        def _keep_a(a: CompilationBook, b: CompilationBook) -> bool:
+            """Из двух изданий одного текста оставить a? Больше текста — лучше;
+            но при практически равном тексте (±1%) — издание с заметно бОльшим
+            числом иллюстраций. Реальный случай: Безбашенный, «Античная
+            наркомафия-8 (иллюстр)» — 226 иллюстраций при том же тексте, что и
+            у издания без них (разница 0,05%); раньше оно оставалось лишь
+            случайно — UTF-8 против 1251 по байтам (см. _file_size)."""
+            (ta, ia), (tb, ib) = _measure(a), _measure(b)
+            if max(ta, tb) and abs(ta - tb) <= TEXT_TIE * max(ta, tb) and abs(ia - ib) >= ILLUSTRATED_MIN:
+                return ia > ib
+            return ta >= tb
 
         # ── Фаза 2: попарное сравнение ─────────────────────────────────────────
         to_remove: set = set()
@@ -3175,8 +3219,7 @@ class FB2CompilerService:
                     if _file_size(loser) > _file_size(winner) * 1.6:
                         continue
                 else:
-                    size_a, size_b = _file_size(book_a), _file_size(book_b)
-                    loser = book_b if size_a >= size_b else book_a
+                    loser = book_b if _keep_a(book_a, book_b) else book_a
                 to_remove.add(id(loser))
                 duplicate_paths.append(loser.abs_path)
                 self._log(
