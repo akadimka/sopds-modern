@@ -423,6 +423,7 @@ ss -ltnp | grep 8008               # должно быть 127.0.0.1:8008, не 
 SOPDS_USE_HTTPS=True
 SOPDS_TRUST_X_FORWARDED_PROTO=True
 ALLOWED_HOSTS=<IP-адрес или домен>,localhost,127.0.0.1
+SOPDS_TRUSTED_PROXIES=127.0.0.1
 ```
 
 - `SOPDS_USE_HTTPS` включает Secure-флаг у cookie сессии и CSRF и
@@ -432,9 +433,23 @@ ALLOWED_HOSTS=<IP-адрес или домен>,localhost,127.0.0.1
   падают с ошибкой CSRF «Origin checking failed». Включать **только**
   после шага 3: пока gunicorn слушает `0.0.0.0`, клиент может прийти
   напрямую на `:8008` с поддельным заголовком.
+- `SOPDS_TRUSTED_PROXIES` — адреса всех прокси перед gunicorn через
+  запятую: Apache на этом же сервере (`127.0.0.1`) и, если есть, ещё один
+  прокси перед ним (например, прокси провайдера: `127.0.0.1,10.0.0.5`).
+  Защита от подбора паролей (django-axes) блокирует по IP клиента; без
+  этой настройки за прокси у всех один адрес `127.0.0.1`, и пять чужих
+  неудачных входов блокируют вход всем на час. Адрес клиента берётся из
+  `X-Forwarded-For` — только записи, дописанные этими прокси.
 
 ```bash
 systemctl restart sopds-modern
+```
+
+Если вход всё же заблокирован («Account locked»), снять блокировку:
+
+```bash
+cd /opt/sopds-modern/src
+sudo -u www-data DJANGO_SETTINGS_MODULE=sopds.settings.base ../.venv/bin/python manage.py axes_reset
 ```
 
 ### 5. Firewall — в последнюю очередь

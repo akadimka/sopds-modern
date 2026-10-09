@@ -65,6 +65,10 @@ AXES_COOLOFF_TIME = 1           # разблокировка через 1 час
 AXES_LOCKOUT_CALLABLE = None    # возвращает 403 (стандартное поведение)
 AXES_RESET_ON_SUCCESS = True    # сброс счётчика после успешного входа
 AXES_ENABLE_ADMIN = False       # не показывать модели axes в /admin/ (вход в /admin/ защищён всё равно)
+# Адреса обратных прокси перед gunicorn через запятую (напр. «127.0.0.1,10.0.0.5»).
+# Без них за прокси у всех один REMOTE_ADDR — и axes блокирует вход всем сразу.
+SOPDS_TRUSTED_PROXIES = env.list("SOPDS_TRUSTED_PROXIES", default=[])
+AXES_CLIENT_IP_CALLABLE = "sopds.client_ip.client_ip"
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
