@@ -77,6 +77,7 @@ urlpatterns = [
     path("genres/code-assign/set/",  views.genres_code_assign_set,  name="genres_code_assign_set"),
     path("genres/excluded/add/",     views.genres_excluded_code_add,    name="genres_excluded_code_add"),
     path("genres/excluded/remove/",  views.genres_excluded_code_remove, name="genres_excluded_code_remove"),
+    path("genres/new-codes/clear/",  views.genres_new_codes_clear,  name="genres_new_codes_clear"),
     path("genres/clear-assigned/",   views.genres_clear_assigned,   name="genres_clear_assigned"),
     path("log/",          views.log,         name="log"),
     path("search/",       views.search,      name="search"),

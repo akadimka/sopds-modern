@@ -1690,3 +1690,27 @@ msgstr ""
 
 msgid "Autosync: moved %(n)s, waiting for a decision %(p)s."
 msgstr "Автосинхронизация: перемещено %(n)s, ждут решения %(p)s."
+
+msgid "All"
+msgstr "Все"
+
+msgid "New"
+msgstr "Новые"
+
+msgid "No genre"
+msgstr "Без жанра"
+
+msgid "new"
+msgstr "новый"
+
+msgid "no genre"
+msgstr "без жанра"
+
+msgid "Clear the “new” marks"
+msgstr "Снять отметки «новый»"
+
+msgid "The codes have been reviewed — leave them as they are"
+msgstr "Коды просмотрены — оставить как есть"
+
+msgid "Open them in the genre reference"
+msgstr "Открыть их в справочнике жанров"

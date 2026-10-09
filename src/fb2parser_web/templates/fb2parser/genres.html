@@ -154,6 +154,18 @@
                         {% blocktrans with n=multi_linked_count %}⚠ Codes linked to several genres at once: {{ n }} — marked below.{% endblocktrans %}
                     </p>
                     {% endif %}
+                    <div id="genre-code-filters" style="display:flex; flex-wrap:wrap; gap:0.3rem; align-items:center; margin:0 0 0.5rem;">
+                        <button type="button" class="button tiny secondary hollow genre-code-filter" data-filter="all"
+                                style="margin:0;" onclick="genreCodeFilter('all')">{% trans "All" %} ({{ reference_codes|length }})</button>
+                        <button type="button" class="button tiny secondary hollow genre-code-filter" data-filter="new"
+                                style="margin:0;" onclick="genreCodeFilter('new')">🆕 {% trans "New" %} ({{ new_codes_count }})</button>
+                        <button type="button" class="button tiny secondary hollow genre-code-filter" data-filter="nogenre"
+                                style="margin:0;" onclick="genreCodeFilter('nogenre')">⚠ {% trans "No genre" %} ({{ no_genre_count }})</button>
+                        {% if new_codes_count %}
+                        <a href="#" style="font-size:0.75rem; margin-left:0.4rem;" onclick="genreNewCodesClear(); return false;"
+                           title="{% trans "The codes have been reviewed — leave them as they are" %}">{% trans "Clear the “new” marks" %}</a>
+                        {% endif %}
+                    </div>
                     <table id="genre-ref-code-table" class="unstriped" style="font-size:0.8rem; margin:0;">
                         <thead>
                             <tr>
@@ -164,8 +176,12 @@
                         </thead>
                         <tbody>
                             {% for c in reference_codes %}
-                            <tr data-code="{{ c.code }}">
-                                <td style="font-family:monospace;" title="{{ c.subsection }}">{{ c.code }}</td>
+                            <tr data-code="{{ c.code }}" data-new="{{ c.is_new|yesno:'1,0' }}" data-nogenre="{{ c.no_genre|yesno:'1,0' }}"
+                                {% if c.is_new or c.no_genre %}style="background:rgba(243,156,18,0.08);"{% endif %}>
+                                <td style="font-family:monospace;" title="{{ c.subsection }}">{{ c.code }}
+                                    {% if c.is_new %}<span style="font-family:inherit; font-size:0.68rem; color:#27ae60; border:1px solid #27ae60; border-radius:3px; padding:0 0.25rem; margin-left:0.3rem; white-space:nowrap;">{% trans "new" %}</span>{% endif %}
+                                    {% if c.no_genre %}<span style="font-family:inherit; font-size:0.68rem; color:#f39c12; border:1px solid #f39c12; border-radius:3px; padding:0 0.25rem; margin-left:0.3rem; white-space:nowrap;">{% trans "no genre" %}</span>{% endif %}
+                                </td>
                                 <td style="color:var(--text-muted);">{{ c.section }}</td>
                                 <td>
                                     <select style="margin:0; font-size:0.78rem;"
@@ -238,6 +254,7 @@ const GENRES_PATTERN_ADD_URL = "{% url 'fb2parser:genres_pattern_add' %}";
 const GENRES_PATTERN_REMOVE_URL = "{% url 'fb2parser:genres_pattern_remove' %}";
 const GENRES_SECTION_MAP_SET_URL = "{% url 'fb2parser:genres_section_map_set' %}";
 const GENRES_CODE_ASSIGN_SET_URL = "{% url 'fb2parser:genres_code_assign_set' %}";
+const GENRES_NEW_CODES_CLEAR_URL = "{% url 'fb2parser:genres_new_codes_clear' %}";
 const i18n_bySection = "{% trans 'by section' %}";
 const i18n_byCode = "{% trans 'by code' %}";
 const GENRES_EXCLUDED_ADD_URL = "{% url 'fb2parser:genres_excluded_code_add' %}";
@@ -393,6 +410,40 @@ function genreSectionMapSet(section, genreName) {
 function genreCodeAssignSet(code, genreName) {
     _genrePost(GENRES_CODE_ASSIGN_SET_URL, {code: code, genre: genreName});
 }
+
+// Фильтр таблицы «по кодам»: все / новые (впервые найдены сканом жанров) /
+// без жанра. Выбор переживает location.reload() после каждого изменения —
+// удобно размечать подряд только новые коды.
+function genreCodeFilter(kind) {
+    document.querySelectorAll('#genre-ref-code-table tr[data-code]').forEach(function (tr) {
+        var show = kind === 'all' || (kind === 'new' && tr.dataset.new === '1')
+            || (kind === 'nogenre' && tr.dataset.nogenre === '1');
+        tr.style.display = show ? '' : 'none';
+    });
+    document.querySelectorAll('#genre-code-filters .genre-code-filter').forEach(function (b) {
+        b.classList.toggle('hollow', b.dataset.filter !== kind);
+    });
+    try { sessionStorage.setItem('fb2parser:genreCodeFilter', kind); } catch (e) {}
+}
+
+function genreNewCodesClear() {
+    _genrePost(GENRES_NEW_CODES_CLEAR_URL, {});
+}
+
+(function () {
+    // ?codes=new — ссылка «новых кодов: N» из статуса скана жанров;
+    // ?code=<код> — переход к одному коду: тогда показываем все строки.
+    var params = new URLSearchParams(location.search);
+    var kind = params.get('codes');
+    if (kind === 'new' || kind === 'nogenre') {
+        _genreRefSetMode('code');
+    } else if (params.get('code')) {
+        kind = 'all';
+    } else {
+        try { kind = sessionStorage.getItem('fb2parser:genreCodeFilter'); } catch (e) {}
+    }
+    genreCodeFilter(kind === 'new' || kind === 'nogenre' ? kind : 'all');
+})();
 
 function _genreRefSetMode(mode) {
     const bySection = document.getElementById('genre-ref-by-section');

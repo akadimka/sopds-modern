@@ -301,6 +301,46 @@ def _genre_scan_folder_key(folder_paths):
     return "|".join(sorted(folder_paths))
 
 
+# ── Отметка «новый» в справочнике кодов ──────────────────────────────────
+# Коды, впервые найденные сканом жанров (register_discovered_codes), —
+# локальная пометка «ещё не разобран» для таблицы «по кодам» Менеджера
+# жанров. Снимается, когда коду назначен жанр или он исключён, либо кнопкой
+# «Снять отметки». Хранится рядом с кешем скана (машинно-локально).
+
+def _new_codes_path():
+    return os.path.join(os.path.dirname(__file__), "_genre_scan_cache", "new_codes.json")
+
+
+def _new_codes_load() -> set:
+    import json
+    try:
+        with open(_new_codes_path(), encoding="utf-8") as f:
+            return set(json.load(f))
+    except (OSError, ValueError):
+        return set()
+
+
+def _new_codes_save(codes) -> None:
+    import json
+    path = _new_codes_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(sorted(codes), f, ensure_ascii=False)
+
+
+def _new_codes_add(codes) -> None:
+    codes = {c.strip().lower() for c in codes if c and c.strip()}
+    if codes:
+        _new_codes_save(_new_codes_load() | codes)
+
+
+def _new_codes_discard(*codes) -> None:
+    current = _new_codes_load()
+    left = current - {c.strip().lower() for c in codes if c}
+    if left != current:
+        _new_codes_save(left)
+
+
 def _genre_scan_cache_path(folder_key):
     import hashlib
     h = hashlib.md5(folder_key.encode("utf-8", errors="replace")).hexdigest()[:16]
@@ -398,6 +438,7 @@ def _run_genre_scan_thread(folder_paths):
                     if code:
                         all_codes.add(code)
             discovered_codes_count = gm.register_discovered_codes(all_codes) or 0
+            _new_codes_add(getattr(gm, "last_discovered", []))
         except Exception as e:
             logging.getLogger(__name__).warning("discovered genre codes not registered: %s", e)
 
@@ -1205,6 +1246,14 @@ def genres(request):
         sections = gm.list_sections()
         excluded_codes = sorted(gm.get_excluded_codes())
         reference_codes = gm.list_reference_codes()
+        # «Новый» — впервые найден сканом жанров и ещё не разобран; «без жанра» —
+        # ни к чему не ведёт и не исключён. Такие строки — первыми.
+        new_codes = _new_codes_load()
+        excluded = set(gm.get_excluded_codes())
+        for c in reference_codes:
+            c["is_new"] = c["code"] in new_codes
+            c["no_genre"] = not c["genre"] and c["code"] not in excluded
+        reference_codes.sort(key=lambda c: (not c["is_new"], not c["no_genre"], c["code"]))
     except Exception as e:
         error = str(e)
     return render(request, "fb2parser/genres.html", _ctx(
@@ -1215,6 +1264,8 @@ def genres(request):
         excluded_codes=excluded_codes,
         reference_codes=reference_codes,
         multi_linked_count=sum(1 for c in reference_codes if len(c["exact_genres"]) > 1),
+        new_codes_count=sum(1 for c in reference_codes if c.get("is_new")),
+        no_genre_count=sum(1 for c in reference_codes if c.get("no_genre")),
         error=error,
     ))
 
@@ -1336,6 +1387,8 @@ def genres_code_assign_set(request):
         return JsonResponse({"ok": False})
     gm = get_genres_manager()
     gm.set_code_association(code, genre_name)
+    if genre_name:
+        _new_codes_discard(code)  # разобран — больше не «новый»
     return JsonResponse({"ok": True})
 
 
@@ -1348,6 +1401,16 @@ def genres_excluded_code_add(request):
         return JsonResponse({"ok": False})
     gm = get_genres_manager()
     gm.add_excluded_code(code)
+    _new_codes_discard(code)
+    return JsonResponse({"ok": True})
+
+
+@staff_member_required(login_url="/web/login/")
+@require_http_methods(["POST"])
+def genres_new_codes_clear(request):
+    """Снять отметку «новый» со всех кодов — просмотрены, решено оставить как есть."""
+    from django.http import JsonResponse
+    _new_codes_save(set())
     return JsonResponse({"ok": True})
 
 

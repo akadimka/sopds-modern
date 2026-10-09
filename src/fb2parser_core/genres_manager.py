@@ -124,6 +124,7 @@ class GenresManager:
         """
         new_codes = []
         seen = set()
+        self.last_discovered = new_codes  # какие именно добавлены — для отметки «новый» в UI
         for code in codes:
             code = (code or '').strip()
             if not code:
