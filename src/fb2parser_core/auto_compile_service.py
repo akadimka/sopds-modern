@@ -13,6 +13,7 @@ def auto_compile_library(
     on_group: Optional[Callable[[str, str, bool], None]] = None,
     config_path: Optional[str] = None,
     filter_paths: Optional[set] = None,
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
 ) -> dict:
     """Сгенерировать CSV, найти группы и скомпилировать каждую с удалением исходников.
 
@@ -24,6 +25,10 @@ def auto_compile_library(
         config_path: путь к config.json; если None — используется дефолтный.
         filter_paths: опциональный набор абсолютных путей подпапок — если задан,
             обрабатываются только файлы внутри них (как в ``synchronize()``).
+        progress_callback: callback(current, total, status) — во время разбора
+            и перед каждой группой; исключение из него (InterruptedError —
+            «Стоп» синхронизации) прерывает компиляцию между группами: каждая
+            группа компилируется целиком или не трогается.
 
     Returns:
         dict с ключами ok (int), fail (int).
@@ -33,7 +38,8 @@ def auto_compile_library(
     sys.stdout = sys.stderr = _devnull
     try:
         svc_csv = RegenCSVService(config_path=config_path) if config_path else RegenCSVService()
-        records = svc_csv.generate_csv(library_path, output_csv_path=None, filter_paths=filter_paths)
+        records = svc_csv.generate_csv(library_path, output_csv_path=None, filter_paths=filter_paths,
+                                       progress_callback=progress_callback)
         if not records:
             records = getattr(svc_csv, 'records', []) or []
     finally:
@@ -46,7 +52,9 @@ def auto_compile_library(
 
     ok_cnt = 0
     fail_cnt = 0
-    for g in groups:
+    for i, g in enumerate(groups):
+        if progress_callback:
+            progress_callback(i, len(groups), f"Компиляция: {g.author} — {g.series}")
         # Жанр итогового файла берём из genre-папки библиотеки (первый
         # сегмент пути группы относительно library_path), а не только из
         # <genre> метаданных первой исходной книги — та часто пуста у

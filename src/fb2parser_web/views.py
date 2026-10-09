@@ -3168,13 +3168,24 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
         on_log(f"{'✓' if success else '✗'} {author} — {series}")
         sync_job["current"] = f"{author} — {series}"
 
+    def _progress(current, total, status=""):
+        # «Стоп» синхронизации — и во время автокомпиляции (между группами:
+        # каждая серия компилируется целиком или не трогается).
+        if sync_stop_flag.is_set():
+            raise InterruptedError("Остановлено пользователем")
+        if status:
+            sync_job["current"] = status
+
     try:
         result = auto_compile_library(
             str(target_path), on_group=_on_group, config_path=_config_path(),
-            filter_paths=filter_paths,
+            filter_paths=filter_paths, progress_callback=_progress,
         )
         on_log(f"✅ Компиляция завершена: {result['ok']} групп, ошибок: {result['fail']}")
         return result["ok"], result["fail"]
+    except InterruptedError:
+        on_log("⏹ Автокомпиляция остановлена пользователем")
+        raise
     except Exception as exc:
         on_log(f"❌ Ошибка компиляции: {exc}")
         return 0, 0

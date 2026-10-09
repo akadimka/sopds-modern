@@ -133,6 +133,9 @@ class SynchronizationService:
         
         # Log callback for UI integration
         self.log_callback = None
+        # «Стоп» во время переноса файлов: перенос прерывается после текущего
+        # файла, но запись в БД и чистка папок доводятся до конца (см. synchronize).
+        self._stop_requested = False
         
         # Statistics tracking
         # Смешанные значения (счётчики, списки заметок, множества путей).
@@ -418,6 +421,7 @@ class SynchronizationService:
             _records_to_move = [r for r in records if r.file_path not in _needs_reconciliation]
             _source_of = {id(r): r.file_path for r in _records_to_move}
 
+            self._stop_requested = False
             moved_records = self._move_files(_records_to_move, folder_structure, progress_callback)
             # Что куда переехало (источник → библиотека) — для журнала
             # автосинхронизации и сводки новинок.
@@ -435,18 +439,32 @@ class SynchronizationService:
             self._log(f"Всего перемещено: {len(moved_records)} файлов")
             self._log(f"Готово к внесению в БД: {len(moved_records)} записей")
 
-            # Step 5: Update database with moved files
-            if progress_callback:
-                progress_callback(80, 100, "Обновление базы данных")
+            # Перенос начат — запись в БД и чистка папок доводятся до конца даже
+            # при «Стоп»: иначе в библиотеке остались бы книги, о которых база
+            # не знает. Остановка срабатывает после них.
+            def _finishing(current, total, status):
+                if progress_callback:
+                    try:
+                        progress_callback(current, total, status)
+                    except InterruptedError:
+                        self._stop_requested = True
 
-            self._update_database(moved_records, progress_callback)
+            # Step 5: Update database with moved files
+            _finishing(80, 100, "Обновление базы данных")
+
+            self._update_database(moved_records, _finishing)
 
             # Step 6: Cleanup empty folders
-            if progress_callback:
-                progress_callback(90, 100, "Очистка пустых папок")
-            
+            _finishing(90, 100, "Очистка пустых папок")
+
             self._cleanup_empty_folders(filter_paths=_filter)
-            
+
+            if self._stop_requested:
+                self.stats['end_time'] = datetime.now()
+                self._log(f"⏹ Остановлено пользователем: перенесено {len(moved_records)} файлов, "
+                          "остальные остались в исходной папке.")
+                raise InterruptedError("Остановлено пользователем")
+
             if progress_callback:
                 progress_callback(100, 100, "Синхронизация завершена")
             
@@ -465,6 +483,10 @@ class SynchronizationService:
             
             return self.stats
             
+        except InterruptedError:
+            self.stats['end_time'] = datetime.now()
+            self._log("⏹ Синхронизация остановлена пользователем")
+            raise
         except Exception as e:
             self._log(f"ОШИБКА при синхронизации: {str(e)}")
             import traceback
@@ -1422,6 +1444,16 @@ class SynchronizationService:
         moved_records = []
         
         for i, record in enumerate(records):
+            # «Стоп»: прерываем перенос перед следующим файлом — уже
+            # перенесённые вернутся вызывающему коду и попадут в БД.
+            if progress_callback:
+                try:
+                    progress_callback(50 + int(i / max(len(records), 1) * 30), 100,
+                                      f"Перемещение в библиотеку: {i + 1}/{len(records)}")
+                except InterruptedError:
+                    self._stop_requested = True
+                    self._log("⏹ Остановка: перенос прерван, уже перенесённые файлы вносятся в БД")
+                    break
             # Delete if no structure (duplicate)
             if record.file_path not in folder_structure:
                 self._log(f"[{i+1}/{len(records)}] 🗑️  УДАЛЕН: {record.file_path} (дубликат - уже в БД)")
