@@ -601,9 +601,6 @@ msgstr ""
 "Синхронизация перемещает FB2-файлы в библиотеку по структуре "
 "жанр/автор/серия/."
 
-msgid "Only folders with an assigned genre are processed."
-msgstr "Обрабатываются только папки с назначенным жанром."
-
 msgid "Working folder:"
 msgstr "Рабочая папка:"
 
@@ -615,16 +612,6 @@ msgstr "⚠️ Операция перемещает и переименовыв
 
 msgid "▶ Start Synchronization"
 msgstr "▶ Запустить синхронизацию"
-
-msgid "ℹ️ No folder has been assigned a genre."
-msgstr "ℹ️ Ни одной папке не назначен жанр."
-
-msgid ""
-"Return to the main window, select folders and assign genres — then "
-"synchronization will become available."
-msgstr ""
-"Вернитесь в главное окно, выберите папки и назначьте им жанр — после этого "
-"синхронизация станет доступна."
 
 # --- sync_status.html ---
 msgid "⏳ Synchronizing..."
@@ -1714,3 +1701,75 @@ msgstr "Коды просмотрены — оставить как есть"
 
 msgid "Open them in the genre reference"
 msgstr "Открыть их в справочнике жанров"
+
+msgid ""
+"Only folders checked in the folder tree on the main screen are processed, "
+"and only if every FB2 file in them (at any depth) has genres from the genre "
+"tree."
+msgstr ""
+"Обрабатываются только папки, отмеченные галочками в дереве папок на главной,"
+" и только если у каждого FB2-файла в них (на любой глубине) жанры из дерева "
+"жанров."
+
+msgid "outside the source folder"
+msgstr "вне исходной папки"
+
+msgid "no FB2 files"
+msgstr "нет FB2-файлов"
+
+#, python-format
+msgid "%(bad)s of %(total)s files have no genre from the genre tree"
+msgstr "у %(bad)s из %(total)s файлов нет жанра из дерева"
+
+msgid ""
+"None of the checked folders can be synchronized yet: assign genres from the "
+"genre tree to all their files first."
+msgstr ""
+"Ни одну из отмеченных папок пока нельзя синхронизировать: сначала назначьте "
+"всем их файлам жанры из дерева."
+
+msgid "ℹ️ No folders are checked."
+msgstr "ℹ️ Не отмечено ни одной папки."
+
+msgid ""
+"Check the folders to synchronize in the folder tree on the main screen, then"
+" open synchronization again."
+msgstr ""
+"Отметьте галочками папки для синхронизации в дереве папок на главной и снова"
+" откройте синхронизацию."
+
+#, python-format
+msgid ""
+"These folders cannot be synchronized: not every FB2 file has genres from the"
+" genre tree — %(paths)s"
+msgstr ""
+"Эти папки нельзя синхронизировать — не у всех FB2-файлов жанры из дерева: "
+"%(paths)s"
+
+#, python-format
+msgid "%(n)s file"
+msgid_plural "%(n)s files"
+msgstr[0] "%(n)s файл"
+msgstr[1] "%(n)s файла"
+msgstr[2] "%(n)s файлов"
+msgstr[3] "%(n)s файла"
+
+msgid "Checking genres in the checked folders…"
+msgstr "Проверяю жанры в отмеченных папках…"
+
+msgid "Source:"
+msgstr "Источник:"
+
+msgid "moves to"
+msgstr "переносится в"
+
+msgid "Library:"
+msgstr "Библиотека:"
+
+msgid "Automatically compile series after sync (deletes source files)"
+msgstr ""
+"Автоматически компилировать серии после синхронизации (исходные файлы "
+"удаляются)"
+
+msgid "not set — select a folder on the main screen"
+msgstr "не задан — выберите папку на главной"

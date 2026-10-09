@@ -1,7 +1,7 @@
 {% load i18n %}
 <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.7rem;">
     {% trans "Sync moves FB2 files into the library using the genre/author/series/ structure." %}
-    {% trans "Only folders with an assigned genre are processed." %}
+    {% trans "Only folders checked in the folder tree on the main screen are processed, and only if every FB2 file in them (at any depth) has genres from the genre tree." %}
 </p>
 
 <div style="background:var(--bg-muted); border:1px solid var(--border); border-radius:5px; padding:0.55rem 0.8rem; margin-bottom:0.8rem; font-size:0.82rem; display:flex; flex-direction:column; gap:0.3rem;">
@@ -24,25 +24,43 @@
     </div>
 </div>
 
-{% if assignments %}
+{% if folders %}
 <div style="margin-bottom:0.8rem;">
     <div style="font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:0.4rem;">
-        {% trans "Folders to synchronize" %} ({{ assignments|length }}):
+        {% trans "Folders to synchronize" %} ({{ eligible_count }}/{{ folders|length }}):
     </div>
-    <div style="max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; background:var(--bg-muted);">
-        {% for path, genre in assignments.items %}
-        <label style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem; cursor:pointer;">
-            <span style="display:flex; align-items:center; overflow:hidden; flex:1; margin-right:0.5rem;">
-                <input type="checkbox" class="sync-folder-cb" value="{{ path }}" checked
-                       style="margin-right:0.5rem; flex-shrink:0; accent-color:#27ae60; cursor:pointer;">
-                <span style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);">{{ path }}</span>
+    <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; background:var(--bg-muted);">
+        {% for f in folders %}
+        <label class="sync-folder{% if not f.eligible %} sync-folder-blocked{% endif %}" data-eligible="{{ f.eligible|yesno:'1,0' }}"
+               style="display:block; padding:0.25rem 0.6rem; border-bottom:1px solid var(--border); font-size:0.8rem; cursor:{% if f.eligible %}pointer{% else %}not-allowed{% endif %};{% if not f.eligible %} opacity:0.6;{% endif %}">
+            <span style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="display:flex; align-items:center; overflow:hidden; flex:1; margin-right:0.5rem;">
+                    <input type="checkbox" class="sync-folder-cb" value="{{ f.path }}"{% if f.eligible %} checked{% else %} disabled{% endif %}
+                           style="margin-right:0.5rem; flex-shrink:0; accent-color:#27ae60; cursor:inherit;">
+                    <span title="{{ f.path }}" style="font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); direction:rtl; text-align:left;">&lrm;{{ f.path }}&lrm;</span>
+                </span>
+                {% if f.eligible %}
+                <span style="display:flex; gap:0.25rem; flex-shrink:0;">
+                    {% for g in f.genres %}<span style="background:#27ae60; color:#fff; border-radius:10px; padding:0.05rem 0.5rem; font-size:0.75rem; white-space:nowrap;">{{ g }}</span>{% endfor %}
+                    <span style="color:var(--text-muted); font-size:0.75rem; white-space:nowrap;">{% blocktrans count n=f.total %}{{ n }} file{% plural %}{{ n }} files{% endblocktrans %}</span>
+                </span>
+                {% endif %}
             </span>
-            <span style="background:#27ae60; color:#fff; border-radius:10px; padding:0.05rem 0.5rem; font-size:0.75rem; white-space:nowrap; flex-shrink:0;">{{ genre }}</span>
+            {% if not f.eligible %}
+            <span style="display:block; padding-left:1.6rem; color:#c0392b; font-size:0.75rem;">
+                {% if f.outside %}{% trans "outside the source folder" %}
+                {% elif not f.total %}{% trans "no FB2 files" %}
+                {% else %}{% blocktrans with bad=f.bad_files|length total=f.total %}{{ bad }} of {{ total }} files have no genre from the genre tree{% endblocktrans %}:
+                <span style="font-family:monospace;">{{ f.bad_files|slice:":3"|join:", " }}{% if f.bad_files|length > 3 %}, …{% endif %}</span>
+                {% endif %}
+            </span>
+            {% endif %}
         </label>
         {% endfor %}
     </div>
 </div>
 
+{% if eligible_count %}
 <div class="callout warning" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem;">
     {% trans "⚠️ This operation moves and renames files on disk!" %}
 </div>
@@ -67,9 +85,15 @@ function syncStart(scanPath) {
 </script>
 
 {% else %}
+<div class="callout alert" style="font-size:0.85rem; padding:0.6rem 0.9rem;">
+    {% trans "None of the checked folders can be synchronized yet: assign genres from the genre tree to all their files first." %}
+</div>
+{% endif %}
+
+{% else %}
 <div class="callout secondary" style="font-size:0.85rem; padding:0.6rem 0.9rem;">
-    {% trans "ℹ️ No folder has been assigned a genre." %}<br>
-    {% trans "Return to the main window, select folders and assign genres — then synchronization will become available." %}
+    {% trans "ℹ️ No folders are checked." %}<br>
+    {% trans "Check the folders to synchronize in the folder tree on the main screen, then open synchronization again." %}
 </div>
 {% endif %}
 

@@ -8,12 +8,7 @@ import json
 import pytest
 from django.test import RequestFactory
 
-from fb2parser_web.views import (
-    genre_assignment_times,
-    genre_assignments,
-    sync_genre_conflict_resolve,
-    sync_job,
-)
+from fb2parser_web.views import sync_genre_conflict_resolve, sync_job
 
 _FB2 = """<?xml version="1.0" encoding="utf-8"?>
 <FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
@@ -39,12 +34,8 @@ def _post(payload, admin_user):
 @pytest.fixture(autouse=True)
 def _reset_sync_job():
     sync_job.reset()
-    genre_assignments.clear()
-    genre_assignment_times.clear()
     yield
     sync_job.reset()
-    genre_assignments.clear()
-    genre_assignment_times.clear()
 
 
 @pytest.fixture
@@ -75,8 +66,6 @@ def test_chosen_genre_written_into_all_series_files(conflict, admin_user):
         text = (scan_path / rel).read_text(encoding="utf-8")
         assert "<genre>Фантастика</genre>" in text
         assert "Детектив" not in text
-    # Папка остаётся в списке назначенных жанров — её подхватит следующая синхронизация.
-    assert genre_assignments.get()[str((scan_path / "src").resolve())] == "Фантастика"
 
 
 def test_genre_outside_series_options_refused(conflict, admin_user):

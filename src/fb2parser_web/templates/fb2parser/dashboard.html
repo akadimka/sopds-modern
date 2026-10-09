@@ -180,7 +180,6 @@ window._onSelectFolder = function(targetId, path) {
     if (targetId === 'main-folder') {
         _saveDashboardRoot(path);
         reloadTree(path);
-        fetch("{% url 'fb2parser:sync_clear_assignments' %}", {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}});
     }
 };
 
@@ -189,7 +188,6 @@ document.getElementById('main-folder').addEventListener('change', function() {
     if (path) {
         _saveDashboardRoot(path);
         reloadTree(path);
-        fetch("{% url 'fb2parser:sync_clear_assignments' %}", {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}});
     }
 });
 
@@ -350,11 +348,6 @@ async function gpApply() {
     progressBar.style.background = 'var(--fp-accent)';
     progressLabel.textContent = JS_STR_PREPARING;
     resultEl.textContent = '';
-
-    // Список "Folders to synchronize" должен показывать ровно то, что сейчас
-    // выбрано и назначено — а не копиться из всех прошлых "Assign Genre" за
-    // всю сессию. Каждое новое применение жанра начинает список заново.
-    await fetch("{% url 'fb2parser:sync_clear_assignments' %}", {method: 'POST', headers: {'X-CSRFToken': _getCsrf()}});
 
     // Присвоение теперь выполняется фоновым потоком на сервере (большие папки
     // могли не укладываться в таймаут HTTP-запроса — см. assign_genre_multi) —

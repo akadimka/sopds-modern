@@ -220,8 +220,15 @@ function openSyncModal() {
     document.getElementById('sync-modal-overlay').classList.add('open');
     var folderEl = document.getElementById('main-folder');
     var path = folderEl ? folderEl.value.trim() : '';
-    var url = '{% url "fb2parser:sync" %}' + (path ? '?scan_path=' + encodeURIComponent(path) : '');
-    htmx.ajax('GET', url, {target: '#sync-modal-body', swap: 'innerHTML'}).then(function() {
+    // Синхронизируются папки, отмеченные галочками в дереве на главной
+    // (_selectedPaths есть только на странице dashboard); список может быть
+    // длинным для URL — поэтому POST.
+    var paths = (typeof _selectedPaths !== 'undefined') ? Array.from(_selectedPaths.keys()) : [];
+    // Проверка жанров всех файлов в больших папках занимает секунды.
+    document.getElementById('sync-modal-body').innerHTML =
+        '<div style="padding:2rem; text-align:center; color:var(--text-muted);">{% trans "Checking genres in the checked folders…" %}</div>';
+    htmx.ajax('POST', '{% url "fb2parser:sync" %}', {target: '#sync-modal-body', swap: 'innerHTML',
+              values: {scan_path: path, paths: JSON.stringify(paths)}}).then(function() {
         htmx.process(document.getElementById('sync-modal-body'));
     });
 }

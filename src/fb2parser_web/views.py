@@ -294,8 +294,8 @@ def _genre_scan_folder_key(folder_paths):
     Баг №78 (docs/quality-roadmap.md): кнопка "Скан" в инструменте
     извлечения жанров должна уметь работать не только с ОДНОЙ папкой из
     текстового поля, но и с несколькими папками, отмеченными на дашборде
-    (тот же список "Folders to synchronize"/`genre_assignments`, что
-    использует синхронизация) — как для sync, набор путей объединяется в
+    (те же галочки в дереве, что берёт синхронизация) — как для sync,
+    набор путей объединяется в
     один прогон, поэтому кэш/состояние адресуются по всему набору целиком.
     """
     return "|".join(sorted(folder_paths))
@@ -615,9 +615,6 @@ def genre_scan_assign(request):
         gm = None
         priority_order = []
 
-    assignments = genre_assignments.get()
-    times = genre_assignment_times.get()
-    now = time.time()
     results = {}
     applied_combos = []
     # Баг №102: собираем все пары (код, жанр) за весь батч и сохраняем в
@@ -652,19 +649,6 @@ def genre_scan_assign(request):
                     existing_genre, _exact = gm.resolve_code(code, priority_order)
                     if existing_genre != genre:
                         learned_genres.setdefault(code, set()).add(genre)
-        for abs_path, ok in per_file.items():
-            if not ok:
-                continue
-            folder_key = str(Path(abs_path).parent)
-            prev_genre = assignments.get(folder_key)
-            if prev_genre is not None and prev_genre != genre and prev_genre != "(разные)":
-                assignments[folder_key] = "(разные)"
-            elif prev_genre is None:
-                assignments[folder_key] = genre
-            times[folder_key] = now
-
-    genre_assignments.set(assignments)
-    genre_assignment_times.set(times)
 
     pending_associations = [
         (code, next(iter(genres))) for code, genres in learned_genres.items() if len(genres) == 1
@@ -1073,13 +1057,6 @@ def _run_assign_genre_thread(genre, paths):
                     if conflicts:
                         result["conflicts"] = conflicts
                     results.append(result)
-                    abs_path = os.path.abspath(path)
-                    assignments = genre_assignments.get()
-                    assignments[abs_path] = genre
-                    genre_assignments.set(assignments)
-                    times = genre_assignment_times.get()
-                    times[abs_path] = time.time()
-                    genre_assignment_times.set(times)
                 else:
                     results.append({"path": path, "success": False, "count": 0,
                                      "error": _("No FB2 files found or none changed")})
@@ -1532,7 +1509,6 @@ def _norm_cache_path(folder_path):
 
 def _norm_cache_save(folder_path, records):
     import json
-    import time
     try:
         data = {"folder": folder_path, "ts": time.time(), "records": records}
         with open(_norm_cache_path(folder_path), "w", encoding="utf-8") as f:
@@ -1543,7 +1519,6 @@ def _norm_cache_save(folder_path, records):
 
 def _norm_cache_load(folder_path, max_age_hours=24):
     import json
-    import time
     try:
         p = _norm_cache_path(folder_path)
         if not os.path.exists(p):
@@ -2874,53 +2849,54 @@ sync_job = JobState("fb2parser:sync", {
     "log": [],
 })
 sync_stop_flag = JobFlag("fb2parser:sync:stop")
-# {abs_path: genre_name} — папки с назначенным жанром в текущей сессии
-genre_assignments = SharedDict("fb2parser:genre_assignments")
-# {abs_path: unix_timestamp} — когда жанр был назначен (для отсева устаревших
-# записей от прошлых, давно закрытых сессий браузера — см. sync()).
-genre_assignment_times = SharedDict("fb2parser:genre_assignment_times")
-# Записи старше этого возраста считаются "устаревшими" при открытии диалога
-# синхронизации — накопительный кэш assign_genre_multi() иначе хранит их
-# бессрочно (TTL кэша продлевается при каждой новой записи), и через
-# несколько дней/недель в списке "Folders to synchronize" незаметно
-# накапливаются папки из давно забытых сессий браузера (обнаружено на
-# реальном случае: 2 подпапки, жанр которым назначили за много дней до
-# этого запуска, показывались рядом со свежевыбранной родительской папкой,
-# неотличимые от неё из-за обрезки длинного общего пути в UI).
-_GENRE_ASSIGNMENT_MAX_AGE = 3 * 60 * 60  # 3 часа
 
 
-def _get_clean_genre_assignments():
-    """Отмеченные на дашборде папки с назначенным жанром, без устаревших
-    записей (см. комментарии у `genre_assignments`/`_GENRE_ASSIGNMENT_MAX_AGE`
-    выше). Используется синхронизацией (`sync()`).
-    """
-    assignments = genre_assignments.get()
-    # Папки, уже перемещённые предыдущим прогоном синхронизации (или удалённые
-    # вручную), остаются в этом кеше 6 часов — без проверки существования панель
-    # при повторном открытии продолжает показывать их как "к синхронизации".
-    stale = [path for path in assignments if not os.path.isdir(path)]
-    # Отдельно — записи, назначенные слишком давно (см. _GENRE_ASSIGNMENT_MAX_AGE):
-    # отсутствие метки времени (запись сделана до появления этого механизма)
-    # тоже считаем устаревшим — безопасный дефолт для уже накопленного мусора.
-    times = genre_assignment_times.get()
-    now = time.time()
-    stale += [
-        path for path in assignments
-        if path not in stale
-        and now - times.get(path, 0) > _GENRE_ASSIGNMENT_MAX_AGE
-    ]
-    if stale:
-        for path in stale:
-            assignments.pop(path, None)
-            times.pop(path, None)
-        genre_assignments.set(assignments)
-        genre_assignment_times.set(times)
-    return assignments
+def _top_level_paths(paths):
+    """Отмеченные папки без вложенных в другие отмеченные (галочка на папке
+    в дереве отмечает и все её загруженные подпапки) — правило допуска и
+    синхронизация всё равно охватывают папку целиком."""
+    norm = sorted({os.path.abspath(p) for p in paths if isinstance(p, str) and p.strip()},
+                  key=lambda p: (len(p), p))
+    top = []
+    for p in norm:
+        if not any(p == t or _is_within_folder(p, t) for t in top):
+            top.append(p)
+    return sorted(top, key=str.lower)
+
+
+def _check_sync_folders(paths, scan_path):
+    """Проверить отмеченные на дашборде папки по правилу допуска к
+    синхронизации (fb2parser_core.sync_eligibility): все FB2-файлы на любой
+    глубине размечены жанрами дерева. Папка вне исходной (scan_path) не
+    допускается — синхронизация обрабатывает только её содержимое."""
+    from fb2parser_core.sync_eligibility import FolderCheck, check_folder
+
+    from .fb2parser_bridge import get_genres_manager
+    names = get_genres_manager().all_genre_names()
+    root = os.path.abspath(scan_path) if scan_path else ""
+    checks = []
+    for p in _top_level_paths(paths):
+        if root and (p == root or _is_within_folder(p, root)):
+            checks.append(check_folder(p, names))
+        else:
+            checks.append(FolderCheck(path=p, outside=True))
+    return checks
+
+
+def _requested_sync_paths(request):
+    import json as _json
+    try:
+        paths = _json.loads(request.POST.get("paths") or request.GET.get("paths") or "[]")
+    except ValueError:
+        return []
+    return paths if isinstance(paths, list) else []
 
 
 @staff_member_required(login_url="/web/login/")
 def sync(request):
+    """Окно синхронизации. Папки — те, что отмечены галочками в дереве на
+    главной (POST/GET `paths`, JSON); каждая проверяется по правилу допуска
+    (`_check_sync_folders`), непрошедшие показываются недоступными."""
     state = sync_job.get()
     if not state["running"] and (state["done"] or state["error"]):
         # Re-opening the sync panel after a previous run finished — don't show
@@ -2928,8 +2904,8 @@ def sync(request):
         # that hasn't started yet.
         state = sync_job.reset()
     pct = _job_pct(state)
-    scan_path = request.GET.get("scan_path", "").strip()
-    assignments = _get_clean_genre_assignments()
+    scan_path = (request.POST.get("scan_path") or request.GET.get("scan_path", "")).strip()
+    folders = _check_sync_folders(_requested_sync_paths(request), scan_path)
     from fb2parser_core.settings_manager import SettingsManager
 
     from .fb2parser_bridge import _config_path
@@ -2938,20 +2914,9 @@ def sync(request):
         "state": state, "pct": pct,
         "scan_path": scan_path,
         "library_path": sm.get_library_path(),
-        "assignments": assignments,
+        "folders": folders,
+        "eligible_count": sum(1 for f in folders if f.eligible),
     })
-
-
-@staff_member_required(login_url="/web/login/")
-def sync_clear_assignments(request):
-    """Сбросить список папок с назначенными жанрами (при смене scan_path)."""
-    if request.method != "POST":
-        from django.http import HttpResponseNotAllowed
-        return HttpResponseNotAllowed(["POST"])
-    genre_assignments.clear()
-    genre_assignment_times.clear()
-    from django.http import HttpResponse
-    return HttpResponse("ok")
 
 
 @staff_member_required(login_url="/web/login/")
@@ -3113,22 +3078,6 @@ def sync_genre_conflict_resolve(request):
     failed = [p for p, ok in per_file.items() if not ok]
     if failed:
         return JsonResponse({"error": _("Could not write the genre to %(failed)d of %(total)d files") % {"failed": len(failed), "total": len(abs_paths)}}, status=500)
-
-    # Следующая синхронизация берёт только папки из списка назначенных
-    # жанров (с истечением по времени) — обновляем его, как genre_scan_assign.
-    assignments = genre_assignments.get()
-    times = genre_assignment_times.get()
-    now = time.time()
-    for p in abs_paths:
-        folder_key = str(_Path(p).parent)
-        prev = assignments.get(folder_key)
-        if prev is None:
-            assignments[folder_key] = genre
-        elif prev != genre:
-            assignments[folder_key] = "(разные)"
-        times[folder_key] = now
-    genre_assignments.set(assignments)
-    genre_assignment_times.set(times)
 
     notes = [n for n in notes if n is not note]
     sync_job.update(genre_conflict_notes=notes)
@@ -3339,7 +3288,6 @@ def _run_sync_thread():
 
 @staff_member_required(login_url="/web/login/")
 def sync_start(request):
-    import json as _json
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
@@ -3347,33 +3295,21 @@ def sync_start(request):
         return _render_sync_status(sync_job.get())
     scan_path = request.POST.get("scan_path", "").strip() or None
     auto_compile = request.POST.get("auto_compile") == "1"
-    assignments = genre_assignments.get()
-
-    # Только папки, отмеченные галочкой в списке "Folders to synchronize" на
-    # самой странице — а не весь genre_assignments. Это накопительный кэш
-    # (см. assign_genre_multi): туда попадает КАЖДАЯ папка, которой хоть раз
-    # присвоили жанр, и без этой фильтрации по чекбоксам старые/лишние
-    # назначения из прошлых сессий незаметно подмешивались бы в текущий
-    # запуск синхронизации.
-    try:
-        requested_paths = _json.loads(request.POST.get("paths", "[]"))
-    except Exception:
-        requested_paths = []
-    selected_paths = [p for p in requested_paths if p in assignments]
-
-    if not selected_paths:
+    # Папки, отмеченные в окне синхронизации (= галочки в дереве на главной).
+    # Правило допуска перепроверяется здесь же: файлы могли измениться с
+    # момента открытия окна, а запрос — прийти не из окна.
+    folders = _check_sync_folders(_requested_sync_paths(request), scan_path)
+    rejected = [f.path for f in folders if not f.eligible]
+    if not folders or rejected:
         from django.template.loader import render_to_string
+        error = (_("These folders cannot be synchronized: not every FB2 file has genres from the genre tree — %(paths)s")
+                 % {"paths": ", ".join(rejected)}) if rejected else _("No folders selected for sync.")
         html = render_to_string("fb2parser/sync_status.html", {
-            "state": {
-                "running": False, "done": False,
-                "error": _("No folders selected for sync."),
-                "log": [],
-            },
+            "state": {"running": False, "done": False, "error": error, "log": []},
             "pct": 0,
         })
         return HttpResponse(html)
-
-    allowed = set(selected_paths)
+    allowed = {f.path for f in folders}
     sync_stop_flag.clear()
     if not sync_job.try_start(
         processed=0, total=0, current="", stats={}, log=[],
@@ -3381,16 +3317,6 @@ def sync_start(request):
         auto_compile=auto_compile,
     ):
         return _render_sync_status(sync_job.get())
-
-    # Снимаем отмеченные папки с очереди — иначе они останутся в
-    # genre_assignments и подмешаются в следующий запуск синхронизации
-    # (см. комментарий выше), даже если этот запуск ещё не завершился.
-    times = genre_assignment_times.get()
-    for p in selected_paths:
-        assignments.pop(p, None)
-        times.pop(p, None)
-    genre_assignments.set(assignments)
-    genre_assignment_times.set(times)
 
     threading.Thread(target=_run_sync_thread, daemon=True).start()
     return _render_sync_status(sync_job.get())
