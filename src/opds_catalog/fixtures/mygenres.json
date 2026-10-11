@@ -3697,5 +3697,14 @@
       "section": "Новые (не классифицировано)",
       "subsection": ""
     }
+  },
+  {
+    "model": "opds_catalog.genre",
+    "pk": 778,
+    "fields": {
+      "genre": "18+",
+      "section": "Новые (не классифицировано)",
+      "subsection": ""
+    }
   }
 ]
