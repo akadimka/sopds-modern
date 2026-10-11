@@ -8530,11 +8530,23 @@ Golden-снапшот: у всех прежних записей ни одно �
    номером и ≥80% номеров различны. У «МИФ. Проза» номеров нет, в «Клубе
    убийств» 14 номеров, различных 4 — защита бага №56 не тронута.
 
+5. **Серия из имени папки — свойство папки, а не книги** (правило
+   пользователя). Серия папки вычислялась по каждой книге с учётом её
+   автора: опечатка в имени автора в метаданных («Алкесандр Шакилов») или
+   неполный список соавторов давали у соседнего тома «Край - Шакилов
+   Александр» вместо «Край», а то и серию из метаданных. Финальный
+   `_postcheck_unify_folder_series`: если хоть одна книга папки получила
+   серию из папки, её получают все (кроме уточнения на уровень глубже
+   `Серия\Подсерия` и сборников); из разных значений выбирается то, от
+   которого остальные отличаются только хвостом « - Автор», иначе самое
+   частое.
+
 Golden-снапшот: у всех прежних записей ни одно поле не изменилось.
 
 Закреплено: `TestFolderOrdinalWithoutSpace`, `TestSeriesDashAuthorFolder`,
-`TestSharedWorldSeriesNotTreatedAsImprint` в
-`tests/integration/fb2parser_core/test_regen_edge_cases.py` (5 подпапок
+`TestSharedWorldSeriesNotTreatedAsImprint`,
+`TestFolderSeriesIsTheSameForEveryBookInFolder` в
+`tests/integration/fb2parser_core/test_regen_edge_cases.py` (8 подпапок
 коллекции в `tests/data/regen_library/`, записи в
 `scripts/build_regen_fixtures.py`).
 

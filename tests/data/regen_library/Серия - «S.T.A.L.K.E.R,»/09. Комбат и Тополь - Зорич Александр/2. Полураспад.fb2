@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Александр</first-name>
+    <last-name>Зорич</last-name>
+   </author>
+   <book-title>Полураспад</book-title>
+   <annotation>
+    <p>Сталкеры Комбат и Тополь, полюбившиеся читателям по бестселлеру «Беглый огонь», вновь возвращаются в Зону! Ни миллионы, ни супер-яхта, ни даже любовь не смогли погасить в неустрашимых сердцах сталкеров жажду приключений. Тем более что заблудившемуся студенту — «отмычке» срочно нужна помощь в добыче легендарного артефакта «подсолнух». Из-за этого-то артефакта бесстрашным и острым на язык сталкерам и предстоит путешествие в саму обитель зла — в логово нового и чрезвычайно опасного клана «каперы». Что ждет там Тополя и Комбата? Наверняка можно сказать только одно: слабакам и трусам в таких местах делать нечего.</p>
+   </annotation>
+   <date>2009</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="S.T.A.L.K.E.R."/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>shum29</nickname>
+   </author>
+   <program-used>FB Editor v2.0</program-used>
+   <date value="2010-05-29">29.05.2010</date>
+   <src-url>http://www.nowa.cc</src-url>
+   <src-ocr>Veterock (djvu)</src-ocr>
+   <id>D0C85A57-BAD5-4E01-8977-A4C72A9E01D9</id>
+   <version>1.1</version>
+   <history>
+    <p>v 1.0 — вычтка, создание fb2 — (shum29), v 1.1, правка — Weer</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Полураспад</book-name>
+   <publisher>Астрель, АСТ</publisher>
+   <city>М.</city>
+   <year>2010</year>
+   <isbn>978-5-17-064142-0, 978-5-271-26762-8</isbn>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

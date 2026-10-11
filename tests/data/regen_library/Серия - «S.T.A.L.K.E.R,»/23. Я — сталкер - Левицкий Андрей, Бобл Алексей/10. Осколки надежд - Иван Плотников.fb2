@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    <author>
+      <first-name>Иван</first-name>
+      <middle-name>Федорович</middle-name>
+      <last-name>Плотников</last-name>
+    </author>
+    <book-title>Осколки надежд</book-title>
+    <annotation>
+      <p>Один стремится обезвредить серийного убийцу. Другой мечтает подняться по карьерной лестнице. Третий надеется спасти мир. Но все они невольно движутся к одной и той же цели. Их пути пересекаются, расходятся и соединяются вновь, порождая события, способные встряхнуть Зону до самого дна. Удастся ли им самим не сгинуть в мясорубке? Согласны ли они поставить жизнь на кон ради своих устремлений? Оправдаются ли их надежды? Кто из них выйдет победителем или победителей не будет совсем? Ведь запланированный итог неизбежен, а герои всего лишь марионетки в руках чего-то большего…</p>
+    </annotation>
+    <keywords>миры Стругацких,сталкеры,аномальные зоны,мутанты,книги по играм,поиск артефактов,постапокалиптика</keywords>
+    <date value="2016-01-01">2016</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Я – сталкер" number="12"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Roland</first-name>
+      <last-name/>
+    </author>
+    <program-used>OOoFBTools-2.40 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-10-06">06.10.2016</date>
+    <id>28fa949f-8aeb-11e6-8a91-0cc47a545a1e</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <book-name>Я – сталкер. Осколки надежд : [фантастический роман] / Иван Плотников</book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>Москва</city>
+    <year>2016</year>
+    <isbn>978-5-17-099274-4</isbn>
+    <sequence name="stalker"/>
+    <sequence name="Апокалипсис-СТ"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

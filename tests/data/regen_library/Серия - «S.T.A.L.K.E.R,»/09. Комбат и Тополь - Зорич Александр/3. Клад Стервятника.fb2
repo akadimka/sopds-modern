@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   <author>
+    <first-name>Александр</first-name>
+    <last-name>Зорич</last-name>
+   </author>
+   <author>
+    <first-name>Сергей</first-name>
+    <last-name>Челяев</last-name>
+   </author>
+   <book-title>Клад Стервятника</book-title>
+   <annotation>
+    <p>Георгий Птицын — он же Гоша, он же Трубач — музыкант, «лабух», который волею судеб прижился в Зона-индустрии.</p>
+    <p>Комбат с Тополем взяли знатный хабар и теперь гуляют на всю катушку?</p>
+    <p>Зовите Трубача, только не забудьте заплатить ему как следует!</p>
+    <p>Аспирант в лагере ученых на Янтаре празднует защиту диссертации?</p>
+    <p>Без Гоши не обойдется!</p>
+    <p>Но после одной чересчур веселой гулянки с участием многих знаменитых личностей Зоны Гоша обнаруживает, что умудрился проиграться в карты не кому-нибудь, а… темным сталкерам! Как возвращать солидный долг?</p>
+    <p>Выход только один: в Зону за хабаром! Трубач вынужден довериться случайно попавшей в его руки информации о легендарном Кладе Стервятника и искать себе подходящую компанию для рейда в Зону…</p>
+   </annotation>
+   <date>2010</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Проект S.T.A.L.K.E.R." number="45"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>MMM</nickname>
+   </author>
+   <program-used>TXT_Preparation, FictionBook Editor Release 2.6</program-used>
+   <date value="2010-11-01">01.11.2010</date>
+   <src-url>http://lib.rus.ec/</src-url>
+   <src-ocr>unknown</src-ocr>
+   <id>CB2854B6-47CE-4D0C-928F-5C72F00A2E22</id>
+   <version>1.1</version>
+   <history>
+    <p>ver 1.0 — создание FB2 из TXT.</p>
+    <p>ver 1.1 — дополнительное форматирование, обработка скриптами (MMM).</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Зорич А., Челяев С. Клад Стервятника: [фантаст. роман]</book-name>
+   <publisher>ACT; Астрель; Харвест</publisher>
+   <city>М.; М.; Минск</city>
+   <year>2010</year>
+   <isbn>978-5-17-068929-3, 978-5-271-29622-2, 978-985-16-8735-6</isbn>
+   <sequence name="S.T.A.L.K.E.R."/>
+  </publish-info>
+  <custom-info info-type="">З-86</custom-info>
+  <custom-info info-type="">УДК 821.161.1-312.9</custom-info>
+  <custom-info info-type="">ББК 84 (2Рос=Рус)6-44</custom-info>
+  <custom-info info-type="">Художник — И. Хивренко.</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

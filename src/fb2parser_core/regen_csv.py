@@ -1262,6 +1262,10 @@ class RegenCSVService:
         # трогает только записи с пустым proposed_series.
         self._postcheck_link_base_arc_book_into_named_series()
 
+        # После отката к метаданным (иначе он снова подменит серию папки) и до
+        # очистки серий у сборников (её не отменяем).
+        self._postcheck_unify_folder_series()
+
         self._clear_series_for_compilations()
         self.logger.log("[OK] Series cleared for compilations")
 
@@ -1973,6 +1977,57 @@ class RegenCSVService:
         if cleared:
             _log.info(f"[POST-CHECK] Cleared {cleared} series values ('вне серий'/'без серии' marker)")
             self.logger.log(f"[OK] POST-CHECK: Cleared {cleared} series values marked 'no series'")
+
+    def _postcheck_unify_folder_series(self) -> None:
+        """Серия из имени папки — свойство папки, а не книги.
+
+        Если хоть одна книга папки получила серию из папки (folder_dataset/
+        folder_hierarchy), её получают все книги папки. Серия папки
+        вычисляется по каждой книге с учётом её автора, и опечатка в имени
+        автора или неполный список соавторов в метаданных давали у соседнего
+        тома «Край - Шакилов Александр» вместо «Край» или серию из метаданных.
+
+        Из разных значений выбирается то, к которому остальные отличаются
+        только хвостом « - Автор»; иначе самое частое. Серию на уровень
+        глубже («Серия папки\\Подсерия») не трогаем.
+        """
+        from collections import Counter, defaultdict
+
+        folder_sources = ('folder_dataset', 'folder_hierarchy')
+        by_folder: dict = defaultdict(list)
+        for record in self.records:
+            if record.file_path:
+                by_folder[str(Path(record.file_path).parent)].append(record)
+
+        unified = 0
+        for recs in by_folder.values():
+            values = Counter(r.proposed_series for r in recs
+                             if r.series_source in folder_sources and r.proposed_series)
+            if not values:
+                continue
+            canonical = next(
+                (v for v in sorted(values, key=len)
+                 if all(w == v or w.startswith(v + ' - ') for w in values)),
+                None,
+            ) or max(values, key=lambda v: (values[v], -len(v)))
+            source = Counter(r.series_source for r in recs
+                             if r.proposed_series == canonical and r.series_source in folder_sources
+                             ).most_common(1)[0][0]
+            for record in recs:
+                if record.proposed_series == canonical and record.series_source in folder_sources:
+                    continue
+                if record.proposed_series.startswith(canonical + '\\'):
+                    continue
+                log_decision(
+                    record,
+                    f"UNIFY FOLDER SERIES: {record.proposed_series!r} ({record.series_source}) -> "
+                    f"{canonical!r} — серия из имени папки у других книг этой папки.",
+                )
+                record.proposed_series = canonical
+                record.series_source = source
+                unified += 1
+        if unified:
+            self.logger.log(f"[POST-CHECK] Unified folder series for {unified} records")
 
     def _clear_series_for_compilations(self) -> None:
         """Clear series for compilation/collection records.

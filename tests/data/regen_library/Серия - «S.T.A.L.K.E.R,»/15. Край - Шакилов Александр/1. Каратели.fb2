@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Александр</first-name>
+    <last-name>Шакилов</last-name>
+   </author>
+   <book-title>Каратели</book-title>
+   <annotation>
+    <p>Мародеры, наемные убийцы и бандиты — дно Зоны. Их ненавидят сталкеры, на них охотятся военные, и сами они убивают друг друга. Но все же некоторые выживают даже в этом жестоком мире и становятся лишь сильнее.</p>
+    <p>Макс Краевой по прозвищу Край — удачливый главарь небольшой банды. Чтобы претворить в жизнь свои планы, он решает ограбить скупщика Сидоровича, у которого недавно появился редкий артефакт. Выясняется, что этот артефакт нужен не только Краю. Поневоле бандит вмешивается в противостояние военных группировок Периметра. Отныне он — важная фигура на шахматной доске под названием Зона Отчуждения. Фигура, которая ведет собственную игру…</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="S.T.A.L.K.E.R."/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Weer</nickname>
+   </author>
+   <program-used>Book Designer 5.0, FictionBook Editor 2.4</program-used>
+   <date value="2010-07-27">27.07.2010</date>
+   <id>C40AF811-F053-44CD-9468-FDD9B7F99764</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 — создание fb2 — Weer</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Каратели</book-name>
+   <publisher>АСТ, Астрель</publisher>
+   <city>М.</city>
+   <year>2010</year>
+   <isbn>978-5-17-064962-4, 978-5-271-26759-8</isbn>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

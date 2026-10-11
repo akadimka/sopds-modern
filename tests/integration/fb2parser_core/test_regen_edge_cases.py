@@ -962,3 +962,24 @@ class TestSharedWorldSeriesNotTreatedAsImprint:
         rec = _by_suffix(records, self.ROOT, folder, filename)
         assert rec.proposed_series == series
         assert rec.series_number == number
+
+
+class TestFolderSeriesIsTheSameForEveryBookInFolder:
+    """Серия из имени папки — свойство папки, а не книги: если её получила
+    хотя бы одна книга папки, её получают все. Серия папки вычисляется по
+    каждой книге с учётом её автора, и опечатка в имени автора
+    («Алкесандр Шакилов») или неполный список соавторов в метаданных
+    давали у соседнего тома «Край - Шакилов Александр» вместо «Край»,
+    а то и серию из метаданных («Проект S.T.A.L.K.E.R.», «Я – сталкер»)."""
+
+    ROOT = "Серия - «S.T.A.L.K.E.R,»"
+
+    @pytest.mark.parametrize("folder, series", [
+        ("15. Край - Шакилов Александр", "Край"),
+        ("09. Комбат и Тополь - Зорич Александр", "Комбат и Тополь"),
+        ("23. Я — сталкер - Левицкий Андрей, Бобл Алексей", "Я — сталкер"),
+    ])
+    def test_all_books_get_folder_series(self, records, folder, series):
+        recs = [r for r in records if Path(r.file_path).parent.parts[-2:] == (self.ROOT, folder)]
+        assert recs, folder
+        assert {r.proposed_series for r in recs} == {series}

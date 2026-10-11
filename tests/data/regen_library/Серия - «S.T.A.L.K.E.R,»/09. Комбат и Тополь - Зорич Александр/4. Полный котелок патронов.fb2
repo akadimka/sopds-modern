@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Александр</first-name>
+    <last-name>Зорич</last-name>
+   </author>
+   <book-title>Полный котелок патронов</book-title>
+   <annotation>
+    <p>Сколько говорилось о том, что Чернобыльскую Зону Отчуждения надо уничтожить! Сколько планов строили военные! Но все срывалось. Однако в один прекрасный день все изменилось. Командование вооруженными силами ООН в районе Зоны получает полковник Буянов, и бронетехника входит в Зону…</p>
+    <p>Но Зона готова к войне! Мощнейшие Выбросы парализуют войсковую операцию. И тогда последним шансом военных на успех становятся неразлучные друзья сталкеры Тополь и Комбат. Им предстоит вести вооруженную до зубов армейскую разведгруппу в самое сердце Зоны, в эпицентр Выбросов, на ЧАЭС.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Комбат и Тополь" number="4"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Kortes_10</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2011-07-18">18 July 2011</date>
+   <src-ocr>Книга подготовлена для библиотеки HL (Scan - shtuks; OCR, ReadCheck, Conv - Kortes_10)</src-ocr>
+   <id>EE23B5ED-8C5D-46BA-97AF-91CCDFFAB929</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла Kortes_10;</p>
+   </history>
+  <ksid>11784</ksid></document-info>
+  <publish-info>
+   <book-name>Полный котелок патронов  /  Александр Зорич</book-name>
+   <publisher>Издательства: АСТ, Астрель</publisher>
+   <city>Москва</city>
+   <year>2011</year>
+   <isbn>978-5-17-073978-3, 978-5-271-35764-0</isbn>
+   <sequence name="Проект S.T.A.L.K.E.R." number="60"/>
+  </publish-info>
+  <custom-info info-type=""> Компьютерный дизайн Г. Смирновой.
+ Мягкая обложка, 320 стр.
+ Тираж: 25000 экз.
+ Формат: 70x90/16 (~170х215 мм)</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

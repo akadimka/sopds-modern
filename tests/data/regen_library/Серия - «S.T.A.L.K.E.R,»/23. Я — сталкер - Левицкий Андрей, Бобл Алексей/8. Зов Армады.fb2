@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Андрей</first-name>
+    <middle-name>Юрьевич</middle-name>
+    <last-name>Левицкий</last-name>
+   </author>
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Александрович</middle-name>
+    <last-name>Коротков</last-name>
+   </author>
+   <book-title>Зов Армады</book-title>
+   <annotation>
+    <p>Четвертый год после Судного дня – катаклизма, погубившего пять шестых жителей планеты. В Пади оставшиеся в живых люди гибнут под натиском воинствующих группировок, диких мутантов и смертельных аномалий. Из уст в уста ходит легенда о райском уголке, где нет крови, врагов, болезней и голода, найти который способен лишь тот, кого озарит знамение, кто чист душой и силен духом. Кто-то свыше тщательно оберегает древнюю внеземную тайну, спрятанную на опустошенной Земле. Путь к Вратам неизвестен, к тому же далек и опасен. Врата находятся под защитой огромной аномалии «Дуга», и охраняют их Стражи – то ли сильные воины, то ли страшные чудовища. Молодой сталкер Данила по прозвищу Треш, долгие годы разыскивающий отца, военного разведчика, пропавшего во время спецоперации еще до Судного дня, отправляется в путь. Потому что надежный источник сообщил: «Ищи отца там, где Врата». Чрезвычайно опасна и коварна эта дорога без настоящих друзей… </p>
+   </annotation>
+   <date value="2015-01-01">2015</date>
+   <coverpage>
+    <image l:href="#ZovArmady.jpeg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>On84ly</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2015-06-15">2015-06-15</date>
+   <id>5bc68153-139b-11e5-bf8a-002590591ed2</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 – (On84ly)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Я – сталкер. Зов Армады</book-name>
+   <publisher>Аст</publisher>
+   <city>Москва</city>
+   <year>2015</year>
+   <isbn>978-5-17-091251-3</isbn>
+   <sequence name="STALKER"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

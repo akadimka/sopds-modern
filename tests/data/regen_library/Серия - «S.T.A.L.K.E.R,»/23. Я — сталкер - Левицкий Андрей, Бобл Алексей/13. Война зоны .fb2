@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Андрей</first-name>
+    <middle-name>Юрьевич</middle-name>
+    <last-name>Левицкий</last-name>
+    <id>3fafd307-06cc-102b-9d2a-1f07c3bd69d8</id>
+   </author>
+   <book-title>Война Зоны</book-title>
+   <annotation>
+    <p>Противостояние в Зоне развернулось не на шутку. Бывшие друзья теперь враги. Химик засел в таинственном Институте, на секретных ярусах которого обнаружились темные тайны, о которых он и не подозревал. Бывалый сталкер разрывается между желанием излечиться и стремлением разгадать секреты артефакта, который может вылечить его. Тем временем Пригоршня сколачивает боевой отряд, чтобы взять Институт штурмом и выжечь его дотла. Пришел в движение весь сталкерский мир – и схватка теперь неизбежна!</p>
+   </annotation>
+   <keywords>охота за артефактами,миры Стругацких,сталкеры,аномальные зоны,мутанты,книги по компьютерным играм,постапокалиптика</keywords>
+   <date value="2018-01-01">2018</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Апокалипсис-СТ">
+    <sequence name="Я – Сталкер" number="15"/>
+   </sequence>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Руслан</first-name>
+    <last-name>Волченко</last-name>
+    <nickname>Ruslan</nickname>
+   </author>
+   <program-used>OOoFBTools-2.54 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2018-09-19">19 September 2018</date>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>238596dd-b871-11e8-9614-0cc47a545a1e</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – Создание fb2 из издательского текста (Ruslan)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>А. Ю. Левицкий. Я – сталкер. Война Зоны</book-name>
+   <publisher>ООО «Издательство АСТ»</publisher>
+   <city>Москва</city>
+   <year>2018</year>
+   <isbn>978-5-17-110475-7</isbn>
+   <sequence name="STALKER"/>
+  </publish-info>
+  <custom-info info-type="">© А. Ю. Левицкий © ООО «Издательство АСТ», 2018</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

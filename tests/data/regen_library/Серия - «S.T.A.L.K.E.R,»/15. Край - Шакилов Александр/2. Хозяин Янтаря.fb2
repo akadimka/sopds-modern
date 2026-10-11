@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Алкесандр</first-name>
+    <last-name>Шакилов</last-name>
+   </author>
+   <book-title>Хозяин Янтаря</book-title>
+   <annotation>
+    <p>Есть винтовка Гаусса? Сам черт тебе не брат! Но удача — девушка с характером: сегодня ты ей люб, а завтра — наоборот. Максим Краевой, беглый зэк и бывший каратель, убедился в этом на личном опыте. Он был в шаге от триумфа — и вынужден с нуля начать свой путь к мечте. Однако теперь он знает, кто во всем виноват. Это загадочный Хозяин Янтаря, которому подчиняются отряды сталкеров-ныряльщиков.</p>
+    <p>Мутанты и аномалии, бандиты и военные — казалось, сама Зона ополчилась на Макса, но он выжил, не сломался вопреки всему.</p>
+    <p>А вот сумеет ли он победить?..</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>UARodion</nickname>
+   </author>
+   <program-used>doc2fb, FictionBook Editor 2.4</program-used>
+   <date value="2010-12-07">2010-12-07</date>
+   <src-ocr>Книга подготовлена для библиотеки Huge Library (Scan: Huge Library; OCR, Conv.: UARodion)</src-ocr>
+   <id>A4EB971E-4E55-4107-9BD0-8228A9D96628</id>
+   <version>1.1</version>
+   <history>
+    <p>1.0 — создание fb2 — UARodion;</p>
+    <p>1.1 — коррекция структуры, доп. вычитка — shtuks;</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Хозяин Янтаря / Шакилов Александр</book-name>
+   <publisher>АСТ</publisher>
+   <year>2010</year>
+   <isbn>978-5-17-067501-2</isbn>
+   <sequence name="S.T.A.L.K.E.R."/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
