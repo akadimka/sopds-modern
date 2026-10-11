@@ -26,6 +26,7 @@ from .evidence import folder_has_signal as _folder_has_signal_fn
 from .evidence import log_decision, series_source_rank
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from .fb2_author_extractor import FB2AuthorExtractor
+from .filename_stem import file_stem, normalize_stem
 from .folder_classifier import FolderClassifier, FolderType
 from .logger import Logger
 from .passes import (
@@ -1378,7 +1379,7 @@ class RegenCSVService:
                 continue
             if not record.proposed_author or ',' not in record.proposed_author:
                 continue
-            stem = Path(record.file_path).stem.lower().replace('ё', 'е')
+            stem = file_stem(record.file_path).lower().replace('ё', 'е')
             parts = [a.strip() for a in record.proposed_author.split(',')]
             # Фамилия = первое слово каждого автора (формат «Фамилия Имя»)
             kept = [
@@ -1944,7 +1945,7 @@ class RegenCSVService:
             if not record.proposed_series:
                 continue
             path = Path(record.file_path)
-            parts_to_check = (*path.parts[:-1], path.stem)
+            parts_to_check = (*path.parts[:-1], normalize_stem(path.stem))
             if any(is_no_series_folder(part, self._no_series_names) for part in parts_to_check):
                 record.proposed_series = ''
                 record.series_number = ''
@@ -2060,7 +2061,7 @@ class RegenCSVService:
         for record in self.records:
             if record.proposed_author:
                 continue
-            filename = Path(record.file_path).stem  # без расширения
+            filename = file_stem(record.file_path)  # без расширения
             # Попытка извлечь автора из скобок в имени файла
             m = _paren_re.search(filename)
             if m:
@@ -2225,7 +2226,7 @@ class RegenCSVService:
             matches = []  # (record, lo, hi, raw_value)
             ok = True
             for rec in group:
-                stem = Path(rec.file_path).stem.replace('ё', 'е').replace('Ё', 'Е')
+                stem = file_stem(rec.file_path).replace('ё', 'е').replace('Ё', 'Е')
                 m = re.search(
                     r'(?i)' + re.escape(_sr_n)
                     + r'[\s\-]+(\d{1,3})(?:\s*[-–—]\s*(\d{1,3}))?\s*(?:[\.\s]|$)',
@@ -2973,7 +2974,7 @@ class RegenCSVService:
                 continue
             # Извлечь часть имени файла после автора (Author. Title → Title)
             def _title_part(rec, _author=author, _self=self):
-                stem = Path(rec.file_path).stem
+                stem = file_stem(rec.file_path)
                 _a_norm = _self._norm_for_series_cmp(_author)
                 for sep in ('. ', ' - '):
                     if sep in stem:

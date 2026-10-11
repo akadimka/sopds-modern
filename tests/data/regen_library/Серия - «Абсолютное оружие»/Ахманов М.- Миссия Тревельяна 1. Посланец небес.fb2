@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Михаил</first-name>
+    <last-name>Ахманов</last-name>
+    <id>cb137a56-2a80-102a-9ae1-2dfe723fe7c7</id>
+   </author>
+   <book-title>Посланец небес</book-title>
+   <annotation>
+    <p>Ивар Тревельян отправляется на планету Осиер, населенную подобными землянам гуманоидами, находящимися на стадии средневековья. В некоторых отношениях этот мир благополучнее Земли в аналогичный период — он не столь кровав и жесток, ибо законность в нем поддерживает всемогущая империя, покорившая единственный населенный континент планеты. Но почему-то это общество не воспринимает новаций земных прогрессоров, и Тревельян должен выяснить, в чем тут дело.</p>
+   </annotation>
+   <date>2005</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Абсолютное оружие"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Black</first-name>
+    <last-name>Jack</last-name>
+   </author>
+   <program-used>FB Tools, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2008-02-01">2008-02-01</date>
+   <src-url>http://www.litres.ru/</src-url>
+   <src-ocr>Текст книги предоставлен издательством «Эксмо»</src-ocr>
+   <id>D171CCD0-2A99-40C2-9471-542792EF9F8C</id>
+   <version>2.01</version>
+   <history>
+    <p>v. 2.0 — Black Jack — создание fb2-документа из издательского текста</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>М. Ахманов. Посланец небес</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2005</year>
+   <isbn>5-699-09734-1</isbn>
+   <sequence name="Абсолютное оружие"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

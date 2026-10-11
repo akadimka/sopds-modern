@@ -862,3 +862,36 @@ class TestMakIsAFirstNameNotAParticle:
             "Рейнольдс Мак - Наемник.fb2",
         )
         assert rec.proposed_author == "Рейнольдс Мак"
+
+
+class TestInitialDotDashSeparator:
+    """«Ахманов М.- Миссия Тревельяна 1. Посланец небес.fb2»: дефис
+    приклеен к точке инициала, пробела перед ним нет. Разбор имён ждал
+    « - », поэтому автором становилось «Ахманов М.- Миссия Тревельяна 1»,
+    а серия не бралась ни из имени, ни из метаданных — даже совпадающих
+    («Миссия Тревельяна 6» с <sequence name="Миссия Тревельяна"/>).
+    Раньше это маскировала издательская серия «Абсолютное оружие» с
+    соседних файлов; после внесения её в series_folder_blacklist книги
+    остались вовсе без серии."""
+
+    FOLDER = ("Серия - «Абсолютное оружие»",)
+
+    @pytest.mark.parametrize("filename, series, number", [
+        ("Ахманов М.- Дик Саймон 1. Тень ветра.fb2", "Дик Саймон", "1"),
+        ("Ахманов М.- Дик Саймон 2. Тень Земли.fb2", "Дик Саймон", "2"),
+        ("Ахманов М.- Зов из бездны 1. Зов из бездны.fb2", "Зов из бездны", "1"),
+        ("Ахманов М.- Зов из бездны 2. Первый после бога.fb2", "Зов из бездны", "2"),
+        ("Ахманов М.- Миссия Тревельяна 1. Посланец небес.fb2", "Миссия Тревельяна", "1"),
+        ("Ахманов М.- Миссия Тревельяна 5. Консул Тревельян.fb2", "Миссия Тревельяна", "5"),
+        ("Ахманов М.- Миссия Тревельяна 6. Защитник.fb2", "Миссия Тревельяна", "6"),
+    ])
+    def test_series_from_filename(self, records, filename, series, number):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == series
+        assert rec.series_number == number
+        assert rec.proposed_author == "Ахманов Михаил"
+
+    def test_standalone_book_has_no_series(self, records):
+        rec = _by_suffix(records, *self.FOLDER, "Ахманов М.- Ассирийские танки у врат Мемфиса.fb2")
+        assert rec.proposed_series == ""
+        assert rec.proposed_author == "Ахманов Михаил"

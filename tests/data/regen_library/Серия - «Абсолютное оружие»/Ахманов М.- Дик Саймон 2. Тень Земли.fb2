@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Mихаил</first-name>
+    <last-name>Ахманов</last-name>
+   </author>
+   <book-title>Тень Земли</book-title>
+   <annotation>
+    <p>Прошло триста лет от начала космической экспансии человечества. Заселенные людьми новые планеты объединены возможностью гиперпространственных перемещений. Но есть лишенные этого Закрытые Миры, и в их число попала прародина человечества — Старая Земля. Исправить эту ошибку берется опытный разведчик — Дик Саймон. Ему нет равных в рукопашной схватке, ведь он обучался боевым искусствам у четырехруких воинов планеты Тайяхат. Но на ставшей средоточием зла Сарой Земле даже ему приходится нелегко…</p>
+   </annotation>
+   <date>1999</date>
+   <coverpage>
+    <image l:href="#_1003652795.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>ru</src-lang>
+   <sequence name="Михаил Ахманов"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2016-03-22">22 March 2016</date>
+   <id>42F81AF7-73DD-4A35-A203-1602AA6F0A5C</id>
+   <version>1.01</version>
+  </document-info>
+  <publish-info>
+   <book-name>М. Ахманов. Тень Земли</book-name>
+   <publisher>Эксмо-Пресс</publisher>
+   <city>Москва</city>
+   <year>1999</year>
+   <sequence name="Михаил Ахманов"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

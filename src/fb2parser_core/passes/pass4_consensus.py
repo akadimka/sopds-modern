@@ -10,6 +10,7 @@ from typing import Dict, List
 
 from ..author_normalizer_extended import AuthorNormalizer
 from ..evidence import log_decision, series_source_rank
+from ..filename_stem import file_name, file_stem
 from ..series_normalizer import _nfc_lower_yo
 from ..series_processor import SeriesProcessor
 from ..settings_manager import SettingsManager
@@ -194,7 +195,7 @@ class Pass4Consensus:
                 # This indicates the original filename HAD a service word or multi-file pattern before extraction
                 has_pattern_evidence = False
                 if record.file_path and record.series_source in ("filename", "filename+meta_confirmed"):
-                    filename = Path(record.file_path).name
+                    filename = file_name(record.file_path)
                     filename_no_ext = filename.rsplit('.', 1)[0]
 
                     # Числовой диапазон N-M в имени файла — надёжный признак серии
@@ -439,7 +440,7 @@ class Pass4Consensus:
                         pass  # обычный случай — применяем
                     elif esc == '':
                         # Пустая строка: разрешаем если серия есть в имени файла или в title
-                        stem = _nfc_lower_yo(Path(record.file_path).stem)
+                        stem = _nfc_lower_yo(file_stem(record.file_path))
                         title = _nfc_lower_yo(record.file_title or '')
                         cs_norm = _nfc_lower_yo(consensus_series)
                         if cs_norm not in stem and cs_norm not in title:
@@ -628,7 +629,7 @@ class Pass4Consensus:
                 key = (base_lc, sub_lc)
 
                 # Ищем sub в stem файла: паттерн "base N. sub" или "base N. sub."
-                stem = Path(r.file_path).stem.lower().replace('ё', 'е')
+                stem = file_stem(r.file_path).lower().replace('ё', 'е')
                 # Вырезаем зону после "base [N]." в стеме
                 _base_pos = stem.find(base_lc)
                 if _base_pos < 0:
@@ -866,7 +867,7 @@ class Pass4Consensus:
             if not series:
                 continue
             series_lc = series.lower().replace('ё', 'е')
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             stem_lc = stem.lower().replace('ё', 'е')
             # Серия должна присутствовать в стеме — только тогда стем авторитетен
             pos = stem_lc.find(series_lc)
@@ -1075,7 +1076,7 @@ class Pass4Consensus:
             if not known:
                 continue
             for record in unknown:
-                stem = Path(record.file_path).stem
+                stem = file_stem(record.file_path)
                 stem_norm = _norm_for_prefix(stem)
                 for orig_author, author_norm in known:
                     if not author_norm:
@@ -1384,7 +1385,7 @@ class Pass4Consensus:
                     continue
 
                 # Условие 2: база серии присутствует в имени файла
-                stem = _nfc_lower_yo(Path(rec.file_path).stem)
+                stem = _nfc_lower_yo(file_stem(rec.file_path))
                 if _nfc_lower_yo(meta_base) not in stem:
                     continue
 
@@ -1440,7 +1441,7 @@ class Pass4Consensus:
                 # собственной серии), совпадение хвостового слова с ДРУГОЙ,
                 # чужой серией того же автора почти наверняка случайное — см. guard
                 # ниже через _nfc_lower_yo(stem).
-                stem = _nfc_lower_yo(Path(rec.file_path).stem)
+                stem = _nfc_lower_yo(file_stem(rec.file_path))
                 for full in full_series:
                     full_lower = _nfc_lower_yo(full)
                     if full_lower == cur_lower:
@@ -1554,7 +1555,7 @@ class Pass4Consensus:
                             continue
                     else:
                         # Пустая серия — применяем только если имя файла содержит серию
-                        stem = _nfc_lower_yo(Path(rec.file_path).stem)
+                        stem = _nfc_lower_yo(file_stem(rec.file_path))
                         if best_lower not in stem:
                             continue
                 # Не применяем если серия в blacklist (издательская/жанровая метка)
@@ -1700,7 +1701,7 @@ class Pass4Consensus:
             file_phrases: list = []  # (record, [phrase_norm, ...])
             phrase_count: dict = {}
             for rec in auth_recs:
-                stem = Path(rec.file_path).stem
+                stem = file_stem(rec.file_path)
                 title = _strip_author_from_stem(stem, author)
                 title_norm = _nfc_lower_yo(title)
                 phrases = _title_phrases(title_norm)
@@ -1780,7 +1781,7 @@ class Pass4Consensus:
                 if subseries.isdigit():
                     record.proposed_series = base
                 else:
-                    stem_norm = Path(record.file_path).stem.lower().replace('ё', 'е')
+                    stem_norm = file_stem(record.file_path).lower().replace('ё', 'е')
                     subseries_norm = subseries.lower().replace('ё', 'е')
                     if subseries_norm in stem_norm:
                         record.proposed_series = f"{base}\\{subseries}"

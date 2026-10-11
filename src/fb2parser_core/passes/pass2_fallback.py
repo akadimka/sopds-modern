@@ -7,6 +7,7 @@ import logging
 import os
 from typing import List
 
+from ..filename_stem import file_name
 from ..settings_manager import SettingsManager
 
 _log = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ class Pass2Fallback:
             
             # Check for collection: 3+ metadata authors + collection keywords in filename
             author_count = self._count_authors(record.metadata_authors)
-            filename = os.path.basename(record.file_path) if record.file_path else ""
+            filename = file_name(record.file_path) if record.file_path else ""
             is_collection = self._is_collection_file(filename)
             
             if author_count >= 3 and is_collection:

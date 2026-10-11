@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Михаил</first-name>
+    <last-name>Ахманов</last-name>
+    <id>cb137a56-2a80-102a-9ae1-2dfe723fe7c7</id>
+   </author>
+   <book-title>Зов из бездны</book-title>
+   <annotation>
+    <p>Штатный психолог первой марсианской экспедиции Лаура Торрес неожиданно для себя принимает телепатические послания из глубин Космоса. Странные видения, насыщенные фрагментами земной истории, перемещают ее сознание то в Древний Египет, то в Средневековье, то в наше время. Что это? Зашифрованное послание неведомой сверхцивилизации? Чтобы понять это, нужно досмотреть видения до конца. И первое из них повествует о странствиях египтянина Ун-Амуна, который жил задолго до нашей эры.</p>
+   </annotation>
+   <date>2011</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Абсолютное оружие"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Roland</first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>ExportToFB21, FictionBook Editor Release 2.6</program-used>
+   <date value="2011-01-14">14.01.2011</date>
+   <src-url>http://www.litres.ru</src-url>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>62ee88f8-1fde-11e0-8c7e-ec5afce481d9</id>
+   <version>1.01</version>
+  </document-info>
+  <publish-info>
+   <book-name>М. Ахманов. Зов из бездны</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2011</year>
+   <isbn>978-5-699-46312-1</isbn>
+   <sequence name="Абсолютное оружие"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

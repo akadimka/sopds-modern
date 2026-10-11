@@ -15,6 +15,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
+from ..filename_stem import normalize_stem
 from ..name_normalizer import validate_author_name
 
 _log = logging.getLogger(__name__)
@@ -646,7 +647,7 @@ class Pass2Filename:
         # Check in filename (basename, no extension) only — NOT in book title,
         # because publishers sometimes add "(сборник)" to the title of an ordinary
         # co-authored book, which should still be classified as "Соавторство".
-        filename_noext = file_path.replace('\\', '/').split('/')[-1].rsplit('.', 1)[0].lower()
+        filename_noext = normalize_stem(file_path.replace('\\', '/').split('/')[-1].rsplit('.', 1)[0]).lower()
 
         for kw in self.collection_keywords:
             kw_l = kw.lower()
@@ -730,7 +731,7 @@ class Pass2Filename:
             # Try to extract from filename (NOT full path!)
             # Handle both Windows (\) and Unix (/) path separators
             filename = record.file_path.replace('\\', '/').split('/')[-1]  # Get basename only
-            filename_without_ext = filename.rsplit('.', 1)[0]  # Remove extension
+            filename_without_ext = normalize_stem(filename.rsplit('.', 1)[0])  # Remove extension
             
             self._last_meta_expanded = False
             author = self._extract_author_from_filename(

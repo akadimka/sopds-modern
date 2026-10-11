@@ -34,6 +34,7 @@ from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
 from ..evidence import folder_has_signal as _folder_has_signal_fn
 from ..evidence import log_decision
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
+from ..filename_stem import file_name, file_stem
 from ..logger import Logger
 from ..name_normalizer import AuthorName
 from ..pattern_converter import compile_patterns
@@ -639,7 +640,7 @@ class Pass2SeriesFilename:
                     continue
                 if not sib.file_path:
                     continue
-                sib_stem_norm = _norm_s(Path(sib.file_path).stem)
+                sib_stem_norm = _norm_s(file_stem(sib.file_path))
                 m = prefix_re.match(sib_stem_norm)
                 if not m or m.group(1).strip() != root_norm:
                     continue
@@ -760,7 +761,7 @@ class Pass2SeriesFilename:
             if _ak2 not in _author_roots or _sn2 not in _author_roots[_ak2]:
                 continue
             _p2 = re.compile(re.escape(_sn2) + r'\s+(\d{1,4})\s*[.\-–—]', re.UNICODE)
-            _m2 = _p2.search(_norm_s(Path(_rec.file_path).stem))
+            _m2 = _p2.search(_norm_s(file_stem(_rec.file_path)))
             if _m2:
                 _n2 = int(_m2.group(1))
                 _is_zero_padded2 = _m2.group(1).startswith('0') and len(_m2.group(1)) >= 2
@@ -777,7 +778,7 @@ class Pass2SeriesFilename:
             if ak not in _author_roots or series_norm not in _author_roots[ak]:
                 continue
             _pat = re.compile(re.escape(series_norm) + r'\s+(\d{1,4})\s*[.\-–—]', re.UNICODE)
-            _m = _pat.search(_norm_s(Path(record.file_path).stem))
+            _m = _pat.search(_norm_s(file_stem(record.file_path)))
             if _m:
                 n_str = _m.group(1)
                 n = int(n_str)
@@ -813,7 +814,7 @@ class Pass2SeriesFilename:
                     re.escape(ps_norm) + r'\s+(\d{1,4})\s*[.\-–—](?!\d)', re.UNICODE
                 )
                 _meta_arc_map[key] = set()
-            _m = _meta_arc_pat[key].search(_norm_s(Path(record.file_path).stem))
+            _m = _meta_arc_pat[key].search(_norm_s(file_stem(record.file_path)))
             if _m:
                 n = int(_m.group(1))
                 if n < 1900:
@@ -826,7 +827,7 @@ class Pass2SeriesFilename:
                 continue
             n = next(iter(nums))
             n_str = str(n)
-            _m = _meta_arc_pat[key].search(_norm_s(Path(record.file_path).stem))
+            _m = _meta_arc_pat[key].search(_norm_s(file_stem(record.file_path)))
             if not _m:
                 continue
             if n_str.startswith('0') and len(n_str) >= 2:
@@ -862,7 +863,7 @@ class Pass2SeriesFilename:
                 re.escape(ps_norm) + r'\s*\.\s*[а-яёa-zA-ZЀ-ӿ][^\d.]*\s+(\d{1,3})\s*[.\-–—]',
                 re.UNICODE,
             )
-            _sm = _sn_pat.search(_norm_s(Path(record.file_path).stem))
+            _sm = _sn_pat.search(_norm_s(file_stem(record.file_path)))
             if _sm:
                 n = int(_sm.group(1))
                 if n < 1900:
@@ -1303,7 +1304,7 @@ class Pass2SeriesFilename:
                         if w.isalpha()
                     )
                 )
-                _fn_stem_lower = Path(record.file_path).stem.lower()
+                _fn_stem_lower = file_stem(record.file_path).lower()
                 _is_in_parens = bool(_re.search(r'\(\s*' + _re.escape(_cand_lower), _fn_stem_lower))
                 # ИСКЛЮЧЕНИЕ 4: серия получена блок-матчером с score=1.0 И подтверждена metadata_series.
                 # Только с metadata-подтверждением: title совпадает с серией у omnibus или 1-й книги.
@@ -1423,7 +1424,7 @@ class Pass2SeriesFilename:
         """
         # Fallback: metadata ТОЛЬКО если паттерны не дали
         if not series_candidate:
-            file_name = Path(record.file_path).stem  # Имя без расширения
+            file_name = file_stem(record.file_path)  # Имя без расширения
             
             # ✅ ВАЖНО: Удалить метатеги из конца чтобы fallback правила работали!
             # "(СИ)" - Самиздат/Интернет
@@ -1496,7 +1497,7 @@ class Pass2SeriesFilename:
                         # ИСКЛЮЧЕНИЕ: если кандидат стоит перед номером тома в имени файла
                         # ("Королевство Костей и Терний 1. Терновый Король") →
                         # это явная серия, даже если _in_title=False по другим причинам.
-                        _fn_stem_fb = Path(record.file_path).stem.lower().replace('ё', 'е')
+                        _fn_stem_fb = file_stem(record.file_path).lower().replace('ё', 'е')
                         _sp_norm = series_part.lower().replace('ё', 'е')
                         _is_numbered_in_fn = bool(re.search(
                             re.escape(_sp_norm) + r'[\s.\-–—]+\d+(?:[\s.]|$)',
@@ -1673,7 +1674,7 @@ class Pass2SeriesFilename:
                 continue
             if 'filename' not in (rec.series_source or ''):
                 continue
-            stem = Path(rec.file_path).stem
+            stem = file_stem(rec.file_path)
             m = _DASH_ARC_RE.match(stem)
             if not m:
                 continue
@@ -1728,7 +1729,7 @@ class Pass2SeriesFilename:
                         continue
                     if _r is entries[0][0]:
                         continue
-                    _stem_b = Path(_r.file_path).stem
+                    _stem_b = file_stem(_r.file_path)
                     _m_b = _BASE_ARC_RE.match(_stem_b)
                     if not _m_b:
                         continue
@@ -1801,7 +1802,7 @@ class Pass2SeriesFilename:
             # (4-8) только потому, что 5 из 8 файлов называют себя «Война родов».
             if (rec.series_source or '') in ('folder_dataset', 'folder_hierarchy'):
                 continue
-            stem = Path(rec.file_path).stem
+            stem = file_stem(rec.file_path)
             _is_fn_src = 'filename' in (rec.series_source or '')
             m = _ARC_RE.match(stem) if _is_fn_src else None
             if not m:
@@ -1948,7 +1949,7 @@ class Pass2SeriesFilename:
                 continue
             if (rec.series_source or '') not in _FILENAME_SRCS:
                 continue
-            stem = Path(rec.file_path).stem
+            stem = file_stem(rec.file_path)
             m = _ARC_RE2.match(stem)
             if not m:
                 continue
@@ -1998,7 +1999,7 @@ class Pass2SeriesFilename:
 
                 def _arc_internal_pos(entry, _anl=_arc_norm_local):
                     _rec, _vn, _rb, _arc = entry
-                    _stem_n = _norm_s(Path(_rec.file_path).stem)
+                    _stem_n = _norm_s(file_stem(_rec.file_path))
                     _m = re.search(re.escape(_anl) + r'[\s.]+(\d{1,3})', _stem_n)
                     _primary = int(_m.group(1)) if _m else 9999
                     # Вторичный ключ — «Том/Книга N» в стеме надёжнее metadata sn
@@ -2069,7 +2070,7 @@ class Pass2SeriesFilename:
                 continue
             if 'filename' not in (rec.series_source or ''):
                 continue
-            _stem_f = Path(rec.file_path).stem
+            _stem_f = file_stem(rec.file_path)
             _m_f = _ARC_RE2.match(_stem_f)
             if not _m_f:
                 continue
@@ -2190,7 +2191,7 @@ class Pass2SeriesFilename:
         for record in records:
             if not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
 
             # Правило 3 — проверяем первым: явный диапазон в скобках (с ключевым словом)
             m3 = _BRACKET_RANGE_RE.search(stem)
@@ -2359,7 +2360,7 @@ class Pass2SeriesFilename:
                 continue  # уже есть — не трогаем
             if not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             mb = _BARE_RANGE_RE.search(stem)
             if not mb:
                 continue
@@ -2389,7 +2390,7 @@ class Pass2SeriesFilename:
                 continue  # уже есть — не трогаем
             if not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             mrr = _BARE_ROMAN_RANGE_RE.search(stem)
             if not mrr:
                 continue
@@ -2421,7 +2422,7 @@ class Pass2SeriesFilename:
                 continue
             if not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             m5 = _MID_NUM_RE.search(stem)
             if not m5:
                 continue
@@ -2442,7 +2443,7 @@ class Pass2SeriesFilename:
                 continue
             if not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             mw = _WORD_NUM_RE.search(stem)
             if not mw:
                 continue
@@ -2472,7 +2473,7 @@ class Pass2SeriesFilename:
                 continue
             if not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             mwr = _WORD_NUM_ROMAN_RE.search(stem)
             if not mwr:
                 continue
@@ -2504,7 +2505,7 @@ class Pass2SeriesFilename:
                 continue
             if not record.proposed_series or not record.file_path:
                 continue
-            stem = Path(record.file_path).stem
+            stem = file_stem(record.file_path)
             ma = _ABBREV_PREFIX_RE.match(stem)
             if not ma:
                 continue
@@ -2570,7 +2571,7 @@ class Pass2SeriesFilename:
         for record in records:
             if record.series_number_source != 'filename_prefix' or not record.file_path:
                 continue
-            stem8 = Path(record.file_path).stem
+            stem8 = file_stem(record.file_path)
             for text in (record.file_title or '', stem8):
                 if not text:
                     continue
@@ -2647,7 +2648,7 @@ class Pass2SeriesFilename:
                     continue
                 if _norm_s(rec.proposed_series or '') != root_k:
                     continue
-                stem_norm = _norm_s(Path(rec.file_path).stem)
+                stem_norm = _norm_s(file_stem(rec.file_path))
                 _num_m = _sub_re.search(stem_norm)
                 if _num_m:
                     rec.proposed_series = flat_series_display
@@ -2716,7 +2717,7 @@ class Pass2SeriesFilename:
             if sn and re.match(r'^\d+$', sn):
                 return sn
             # Пробуем извлечь из имени файла: последнее вхождение «СЛОВО N.»
-            stem = Path(rec.file_path).stem
+            stem = file_stem(rec.file_path)
             matches = _STEM_SN_RE.findall(stem)
             return matches[-1] if matches else ''
 
@@ -2764,7 +2765,7 @@ class Pass2SeriesFilename:
                     continue
                 tom_values = []
                 for r in recs:
-                    m = _TOM_RE.search(Path(r.file_path).stem)
+                    m = _TOM_RE.search(file_stem(r.file_path))
                     if m:
                         tom_values.append(int(m.group(1)))
                 # ≥2 файлов с Том-keyword И все их числа различны
@@ -2789,7 +2790,7 @@ class Pass2SeriesFilename:
                     )
                     _quals: set = set()
                     for r in fn_recs:
-                        _qm = _qual_re.search(Path(r.file_path).stem)
+                        _qm = _qual_re.search(file_stem(r.file_path))
                         if _qm:
                             _quals.add(_norm_s(_qm.group(1)))
                     if len(_quals) >= 2:
@@ -2808,7 +2809,7 @@ class Pass2SeriesFilename:
                     for rec in recs:
                         rec.proposed_series = f'{rec.proposed_series.strip()} {sn}'
                         # Для файлов с Том-keyword: series_number ← M из «Том M»
-                        tm = _TOM_RE.search(Path(rec.file_path).stem)
+                        tm = _TOM_RE.search(file_stem(rec.file_path))
                         if tm:
                             rec.series_number = tm.group(1)
                             rec.series_number_source = 'filename_tom_keyword'
@@ -2828,7 +2829,7 @@ class Pass2SeriesFilename:
                         _ps_norm = _norm_s(rec.proposed_series or '')
                         if _ms_norm and _ms_norm == _ps_norm:
                             continue
-                        _qm = _qual_re.search(Path(rec.file_path).stem)
+                        _qm = _qual_re.search(file_stem(rec.file_path))
                         if _qm:
                             rec.proposed_series = f'{rec.proposed_series.strip()} {_qm.group(1)}'
 
@@ -2865,8 +2866,8 @@ class Pass2SeriesFilename:
             if len(grp) < 2:
                 continue
             # Разбиваем на «новые» и «старые» по маркеру в имени файла
-            new_variants = [r for r in grp if _NEW_MARKERS.search(Path(r.file_path).stem)]
-            old_variants = [r for r in grp if not _NEW_MARKERS.search(Path(r.file_path).stem)]
+            new_variants = [r for r in grp if _NEW_MARKERS.search(file_stem(r.file_path))]
+            old_variants = [r for r in grp if not _NEW_MARKERS.search(file_stem(r.file_path))]
             if new_variants and old_variants:
                 for r in old_variants:
                     r.delete_flag = True
@@ -3297,7 +3298,7 @@ class Pass2SeriesFilename:
             # Извлекаем серию из стема каждого файла
             stem_series: dict = {}  # id(record) → extracted series
             for record in group:
-                stem = Path(record.file_path).stem
+                stem = file_stem(record.file_path)
                 m = self._UMBRELLA_SERIES_RE.match(stem)
                 if m:
                     stem_series[id(record)] = m.group(1).strip()
@@ -3604,7 +3605,7 @@ class Pass2SeriesFilename:
             validate: Если True - проверять валидность; если False - возвращать raw candidate
             metadata_series: Метаинформация о серии из FB2 (для подтверждения результата BlockLevelPatternMatcher)
         """
-        filename = Path(file_path).name
+        filename = file_name(file_path)
         name_without_ext = filename.rsplit('.', 1)[0]
 
         # ВАЖНО: Удалить метатеги из конца filename ПЕРЕД парсингом
