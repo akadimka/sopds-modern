@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Александр</first-name>
+    <middle-name>Александрович</middle-name>
+    <last-name>Тихонов</last-name>
+    <id>5ad9db61-db49-11e2-b4a7-002590591dd6</id>
+   </author>
+   <book-title>Стражи Армады. Охота на зверя</book-title>
+   <annotation>
+    <p>Случайности не случайны, особенно в аномальных землях, где судьбы людей переплетаются так сильно, что порой хочется воскликнуть: «Это всё Зона!..»</p>
+    <p>Военный сталкер Александр Журавлёв и загадочная личность Макс Зверев по прозвищу Зверь – единственные, кто знает тайну легендарного «Скорбящего Камня» – аномалии, которая, по преданию, способна даровать исцеление от любой болезни и даже бессмертие. Но легенды лгут. Тайные общества и секты, военные и сталкеры – все хотят отыскать «Камень», а чтобы это сделать, нужно найти неуловимого Зверя.</p>
+    <p>И тогда на него открывается охота…</p>
+   </annotation>
+   <keywords>миры Стругацких,сталкеры,близкое будущее,аномальные зоны,мутанты,постапокалиптика</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Апокалипсис-СТ">
+    <sequence name="Стражи Армады" number="6"/>
+   </sequence>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Руслан</first-name>
+    <last-name>Волченко</last-name>
+    <nickname>Ruslan</nickname>
+   </author>
+   <program-used>OOoFBTools-2.46 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2016-10-12">12 October 2016</date>
+   <id>871f7004-a649-4219-982f-73d348b199c2</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – Создание fb2 из издательского текста (Ruslan)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>А. А. Тихонов. Стражи Армады. Охота на зверя</book-name>
+   <publisher>ООО «Издательство АСТ»</publisher>
+   <city>Москва</city>
+   <year>2016</year>
+   <isbn>978-5-17-100076-9</isbn>
+   <sequence name="STALKER"/>
+  </publish-info>
+  <custom-info info-type="">© Тихонов А., 2016 © ООО «Издательство АСТ», 2016</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

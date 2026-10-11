@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    <author>
+      <first-name>Сергей</first-name>
+      <middle-name>Александрович</middle-name>
+      <last-name>Коротков</last-name>
+    </author>
+    <book-title>Стражи Армады. По ту сторону восхода</book-title>
+    <annotation>
+      <p>Третья книга о приключениях Треша в поисках святого артефакта «искра» и секретной энергии Армады.</p>
+      <p>Сталкер из Пади, невольно повторяя путь своего отца, в прошлом командира спецназа, тоже собрал отряд наемников и друзей, прошел с ними половину пути до Восточного форта и… остался лишь с верной подругой. Теперь им двоим предстоит завершить маршрут: преодолеть Пустоши, кишащие мутантами, аномалиями и враждебными группировками, достигнув Восточного форта. Выполнить задание Армады и разгадать тайну Судного дня – удел уже не просто Избранных, а будущих Стражей.</p>
+    </annotation>
+    <keywords>миры Стругацких,сталкеры,близкое будущее,аномальные зоны,мутанты,книги по компьютерным играм,поиск артефактов,постапокалиптика</keywords>
+    <date value="2017-01-01">2017</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Стражи Армады" number="7"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>irul</nickname>
+    </author>
+    <program-used>OOoFBTools-2.40 (ExportToFB21), FictionBook Editor Release 2.6</program-used>
+    <date value="2017-05-11">11.05.2017</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=24049600</src-url>
+    <src-ocr>текст предоставлен правообладателем</src-ocr>
+    <id>369dc50f-356e-11e7-b088-0cc47a52085c</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 (irul)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Сергей Коротков. Стражи Армады. По ту сторону восхода</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2017</year>
+    <isbn>978-5-17-103309-5</isbn>
+    <sequence name="stalker"/>
+    <sequence name="Апокалипсис-СТ"/>
+  </publish-info>
+  <custom-info info-type="">Любое использование материала данной книги, полностью или частично, без разрешения правообладателя запрещается. Серия «Stalker» основана в 2013 году © Коротков С., 2017 © ООО «Издательство АСТ», 2017</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    <author>
+      <first-name>Дмитрий</first-name>
+      <middle-name>Юрьевич</middle-name>
+      <last-name>Манасыпов</last-name>
+    </author>
+    <book-title>Питерская Зона. Запас удачи</book-title>
+    <annotation>
+      <p>Сталкер-одиночка Хэт любит свое дело.</p>
+      <p>Но еще больше он любит мечту про домик в Ирландии и заслуженный отдых.</p>
+      <p>Но не все так просто. И вот, почти потеряв все, он возвращается в Зону.</p>
+      <p>Дойти до Клондайка артефактов, принести образцы и сделать карту – казалось бы, что может быть легче?</p>
+      <p>Но ведь это Зона. И здесь, чтобы выжить и вернуться, нужен весь запас удачи.</p>
+    </annotation>
+    <keywords>миры Стругацких,квест,сталкеры,аномальные зоны,мутанты,поиск артефактов,постапокалиптика</keywords>
+    <date value="2016-01-01">2016</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Апокалипсис-СТ"/>
+    <sequence name="Питерская Зона" number="2"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Руслан</first-name>
+      <last-name>Волченко</last-name>
+      <nickname>Ruslan</nickname>
+    </author>
+    <program-used>OOoFBTools-2.48 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2017-01-25">25 January 2017</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=22680536</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>900d19bd-e238-11e6-b088-0cc47a52085c</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – Создание fb2 из издательского текста (Ruslan)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Д. Ю. Манасыпов. Питерская Зона. Запас удачи</book-name>
+    <publisher>ООО «Издательство АСТ»</publisher>
+    <city>Москва</city>
+    <year>2016</year>
+    <isbn>978-5-17-099945-3</isbn>
+    <sequence name="СТАЛКЕР"/>
+  </publish-info>
+  <custom-info info-type="">© Д. Манасыпов, 2016 © ООО «Издательство АСТ», 2016</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

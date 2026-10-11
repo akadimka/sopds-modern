@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Владимир</first-name>
+    <last-name>Андрейченко</last-name>
+    <id>d4a0ab91-d058-11e4-a494-0025905a0812</id>
+   </author>
+   <book-title>Стражи Армады. Предел везения</book-title>
+   <annotation>
+    <p>Он – Страж Армады со специализацией доставщика потерянной после Судного дня информации. Дышит настоящим, но ни на минуту не забывает о прошлом. Каким бы оно ни было – плохим либо хорошим, позади сталкер оставил частицу себя. Находил и безвозвратно терял друзей, испытывал горечь поражений и радость побед. И каждый раз Везунчика мучил вопрос: существует ли предел допустимому везению? Вдруг не только Армада подскажет ответ, но и сама жизнь? Он же точно уверен в одном: для достижения цели не обязательно надеяться на удачу, главное – уметь правильно расходовать свой внутренний потенциал, прилагая максимум сил и используя любую возможность.</p>
+    <p>Кто знает… А вдруг именно от него будет зависеть будущее?</p>
+   </annotation>
+   <keywords>миры Стругацких,сталкеры,близкое будущее,аномальные зоны,мутанты,постапокалиптика</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Апокалипсис-СТ">
+    <sequence name="Стражи Армады" number="4"/>
+   </sequence>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Chernov2</nickname>
+    <email>chernov@orel.ru</email>
+   </author>
+   <program-used>OOoFBTools-2.36 (ExportToFB21), FictionBook Editor Release 2.6.7</program-used>
+   <date value="2016-06-29">29.06.2016</date>
+   <id>d0989626-3df0-11e6-9ba0-0cc47a1952f2</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 Chernov Sergey июнь 2016 г.</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Андрейченко, Владимир Александрович. Стражи Армады. Предел везения : [фантастический роман]</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2016</year>
+   <isbn>978-5-17-095104-8</isbn>
+   <sequence name="Stalker"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

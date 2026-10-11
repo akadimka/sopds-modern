@@ -1160,6 +1160,16 @@ class Pass4Consensus:
             if _has_common_token(real_authors):
                 continue  # авторы имеют общий токен → не издательская серия
 
+            # Межавторский цикл («Стражи Армады»: 7 авторов, тома 1–9) — сквозная
+            # нумерация томов по всей папке. У издательской подборки номеров нет
+            # («МИФ. Проза») или у каждого автора своя нумерация с повторами
+            # («Клуб убийств»: 14 номеров, из них различных 4).
+            _nums = [(r.series_number or '').strip() for r in group_records]
+            _nums = [n for n in _nums if n]
+            if (len(_nums) >= 2 and len(_nums) >= 0.8 * len(group_records)
+                    and len(set(_nums)) >= 0.8 * len(_nums)):
+                continue
+
             for record in group_records:
                 if not record.proposed_series:
                     continue

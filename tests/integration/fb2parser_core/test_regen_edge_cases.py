@@ -937,3 +937,28 @@ class TestSeriesDashAuthorFolder:
         rec = _by_suffix(records, self.ROOT, folder, filename)
         assert rec.proposed_series == series
         assert rec.series_number == number
+
+
+class TestSharedWorldSeriesNotTreatedAsImprint:
+    """Межавторский цикл («34. Стражи Армады»: 7 авторов, тома 1–9)
+    стирался как издательская метка: в папке больше одного автора —
+    значит, «издательская серия» (защита от «Коллекции МИФ», баг №56).
+    Затем при записи CSV стиралась и подставленная серия из метаданных.
+    Отличие от издательской подборки — сквозная нумерация томов по всей
+    папке: у «МИФ. Проза» номеров нет, в «Клубе убийств» у каждого
+    автора своя нумерация с повторами (TestMultiAuthorImprint… ниже по
+    файлу должны продолжать проходить)."""
+
+    ROOT = "Серия - «S.T.A.L.K.E.R,»"
+
+    @pytest.mark.parametrize("folder, filename, series, number", [
+        ("34. Стражи Армады", "1. Умереть вчера - Владимир Андрейченко.fb2", "Стражи Армады", "1"),
+        ("34. Стражи Армады", "3. Прыжок за грань - Роман Приходько.fb2", "Стражи Армады", "3"),
+        ("34. Стражи Армады", "9. Точка опоры - Тим Волков.fb2", "Стражи Армады", "9"),
+        ("38.Питерская Зона", "1.Питерская Зона. Бустер -Николай Романецкий.fb2", "Питерская Зона", "1"),
+        ("38.Питерская Зона", "2.Питерская Зона. Запас удачи-Дмитрий Манасыпов.fb2", "Питерская Зона", "2"),
+    ])
+    def test_shared_world_series_kept(self, records, folder, filename, series, number):
+        rec = _by_suffix(records, self.ROOT, folder, filename)
+        assert rec.proposed_series == series
+        assert rec.series_number == number

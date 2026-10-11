@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Николай</first-name>
+    <middle-name>Михайлович</middle-name>
+    <last-name>Романецкий</last-name>
+    <id>7f9fdfbe-2a81-102a-9ae1-2dfe723fe7c7</id>
+   </author>
+   <book-title>Питерская Зона. Бустер</book-title>
+   <annotation>
+    <p>Сталкера Сергея Бустрыгина (по кличке Бустер), хорошо знающего часть петербургской Зоны, расположенную на Васильевском острове, нанимает то ли бизнесмен, то ли бандит Аркадий Мамонтов. Задача Бустера – отыскать там пропавшую дочь Мамонтова. В результате в Зону отправляется небольшая экспедиция в составе самого Бустера, его ученика Жеки и работающих на бизнесмена Зои и Трофима.</p>
+    <p>Берясь за выполнение заказа, Бустер даже не догадывается, что поиски девушки приведут его к столкновению со спецслужбами, занимающимися изучением Зоны.</p>
+   </annotation>
+   <keywords>миры Стругацких,квест,сталкеры,аномальные зоны,мутанты,поиск артефактов,постапокалиптика</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Апокалипсис-СТ">
+    <sequence name="Питерская Зона" number="1"/>
+   </sequence>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>cleed</nickname>
+   </author>
+   <program-used>OOoFBTools-2.37 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2016-03-28">28.03.2016</date>
+   <id>ac2da368-0a62-11e6-9292-0cc47a1952f2</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 – cleed</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Николай Михайлович Романецкий. Питерская Зона. Бустер</book-name>
+   <publisher>Издательство АСТ</publisher>
+   <city>М</city>
+   <year>2016</year>
+   <isbn>978-5-17-095671-5</isbn>
+   <sequence name="Сталкер"/>
+  </publish-info>
+  <custom-info info-type="">© Н. Романецкий, 2016 © ООО «Издательство АСТ», 2016</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
