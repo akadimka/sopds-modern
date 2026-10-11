@@ -62,17 +62,26 @@ def _rec(rel: str, title: str, number: str, number_source: str,
     )
 
 
-# (имя файла, название, имена книг внутри сборника)
+# (имя файла, название, разделы-книги внутри сборника). Как в реальных
+# сборниках, заголовок каждой книги начинается с имени автора; «Конец игры»
+# разбит на две части — это одна книга. Всего 3 + 4 + 3 + 2 = 12 книг.
 _OMNIBUSES = [
     ("Перумов. Летописи Разлома 1. Летописи Разлома.fb2", "Летописи Разлома",
-     ["Рождение мага"]),
+     ["Ник Перумов Алмазный Меч, Деревянный Меч. Книга 1",
+      "Ник Перумов Алмазный меч, деревянный меч Книга вторая",
+      "Ник Перумов Хранитель Мечей. Рождение Мага"]),
     ("Перумов. Летописи Разлома 2. Путь некроманта.fb2", "Путь некроманта",
-     ["Хранитель Мечей"]),
+     ["Ник Перумов Странствия мага. Том 1", "Ник Перумов Странствия мага. Том второй",
+      "Ник Перумов Одиночество мага. Том 1", "Ник Перумов Одиночество мага. Том 2"]),
     ("Перумов. Летописи Разлома 3. Дочь Некроманта. Война мага. Дебют — Миттельшпиль.fb2",
      "Дочь Некроманта. Война мага. Дебют — Миттельшпиль",
-     ["Книга 1. Дочь Некроманта", "Книга 2. Дебют", "Книга 3. Миттельшпиль"]),
+     ["Ник Перумов Книга 1. Дочь Некроманта", "Ник Перумов Книга 2. Дебют",
+      "Ник Перумов Книга 3. Миттельшпиль"]),
     ("Перумов. Летописи Разлома 4. Война мага. Эндшпиль — Конец игры.fb2",
-     "Война мага. Эндшпиль — Конец игры", ["Эндшпиль"]),
+     "Война мага. Эндшпиль — Конец игры",
+     ["Ник Перумов Война мага. Том 3: Эндшпиль",
+      "Ник Перумов Война мага. Том 4. Конец игры. Часть 1",
+      "Ник Перумов Война мага. Том 4. Конец игры. Часть 2"]),
 ]
 
 # (подпапка, [(имя файла, название)])
@@ -116,14 +125,13 @@ def _build(tmp_path: Path, omnibus_repeat: int = 400, folder_series: bool = Fals
 
 
 def _groups(tmp_path: Path, recs: list):
-    """(группа компиляции сборников, все пути в дублях, все сохраняемые пути)."""
+    """(единственная группа автора, все пути в дублях, все группы автора)."""
     groups = [g for g in FB2CompilerService().find_groups(recs, tmp_path)
               if g.author == "Перумов Ник"]
     compile_groups = [g for g in groups if not g.cleanup_only]
     assert len(compile_groups) == 1, [(g.series, g.volume_range) for g in compile_groups]
     deleted = {p.name for g in groups for p in (g.duplicate_paths or [])}
-    kept = {p.name for g in groups for p in (g.kept_paths or [])}
-    return compile_groups[0], deleted, kept
+    return compile_groups[0], deleted, groups
 
 
 @pytest.fixture(params=[False, True], ids=["metadata_series", "folder_series"])
@@ -147,9 +155,31 @@ class TestSubfolderPartsOfSiblingOmnibus:
         assert [b.volume_label for b in group.books] == ["1", "2", "3", "4"]
 
     def test_subfolder_parts_go_to_duplicates(self, result):
-        _, deleted, kept = result
+        _, deleted, _ = result
         assert deleted == _PART_NAMES
-        assert kept == set(_OMNIBUS_NAMES[1:])
+
+    def test_parts_are_duplicates_of_the_omnibus_group_itself(self, result):
+        """Отдельные cleanup-группы на каждую подпапку только путали: сборники
+        уже в итоговой компиляции — тома подпапок дубли именно её."""
+        group, _, groups = result
+        assert [g for g in groups if g.cleanup_only] == []
+        assert {p.name for p in group.duplicate_paths} == _PART_NAMES
+
+    def test_name_counts_books_inside_omnibuses(self, group):
+        suffix = FB2CompilerService().compute_group_suffix(group)[0]
+        assert suffix == "Тетралогия в 12 книгах"
+
+    def test_omnibus_not_in_any_group_gets_cleanup_group(self, tmp_path):
+        """Сборник один на позиции серии (группы компиляции нет) — тома
+        подпапки всё равно дубли: отдельная cleanup-группа, сборник сохраняется."""
+        recs = [r for r in _build(tmp_path, folder_series=True)
+                if "Летописи Разлома" not in r.file_path or "Разлома 2." in r.file_path]
+        groups = FB2CompilerService().find_groups(recs, tmp_path)
+        cleanup = [g for g in groups if g.cleanup_only]
+        assert len(cleanup) == 1, [(g.series, g.cleanup_only) for g in groups]
+        assert [p.name for p in cleanup[0].kept_paths] == [_OMNIBUS_NAMES[1]]
+        assert {p.name for p in cleanup[0].duplicate_paths} == {
+            name for name, _ in _PART_FOLDERS[0][1]}
 
     def test_abridged_omnibus_does_not_swallow_parts(self, tmp_path):
         """Сборник заметно меньше суммы томов подпапки — вероятно, урезанное

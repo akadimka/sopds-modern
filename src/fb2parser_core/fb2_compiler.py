@@ -1049,17 +1049,38 @@ class FB2CompilerService:
                     for _nd in _name_dups:
                         g.duplicate_paths.append(_nd.abs_path)
                     g.books = [_b for _b in g.books if _b not in _name_dups]
+            # Тома подпапки, повторяющей сборник из этой группы, — её дубли
+            # (см. _collect_parts_of_sibling_omnibus).
+            if pending_parts and not g.cleanup_only:
+                for _b in list(g.books) + list(g.original_books or []):
+                    _pp = pending_parts.pop(_b.abs_path, None)
+                    if _pp:
+                        g.duplicate_paths = list(g.duplicate_paths or []) + _pp[1]
             groups.append(g)
             if on_group:
                 on_group(g)
 
-        self._emit_parts_of_sibling_omnibus(work_dir, _emit, ctx)
+        pending_parts = self._collect_parts_of_sibling_omnibus(work_dir, ctx)
         for (_, _), recs in buckets.items():
             self._build_group_from_bucket(recs, work_dir, _emit, _punct_norm, _single_slot_by_root)
+        # Сборник не попал ни в одну группу компиляции — тома его подпапки
+        # всё равно дубли: отдельная cleanup-группа «сборник остаётся».
+        for omnibus_path, (omnibus, part_paths) in list(pending_parts.items()):
+            pending_parts.pop(omnibus_path)
+            _emit(CompilationGroup(
+                author=(omnibus.proposed_author or '').strip(),
+                series=(omnibus.proposed_series or '').strip() or omnibus_path.stem,
+                books=[],
+                order_determined=True,
+                volume_range='',
+                duplicate_paths=part_paths,
+                kept_paths=[omnibus_path],
+                cleanup_only=True,
+            ))
         ctx.groups = groups
 
 
-    def _emit_parts_of_sibling_omnibus(self, work_dir, _emit, ctx) -> None:
+    def _collect_parts_of_sibling_omnibus(self, work_dir, ctx) -> Dict[Path, Tuple[object, List[Path]]]:
         """find_groups, шаг 3а: тома подпапки, которая повторяет книгу-сборник рядом.
 
         Баги №130/№131: в одной папке лежит сборник "Перумов. Летописи Разлома 2.
@@ -1073,10 +1094,14 @@ class FB2CompilerService:
 
         Подпапка относится к сборнику, если её имя без фамилии автора в начале
         совпадает с названием книги того же автора из родительской папки.
-        Тогда тома подпапки убираются из своих бакетов и выводятся
-        cleanup-группой: сборник остаётся, тома — в дубли. Если сборник
-        заметно меньше суммы томов (вероятно, урезанное издание), ничего не
-        меняем.
+        Тогда тома подпапки убираются из своих бакетов и становятся дублями
+        группы, в которую попал сам сборник (отдельные cleanup-группы на
+        каждую подпапку только путали: «зачем они, если сборники уже в
+        итоговой компиляции»); если сборник ни в одну группу не попал —
+        отдельной cleanup-группой «сборник остаётся». Если сборник заметно
+        меньше суммы томов (вероятно, урезанное издание), ничего не меняем.
+
+        Возвращает {путь сборника: (запись сборника, пути томов)}.
         """
         buckets = ctx.buckets
 
@@ -1106,6 +1131,7 @@ class FB2CompilerService:
                 by_folder.setdefault((author_k, (work_dir / rec.file_path).parent), []).append(rec)
 
         dropped: set = set()
+        pending: Dict[Path, Tuple[object, List[Path]]] = {}
         for (author_k, folder), parts in by_folder.items():
             author_tokens = set(_key(parts[0].proposed_author or '').split())
             words = _key(folder.name).split()
@@ -1128,21 +1154,13 @@ class FB2CompilerService:
                 continue
             self._log(f"  ℹ Тома из «{folder.name}» уже входят в {omnibus_path.name} — на удаление.")
             dropped.update(id(r) for r in parts)
-            _emit(CompilationGroup(
-                author=(omnibus.proposed_author or '').strip(),
-                series=(omnibus.proposed_series or '').strip() or folder.name,
-                books=[],
-                order_determined=True,
-                volume_range='',
-                duplicate_paths=part_paths,
-                kept_paths=[omnibus_path],
-                cleanup_only=True,
-            ))
+            pending[omnibus_path] = (omnibus, part_paths)
         if dropped:
             for key in list(buckets):
                 buckets[key] = [r for r in buckets[key] if id(r) not in dropped]
                 if not buckets[key]:
                     del buckets[key]
+        return pending
 
 
     def _suppress_covered_groups(self, ctx) -> None:
@@ -4451,6 +4469,56 @@ class FB2CompilerService:
                 return (b.volume_label or default).strip() or default
         return default
 
+    _omnibus_book_count_cache: Dict[Tuple[str, float, str], int] = {}
+
+    def _omnibus_book_count(self, book: 'CompilationBook', author: str) -> int:
+        """Сколько книг внутри файла-сборника без служебного слова в имени.
+
+        Баг №131: «Перумов. Летописи Разлома 2. Путь некроманта.fb2» — сборник
+        из 4 книг, но ни «Тетралогии», ни диапазона в имени нет, и итоговая
+        компиляция из 4 таких сборников называлась «(Тетралогия)» вместо
+        «(Тетралогия в 12 книгах)». У таких сборников каждая книга —
+        раздел верхнего уровня, чей заголовок начинается с имени автора
+        («Ник Перумов Странствия мага. Том 1»). Считаем такие разделы,
+        части одной книги («… Конец игры. Часть 1/2») — как одну.
+        Обычный роман (главы без имени автора) даёт 1.
+        """
+        path = book.abs_path
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            return 1
+        cache_key = (str(path), mtime, author)
+        cached = self._omnibus_book_count_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        count = 1
+        surname = (_norm_key(author).split() or [''])[0]
+        try:
+            text = read_fb2_bytes(path).decode('utf-8', errors='replace')
+        except OSError:
+            text = ''
+        body_m = re.search(r'<body(?![^>]*name=.notes)[^>]*>(.*?)</body>', text, re.S)
+        if surname and len(surname) >= 3 and body_m:
+            titles, depth = [], 0
+            for m in re.finditer(r'<(/?)section\b[^>]*>|<title\b[^>]*>(.*?)</title>', body_m.group(1), re.S):
+                tag = m.group(0)
+                if tag.startswith('<section'):
+                    depth += 1
+                elif tag.startswith('</section'):
+                    depth -= 1
+                elif depth == 1:
+                    plain = _norm_key(_html.unescape(re.sub(r'<[^>]+>', ' ', m.group(2))))
+                    titles.append(' '.join(re.split(r'[\W_]+', plain)).strip())
+            books = {
+                re.sub(r'\s+(?:часть|ч|part)\s+(?:\d+|[ivx]+|\w+ая)$', '', tt)
+                for tt in titles if surname in tt.split()[:4]
+            }
+            if len(books) >= 2:
+                count = len(books)
+        self._omnibus_book_count_cache[cache_key] = count
+        return count
+
     def compute_group_suffix(self, group: 'CompilationGroup') -> Tuple[str, int, int]:
         """Вычислить суффикс имени файла компиляции ("Дилогия в 8 книгах" и
         т.п.) и верхнеуровневый диапазон позиций (top_lo, top_hi).
@@ -4568,10 +4636,12 @@ class FB2CompilerService:
                             else:
                                 _arc_part_count += 1
                         else:
-                            _arc_part_count += 1
+                            _arc_part_count += self._omnibus_book_count(b, group.author)
                 else:
-                    # Одиночная книга на плоской arc-позиции → 1 книга
-                    _arc_part_count += 1
+                    # Одиночная книга на плоской arc-позиции → 1 книга,
+                    # если это не готовый сборник без служебного слова в
+                    # имени (см. _omnibus_book_count).
+                    _arc_part_count += self._omnibus_book_count(b, group.author)
             if _arc_part_count <= n_volumes:
                 _arc_part_count = 0  # не имеет смысла если не больше числа arc'ов
 
