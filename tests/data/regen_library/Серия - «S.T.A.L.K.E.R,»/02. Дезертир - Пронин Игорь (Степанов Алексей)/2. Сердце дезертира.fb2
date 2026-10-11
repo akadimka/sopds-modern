@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Степанов</last-name>
+   </author>
+   <book-title>Сердце дезертира</book-title>
+   <annotation>
+    <p>В Зону прибыл странный турист — богатый старик со свитой и телохранителями, которого острые на язык сталкеры тут же прозвали Шейхом.</p>
+    <p>Команда у него подбирается тоже странноватая — и вечный неудачник Хромой, и жестокая Фаш, и изгнанная из группировки «Искатель» за самодеятельность любопытная Норрис, и вообще неизвестно откуда взявшийся мрачный Дезертир — обладатель самой скверной в сталкерской среде репутации.</p>
+    <p>Им предстоит идти к ЧАЭС. Но чем дальше, тем более странные вещи происходят с экспедицией.</p>
+    <p>Загадочное кольцо аномалий, подозрительно похожее на круговую оборону, — только первое из того, что ожидает тех, кто имел глупость принять предложение Шейха…</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>shtuks</nickname>
+    <home-page>http://huge-library.org/</home-page>
+   </author>
+   <program-used>ExportToFB21, FictionBook Editor 2.4</program-used>
+   <date value="2011-01-19">19.01.2011</date>
+   <src-url>http://huge-library.org/</src-url>
+   <src-ocr>Книга подготовлена для библиотеки Huge Library (Scan - HL; OCR, ReadCheck - Trioxin; Conv - shtuks)</src-ocr>
+   <id>OOoFBTools-2011-1-19-19-44-42-551</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание fb2 (shtuks)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Сердце дезертира / Алексей Степанов</book-name>
+   <publisher>АСТ, Астрель</publisher>
+   <year>2010</year>
+   <isbn>978-5-17-065457-4</isbn>
+   <sequence name="S.T.A.L.K.E.R."/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

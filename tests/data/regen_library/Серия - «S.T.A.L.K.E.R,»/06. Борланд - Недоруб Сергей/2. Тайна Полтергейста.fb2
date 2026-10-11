@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+<title-info>
+
+
+
+<author>
+<first-name>Сергей</first-name>
+<middle-name></middle-name>
+<last-name>Недоруб</last-name>
+<home-page></home-page>
+<email></email>
+<nickname></nickname>
+</author>
+<book-title>Тайна Полтергейста</book-title>
+<annotation>
+<p>Вот уже два года бывший сталкер Борланд ничем не связан с Зоной. Но не так просто вырваться из сетей прошлого. Ввиду некоторых обстоятельств Борланд попадает в одиночную аномалию в центре цивилизованного мира, в попытке спасти неизвестную девушку. Ему остается всего несколько дней жизни на то, чтобы вернуться в Зону и найти таинственного сталкера Призрака, владеющего единственным в мире артефактом, который может стать спасением. В этом ему поможет команда молодых специалистов, имеющих свои интересы. Кроме того, Борланду предстоит выяснить, кем на самом деле является его новая знакомая, каким образом была расставлена ловушка за пределами Зоны, и кто за это несет ответственность. Истина окажется шокирующей. Ответы на вопросы будут стоить ему слишком многого…</p>
+</annotation>
+<keywords></keywords>
+<date value=""></date>
+<coverpage>
+<image xlink:href="#cover.jpg"/>
+</coverpage>
+<lang>ru</lang>
+<src-lang></src-lang>
+<sequence name="S.t.a.l.k.e.r" number="000"/>
+<genre>Фантастика</genre>
+  </title-info>
+<document-info>
+<author>
+<first-name></first-name>
+<middle-name></middle-name>
+<last-name></last-name>
+<nick-name></nick-name>
+<home-page></home-page>
+<email>lazyman2003@list.ru</email>
+</author>
+<program-used>Book Designer 5.0</program-used>
+<date value="28.04.2010"></date>
+<src-url></src-url>
+<src-ocr></src-ocr>
+<id>BD-9AD186-0A24-9747-488D-75AE-25FB-7F14FF</id>
+<version>1</version>
+<history><p>
+</p></history>
+</document-info>
+<publish-info>
+<book-name>Тайна Полтергейста</book-name>
+<publisher>АСТРЕЛЬ, АСТ</publisher>
+<city>Москва</city>
+<year>2010</year>
+<isbn>978-5-271-26708-6, 978-5-17-064140-6</isbn>
+</publish-info>
+<custom-info info-type="general">
+</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+
+
+
+</FictionBook>

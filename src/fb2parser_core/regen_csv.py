@@ -47,6 +47,11 @@ from .settings_manager import SettingsManager
 
 _log = logging.getLogger(__name__)
 
+# Порядковый номер папки-серии: «1. », «2) », «3- », а также «30.Пленники
+# Зоны» без пробела, если сразу за номером буква («1941 (...)», «1.5 ...» —
+# не номер).
+_LEADING_ORDINAL_RE = re.compile(r'^\d+(?:[\.\)\-]\s+|[\.\)](?=[^\W\d_]))')
+
 
 class RegenCSVService:
     """Service for CSV regeneration using 6-PASS architecture."""
@@ -299,9 +304,8 @@ class RegenCSVService:
         # "2) Варяг" → "Варяг"
         # НО: "1941 (Иван Байбаков)" оставляем (1941 — часть имени, не порядковый номер)
         # НЕ срезаем когда папка — подсерия в иерархии (preserve_leading_number=True)
-        # «30.Пленники Зоны» — номер без пробела, если сразу за ним буква.
         if not preserve_leading_number:
-            cleaned = re.sub(r'^\d+(?:[\.\)\-]\s+|[\.\)](?=[^\W\d_]))', '', folder_name).strip()
+            cleaned = _LEADING_ORDINAL_RE.sub('', folder_name).strip()
             if cleaned and cleaned != folder_name:
                 folder_name = cleaned
 
@@ -872,6 +876,19 @@ class RegenCSVService:
                     # Пробуем извлечь серию — если она непустая и не совпадает с автором,
                     # это формат "Серия (Автор)", используем её.
                     _extracted = self._extract_series_from_folder_name(_sf)
+                    # «06. Борланд - Недоруб Сергей», «02. Дезертир - Пронин Игорь
+                    # (Степанов Алексей)»: «[NN.] Серия - Автор(ы)», автор книги —
+                    # справа от тире (в т.ч. псевдоним в скобках). Экстрактор уже
+                    # срезал номер/скобки, поэтому разбор ниже (`_extracted == _sf`)
+                    # сюда не доходил: «Борланд - Недоруб Сергей» целиком считалось
+                    # папкой автора, а у «Дезертира» в серии оставалось «Пронин Игорь».
+                    _sf_base = _LEADING_ORDINAL_RE.sub('', _sf).strip()
+                    if ' - ' in _sf_base:
+                        _sd_head, _sd_tail = (p.strip() for p in _sf_base.rsplit(' - ', 1))
+                        if (_sd_head and _sd_tail
+                                and self._surnames_match_folder(author, _sd_tail)
+                                and not self._surnames_match_folder(author, _sd_head)):
+                            _extracted = _sd_head
                     # Баг №59: "С.К.С., Вязовский - Режим бога" — псевдоним автора для
                     # части книг серии (через запятую) + реальное имя автора + тире +
                     # НАСТОЯЩЕЕ название серии. _extract_series_from_folder_name не

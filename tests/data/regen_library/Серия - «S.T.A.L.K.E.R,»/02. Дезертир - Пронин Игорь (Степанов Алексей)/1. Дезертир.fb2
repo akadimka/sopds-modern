@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Алексей</first-name>
+    <last-name>Степанов</last-name>
+   </author>
+   <book-title>Дезертир</book-title>
+   <annotation>
+    <p>Когда после Второй Чернобыльской катастрофы территория вокруг ЧАЭС превратилась в Зону, наполненную смертельно опасными аномалиями и хищными мутантами, войска ООН оцепили ее по периметру, чтобы ужас и безумие не вырвались из нее во внешний мир. Однако иногда жизнь человека складывается так, что приходится искать спасения на этой проклятой земле…</p>
+    <p>Боец русского батальона миротворцев Никита Нефедов, доведенный до ручки издевательствами дембелей и попавший в безвыходную ситуацию, уходит в Зону и включается в бурную жизнь сталкеров — членов местных группировок контрабандистов. Чтобы выжить здесь, ему приходится стать совсем другим человеком и освоить много полезных навыков, главные из которых — умение стрелять и выживать в любой ситуации. Из забитого «духа» он превращается в безжалостного убийцу по кличке Дезертир…</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>DJINN</nickname>
+   </author>
+   <program-used>FB Editor v2.2</program-used>
+   <date value="2010-06-17">17 June 2010</date>
+   <src-ocr>DJINN</src-ocr>
+   <id>07FF9908-0675-47D0-9663-98DD69242EDB</id>
+   <version>1.0</version>
+   <history>
+    <p>v1.0: скан, OCR, и создание fb2 — DJINN. Вычитка — Миррима.</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Дезертир</book-name>
+   <publisher>Эксмо</publisher>
+   <city>Москва</city>
+   <year>2008</year>
+   <isbn>978-5-699-21487-7</isbn>
+   <sequence name="S.T.A.L.K.E.R."/>
+  </publish-info>
+  <custom-info info-type="">Оформление серии А. Матвеева
+В оформлении переплета использована работа В. Нартова</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+</FictionBook>

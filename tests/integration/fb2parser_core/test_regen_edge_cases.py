@@ -913,3 +913,27 @@ class TestFolderOrdinalWithoutSpace:
         rec = _by_suffix(records, *self.FOLDER, filename)
         assert rec.proposed_series == "Пленники Зоны"
         assert rec.series_number == number
+
+
+class TestSeriesDashAuthorFolder:
+    """«06. Борланд - Недоруб Сергей»: в имени подпапки издательской
+    коллекции после тире стоит автор книги. Экстрактор уже срезал номер,
+    поэтому разбор «Серия - Автор» (баг №109, «Киндрэт») не срабатывал,
+    а папка целиком считалась папкой автора — серия терялась. Если автор
+    книги — псевдоним в скобках («02. Дезертир - Пронин Игорь (Степанов
+    Алексей)»), серия шла вместе с настоящим именем: «Дезертир - Пронин
+    Игорь»."""
+
+    ROOT = "Серия - «S.T.A.L.K.E.R,»"
+
+    @pytest.mark.parametrize("folder, filename, series, number", [
+        ("06. Борланд - Недоруб Сергей", "1. Песочные Часы.fb2", "Борланд", "1"),
+        ("06. Борланд - Недоруб Сергей", "2. Тайна Полтергейста.fb2", "Борланд", "2"),
+        ("06. Борланд - Недоруб Сергей", "3. Горизонт событий.fb2", "Борланд", "3"),
+        ("02. Дезертир - Пронин Игорь (Степанов Алексей)", "1. Дезертир.fb2", "Дезертир", "1"),
+        ("02. Дезертир - Пронин Игорь (Степанов Алексей)", "2. Сердце дезертира.fb2", "Дезертир", "2"),
+    ])
+    def test_series_is_text_before_dash(self, records, folder, filename, series, number):
+        rec = _by_suffix(records, self.ROOT, folder, filename)
+        assert rec.proposed_series == series
+        assert rec.series_number == number
