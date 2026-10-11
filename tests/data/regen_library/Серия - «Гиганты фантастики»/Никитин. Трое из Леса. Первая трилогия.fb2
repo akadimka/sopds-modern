@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Юрий</first-name>
+      <last-name>Никитин</last-name>
+    </author>
+    <book-title>Трое из Леса. Трилогия</book-title>
+    <annotation>
+      <p>В небольшой деревне в дремучем Лесу существует правило: «Кто не работает – тот не ест». А чтобы, на всякий случай, никого не заразить бездельем, лучше отправить лентяев подальше из деревни. Так и отправились в безвозвратное путешествие незадачливый волхв Олег и никудышный охотник Таргитай. И скучно им было вдвоем. Нашли они третьего бездельника с невеселым именем Мрак…</p>
+      <p>Классика отечественной фэнтези. Первые три романа легендарного цикла впервые под одной обложкой!</p>
+    </annotation>
+    <keywords>сражения,становление героя,древние боги,темные силы,магия и колдовство</keywords>
+    <date value="2019-01-01">2019</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Трое из леса"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Alesh</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2020-08-03">2020-08-03</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=57240816</src-url>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>45101f3d-d59d-11ea-965b-441ea152441c</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (Alesh)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция (12)</last-name>
+      <id>647101de-3c37-11e9-96df-0cc47a545a1e</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Трое из Леса. Трилогия</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2019</year>
+    <isbn>978-5-04-103805-2</isbn>
+    <sequence name="Гиганты фантастики"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

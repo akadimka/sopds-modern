@@ -1039,3 +1039,31 @@ class TestAllCapsFolderSeriesMatchesSameAuthorSeries:
     def test_one_spelling_of_the_series(self, records, folder, filename):
         rec = _by_suffix(records, self.ROOT, *folder, filename)
         assert rec.proposed_series == "Снайпер"
+
+
+class TestOrdinalOmnibusIsNotADuplicate:
+    """«Никитин. Трое из Леса. Первая трилогия» и «… Вторая трилогия» —
+    разные омнибусы (тома 1-3 и 4-6). Компилятор читал служебное слово
+    «Трилогия» как диапазон 1-3 у обоих, не глядя на порядковое слово
+    перед ним, и удалял «Первую трилогию» как дубликат — потеря трёх
+    томов при применении."""
+
+    def _group(self, records):
+        groups = FB2CompilerService().find_groups(records, LIBRARY_ROOT)
+        matches = [g for g in groups if g.author == "Никитин Юрий"]
+        assert len(matches) == 1, matches
+        return matches[0]
+
+    def test_neither_trilogy_is_deleted(self, records):
+        group = self._group(records)
+        deleted = [p.name for p in (group.duplicate_paths or [])]
+        assert not [n for n in deleted if "трилогия" in n.lower()], deleted
+
+    def test_trilogies_cover_consecutive_volumes(self, records):
+        compiler = FB2CompilerService()
+        group = self._group(records)
+        by_name = {b.abs_path.name: b for b in (group.original_books or group.books)}
+        first = by_name["Никитин. Трое из Леса. Первая трилогия.fb2"]
+        second = by_name["Никитин. Трое из Леса. Вторая трилогия.fb2"]
+        assert compiler._precompiled_range(first, group.series) == (1, 3)
+        assert compiler._precompiled_range(second, group.series) == (4, 6)

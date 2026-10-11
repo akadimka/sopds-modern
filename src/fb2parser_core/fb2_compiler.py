@@ -35,6 +35,34 @@ except ImportError:
     BookRecord = None
 
 
+# «Вторая трилогия», «2-я трилогия», «II трилогия» — N-й омнибус цикла.
+_ORDINAL_STEMS = (('перв', 1), ('втор', 2), ('трет', 3), ('четв', 4), ('пят', 5),
+                  ('шест', 6), ('седьм', 7), ('восьм', 8), ('девят', 9), ('десят', 10))
+_ORDINAL_BEFORE_RE = re.compile(
+    r'(?:(?<![а-яё])(перв|втор|трет|четв|пят|шест|седьм|восьм|девят|десят)[а-яё]*'
+    r'|(?<!\d)(\d{1,2})\s*-\s*[яй]|(?<![a-z])([ivx]{1,4}))$'
+)
+
+
+def _ordinal_omnibus_range(text_before_word: str, size: int) -> Optional[Tuple[int, int]]:
+    """Диапазон томов N-го омнибуса, если перед служебным словом («трилогия»)
+    стоит порядковое слово: «Вторая трилогия» → (4, 6). Иначе None — тогда
+    служебное слово означает тома 1..size, как раньше. Без этого «Первая» и
+    «Вторая трилогия» обе получали 1-3, и одна удалялась как дубликат."""
+    m = _ORDINAL_BEFORE_RE.search(text_before_word.lower().rstrip())
+    if not m:
+        return None
+    if m.group(1):
+        n = dict(_ORDINAL_STEMS)[m.group(1)]
+    elif m.group(2):
+        n = int(m.group(2))
+    else:
+        n = roman_to_int(m.group(3).upper()) or 0
+    if n < 1:
+        return None
+    return (n - 1) * size + 1, n * size
+
+
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
@@ -2747,6 +2775,9 @@ class FB2CompilerService:
                         if (_arc_n < 1900 and
                                 not re.search(r'(?<!\d)' + re.escape(_n_val) + r'(?!\d)', series_lower)):
                             return _arc_n, _arc_n  # arc-позиция в родительской серии
+                    _ord_range = _ordinal_omnibus_range(_before_kw, idx)
+                    if _ord_range:
+                        return _ord_range
                     return 1, idx
 
         # Критерий 2: series_number — диапазон "N-M" из метаданных (запасной вариант)
@@ -2781,6 +2812,9 @@ class FB2CompilerService:
                         if _sub_n3:
                             if not re.search(r'(?<!\d)' + re.escape(_sub_n3.group(1)) + r'(?!\d)', series_lower):
                                 return 0, 0
+                        _ord_range3 = _ordinal_omnibus_range(_before3, idx)
+                        if _ord_range3:
+                            return _ord_range3
                         return 1, idx  # сервисное слово → предполагаем lo=1
 
         # Критерий 4: файл выглядит как компиляция (по имени/title) — читаем FB2-контент
