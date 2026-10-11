@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Дмитрий</first-name>
+    <last-name>Силлов</last-name>
+   </author>
+   <book-title>Кремль 2222. Юг</book-title>
+   <annotation>
+    <p>Цивилизация погибла. Все, что осталось от России — Поля Смерти и горстка людей, обороняющих московский Кремль от биороботов, киборгов, безумных шаманов, и прочей нечисти, порожденной Третьей мировой войной.</p>
+    <p>Молодой кремлевский дружинник Данила, сбежавший из плена нелюдей, в руинах бывшей столицы России встречает человека, который не боится ни биороботов, ни телепатов. Человека, пришедшего из мира, где Последняя Война ещё не проиграна.</p>
+    <p>Этот мир называется Зоной. А человека зовут — Снайпер.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Кремль 2222" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Kortes_10</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2011-04-07">07 April 2011</date>
+   <src-ocr>Книга подготовлена для библиотеки HL (Scan - HL; OCR, ReadCheck, Conv - Kortes_10; Check - Igorek67)</src-ocr>
+   <id>9634B604-AECD-4BE1-8B15-EC74271426DF</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла Kortes_10</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Кремль 2222. Юг  /  Дмитрий Силлов</book-name>
+   <publisher>АСТ,  Астрель-СПб</publisher>
+   <city>Москва, СПб</city>
+   <year>2011</year>
+   <isbn>978-5-17-072343-0, 978-5-9725-1950-7</isbn>
+  </publish-info>
+  <custom-info info-type="">Твердый переплет 416 стр.
+Тираж: 18000 экз.
+Формат: 84x108/32 (~130х205 мм)</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

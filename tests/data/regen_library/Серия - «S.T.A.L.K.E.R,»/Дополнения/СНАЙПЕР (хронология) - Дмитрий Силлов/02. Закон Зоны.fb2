@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Дмитрий</first-name>
+    <middle-name>Олегович</middle-name>
+    <last-name>Силлов</last-name>
+    <id>0d01ad2e-f192-102b-9810-fbae753fdc93</id>
+   </author>
+   <book-title>Закон Зоны</book-title>
+   <annotation>
+    <p>Он не помнит, как попал в Зону. Но Зона помнит о нем и всеми силами пытается уничтожить. Но он – Снайпер. И он идет к цели, несмотря ни на что. Его цель – Саркофаг, скрывающий в своих недрах ответы на все вопросы. Если только Снайпер доберется до цели и останется жив, ведь это еще никогда никому не удавалось…</p>
+   </annotation>
+   <keywords>сталкеры,аномальные зоны,мутанты,постапокалиптика</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Апокалипсис-СТ"/>
+   <sequence name="Снайпер" number="20"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name>Олег</first-name>
+    <last-name>Власов</last-name>
+    <nickname>prussol</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2016-07-11">11.07.2016</date>
+   <id>1ca28305-4748-11e6-9c02-0cc47a5203ba</id>
+   <version>1.0</version>
+   <history>
+    <p>V 1.0 by prussol</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Закон Зоны : [фантастический роман] / Дмитрий Силлов.</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2016</year>
+   <isbn>978-5-17-098622-4</isbn>
+  </publish-info>
+  <custom-info info-type="">Любое использование материала данной книги, полностью или частично, без разрешения правообладателя запрещается. © Д.О. Силлов, 2016 © ООО «Издательство АСТ», 2016</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

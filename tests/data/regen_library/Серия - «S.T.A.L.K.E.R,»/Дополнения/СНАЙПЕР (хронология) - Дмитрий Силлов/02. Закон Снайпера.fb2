@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Дмитрий</first-name>
+    <last-name>Силлов</last-name>
+   </author>
+   <book-title>Закон Снайпера</book-title>
+   <annotation>
+    <p>Его прошлое неизвестно. Как он попал в Зону — загадка. Здесь его зовут Снайпером. Настоящего имени не знает никто, даже он сам. Зато он всегда отвечает по долгам. И он идет к центру Зоны, потому что поклялся в этом умирающему сталкеру. На Снайпера охотятся люди и мутанты. Его очень хотят убить. Или хотя бы остановить. Или забрать то, что Снайпер получил от умирающего. Но это — трудная задача. Потому что он — Снайпер. И он всегда поражает выбранную цель.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>Igorek67</nickname>
+   </author>
+   <program-used>FB Editor v2.0, , FictionBook Editor Release 2.5</program-used>
+   <date value="2009-07-17">17.07.2009</date>
+   <src-url>http://java-bookz</src-url>
+   <id>4FB8E3A1-E9E9-47AC-9198-0747EA739A98</id>
+   <version>1.5</version>
+   <history>
+    <p>v 1.1 — корректура текста Qwert</p>
+    <p>v 1.5 — исправление ошибок, перекодировка — Igorek67</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Закон Снайпера</book-name>
+   <publisher>Издательства: АСТ, Астрель</publisher>
+   <city>Москва; СПб</city>
+   <year>2010</year>
+   <isbn>978-5-17-066240-1</isbn>
+   <sequence name="Проект S.T.A.L.K.E.R."/>
+  </publish-info>
+  <custom-info info-type="">Твердый переплет, 320 стр.
+Тираж: 70000 экз.
+Формат: 84x108/32 (~130х205 мм)
+</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

@@ -1020,3 +1020,22 @@ class TestSeriesDashAuthorsFolderAuthor:
         recs = [r for r in records if Path(r.file_path).parent.parts[-2:] == self.FOLDER]
         assert recs
         assert not [r.proposed_author for r in recs if "сталкер" in r.proposed_author.lower()]
+
+
+class TestAllCapsFolderSeriesMatchesSameAuthorSeries:
+    """Одна серия Силлова в двух папках коллекции: «Дополнения\СНАЙПЕР
+    (хронология) - Дмитрий Силлов» (имя папки заглавными) и «18. Снайпер -
+    Силлов Дмитрий» — давали две разные серии «СНАЙПЕР» и «Снайпер», при
+    синхронизации — две папки. Серия из папки, записанная заглавными,
+    берётся в обычном написании, если такая же есть у того же автора."""
+
+    ROOT = "Серия - «S.T.A.L.K.E.R,»"
+
+    @pytest.mark.parametrize("folder, filename", [
+        (("Дополнения", "СНАЙПЕР (хронология) - Дмитрий Силлов"), "01. Закон проклятого.fb2"),
+        (("Дополнения", "СНАЙПЕР (хронология) - Дмитрий Силлов"), "03. Юг.fb2"),
+        (("18. Снайпер - Силлов Дмитрий",), "04. Закон Шухарта.fb2"),
+    ])
+    def test_one_spelling_of_the_series(self, records, folder, filename):
+        rec = _by_suffix(records, self.ROOT, *folder, filename)
+        assert rec.proposed_series == "Снайпер"

@@ -1265,6 +1265,7 @@ class RegenCSVService:
         # После отката к метаданным (иначе он снова подменит серию папки) и до
         # очистки серий у сборников (её не отменяем).
         self._postcheck_unify_folder_series()
+        self._postcheck_caps_folder_series_to_author_spelling()
 
         self._clear_series_for_compilations()
         self.logger.log("[OK] Series cleared for compilations")
@@ -2028,6 +2029,46 @@ class RegenCSVService:
                 unified += 1
         if unified:
             self.logger.log(f"[POST-CHECK] Unified folder series for {unified} records")
+
+    def _postcheck_caps_folder_series_to_author_spelling(self) -> None:
+        """Серия из папки заглавными («СНАЙПЕР (хронология) - Дмитрий Силлов»
+        → «СНАЙПЕР») берётся в обычном написании («Снайпер»), если такая же
+        серия есть у того же автора — иначе одна серия давала две папки при
+        синхронизации. Аббревиатуры («ГКР», «S.T.A.L.K.E.R.») без обычного
+        варианта у автора не трогаются.
+        """
+        from collections import Counter, defaultdict
+
+        def _authors(rec):
+            return {a.strip().lower() for a in (rec.proposed_author or '').split(',') if a.strip()}
+
+        def _key(s):
+            return s.lower().replace('ё', 'е')
+
+        spellings: dict = defaultdict(Counter)
+        for rec in self.records:
+            s = rec.proposed_series
+            if s and s != s.upper():
+                for a in _authors(rec):
+                    spellings[(a, _key(s))][s] += 1
+
+        fixed = 0
+        for rec in self.records:
+            s = rec.proposed_series
+            if (not s or s != s.upper() or not any(c.isalpha() for c in s)
+                    or rec.series_source not in ('folder_dataset', 'folder_hierarchy')):
+                continue
+            variants: Counter = Counter()
+            for a in _authors(rec):
+                variants.update(spellings.get((a, _key(s)), {}))
+            if not variants:
+                continue
+            new = variants.most_common(1)[0][0]
+            log_decision(rec, f"CAPS FOLDER SERIES: {s!r} -> {new!r} — так эта серия записана у того же автора.")
+            rec.proposed_series = new
+            fixed += 1
+        if fixed:
+            self.logger.log(f"[POST-CHECK] Normalized {fixed} all-caps folder series to the author's spelling")
 
     def _clear_series_for_compilations(self) -> None:
         """Clear series for compilation/collection records.
