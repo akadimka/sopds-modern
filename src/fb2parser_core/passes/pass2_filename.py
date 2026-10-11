@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from ..filename_stem import normalize_stem
+from ..keyword_match import contains_keyword
 from ..name_normalizer import validate_author_name
 
 _log = logging.getLogger(__name__)
@@ -650,8 +651,7 @@ class Pass2Filename:
         filename_noext = normalize_stem(file_path.replace('\\', '/').split('/')[-1].rsplit('.', 1)[0]).lower()
 
         for kw in self.collection_keywords:
-            kw_l = kw.lower()
-            if kw_l in filename_noext:
+            if contains_keyword(filename_noext, kw):
                 return True
 
         return False

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Айзек</first-name>
+      <last-name>Азимов</last-name>
+    </author>
+    <book-title>Норби</book-title>
+    <annotation>
+      <p>В творчестве Айзека Азимова, классика мировой фантастики, автора более 400 книг, обладателя 5 премий «Хьюго», 2 премий «Небьюла» и бесчисленного количества других премий и призов, цикл о роботе Норби занимает особое место. Когда юный Джефферсон Уэллс, кадет Космической академии, купил подержанного робота Норби, то даже и не подозревал, какие удивительные приключения его ожидают в дальнейшем. Вместе с новым другом им предстоит совершить множество прыжков во времени и гиперпространстве, вступить в ожесточенную схватку с бандитами, посетить Землю ледникового периода, спасти пропавшую принцессу и даже побывать на планете дракониц!</p>
+      <p>Впервые все десять романов цикла под одной обложкой!</p>
+    </annotation>
+    <keywords>роботы,ксенофантастика,далёкое будущее</keywords>
+    <date value="1991-01-01">1983-1991</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Кирилл</first-name>
+      <middle-name>Александрович</middle-name>
+      <last-name>Савельев</last-name>
+    </translator>
+    <sequence name="Норби"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2015-11-17">2015-11-17</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=12309885</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>9e7270fa-8cfa-11e5-9170-0cc47a52085c</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name/>
+      <last-name>Литагент «1 редакция»</last-name>
+      <id>0058d61b-69a7-11e4-a35a-002590591ed2</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Норби : [романы] / Айзек Азимов</book-name>
+    <publisher>Э</publisher>
+    <city>Москва</city>
+    <year>2015</year>
+    <isbn>978-5-699-84671-9</isbn>
+    <sequence name="Гиганты фантастики"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

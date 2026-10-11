@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Джо</first-name>
+      <last-name>Аберкромби</last-name>
+    </author>
+    <book-title>Холодное железо: Лучше подавать холодным. Герои. Красная страна</book-title>
+    <annotation>
+      <p>Три романа из цикла «Земной Круг», возвращающие героев трилогии «Первый Закон» легенды фэнтези Джо Аберкромби.</p>
+      <p>Влиятельный герцог Орсо не может позволить наемнице Монце Меркатто, Змее Талина, предводительнице Тысячи Мечей, захватить власть. Потерявшая брата и чудом выжившая, она идет на сделку с ворами, лицедеями и убийцами, чтобы отомстить предателю.</p>
+      <p>Три дня. Одна битва. Союз против Севера. Под бесстрастными взглядами каменных истуканов пришло время решить, что такое война: преддверие мира или грубое ремесло, суровое испытание или редкая возможность изменить расстановку политических сил. Вернуть честь на поле боя, бороться за власть, плести интриги и метить в Герои.</p>
+      <p>Искатели счастья со всех окрестных земель стремятся в Дальнюю Страну в поисках наживы. Здесь нет единой власти и торжествует право сильного. Золото сводит с ума, а будущее принадлежит Союзу. Страна золота, Красная Страна.</p>
+    </annotation>
+    <keywords>магические артефакты,магические миры,эпическое фэнтези,борьба за власть,приключенческое фэнтези,темное фэнтези / dark fantasy,сверхспособности</keywords>
+    <date>2009-2012</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Оксана</first-name>
+      <middle-name>В.</middle-name>
+      <last-name>Орлова</last-name>
+    </translator>
+    <translator>
+      <first-name>Владимир</first-name>
+      <middle-name>Юрьевич</middle-name>
+      <last-name>Иванов</last-name>
+    </translator>
+    <translator>
+      <first-name>Александра</first-name>
+      <last-name>Питчер</last-name>
+    </translator>
+    <translator>
+      <first-name>Нияз</first-name>
+      <middle-name>Наилевич</middle-name>
+      <last-name>Абдуллин</last-name>
+    </translator>
+    <sequence name="Земной Круг"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>cleed</nickname>
+    </author>
+    <program-used>OOoFBTools-2.37 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2021-02-15">15.02.2021</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=63988891</src-url>
+    <src-ocr>indd предоставлен правообладателем</src-ocr>
+    <id>df998f88-6b99-11eb-8996-0cc47a5f137d</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – cleed</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция (13)</last-name>
+      <id>785289c3-3c37-11e9-96df-0cc47a545a1e</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Джо Аберкромби. Холодное железо: Лучше подавать холодным Герои Красная страна: Три романа из цикла Земной Круг</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-04-118208-3</isbn>
+    <sequence name="Гиганты фантастики"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

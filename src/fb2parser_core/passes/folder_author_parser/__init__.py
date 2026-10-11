@@ -6,6 +6,7 @@ PASS0 + PASS1 + PASS2 architecture for parsing author names from folder names.
 Reference: REGEN_CSV_ARCHITECTURE.md - Section 3.1 (Folder Hierarchy)
 """
 
+from ...keyword_match import starts_with_keyword
 from .pass0_structural_analysis import analyze_structure
 from .pass1_pattern_selection import select_pattern
 from .pass2_author_extraction import extract_author
@@ -83,15 +84,19 @@ def parse_author_from_folder_name(folder_name: str,
             / 'fb2_data' / 'settings' / 'config.json'
         )
         settings = SettingsManager(_default_config_path)
-        blacklist_starts = _BUILTIN_BLACKLIST + settings.get_list('collection_keywords')
+        collection_keywords = settings.get_list('collection_keywords') or []
     except Exception:
         # Fallback если конфиг недоступен
-        blacklist_starts = _BUILTIN_BLACKLIST
-    
+        collection_keywords = []
+
     name_lower = name.lower()
-    for word in blacklist_starts:
+    for word in _BUILTIN_BLACKLIST:
         if name_lower.startswith(word.lower()):
             return ""  # This is a category, not an author
+    # Маркеры из конфига — по границе слова (баг №130): иначе «топ» отсекал
+    # папку «Топоров Владимир».
+    if any(starts_with_keyword(name_lower, kw) for kw in collection_keywords):
+        return ""
     
     # ==================== PRE-PASS: Strip dot-as-word-separator ====================
     # Folders like "Бах. Ричард" use ". " as a separator between surname and first name.

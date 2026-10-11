@@ -1067,3 +1067,24 @@ class TestOrdinalOmnibusIsNotADuplicate:
         second = by_name["Никитин. Трое из Леса. Вторая трилогия.fb2"]
         assert compiler._precompiled_range(first, group.series) == (1, 3)
         assert compiler._precompiled_range(second, group.series) == (4, 6)
+
+
+class TestCollectionKeywordInsideWordIsNotACollection:
+    """«Перумов. Летописи Разлома 1…4» (баг №130): маркер сборника «топ»
+    из collection_keywords находился подстрокой в «ле-топ-иси», и серия
+    «Летописи Разлома» отбрасывалась у всех четырёх книг — серия пустая,
+    сборники выпадали из группы компиляции. У четвёртой («… 4. Война мага.
+    Эндшпиль — Конец игры») вдобавок закреплялся ложный подцикл «Война мага»."""
+
+    ROOT = "Серия - «Гиганты фантастики»"
+
+    @pytest.mark.parametrize("filename, number", [
+        ("Перумов. Летописи Разлома 1. Летописи Разлома.fb2", "1"),
+        ("Перумов. Летописи Разлома 2. Путь некроманта.fb2", "2"),
+        ("Перумов. Летописи Разлома 3. Дочь Некроманта. Война мага. Дебют — Миттельшпиль.fb2", "3"),
+        ("Перумов. Летописи Разлома 4. Война мага. Эндшпиль — Конец игры.fb2", "4"),
+    ])
+    def test_series_from_filename_and_metadata(self, records, filename, number):
+        rec = _by_suffix(records, self.ROOT, filename)
+        assert rec.proposed_series == "Летописи Разлома"
+        assert rec.series_number == number

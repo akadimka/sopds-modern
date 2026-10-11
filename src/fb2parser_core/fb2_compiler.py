@@ -26,6 +26,7 @@ from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
+from .keyword_match import contains_any_keyword
 from .roman_numerals import roman_to_int
 from .series_normalizer import _nfc_lower_yo as _norm_key
 
@@ -1183,6 +1184,7 @@ class FB2CompilerService:
 
         ctx = SimpleNamespace(author=author)
         self._group_series_and_books(recs, work_dir, ctx)
+        self._group_drop_parts_of_sibling_omnibus(ctx)
         if self._group_skip_if_all_arc_precompiled(ctx):
             return
         self._group_service_word_correction(ctx)
@@ -1250,6 +1252,79 @@ class FB2CompilerService:
         ctx.books = books
         ctx.duplicate_paths = duplicate_paths
         ctx.series = series
+
+
+    def _group_drop_parts_of_sibling_omnibus(self, ctx) -> None:
+        """Группа компиляции, шаг 1.5: тома из подпапки, которая повторяет книгу-сборник рядом.
+
+        Баг №130: в одной папке лежит сборник "Перумов. Летописи Разлома 2.
+        Путь некроманта.fb2", а рядом — подпапка "Перумов. Путь некроманта"
+        с его исходными томами "1. …" … "4. …". Номера в подпапке считаются
+        внутри неё, а не по всей серии. Без этого шага тома трёх таких подпапок
+        перемешивались по номерам (1, 1, 1, 2, 2, …) в одну группу. Хуже того,
+        сборники 3 и 4 уходили в дубли, потому что их номер совпадал с
+        "3. …"/"4. …" из подпапки.
+
+        Подпапка относится к сборнику группы, если её имя без фамилии автора
+        в начале совпадает с названием сборника, а сам сборник лежит в
+        родительской папке. В группе может оказаться и один том подпапки:
+        "Война мага. Эндшпиль - Конец игры" — "Конец игры" по метаданным
+        в другой серии. Тогда её тома покрыты сборником:
+        они уходят в дубли, сборник остаётся. Если сборник заметно меньше
+        суммы томов (вероятно, урезанное издание), ничего не меняем.
+        """
+        books = ctx.books
+
+        def _key(s: str) -> str:
+            s = unicodedata.normalize('NFC', s).lower().replace('ё', 'е')
+            return ' '.join(re.split(r'[\W_]+', s)).strip()
+
+        author_tokens = set(_key(ctx.author).split())
+
+        def _folder_key(folder: Path) -> str:
+            words = _key(folder.name).split()
+            while words and words[0] in author_tokens:
+                words.pop(0)
+            return ' '.join(words)
+
+        by_folder: Dict[Path, List[CompilationBook]] = {}
+        for b in books:
+            by_folder.setdefault(b.abs_path.parent, []).append(b)
+
+        def _unpacked_size(b: CompilationBook) -> int:
+            try:
+                return len(read_fb2_bytes(b.abs_path))
+            except OSError:
+                return 0
+
+        dropped: set = set()
+        for folder, parts in by_folder.items():
+            fkey = _folder_key(folder)
+            # Короткое имя ("Том 1", "Книги") — не повод для привязки.
+            if len(fkey) < 6 or len(fkey.split()) < 2:
+                continue
+            omnibus = next(
+                (b for b in by_folder.get(folder.parent, [])
+                 if _key(b.record.file_title or '') == fkey),
+                None,
+            )
+            if omnibus is None:
+                continue
+            parts_size = sum(_unpacked_size(p) for p in parts)
+            if _unpacked_size(omnibus) < parts_size * 0.7:
+                self._log(
+                    f"  ⚠ {omnibus.abs_path.name} заметно меньше томов из «{folder.name}» — "
+                    f"вероятно, урезанное издание, тома не убираем."
+                )
+                continue
+            self._log(
+                f"  ℹ Тома из «{folder.name}» уже входят в {omnibus.abs_path.name} — на удаление."
+            )
+            for p in parts:
+                dropped.add(id(p))
+                ctx.duplicate_paths.append(p.abs_path)
+        if dropped:
+            ctx.books = [b for b in books if id(b) not in dropped]
 
 
     def _group_skip_if_all_arc_precompiled(self, ctx) -> bool | None:
@@ -2817,13 +2892,37 @@ class FB2CompilerService:
                             return _ord_range3
                         return 1, idx  # сервисное слово → предполагаем lo=1
 
+        # Баг №130: «Перумов. Летописи Разлома 3. Дочь Некроманта. Война мага.
+        # Дебют — Миттельшпиль» — сборник трёх книг, но в серии это позиция 3
+        # (так в имени файла, так и в series_number). Разделы «Книга 1/2/3»
+        # в его содержимом — внутренняя нумерация сборника, не тома серии.
+        # Раньше Критерий 5 возвращал по ним диапазон 1-3, и сборник поглощал
+        # соседние «Летописи Разлома 1» и «… 2» как дубли. Явная позиция
+        # «Серия N.» в имени, совпадающая с series_number, весомее: диапазон
+        # из содержимого принимаем, только если он начинается с той же N.
+        _series_root_lc = series_lower.split('\\')[0].strip().replace('ё', 'е')
+        _arc_in_stem = re.search(
+            re.escape(_series_root_lc) + r'\s+(\d{1,3})\s*\.(?!\d)', _stem_lc
+        ) if _series_root_lc else None
+        _stem_arc_pos = (
+            int(_arc_in_stem.group(1))
+            if _arc_in_stem and (book.record.series_number or '').strip() == _arc_in_stem.group(1)
+            else None
+        )
+
+        def _content_range() -> Tuple[int, int]:
+            lo_c, hi_c = self._precompiled_range_from_content(book.abs_path, series)
+            if hi_c > lo_c and _stem_arc_pos is not None and lo_c != _stem_arc_pos:
+                return 0, 0
+            return lo_c, hi_c
+
         # Критерий 4: файл выглядит как компиляция (по имени/title) — читаем FB2-контент
         _COMPILATION_WORDS = re.compile(
             r'компилян|компиляц|сборник|omnibus|антолог|собрани', re.IGNORECASE | re.UNICODE
         )
         _title_text = (book.record.file_title or book.abs_path.stem).lower()
         if _COMPILATION_WORDS.search(_title_text) or _COMPILATION_WORDS.search(book.abs_path.stem.lower()):
-            lo, hi = self._precompiled_range_from_content(book.abs_path, series)
+            lo, hi = _content_range()
             if hi > lo:
                 return lo, hi
 
@@ -2846,7 +2945,7 @@ class FB2CompilerService:
         ):
             _is_multi = False
         if _is_multi:
-            lo, hi = self._precompiled_range_from_content(book.abs_path, series)
+            lo, hi = _content_range()
             if hi > lo:
                 return lo, hi
 
@@ -3824,9 +3923,9 @@ class FB2CompilerService:
         if self.collection_keywords:
             _stem_lower = stem.lower().replace('ё', 'е')
             _title_lower = (rec.file_title or '').lower().replace('ё', 'е')
-            _is_collection_file = any(
-                kw.lower() in _stem_lower or kw.lower() in _title_lower
-                for kw in self.collection_keywords
+            _is_collection_file = (
+                contains_any_keyword(_stem_lower, self.collection_keywords)
+                or contains_any_keyword(_title_lower, self.collection_keywords)
             )
 
         # Баг №109 (продолжение, по решению пользователя: приквелы/рассказы

@@ -21,6 +21,8 @@ Usage:
 import re
 from enum import Enum
 
+from .keyword_match import contains_keyword
+
 
 class FolderType(Enum):
     AUTHOR = "author"
@@ -118,7 +120,7 @@ class FolderClassifier:
 
         # 4. COLLECTION — collection keywords
         for kw in self._collection_keywords:
-            if kw in name_lower:
+            if contains_keyword(name_lower, kw):
                 return FolderType.COLLECTION
 
         # 5. VARIANT — edition/variant keywords

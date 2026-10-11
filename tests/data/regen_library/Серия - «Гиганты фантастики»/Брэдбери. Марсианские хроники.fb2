@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   
+   <author>
+    <first-name>Рэй</first-name>
+    <middle-name>Дуглас</middle-name>
+    <last-name>Брэдбери</last-name>
+   </author>
+   <book-title>Марсианские хроники. Сборник</book-title>
+   <annotation>
+    <p>"Марсианские хроники": странный изменчивый мир, населенный загадочными, неуловимыми обитателями... "451° по Фаренгейту": пожарные, которые разжигают пожары, книги, которые запрещено читать, и люди, которые уже почти перестали быть людьми... "Вино из одуванчиков": лето двенадцатилетнего мальчишки, наполненное простыми радостями и удивительными открытиями, счастьем, которое дарит свет, и тайнами, которые хранит тьма... В этот сборник вошли все лучшие романы и самые яркие сборники рассказов Рэя Брэдбери, великого мастера пера, классика мировой литературы и живой легенды фантастики.</p>
+    <empty-line/>
+    <p>Содержание:</p>
+    <p>1. <strong>Рэй Дуглас Брэдбери</strong>: Марсианские хроники. Роман <emphasis>(1950)</emphasis></p>
+    <p>2. <strong>Рэй Дуглас Брэдбери</strong>: 451 градус по Фаренгейту. Роман <emphasis>(1953)</emphasis></p>
+    <p>3. <strong>Рэй Дуглас Брэдбери</strong>: Вино из одуванчиков. Роман <emphasis>(1957)</emphasis></p>
+    <p>4. <strong>Рэй Дуглас Брэдбери</strong>: Лето, прощай. Роман <emphasis>(2006)</emphasis></p>
+    <p>5. <strong>Рэй Дуглас Брэдбери</strong>: Надвигается беда. Роман <emphasis>(1962)</emphasis></p>
+    <p>6. <strong>Рэй Дуглас Брэдбери</strong>: Канун Всех Святых. Роман <emphasis>(1972)</emphasis></p>
+    <p>7. <strong>Рэй Дуглас Брэдбери</strong>: Человек в картинках (сборник) <emphasis>(1951)</emphasis></p>
+    <p>8. <strong>Рэй Дуглас Брэдбери</strong>: Октябрьская страна (сборник) <emphasis>(1955)</emphasis></p>
+    <p>9. <strong>Рэй Дуглас Брэдбери</strong>: Золотые яблоки Солнца (сборник) <emphasis>(1953)</emphasis></p>
+    <empty-line/>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <translator>
+    <first-name>Лев</first-name>
+    <middle-name>Львович</middle-name>
+    <last-name>Жданов</last-name>
+   </translator>
+   <translator>
+    <first-name>В.</first-name>
+    <last-name>Бабенко</last-name>
+   </translator>
+   <translator>
+    <first-name>Арам</first-name>
+    <last-name>Оганян</last-name>
+   </translator>
+   <translator>
+    <first-name>Елена</first-name>
+    <middle-name>Серафимовна</middle-name>
+    <last-name>Петрова</last-name>
+   </translator>
+   <translator>
+    <first-name>Наталья</first-name>
+    <middle-name>Викторовна</middle-name>
+    <last-name>Григорьева</last-name>
+   </translator>
+   <translator>
+    <first-name>Владимир</first-name>
+    <middle-name>Игоревич</middle-name>
+    <last-name>Грушецкий</last-name>
+   </translator>
+   <translator>
+    <first-name>М.</first-name>
+    <middle-name>С.</middle-name>
+    <last-name>Ковалева</last-name>
+   </translator>
+   <translator>
+    <first-name>Арам</first-name>
+    <last-name>Оганян</last-name>
+   </translator>
+   <translator>
+    <first-name>Нора</first-name>
+    <last-name>Галь</last-name>
+   </translator>
+   <translator>
+    <first-name>Нина</first-name>
+    <middle-name>Мартиевна</middle-name>
+    <last-name>Коптюг</last-name>
+   </translator>
+   <translator>
+    <first-name>Владимир</first-name>
+    <last-name>Серебряков</last-name>
+   </translator>
+   <translator>
+    <first-name>Татьяна</first-name>
+    <middle-name>Николаевна</middle-name>
+    <last-name>Шинкарь</last-name>
+   </translator>
+   <translator>
+    <first-name>Белла</first-name>
+    <middle-name>Григорьевна</middle-name>
+    <last-name>Клюева</last-name>
+   </translator>
+   <translator>
+    <first-name>Лев</first-name>
+    <middle-name>Львович</middle-name>
+    <last-name>Жданов</last-name>
+   </translator>
+   <translator>
+    <first-name>Раиса</first-name>
+    <middle-name>Ефимовна</middle-name>
+    <last-name>Облонская</last-name>
+   </translator>
+   <translator>
+    <first-name>Сергей</first-name>
+    <last-name>Трофимов</last-name>
+   </translator>
+   <translator>
+    <first-name>Михаил</first-name>
+    <middle-name>А.</middle-name>
+    <last-name>Пчелинцев</last-name>
+   </translator>
+   <translator>
+    <first-name>М.</first-name>
+    <last-name>Воронежская</last-name>
+   </translator>
+   <translator>
+    <first-name>Татьяна</first-name>
+    <last-name>Жданова</last-name>
+   </translator>
+   <translator>
+    <first-name>А.</first-name>
+    <last-name>Левкин</last-name>
+   </translator>
+   <translator>
+    <first-name>Татьяна</first-name>
+    <last-name>Шинкарь</last-name>
+   </translator>
+   <translator>
+    <first-name>Наташа</first-name>
+    <last-name>Аллунан</last-name>
+   </translator>
+   <translator>
+    <first-name>Н.</first-name>
+    <last-name>Куняева</last-name>
+   </translator>
+   <translator>
+    <first-name>С.</first-name>
+    <last-name>Анисимов</last-name>
+   </translator>
+   <translator>
+    <first-name>Арам</first-name>
+    <last-name>Оганян</last-name>
+   </translator>
+   <translator>
+    <first-name>Зинаида</first-name>
+    <middle-name>Анатольевна</middle-name>
+    <last-name>Бобырь</last-name>
+   </translator>
+   <translator>
+    <first-name>Ольга</first-name>
+    <middle-name>Ивановна</middle-name>
+    <last-name>Васант</last-name>
+   </translator>
+   <translator>
+    <first-name>Нора</first-name>
+    <last-name>Галь</last-name>
+   </translator>
+   <translator>
+    <first-name>Лев</first-name>
+    <middle-name>Львович</middle-name>
+    <last-name>Жданов</last-name>
+   </translator>
+   <translator>
+    <first-name>Белла</first-name>
+    <middle-name>Григорьевна</middle-name>
+    <last-name>Клюева</last-name>
+   </translator>
+   <translator>
+    <first-name>Арам</first-name>
+    <last-name>Оганян</last-name>
+   </translator>
+   <translator>
+    <first-name>Владимир</first-name>
+    <last-name>Серебряков</last-name>
+   </translator>
+   <translator>
+    <first-name>Сергей</first-name>
+    <middle-name>Павлович</middle-name>
+    <last-name>Трофимов</last-name>
+   </translator>
+   <sequence name="Гиганты фантастики / Гиганты фэнтези"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>mergeFB2.exe, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-02-26">26 February 2023</date>
+   <id>D5AEA087-BF56-4203-A3DF-B1625C62786D</id>
+   <version>1.0</version>
+   <history>
+    <p>Сборник сгенерирован программой mergeFB2</p>
+    <p>Автор программы: Karsten</p>
+    <p>Автор объединяющего скрипта: KiR</p>
+    <p>XSL-процессор: xsltproc - www.zlatkovic.com/pub/libxml/</p>
+    <p>Сайт программы: sites.google.com/site/svenkarsten/</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

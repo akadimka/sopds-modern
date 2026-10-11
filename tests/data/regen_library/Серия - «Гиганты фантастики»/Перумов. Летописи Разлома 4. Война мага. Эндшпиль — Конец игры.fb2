@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Ник</first-name>
+    <last-name>Перумов</last-name>
+   </author>
+   <book-title>Война мага. Эндшпиль — Конец игры</book-title>
+   <annotation>
+    <p>Прихотливы дороги судьбы. От Черной башни, где непримиримые враги Фесс и Этлау вели смертный бой, они приводят их, теперь соратников поневоле, на стены Аркина в противостоянии страшной напасти - нашествию Империи Клешней. Сомневаться не приходится - если не удержать Святой город, а вместе с ним и Эвиал, ни правых, ни виноватых не будет. Не останется вообще ничего. Пока же шанс есть. Главное, чтобы свои и пришлые наконец поняли, что они способны победить, лишь соединив силы. Некромант, экзекутор, эльфы Нарна и Вечного леса, маги Ордосской Академии, Волшебный Двор, Клара Хюммель с друзьями, Сильвия и даже загадочный Динтра - все они отныне воины одной армии, сражающейся во имя жизни...</p>
+    <empty-line/>
+    <p>Содержание:</p>
+    <p>1. Война мага. Эндшпиль <emphasis>(2006)</emphasis> </p>
+    <p>2. Война мага. Конец игры. Часть 1 <emphasis>(2006)</emphasis>  </p>
+    <p>3. Война мага. Конец игры. Часть 2 <emphasis>(2006)</emphasis></p>
+    <empty-line/>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Гиганты фантастики / Гиганты фэнтези">
+    <sequence name="Летописи Разлома" number="4"/>
+   </sequence>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>mergeFB2.exe, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-02-27">27 February 2023</date>
+   <id>445729B9-A196-4121-BC26-5D405CFDBFA6</id>
+   <version>1.0</version>
+   <history>
+    <p>Сборник сгенерирован программой mergeFB2</p>
+    <p>Автор программы: Karsten</p>
+    <p>Автор объединяющего скрипта: KiR</p>
+    <p>XSL-процессор: xsltproc - www.zlatkovic.com/pub/libxml/</p>
+    <p>Сайт программы: sites.google.com/site/svenkarsten/</p>
+   </history>
+  </document-info>
+  <custom-info info-type="">2. Source URL: www.litres.ru; Source OCR: Текст предоставлен издательством «Эксмо»; Source ID: A909A7BE-38DA-47CB-A078-CCFE1DBCC275; Source Creation Date: 2008-09-08; Source Version: 2.001; Source Document Author:  MCat78; Source Document Author Nickname: MCat78; Source Document Author E-Mail: MCat78@ya.ru;
+3. Source URL: www.litres.ru; Source OCR: Текст предоставлен издательством «Эксмо»; Source ID: 9c6ca3af-cf01-102b-946f-f03f69515cd7; Source Creation Date: 2008-09-08; Source Version: 2.001; Source Document Author:  MCat78; Source Document Author Nickname: MCat78; Source Document Author E-Mail: MCat78@ya.ru;
+
+</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

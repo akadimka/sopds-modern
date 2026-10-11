@@ -8,6 +8,7 @@ import os
 from typing import List
 
 from ..filename_stem import file_name
+from ..keyword_match import contains_keyword
 from ..settings_manager import SettingsManager
 
 _log = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class Pass2Fallback:
         
         filename_lower = filename.lower()
         for keyword in self.collection_keywords:
-            if keyword.lower() in filename_lower:
+            if contains_keyword(filename_lower, keyword):
                 return True
         return False
     

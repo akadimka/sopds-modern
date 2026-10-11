@@ -35,6 +35,7 @@ from ..evidence import folder_has_signal as _folder_has_signal_fn
 from ..evidence import log_decision
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from ..filename_stem import file_name, file_stem
+from ..keyword_match import contains_any_keyword, contains_keyword, starts_with_keyword
 from ..logger import Logger
 from ..name_normalizer import AuthorName
 from ..pattern_converter import compile_patterns
@@ -2244,8 +2245,8 @@ class Pass2SeriesFilename:
             if self.collection_keywords:
                 _stem_lower = stem.lower().replace('ё', 'е')
                 _title_lower = (record.file_title or '').lower().replace('ё', 'е')
-                if any(kw.lower() in _stem_lower or kw.lower() in _title_lower
-                       for kw in self.collection_keywords):
+                if (contains_any_keyword(_stem_lower, self.collection_keywords)
+                        or contains_any_keyword(_title_lower, self.collection_keywords)):
                     continue
 
             # Правило 1.5: дробный префикс «N.M.» или «N.M_»
@@ -2640,6 +2641,8 @@ class Pass2SeriesFilename:
                 re.escape(sub_norm) + r'\s+(\d{1,3})',
                 re.UNICODE,
             )
+            _flat_root_count = 0
+            _flat_converted = 0
             for rec in records:
                 if _norm_s(rec.proposed_author or '') != author_k:
                     continue
@@ -2648,9 +2651,11 @@ class Pass2SeriesFilename:
                     continue
                 if _norm_s(rec.proposed_series or '') != root_k:
                     continue
+                _flat_root_count += 1
                 stem_norm = _norm_s(file_stem(rec.file_path))
                 _num_m = _sub_re.search(stem_norm)
                 if _num_m:
+                    _flat_converted += 1
                     rec.proposed_series = flat_series_display
                     # ВАЖНО: помечаем как подтверждённую именованную дугу
                     # (тот же series_source, что и _detect_named_arcs) — иначе
@@ -2670,6 +2675,17 @@ class Pass2SeriesFilename:
 
             # 3. Нормализуем сами иерархические записи
             for root_b, sub_d, rec in entries:
+                # Баг №130: «Перумов. Летописи Разлома 4. Война мага. Эндшпиль —
+                # Конец игры» — по имени «Серия N. Подцикл. Название», но
+                # «Война мага» — начало названия сборника, а не подцикл. Рядом
+                # 3 плоские «Летописи Разлома» того же автора, ни у одной нет
+                # «Война мага N.», метаданные — тоже плоский корень. Подцикл
+                # из одного имени файла против всего этого не подтверждаем:
+                # оставляем 'filename', дальше консенсус свернёт его к корню.
+                if (_flat_root_count and not _flat_converted
+                        and (rec.series_source or '') == 'filename'
+                        and _norm_s(rec.metadata_series or '') == root_k):
+                    continue
                 rec.proposed_series = flat_series_display
                 rec.series_source = 'filename_named_arc'
 
@@ -4259,7 +4275,7 @@ class Pass2SeriesFilename:
                 # помеченной книгой.
                 _rest_is_collection_marker = bool(
                     (self.collection_keywords and
-                     any(_rest_after_first.lower().startswith(kw.lower())
+                     any(starts_with_keyword(_rest_after_first, kw)
                          for kw in self.collection_keywords if kw)) or
                     # "Книги 1-10" / "Тома 1-5" / "Части 1-3" — само по себе
                     # не заголовок, а обёртка вокруг диапазона томов.
@@ -4414,7 +4430,7 @@ class Pass2SeriesFilename:
                 # Анализируем что в скобках
                 service_words_lower = [sw.lower() for sw in self.service_words]
                 brackets_lower = brackets_content.lower()
-                is_skip_keyword = any(kw.lower() in brackets_lower for kw in self.collection_keywords)
+                is_skip_keyword = contains_any_keyword(brackets_lower, self.collection_keywords)
                 
                 is_pure_service_word = any(
                     brackets_lower.startswith(sw) or brackets_lower == sw
@@ -4793,7 +4809,7 @@ class Pass2SeriesFilename:
         # Если текст начинается с collection_keyword (например "Сборник авторов"),
         # весь блок — маркер коллекции, не название серии — отвергаем целиком.
         for kw in (self.collection_keywords or []):
-            if text_lower.startswith(kw.lower()):
+            if starts_with_keyword(text_lower, kw):
                 return ""
 
         original_text = text
@@ -5017,7 +5033,7 @@ class Pass2SeriesFilename:
         # Эти фразы обычно многословные (сборник, антология, коллекция)
         # поэтому substring check более безопасен
         for keyword in self.collection_keywords:
-            if keyword.lower() in text_lower:
+            if contains_keyword(text_lower, keyword):
                 return False
         
         # ПРОВЕРКА 3: Исключить сервис-слова (том, книга, выпуск)

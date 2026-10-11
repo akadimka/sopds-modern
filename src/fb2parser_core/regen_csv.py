@@ -28,6 +28,7 @@ from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_fold
 from .fb2_author_extractor import FB2AuthorExtractor
 from .filename_stem import file_stem, normalize_stem
 from .folder_classifier import FolderClassifier, FolderType
+from .keyword_match import contains_any_keyword
 from .logger import Logger
 from .passes import (
     Pass1ReadFiles,
@@ -2083,7 +2084,7 @@ class RegenCSVService:
             author_lower = record.proposed_author.lower()
             
             # Check if author contains collection keyword
-            if any(kw.lower() in author_lower for kw in self.collection_keywords):
+            if contains_any_keyword(author_lower, self.collection_keywords):
                 # Clear the series for compilations
                 record.proposed_series = ""
                 record.series_source = ""

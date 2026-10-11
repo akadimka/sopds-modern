@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>Фантастика</genre>
+   <author>
+    <first-name>Марина</first-name>
+    <middle-name>и Сергей</middle-name>
+    <last-name>Дяченко</last-name>
+   </author>
+   <book-title>Трон</book-title>
+   <annotation>
+    <p>Актриса детского театра пытается разгадать загадку Сфинкса. Девочки играют в мячик, верша судьбы мира. Кто сумеет без потерь пересечь Долину Совести, если любовь к главному герою грозит смертью?.. Дух сцены мстит мятежному режиссеру. В подворотне прячется испуганная девочка с плюшевым медведем - под плюшем скрывается чудовище, за обликом ребенка - целеустремленный демон. Обычные горожане днем живут без жестокости и агрессии; но во сне, в Мире Пещеры, каждый из них живет хищником или жертвой. Куда ни глянь, под тонкой пленкой повседневности таится хаос... В этой книге собрано "городское фэнтези" Марины и Сергея Дяченко - признанных мастеров жанра.</p>
+    <empty-line/>
+    <p>Содержание:</p>
+    <p>1. Долина совести <emphasis>(2001)</emphasis></p>
+    <p>2. Пещера <emphasis>(1998)</emphasis></p>
+    <p>3. Алена и Аспирин <emphasis>(2006)</emphasis></p>
+    <p>4. Эмма и Cфинкс <emphasis>(2002)</emphasis></p>
+    <p>5. Кон (повесть) <emphasis>(2001)</emphasis></p>
+    <p>6. Трон (рассказ) <emphasis>(1998)</emphasis></p>
+    <empty-line/>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Гиганты фантастики / Гиганты фэнтези"/>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>mergeFB2.exe, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-04-04">04 April 2021</date>
+   <id>EA4D945B-FE28-4635-865E-FD6C770C7675</id>
+   <version>1.0</version>
+   <history>
+    <p>Сборник сгенерирован программой mergeFB2</p>
+    <p>Автор программы: Karsten</p>
+    <p>Автор объединяющего скрипта: KiR</p>
+    <p>XSL-процессор: xsltproc - www.zlatkovic.com/pub/libxml/</p>
+    <p>Сайт программы: sites.google.com/site/svenkarsten/</p>
+   </history>
+  </document-info>
+  <custom-info info-type="">1. Source URL: www.litres.ru; Source OCR: Вычитка – MCat78; Source ID: 35557BC1-23E6-4780-A064-D4B8223A87E3; Source Creation Date: 2007-08-14; Source Version: 2.01; Source Document Author: Consul ; Source Document Author E-Mail: fictionbook@gmail.com;
+4. Source URL: fenzin.org/; Source OCR: SCAN &amp; OCR FEDYA; Source ID: AE48FB3D-B706-4B03-A7BB-DDBD68D8D394; Source Creation Date: 2009-11-15; Source Version: 1.1; Source Document Author Nickname: Stranger; Source Document Author E-Mail: [4pi@bk.ru];
+
+</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

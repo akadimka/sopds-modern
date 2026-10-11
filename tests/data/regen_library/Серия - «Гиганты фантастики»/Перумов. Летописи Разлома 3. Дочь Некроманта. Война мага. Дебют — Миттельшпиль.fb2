@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   <author>
+    <first-name>Ник</first-name>
+    <last-name>Перумов</last-name>
+   </author>
+   <book-title>Дочь Некроманта. Война мага. Дебют — Миттельшпиль</book-title>
+   <annotation>
+    <p>Страшная война, в которой против некроманта одновременно выступают силы Тьмы и силы Света, начинается. Под стены Черной башни отец-экзекутор Этлау приводит тысячи воинов, смерть которых должна стать последней каплей на весах Добра и Зла и позволить Разрушителю воплотиться. Однако события принимают неожиданный оборот. Фесс, не желая играть отведенную ему Западной Тьмой роль, вырывается из окружения, и совсем не той ценой, что было предписано. Куда теперь приведет его дорога? Кто встанет с ним плечом к плечу во имя защиты Эвиала и всего Упорядоченного?</p>
+    <empty-line/>
+    <p>Содержание:</p>
+    <p>1. Дочь Некроманта <emphasis>(2000)</emphasis></p>
+    <p>2. Война мага. Том 1. Дебют <emphasis>(2003)</emphasis></p>
+    <p>3. Война мага. Том 2. Миттельшпиль <emphasis>(2004)</emphasis></p>
+    <empty-line/>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Гиганты фантастики / Гиганты фэнтези">
+    <sequence name="Летописи Разлома" number="3"/>
+   </sequence>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>mergeFB2.exe, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2023-02-27">27 February 2023</date>
+   <id>E65E18EB-F3A9-4CF4-90E8-944B4D63F1A6</id>
+   <version>1.0</version>
+   <history>
+    <p>Сборник сгенерирован программой mergeFB2</p>
+    <p>Автор программы: Karsten</p>
+    <p>Автор объединяющего скрипта: KiR</p>
+    <p>XSL-процессор: xsltproc - www.zlatkovic.com/pub/libxml/</p>
+    <p>Сайт программы: sites.google.com/site/svenkarsten/</p>
+   </history>
+  </document-info>
+  <custom-info info-type="">2. Source URL: www.litres.ru   https://rutracker.org/forum/viewtopic.php?t=5463448; Source OCR: Текст предоставлен издательством «Эксмо»; Source ID: 00008129-238b-102a-b1f8-a26c34c231af; Source Creation Date: 2008-05-26; Source Version: 2.1; Source Document Author:  MCat78; Source Document Author Nickname: MCat78; Source Document Author E-Mail: MCat78@mail.ru;
+3. Source URL: www.litres.ru; Source OCR: Текст предоставлен издательством «Эксмо»; Source ID: 00008130-238b-102a-b1f8-a26c34c231af; Source Creation Date: 2007-10-09; Source Version: 2.01; Source Document Author:  MCat78; Source Document Author Nickname: MCat78; Source Document Author E-Mail: MCat78@mail.ru;
+
+</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>
