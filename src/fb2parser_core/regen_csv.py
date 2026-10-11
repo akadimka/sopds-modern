@@ -87,7 +87,7 @@ class RegenCSVService:
         # после self.settings, чтобы AuthorName.set_config_path() был вызван
         # с правильным путём ДО первого использования AuthorName где бы то
         # ни было в этом прогоне — независимо от порядка PASS'ов.
-        AuthorNormalizer(self.settings)
+        self._author_normalizer = AuthorNormalizer(self.settings)
 
         # Load configuration lists
         self.collection_keywords = self.settings.get_list('collection_keywords')
@@ -754,6 +754,7 @@ class RegenCSVService:
         # Вспомогательная функция: вычислить (proposed_series, series_source)
         # по частям пути и автору. Результат кэшируется по ключу (author, parent_parts).
         _series_folder_cache: dict = {}  # (author, parent_parts) → (series, source)
+        _norm_author_cache: dict = {}  # author → normalize_format(author)
 
         def _compute_folder_series(author: str, parent_parts: tuple) -> tuple:
             """Вернуть (proposed_series, series_source) из структуры папок.
@@ -836,6 +837,24 @@ class RegenCSVService:
                                  if hasattr(self.settings, 'settings') else [])]
                     self._translator_folder_prefixes_cache = _tfp_ser
 
+                # Баг №131: серии из папок считаются ДО нормализации авторов
+                # (PASS 3), и автор из метаданных ещё в порядке «Имя Фамилия»
+                # («Ник Перумов»). _surnames_match_folder считает фамилией
+                # первое слово и не узнавал «Перумов. Путь некроманта» как
+                # папку с автором — имя папки целиком (с фамилией) уходило
+                # в серию. Сверяем и с нормализованной формой «Фамилия Имя».
+                _author_n = _norm_author_cache.get(author)
+                if _author_n is None:
+                    try:
+                        _author_n = self._author_normalizer.normalize_format(author) if author else ''
+                    except Exception:
+                        _author_n = author
+                    _norm_author_cache[author] = _author_n
+
+                def _author_in(folder: str) -> bool:
+                    return (self._surnames_match_folder(author, folder)
+                            or (_author_n != author and self._surnames_match_folder(_author_n, folder)))
+
                 series_folders = []
                 for _sf in subfolders:
                     # Папка-буква алфавитного указателя («С», «А», «Б»…) — типичная
@@ -845,7 +864,7 @@ class RegenCSVService:
                     # ...fb2" — без этого фильтра "С" считалась частью серии.
                     if self._is_alphabet_index_folder(_sf):
                         continue
-                    if not author or not self._surnames_match_folder(author, _sf):
+                    if not author or not _author_in(_sf):
                         # Дополнительная проверка: папка = латинский логин/транслит автора
                         if self._folder_is_author_login(_sf, author):
                             continue  # папка автора, не серия
@@ -884,11 +903,23 @@ class RegenCSVService:
                     # сюда не доходил: «Борланд - Недоруб Сергей» целиком считалось
                     # папкой автора, а у «Дезертира» в серии оставалось «Пронин Игорь».
                     _sf_base = _LEADING_ORDINAL_RE.sub('', _sf).strip()
+                    # Баг №131: «Перумов. Путь некроманта» — «Фамилия. Серия».
+                    # Без этого серией становилось имя папки целиком, вместе
+                    # с фамилией, а _postcheck_series_not_equal_author, увидев
+                    # в серии автора, заменял её серией из метаданных
+                    # («Летописи Разлома») — значение папки терялось.
+                    if '. ' in _sf_base:
+                        _dot_head, _dot_tail = (p.strip() for p in _sf_base.split('. ', 1))
+                        if (_dot_head and _dot_tail and len(_dot_head.split()) <= 3
+                                and _author_in(_dot_head)
+                                and not _author_in(_dot_tail)):
+                            _sf_base = _dot_tail
+                            _extracted = self._extract_series_from_folder_name(_dot_tail)
                     if ' - ' in _sf_base:
                         _sd_head, _sd_tail = (p.strip() for p in _sf_base.rsplit(' - ', 1))
                         if (_sd_head and _sd_tail
-                                and self._surnames_match_folder(author, _sd_tail)
-                                and not self._surnames_match_folder(author, _sd_head)):
+                                and _author_in(_sd_tail)
+                                and not _author_in(_sd_head)):
                             _extracted = _sd_head
                     # Баг №59: "С.К.С., Вязовский - Режим бога" — псевдоним автора для
                     # части книг серии (через запятую) + реальное имя автора + тире +
@@ -913,7 +944,7 @@ class RegenCSVService:
                         # ПОСЛЕ тире это список соавторов (совпадает с уже
                         # известным `author`), а не название серии — тогда
                         # настоящая серия — текст ДО тире.
-                        if _after_dash_ser and self._surnames_match_folder(author, _after_dash_ser):
+                        if _after_dash_ser and _author_in(_after_dash_ser):
                             if _before_dash_ser:
                                 _extracted = _before_dash_ser
                         elif _after_dash_ser:

@@ -761,7 +761,8 @@ class FB2CompilerService:
             base_key = _punct_norm(root_no_num) if root_no_num else _punct_norm(series)
             return f'{base_key}|{sub_key}' if sub_key else base_key
 
-        ctx = SimpleNamespace(_punct_norm=_punct_norm, _series_group_key=_series_group_key)
+        ctx = SimpleNamespace(_punct_norm=_punct_norm, _series_group_key=_series_group_key,
+                              records=records)
         self._build_series_buckets(records, ctx)
         self._merge_series_buckets(ctx)
         self._emit_groups_from_buckets(work_dir, on_group, ctx)
@@ -1052,9 +1053,96 @@ class FB2CompilerService:
             if on_group:
                 on_group(g)
 
+        self._emit_parts_of_sibling_omnibus(work_dir, _emit, ctx)
         for (_, _), recs in buckets.items():
             self._build_group_from_bucket(recs, work_dir, _emit, _punct_norm, _single_slot_by_root)
         ctx.groups = groups
+
+
+    def _emit_parts_of_sibling_omnibus(self, work_dir, _emit, ctx) -> None:
+        """find_groups, шаг 3а: тома подпапки, которая повторяет книгу-сборник рядом.
+
+        Баги №130/№131: в одной папке лежит сборник "Перумов. Летописи Разлома 2.
+        Путь некроманта.fb2", а рядом — подпапка "Перумов. Путь некроманта" с
+        его исходными томами "1. …" … "4. …" (проверено по тексту: сборник
+        содержит их целиком). Серия томов может совпадать с серией сборника
+        ("Летописи Разлома" из метаданных — тогда тома перемешивались с
+        другими подпапками по номерам) или быть своей, из имени папки
+        ("Путь некроманта" — тогда компиляция создала бы копию сборника).
+        В обоих случаях новая компиляция не нужна: сборник уже есть.
+
+        Подпапка относится к сборнику, если её имя без фамилии автора в начале
+        совпадает с названием книги того же автора из родительской папки.
+        Тогда тома подпапки убираются из своих бакетов и выводятся
+        cleanup-группой: сборник остаётся, тома — в дубли. Если сборник
+        заметно меньше суммы томов (вероятно, урезанное издание), ничего не
+        меняем.
+        """
+        buckets = ctx.buckets
+
+        def _key(s: str) -> str:
+            s = unicodedata.normalize('NFC', s).lower().replace('ё', 'е')
+            return ' '.join(re.split(r'[\W_]+', s)).strip()
+
+        def _unpacked_size(path: Path) -> int:
+            try:
+                return len(read_fb2_bytes(path))
+            except OSError:
+                return 0
+
+        # Книги-кандидаты в сборники: (автор, папка, название) → запись.
+        omnibus_index: Dict[Tuple[str, Path, str], object] = {}
+        for rec in ctx.records:
+            author = _norm_key((rec.proposed_author or '').strip())
+            title = _key(rec.file_title or '')
+            if author and title:
+                omnibus_index.setdefault(
+                    (author, (work_dir / rec.file_path).parent, title), rec)
+
+        # Тома из бакетов, сгруппированные по (автор, папка).
+        by_folder: Dict[Tuple[str, Path], List] = {}
+        for (author_k, _), recs in buckets.items():
+            for rec in recs:
+                by_folder.setdefault((author_k, (work_dir / rec.file_path).parent), []).append(rec)
+
+        dropped: set = set()
+        for (author_k, folder), parts in by_folder.items():
+            author_tokens = set(_key(parts[0].proposed_author or '').split())
+            words = _key(folder.name).split()
+            while words and words[0] in author_tokens:
+                words.pop(0)
+            fkey = ' '.join(words)
+            # Короткое имя ("Том 1", "Книги") — не повод для привязки.
+            if len(fkey) < 6 or len(words) < 2:
+                continue
+            omnibus = omnibus_index.get((author_k, folder.parent, fkey))
+            if omnibus is None:
+                continue
+            omnibus_path = work_dir / omnibus.file_path
+            part_paths = [work_dir / r.file_path for r in parts]
+            if _unpacked_size(omnibus_path) < sum(_unpacked_size(pp) for pp in part_paths) * 0.7:
+                self._log(
+                    f"  ⚠ {omnibus_path.name} заметно меньше томов из «{folder.name}» — "
+                    f"вероятно, урезанное издание, тома не убираем."
+                )
+                continue
+            self._log(f"  ℹ Тома из «{folder.name}» уже входят в {omnibus_path.name} — на удаление.")
+            dropped.update(id(r) for r in parts)
+            _emit(CompilationGroup(
+                author=(omnibus.proposed_author or '').strip(),
+                series=(omnibus.proposed_series or '').strip() or folder.name,
+                books=[],
+                order_determined=True,
+                volume_range='',
+                duplicate_paths=part_paths,
+                kept_paths=[omnibus_path],
+                cleanup_only=True,
+            ))
+        if dropped:
+            for key in list(buckets):
+                buckets[key] = [r for r in buckets[key] if id(r) not in dropped]
+                if not buckets[key]:
+                    del buckets[key]
 
 
     def _suppress_covered_groups(self, ctx) -> None:
@@ -1184,7 +1272,6 @@ class FB2CompilerService:
 
         ctx = SimpleNamespace(author=author)
         self._group_series_and_books(recs, work_dir, ctx)
-        self._group_drop_parts_of_sibling_omnibus(ctx)
         if self._group_skip_if_all_arc_precompiled(ctx):
             return
         self._group_service_word_correction(ctx)
@@ -1252,79 +1339,6 @@ class FB2CompilerService:
         ctx.books = books
         ctx.duplicate_paths = duplicate_paths
         ctx.series = series
-
-
-    def _group_drop_parts_of_sibling_omnibus(self, ctx) -> None:
-        """Группа компиляции, шаг 1.5: тома из подпапки, которая повторяет книгу-сборник рядом.
-
-        Баг №130: в одной папке лежит сборник "Перумов. Летописи Разлома 2.
-        Путь некроманта.fb2", а рядом — подпапка "Перумов. Путь некроманта"
-        с его исходными томами "1. …" … "4. …". Номера в подпапке считаются
-        внутри неё, а не по всей серии. Без этого шага тома трёх таких подпапок
-        перемешивались по номерам (1, 1, 1, 2, 2, …) в одну группу. Хуже того,
-        сборники 3 и 4 уходили в дубли, потому что их номер совпадал с
-        "3. …"/"4. …" из подпапки.
-
-        Подпапка относится к сборнику группы, если её имя без фамилии автора
-        в начале совпадает с названием сборника, а сам сборник лежит в
-        родительской папке. В группе может оказаться и один том подпапки:
-        "Война мага. Эндшпиль - Конец игры" — "Конец игры" по метаданным
-        в другой серии. Тогда её тома покрыты сборником:
-        они уходят в дубли, сборник остаётся. Если сборник заметно меньше
-        суммы томов (вероятно, урезанное издание), ничего не меняем.
-        """
-        books = ctx.books
-
-        def _key(s: str) -> str:
-            s = unicodedata.normalize('NFC', s).lower().replace('ё', 'е')
-            return ' '.join(re.split(r'[\W_]+', s)).strip()
-
-        author_tokens = set(_key(ctx.author).split())
-
-        def _folder_key(folder: Path) -> str:
-            words = _key(folder.name).split()
-            while words and words[0] in author_tokens:
-                words.pop(0)
-            return ' '.join(words)
-
-        by_folder: Dict[Path, List[CompilationBook]] = {}
-        for b in books:
-            by_folder.setdefault(b.abs_path.parent, []).append(b)
-
-        def _unpacked_size(b: CompilationBook) -> int:
-            try:
-                return len(read_fb2_bytes(b.abs_path))
-            except OSError:
-                return 0
-
-        dropped: set = set()
-        for folder, parts in by_folder.items():
-            fkey = _folder_key(folder)
-            # Короткое имя ("Том 1", "Книги") — не повод для привязки.
-            if len(fkey) < 6 or len(fkey.split()) < 2:
-                continue
-            omnibus = next(
-                (b for b in by_folder.get(folder.parent, [])
-                 if _key(b.record.file_title or '') == fkey),
-                None,
-            )
-            if omnibus is None:
-                continue
-            parts_size = sum(_unpacked_size(p) for p in parts)
-            if _unpacked_size(omnibus) < parts_size * 0.7:
-                self._log(
-                    f"  ⚠ {omnibus.abs_path.name} заметно меньше томов из «{folder.name}» — "
-                    f"вероятно, урезанное издание, тома не убираем."
-                )
-                continue
-            self._log(
-                f"  ℹ Тома из «{folder.name}» уже входят в {omnibus.abs_path.name} — на удаление."
-            )
-            for p in parts:
-                dropped.add(id(p))
-                ctx.duplicate_paths.append(p.abs_path)
-        if dropped:
-            ctx.books = [b for b in books if id(b) not in dropped]
 
 
     def _group_skip_if_all_arc_precompiled(self, ctx) -> bool | None:

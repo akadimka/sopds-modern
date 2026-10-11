@@ -1088,3 +1088,23 @@ class TestCollectionKeywordInsideWordIsNotACollection:
         rec = _by_suffix(records, self.ROOT, filename)
         assert rec.proposed_series == "Летописи Разлома"
         assert rec.series_number == number
+
+
+class TestSurnameDotSeriesFolderInPublisherFolder:
+    """«Серия - «Гиганты фантастики»\Перумов. Путь некроманта» (баг №131):
+    серия — из имени папки без фамилии. Серии из папок считаются до
+    нормализации авторов, автор из метаданных ещё «Ник Перумов», и фамилия
+    в папке не узнавалась: серией становилась «Перумов. Путь некроманта»,
+    а постчек «серия содержит автора» заменял её метой «Летописи Разлома»."""
+
+    FOLDER = ("Серия - «Гиганты фантастики»", "Перумов. Путь некроманта")
+
+    @pytest.mark.parametrize("filename, number", [
+        ("1. Хранитель Мечей. Странствия мага. Том 1.fb2", "1"),
+        ("2. Хранитель Мечей. Странствия мага. Том 2.fb2", "2"),
+    ])
+    def test_series_is_folder_name_without_surname(self, records, filename, number):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == "Путь некроманта"
+        assert rec.series_source == "folder_dataset"
+        assert rec.series_number == number

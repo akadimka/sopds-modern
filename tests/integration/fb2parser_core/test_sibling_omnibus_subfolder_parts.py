@@ -16,9 +16,12 @@ roadmap.md, баг №130.
    (разделы "Книга 1/2/3") как тома 1-3 серии и поглощал сборники 1 и 2
    как дубли — потеря файлов при применении.
 
+Баг №131: после него у томов серия из имени подпапки ("Путь некроманта"),
+и без проверки компилятор собрал бы из них копию готового сборника.
+
 Фикс: тома подпапки, имя которой (без фамилии автора) совпадает с
 названием сборника из родительской папки, считаются покрытыми этим
-сборником; явная позиция "Серия N." в имени сборника весомее внутренней
+сборником — при любой их серии; явная позиция "Серия N." в имени сборника весомее внутренней
 нумерации его содержимого.
 """
 from pathlib import Path
@@ -48,12 +51,13 @@ def _write(path: Path, title: str, sections: list, repeat: int) -> None:
     path.write_text(_FB2_TMPL.format(title=title, sections=body), encoding="utf-8")
 
 
-def _rec(rel: str, title: str, number: str, number_source: str) -> BookRecord:
+def _rec(rel: str, title: str, number: str, number_source: str,
+         series: str = SERIES, series_source: str = "metadata") -> BookRecord:
     return BookRecord(
         file_path=rel, file_title=title,
         metadata_authors="Ник Перумов", proposed_author="Перумов Ник",
         author_source="metadata_folder_confirmed", metadata_series=SERIES,
-        proposed_series=SERIES, series_source="metadata",
+        proposed_series=series, series_source=series_source,
         series_number=number, series_number_source=number_source,
     )
 
@@ -94,7 +98,9 @@ _PART_NAMES = {name for _, parts in _PART_FOLDERS for name, _ in parts}
 _OMNIBUS_NAMES = [name for name, _, _ in _OMNIBUSES]
 
 
-def _build(tmp_path: Path, omnibus_repeat: int = 400) -> list:
+def _build(tmp_path: Path, omnibus_repeat: int = 400, folder_series: bool = False) -> list:
+    """folder_series=True — у томов серия из имени своей подпапки (как
+    после бага №131), иначе — общая "Летописи Разлома" из метаданных."""
     recs = []
     for n, (name, title, books) in enumerate(_OMNIBUSES, start=1):
         _write(tmp_path / ROOT / name, title,
@@ -103,25 +109,36 @@ def _build(tmp_path: Path, omnibus_repeat: int = 400) -> list:
     for folder, parts in _PART_FOLDERS:
         for i, (name, title) in enumerate(parts, start=1):
             _write(tmp_path / ROOT / folder / name, title, [(title, f"Текст тома {title}. ")], 40)
-            recs.append(_rec(f"{ROOT}\\{folder}\\{name}", title, str(i), "filename_prefix"))
+            series = folder.split(". ", 1)[1] if folder_series else SERIES
+            recs.append(_rec(f"{ROOT}\\{folder}\\{name}", title, str(i), "filename_prefix",
+                             series, "folder_dataset" if folder_series else "metadata"))
     return recs
 
 
-def _group(tmp_path: Path, recs: list):
+def _groups(tmp_path: Path, recs: list):
+    """(группа компиляции сборников, все пути в дублях, все сохраняемые пути)."""
     groups = [g for g in FB2CompilerService().find_groups(recs, tmp_path)
               if g.author == "Перумов Ник"]
-    assert len(groups) == 1, [(g.series, g.volume_range) for g in groups]
-    return groups[0]
+    compile_groups = [g for g in groups if not g.cleanup_only]
+    assert len(compile_groups) == 1, [(g.series, g.volume_range) for g in compile_groups]
+    deleted = {p.name for g in groups for p in (g.duplicate_paths or [])}
+    kept = {p.name for g in groups for p in (g.kept_paths or [])}
+    return compile_groups[0], deleted, kept
+
+
+@pytest.fixture(params=[False, True], ids=["metadata_series", "folder_series"])
+def result(request, tmp_path):
+    return _groups(tmp_path, _build(tmp_path, folder_series=request.param))
 
 
 @pytest.fixture
-def group(tmp_path):
-    return _group(tmp_path, _build(tmp_path))
+def group(result):
+    return result[0]
 
 
 class TestSubfolderPartsOfSiblingOmnibus:
-    def test_no_omnibus_is_deleted(self, group):
-        deleted = {p.name for p in (group.duplicate_paths or [])}
+    def test_no_omnibus_is_deleted(self, result):
+        _, deleted, _ = result
         assert not deleted & set(_OMNIBUS_NAMES), deleted
 
     def test_omnibuses_compile_in_series_order(self, group):
@@ -129,16 +146,17 @@ class TestSubfolderPartsOfSiblingOmnibus:
         assert names == _OMNIBUS_NAMES
         assert [b.volume_label for b in group.books] == ["1", "2", "3", "4"]
 
-    def test_subfolder_parts_go_to_duplicates(self, group):
-        deleted = {p.name for p in (group.duplicate_paths or [])}
+    def test_subfolder_parts_go_to_duplicates(self, result):
+        _, deleted, kept = result
         assert deleted == _PART_NAMES
+        assert kept == set(_OMNIBUS_NAMES[1:])
 
     def test_abridged_omnibus_does_not_swallow_parts(self, tmp_path):
         """Сборник заметно меньше суммы томов подпапки — вероятно, урезанное
         издание: тома не убираем как покрытые им."""
-        group = _group(tmp_path, _build(tmp_path, omnibus_repeat=1))
-        kept = {b.abs_path.name for b in group.books}
-        assert "1. Хранитель Мечей. Странствия мага. Том 1.fb2" in kept
+        groups = FB2CompilerService().find_groups(_build(tmp_path, omnibus_repeat=1), tmp_path)
+        deleted = {p.name for g in groups for p in (g.duplicate_paths or [])}
+        assert "1. Хранитель Мечей. Странствия мага. Том 1.fb2" not in deleted
 
 
 class TestExplicitSeriesPositionBeatsInnerNumbering:
