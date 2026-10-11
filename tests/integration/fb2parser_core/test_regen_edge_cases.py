@@ -983,3 +983,40 @@ class TestFolderSeriesIsTheSameForEveryBookInFolder:
         recs = [r for r in records if Path(r.file_path).parent.parts[-2:] == (self.ROOT, folder)]
         assert recs, folder
         assert {r.proposed_series for r in recs} == {series}
+
+
+class TestOrganizationalFolderNotASeriesRoot:
+    """«Серия - «S.T.A.L.K.E.R,»\Дополнения\Цыган»: организационная папка
+    «Дополнения» внутри издательской коллекции становилась корнем серии —
+    «Дополнения\Цыган». Она в series_folder_blacklist, который
+    выбрасывается из любого уровня иерархии."""
+
+    FOLDER = ("Серия - «S.T.A.L.K.E.R,»", "Дополнения", "Цыган")
+
+    @pytest.mark.parametrize("filename, number", [
+        ("1. Охотники на мутантов - Андрей Левицкий, Лев Жаков.fb2", "1"),
+        ("2. Во имя Зоны - Лев Жаков.fb2", "2"),
+    ])
+    def test_series_without_organizational_root(self, records, filename, number):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == "Цыган"
+        assert rec.series_number == number
+
+
+class TestSeriesDashAuthorsFolderAuthor:
+    """«23. Я — сталкер - Левицкий Андрей, Бобл Алексей»: автор из папки-
+    предка (_propagate_ancestor_folder_authors) брался из ВСЕГО имени
+    папки — «23. Я — сталкер - Левицкий Андрей» и «Бобл Алексей» через
+    запятую, а нормализация превращала первое в «Сталкер 23». Авторы —
+    справа от последнего « - »."""
+
+    FOLDER = ("Серия - «S.T.A.L.K.E.R,»", "23. Я — сталкер - Левицкий Андрей, Бобл Алексей")
+
+    def test_author_is_the_list_after_dash(self, records):
+        rec = _by_suffix(records, *self.FOLDER, "1. Осознание.fb2")
+        assert rec.proposed_author == "Бобл Алексей, Левицкий Андрей"
+
+    def test_no_author_built_from_series_name(self, records):
+        recs = [r for r in records if Path(r.file_path).parent.parts[-2:] == self.FOLDER]
+        assert recs
+        assert not [r.proposed_author for r in recs if "сталкер" in r.proposed_author.lower()]

@@ -3072,6 +3072,17 @@ class Pass2SeriesFilename:
                 if re.search(r'(?<![а-яёa-z])' + re.escape(bl_lower) + r'(?![а-яёa-z])',
                              folder_lower):
                     return ''
+            # «23. Я — сталкер - Левицкий Андрей, Бобл Алексей»: «[NN.] Серия -
+            # Автор(ы)» — авторы справа от последнего тире; иначе в автора уходило
+            # всё имя папки, и нормализация делала из названия серии «Сталкер 23».
+            # Если справа не автор («Пехов Алексей - Сборник») — разбор как прежде.
+            if ' - ' in folder_name:
+                tail_author = _parse_and_validate(folder_name.rsplit(' - ', 1)[1].strip())
+                if tail_author:
+                    return tail_author
+            return _parse_and_validate(folder_name)
+
+        def _parse_and_validate(folder_name: str) -> str:
             author = parse_author_from_folder_name(
                 folder_name,
                 male_names=self.male_names,

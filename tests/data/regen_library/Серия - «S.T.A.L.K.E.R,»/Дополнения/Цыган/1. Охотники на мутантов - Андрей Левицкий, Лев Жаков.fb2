@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Андрей</first-name>
+    <last-name>Левицкий</last-name>
+   </author>
+   <author>
+    <first-name>Лев</first-name>
+    <last-name>Жаков</last-name>
+   </author>
+   <book-title>Охотники на мутантов</book-title>
+   <annotation>
+    <p>Могильник - дикие непроходимые земли, из глубин которых поднимается аномальная энергия старых захоронений. Это самый странный и опасный район Зоны. Здесь водятся существа, которых нет больше нигде, здесь происходят вещи, способные напугать даже бывалого сталкера.</p>
+    <p>В центре Могильника находится Крепость, таинственный объект, из-за которого столкнулись интересы двух сильнейших группировок Зоны. «Долг» пытается как можно быстрее доставить туда ценный груз, а «Свобода» хочет во что бы то ни стало помешать этому. «Долг» нанимает Лесника - лучшего охотника на мутантов, «Свобода» обращается за помощью к Цыгану - опасному наемнику-убийце.</p>
+    <p>Теперь эти двое стремятся уничтожить друг друга. А Могильник стремится уничтожить их.</p>
+    <p>Смертельное противостояние началось!</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="S.T.A.L.K.E.R."/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>shum29</nickname>
+   </author>
+   <program-used>FB Editor v2.0</program-used>
+   <date value="2009-03-27">27.03.2009</date>
+   <src-url>http://www.all-ebooks.com</src-url>
+   <id>E6577569-3F40-41A3-8999-774D1E281F29</id>
+   <version>1.1</version>
+   <history>
+    <p>v 1.0 - вычитка, создание fb2 - (shum29)</p>
+    <p>v 1.1 - корректура текста Qwert</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Охотники на мутантов</book-name>
+   <publisher>Эксмо</publisher>
+   <city>М.</city>
+   <year>2009</year>
+   <isbn>978-5-699-33501-5</isbn>
+   <sequence name="S.T.A.L.K.E.R."/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>
