@@ -299,8 +299,9 @@ class RegenCSVService:
         # "2) Варяг" → "Варяг"
         # НО: "1941 (Иван Байбаков)" оставляем (1941 — часть имени, не порядковый номер)
         # НЕ срезаем когда папка — подсерия в иерархии (preserve_leading_number=True)
+        # «30.Пленники Зоны» — номер без пробела, если сразу за ним буква.
         if not preserve_leading_number:
-            cleaned = re.sub(r'^\d+[\.\)\-]\s+', '', folder_name).strip()
+            cleaned = re.sub(r'^\d+(?:[\.\)\-]\s+|[\.\)](?=[^\W\d_]))', '', folder_name).strip()
             if cleaned and cleaned != folder_name:
                 folder_name = cleaned
 

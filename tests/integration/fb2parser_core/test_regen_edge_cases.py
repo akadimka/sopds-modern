@@ -895,3 +895,21 @@ class TestInitialDotDashSeparator:
         rec = _by_suffix(records, *self.FOLDER, "Ахманов М.- Ассирийские танки у врат Мемфиса.fb2")
         assert rec.proposed_series == ""
         assert rec.proposed_author == "Ахманов Михаил"
+
+
+class TestFolderOrdinalWithoutSpace:
+    """«30.Пленники Зоны»: номер подпапки без пробела после точки не
+    срезался (ведущий номер снимался только в форме «30. Название»), и
+    в серию попадал номер — «30.Пленники Зоны»."""
+
+    FOLDER = ("Серия - «S.T.A.L.K.E.R,»", "30.Пленники Зоны")
+
+    @pytest.mark.parametrize("filename, number", [
+        ("1.Пленники Зоны. О возвращении забыть - Коротков.fb2", "1"),
+        ("3. Смерти вопреки- Коротков.fb2", "3"),
+        ("5. Пленники Зоны. Гонка преследования-Сергей Коротков.fb2", "5"),
+    ])
+    def test_series_without_folder_number(self, records, filename, number):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == "Пленники Зоны"
+        assert rec.series_number == number
