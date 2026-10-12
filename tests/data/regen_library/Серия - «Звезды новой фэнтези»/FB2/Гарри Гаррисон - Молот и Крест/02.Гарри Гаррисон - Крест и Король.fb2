@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   
+   
+   <author>
+    <first-name>Гарри</first-name>
+    <last-name>Гаррисон</last-name>
+   </author>
+   <author>
+    <first-name>Том</first-name>
+    <last-name>Шиппи</last-name>
+   </author>
+   <book-title>Крест и король</book-title>
+   <annotation>
+    <p>Знаток ремесел, провидец и воин Шеф Сигвардссон поднялся из самых низов, чтобы возглавить могущественный народ викингов. Но его растущее королевство угрожает существованию всей Европы, и он обзавелся множеством опаснейших врагов. Церковные иерархи и их союзники, фанатики из рыцарского религиозного ордена, поклялись свергнуть Шефа любой ценой. Чтобы исполнить обет, им необходимо раздобыть священное копье, оборвавшее жизнь Христа, и возродить Священную Римскую империю. Повинуясь ниспосланным свыше видениям, Шеф сражается, чтобы изменить ход истории, но кажется, даже сами боги вступили в заговор против него.</p>
+   </annotation>
+   <keywords>альтернативная история,средние века,викинги,религиозные войны,эпическое фэнтези,Борьба за власть,приключенческое фэнтези</keywords>
+   <date value="1994-01-01">1994</date>
+   <coverpage>
+    <image l:href="#_142356.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Виктор</first-name>
+    <middle-name>Н.</middle-name>
+    <last-name>Гаврилов</last-name>
+   </translator>
+   <sequence name="Молот и крест" number="2"/>
+  <genre>Приключения</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>cleed</nickname>
+   </author>
+   <program-used>OOoFBTools-2.37 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2021-06-15">15.06.2021</date>
+   <src-url>http://www.litres.ru/pages/biblio_book/?art=122322</src-url>
+   <src-ocr>indd предоставлен правообладателем</src-ocr>
+   <id>6272712e-7bf0-4c74-96e9-f73ec6e35d15</id>
+   <version>2.1</version>
+   <history>
+    <p>v 1.0 — создание fb2 — cleed</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Гарри Гаррисон, Джон Холм Крест и король</book-name>
+   <publisher>Азбука, Азбука-Аттикус</publisher>
+   <year>2021</year>
+   <isbn>978-5-389-19795-4</isbn>
+   <sequence name="Звезды новой фэнтези"/>
+   <sequence name="Мир приключений (Азбука)"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

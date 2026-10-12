@@ -16,7 +16,8 @@ from .pass2_author_extraction import extract_author
 
 def parse_author_from_folder_name(folder_name: str,
                                    male_names: set = None,
-                                   female_names: set = None) -> str:
+                                   female_names: set = None,
+                                   _split_dash: bool = True) -> str:
     """
     Parses author name from a folder name using PASS0+PASS1+PASS2 architecture.
     
@@ -114,6 +115,26 @@ def parse_author_from_folder_name(folder_name: str,
             return m.group(0)
         return _re_pre.sub(r'(\S+)\. ([А-ЯЁA-Z])', _repl, s)
     name = _strip_dot_separator(name)
+
+    # ==================== PRE-PASS: «Автор(ы) - Серия» ====================
+    # Баг №135: «Гарри Гаррисон, Том Шиппи - Молот и Крест» разбиралось
+    # целиком, «и» в названии серии считалось разделителем соавторов:
+    # «Гарр Гаррисон, Том Шиппи - Молот; Гарр Крест». Если до « - » —
+    # имена (есть известное личное имя), автор берётся только оттуда —
+    # но лишь когда разбор целиком не дал автора или оставил в нём « - »:
+    # удачные прежние результаты («Питер В. Бретт - Война с демонами» →
+    # «Питер В. Бретт») не трогаем.
+    _dash_m = _re_pre.match(r'^(.+?)\s+[-–—]\s+(.+)$', name) if _split_dash else None
+    if _dash_m and not _re_pre.search(r'\d', _dash_m.group(1)):
+        _head = _dash_m.group(1).strip()
+        _known = {n.lower().replace('ё', 'е') for n in (male_names or set()) | (female_names or set())}
+        _head_words = {w.lower().replace('ё', 'е') for w in _re_pre.split(r'[\s,;]+', _head) if w}
+        if _known and _head_words & _known:
+            _whole = parse_author_from_folder_name(name, male_names, female_names, _split_dash=False)
+            if _whole and not _re_pre.search(r'\s[-–—]\s', _whole):
+                return _whole
+            _head_author = parse_author_from_folder_name(_head, male_names, female_names)
+            return _head_author or _whole
 
     # ==================== PASS0: Structural Analysis ====================
     struct_info = analyze_structure(name)

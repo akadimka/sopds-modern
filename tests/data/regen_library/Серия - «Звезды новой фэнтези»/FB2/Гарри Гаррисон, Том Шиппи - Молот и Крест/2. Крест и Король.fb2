@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   <author>
+    <first-name>Гарри</first-name>
+    <last-name>Гаррисон</last-name>
+   </author>
+   <book-title>Крест и Король</book-title>
+   <annotation>
+    <p>Знаток ремесел, провидец и воин Шеф Сигвардссон поднялся из самых низов, чтобы возглавить могущественный народ викингов. Но его растущее королевство угрожает существованию всей Европы, и он обзавелся множеством опаснейших врагов. </p>
+    <p>Церковные иерархи и их союзники, фанатики из рыцарского религиозного ордена, поклялись свергнуть Шефа любой ценой. Чтобы исполнить обет, им необходимо раздобыть священное копье, оборвавшее жизнь Христа, и возродить Священную Римскую империю. </p>
+    <p>Повинуясь ниспосланным свыше видениям, Шеф сражается, чтобы изменить ход истории, но кажется, даже сами боги вступили в заговор против него.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>В.</first-name>
+    <middle-name>В.</middle-name>
+    <last-name>Гаврилов</last-name>
+   </translator>
+   <sequence name="Молот и крест" number="2"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2017-12-17">2017</date>
+   <id>{B8083A19-4D79-4791-B6E2-BD2DE13516AF}</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Гаррисон. Молот и крест 2. Крест и Король</book-name>
+   <publisher>Азбука, Азбука-Аттикус</publisher>
+   <city>М., СПб.</city>
+   <year>2015</year>
+   <isbn>978-5-389-10091-6</isbn>
+   <sequence name="Звёзды новой фэнтези"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

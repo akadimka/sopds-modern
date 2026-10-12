@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   <author>
+    <first-name>Гарри</first-name>
+    <last-name>Гаррисон</last-name>
+   </author>
+   <author>
+    <first-name>Том</first-name>
+    <last-name>Шиппи</last-name>
+   </author>
+   <book-title>Молот и Крест</book-title>
+   <annotation>
+    <p>Год 865-й. Британскими островами правят враждующие короли, а королями правит Церковь, беспощадно расправляясь со всеми, кто оспаривает ее власть. Только грозные викинги не страшатся христианских иерархов и крепко держатся за свою веру.</p>
+    <p>Молодой кузнец Шеф, рожденный знатной английской пленницей от вождя разбойников-северян, волею судьбы – а может быть, волею языческих богов – становится врагом собственного народа. Таинственный наставник, являющийся в видениях, помогает ему создавать ранее невиданное оружие. Но этого мало, чтобы одерживать победу за победой; главные союзники Шефа – его отвага и изобретательность. Шеф собирает по крупицам собственное королевство и начинает тотальную войну – войну Молота и Креста.</p>
+   </annotation>
+   <keywords>альтернативная история,Средние века,эпическое фэнтези,приключенческое фэнтези,мифологическое фэнтези</keywords>
+   <date value="1993-01-01">1993</date>
+   <coverpage>
+    <image l:href="#_1.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Алексей</first-name>
+    <middle-name>Константинович</middle-name>
+    <last-name>Смирнов</last-name>
+   </translator>
+   <sequence name="Молот и крест" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <src-title-info>
+   
+   <author>
+    <first-name>Harry</first-name>
+    <last-name>Harrison</last-name>
+   </author>
+   <book-title>The Hammer and The Cross</book-title>
+   <date></date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name>Руслан</first-name>
+    <last-name>Волченко</last-name>
+    <nickname>Ruslan</nickname>
+   </author>
+   <author>
+    <nickname>Colourban</nickname>
+   </author>
+   <program-used>OOoFBTools-3.0 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+   <date value="2021-03-18">18 March 2021</date>
+   <src-url>http://www.litres.ru/pages/biblio_book/?art=64455491</src-url>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>10a3fcb0-8665-11eb-8996-0cc47a5f137d</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – Создание fb2 из издательского текста (Ruslan)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Г. Гаррисон. Дж. Холм. Молот и крест</book-name>
+   <publisher>ООО «Издательская Группа „Азбука-Аттикус“»</publisher>
+   <city>Санкт-Петербург</city>
+   <year>2021</year>
+   <isbn>978-5-389-19418-2</isbn>
+   <sequence name="Звезды новой фэнтези"/>
+   <sequence name=" "/>
+  </publish-info>
+  <custom-info info-type="">© 1993 by Harry Harrison © А. К. Смирнов, перевод, 2015 © В. В. Еклерис, иллюстрация на обложке, 2015 © Издание на русском языке, оформление. ООО «Издательская Группа „Азбука-Аттикус“», 2021 Издательство АЗБУКА®</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+</FictionBook>

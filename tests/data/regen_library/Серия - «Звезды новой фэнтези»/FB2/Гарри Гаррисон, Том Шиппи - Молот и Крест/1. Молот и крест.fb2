@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   <author>
+    <first-name>Гарри</first-name>
+    <last-name>Гаррисон</last-name>
+   </author>
+   <author>
+    <first-name>Джон</first-name>
+    <last-name>Холм</last-name>
+   </author>
+   <book-title>Молот и крест</book-title>
+   <annotation>
+    <p>Год 865-й. Британскими островами правят враждующие короли, а королями правит Церковь, беспощадно расправляясь со всеми, кто оспаривает ее власть. Только грозные викинги не страшатся христианских иерархов и крепко держатся за свою веру.</p>
+    <p> Молодой кузнец Шеф, рожденный знатной английской пленницей от вождя разбойников-северян, волею судьбы - а может быть, волею языческих богов - становится врагом собственного народа. Являясь в видениях, таинственный наставник помогает ему изобретать новое оружие и тактические приемы. Шеф собирает по крупицам собственное королевство и начинает тотальную войну - войну Молота и Креста.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <sequence name="Молот и крест" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2018-01-17">17 January 2018</date>
+   <id>1198233D-D625-42B3-AAAD-DCE49E817CBE</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Гаррисон. Молот и крест</book-name>
+   <publisher>Азбука, Азбука-Аттикус</publisher>
+   <city>М., СПб.</city>
+   <year>2015</year>
+   <isbn>978-5-389-08826-9</isbn>
+   <sequence name="Звёзды новой фэнтези"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

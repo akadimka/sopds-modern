@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   <author>
+    <first-name>Гарри</first-name>
+    <last-name>Гаррисон</last-name>
+   </author>
+   <book-title>Король и Император</book-title>
+   <annotation>
+    <p>Побеждая в сражениях на суше и на море, исполняя волю богов, что являются в пророческих видениях, человек, поднявшийся из самых низов, становится единым королем северных народов. Шеф, мастер боевых и мирных ремесел, совершил поистине невозможное, заставив вчерашних заклятых врагов прекратить взаимное истребление. Но теперь ему бросает вызов возрожденная Священная Римская империя, которая заключила временный союз с могущественной Византией, чтобы расправиться с загадочным англо-норманнским монархом и расцветающими под его защитой странами. Понимая, что драккары викингов не могут противостоять мечущим греческий огонь галерам, Шеф в поисках равноценного оружия отправляется в новый поход — на Восток, к сокровищнице знаний мусульманской цивилизации.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>В.</first-name>
+    <middle-name>В.</middle-name>
+    <last-name>Гаврилов</last-name>
+   </translator>
+   <sequence name="Молот и крест" number="3"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2017-05-11">2017</date>
+   <id>{F79BE45D-7CEC-4BC4-B772-4898881B13EF}</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Гаррисон. Король и Император</book-name>
+   <publisher>Азбука, Азбука-Аттикус</publisher>
+   <city>М., СПб</city>
+   <year>2015</year>
+   <isbn>978-5-389-10090-9</isbn>
+   <sequence name="Звёзды новой фэнтези"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

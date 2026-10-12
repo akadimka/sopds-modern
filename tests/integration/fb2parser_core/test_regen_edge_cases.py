@@ -1234,3 +1234,36 @@ class TestLongDashAuthorSeparator:
         groups = [g for g in FB2CompilerService().find_groups(records, LIBRARY_ROOT)
                   if g.author == "Тамоников Александр"]
         assert [(g.series, len(g.books)) for g in groups] == [("Группа Глеба Шубина", 3)]
+
+
+class TestAuthorsDashSeriesFolderName:
+    """«Гарри Гаррисон, Том Шиппи - Молот и Крест» (баг №135): имя папки
+    разбиралось целиком, «и» в названии серии считалось разделителем
+    соавторов — автор «Гарр Гаррисон, Крест Гарр, Молот Том Шиппи». Рядом
+    папка «Гарри Гаррисон - Молот и Крест» с той же серией (3 тома против
+    2) — из-за разных авторов компилятор видел две серии, а не дубли."""
+
+    ROOT = ("Серия - «Звезды новой фэнтези»", "FB2")
+
+    @pytest.mark.parametrize("folder, filename", [
+        ("Гарри Гаррисон, Том Шиппи - Молот и Крест", "1. Молот и крест.fb2"),
+        ("Гарри Гаррисон, Том Шиппи - Молот и Крест", "2. Крест и Король.fb2"),
+        ("Гарри Гаррисон - Молот и Крест", "01.Гарри Гаррисон - Молот и Крест.fb2"),
+    ])
+    def test_author_from_part_before_dash(self, records, folder, filename):
+        rec = _by_suffix(records, *self.ROOT, folder, filename)
+        assert rec.proposed_author == "Гаррисон Гарри, Шиппи Том"
+        assert rec.proposed_series == "Молот и Крест"
+
+    def test_compiler_sees_one_series_with_duplicates(self, records):
+        groups = [g for g in FB2CompilerService().find_groups(records, LIBRARY_ROOT)
+                  if "Гаррисон" in g.author]
+        assert len(groups) == 1, [(g.author, g.series) for g in groups]
+        group = groups[0]
+        assert [b.abs_path.name for b in group.books] == [
+            "01.Гарри Гаррисон - Молот и Крест.fb2",
+            "02.Гарри Гаррисон - Крест и Король.fb2",
+            "03.Гарри Гаррисон - Король и Император.fb2",
+        ]
+        assert sorted(p.name for p in group.duplicate_paths) == [
+            "1. Молот и крест.fb2", "2. Крест и Король.fb2"]
