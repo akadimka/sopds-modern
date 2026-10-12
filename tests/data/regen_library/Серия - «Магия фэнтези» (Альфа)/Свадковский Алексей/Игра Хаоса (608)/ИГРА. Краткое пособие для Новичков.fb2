@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Рудольфович</middle-name>
+      <last-name>Свадковский</last-name>
+    </author>
+    <book-title>ИГРА Краткое пособие для Новичков</book-title>
+    <annotation>
+      <p>Краткое пособие для Новичков</p>
+      <p>Справочные материалы по миру серии книг</p>
+      <p>Алексея Свадковского «Игра Хаоса»</p>
+      <p>Составитель: Mrrrina</p>
+    </annotation>
+    <date value="2023-02-28 20:22">2023-02-28 20:22</date>
+    <coverpage>
+      <image l:href="#6be89311-5e12-40d5-9925-835464b83029.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Игра Хаоса"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Цокольный этаж</first-name>
+      <home-page>https://searchfloor.ru/</home-page>
+    </author>
+    <date value="2023-09-04 23:22">2023-09-04 23:22</date>
+    <src-url>https://author.today/work/19005</src-url>
+    <program-used>Elib2Ebook, PureFB2</program-used>
+  </document-info>
+  <publish-info>
+    <year>2023</year>
+  </publish-info>
+  <custom-info info-type="donated">false</custom-info>
+  <custom-info info-type="status">fulltext</custom-info>
+  <custom-info info-type="convert-images">true</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

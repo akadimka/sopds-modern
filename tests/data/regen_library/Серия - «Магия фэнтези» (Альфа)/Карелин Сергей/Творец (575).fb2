@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   
+   <author>
+    <first-name>Сергей</first-name>
+    <middle-name>Витальевич</middle-name>
+    <last-name>Карелин</last-name>
+   </author>
+   <author>
+    <first-name>Яна</first-name>
+    <middle-name>В.</middle-name>
+    <last-name>Икрамова</last-name>
+   </author>
+   <book-title>Творец</book-title>
+   <annotation>
+    <p>Хорошо попасть в чужой мир десантником, инженером или просто человеком, у которого в голове энциклопедия… но наш попаданец – обычный человек… Правда, есть один талант, писатель он… Да разве это тот талант, который поможет выжить? </p>
+   </annotation>
+   <date value="2015-01-01">2015</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>On84ly</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date value="2015-07-20">2015-07-20</date>
+   <src-ocr>Текст предоставлен правообладателем</src-ocr>
+   <id>d0c95249-2ebc-11e5-93a0-0025905a0812</id>
+   <version>1.0</version>
+   <history>
+    <p>v 1.0 – создание fb2 – (On84ly)</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Творец: Фантастический роман</book-name>
+   <publisher>Альфа-книга</publisher>
+   <city>Москва</city>
+   <year>2015</year>
+   <isbn>978-5-9922-1997-5</isbn>
+   <sequence name="Магия фэнтези" number="575"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

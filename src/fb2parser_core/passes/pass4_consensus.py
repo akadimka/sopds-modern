@@ -11,6 +11,7 @@ from typing import Dict, List
 from ..author_normalizer_extended import AuthorNormalizer
 from ..evidence import log_decision, series_source_rank
 from ..filename_stem import file_name, file_stem
+from ..name_normalizer import AuthorName
 from ..series_normalizer import _nfc_lower_yo
 from ..series_processor import SeriesProcessor
 from ..settings_manager import SettingsManager
@@ -1947,6 +1948,40 @@ class Pass4Consensus:
                 # самом FB2) при этом не трогаем для записей без своего
                 # подтверждения — см. комментарий у поля в BookRecord.
                 r.author_folder_root = _best_cand
+
+        # Баг №133: книга вне серии в папке одного соавтора («Карелин
+        # Сергей\Творец (575).fb2», в метаданных — Карелин и Икрамова).
+        # Голосовать по серии здесь некому, поэтому вместо большинства —
+        # своя защита от шумного <author> (баг №58, «Тёмные Окна»): каждый
+        # автор в метаданных начинается с известного личного имени, и автор
+        # из папки — один из них. Автор книги — все соавторы, но при
+        # синхронизации книга остаётся в папке автора, где лежала
+        # (author_folder_root), а не переезжает в общую папку соавторов —
+        # решение пользователя.
+        _known_first_names = AuthorName._get_known_names()
+        for r in records:
+            if (r.proposed_series or '').strip():
+                continue
+            if not (r.author_source or '').startswith('folder_dataset') \
+                    or 'metadata-coauthors' in r.author_source:
+                continue
+            _cand = _plausible_meta_coauthors(r)
+            if not _cand:
+                continue
+            _raw_names = [a.strip() for a in re.split(r'[;,]', r.metadata_authors) if a.strip()]
+            if not all(_nfc_lower_yo(a.split()[0]) in _known_first_names for a in _raw_names):
+                continue
+            _own = {t.lower().replace('ё', 'е')
+                    for t in re.split(r'[\s,;]+', r.proposed_author or '') if len(t) > 2}
+            _cand_tokens = set().union(*(
+                {t.lower().replace('ё', 'е') for t in a.split() if len(t) > 2} for a in _cand
+            ))
+            _merged = ', '.join(sorted(_cand))
+            if _own and _own < _cand_tokens and r.proposed_author.strip() != _merged:
+                r.author_folder_root = r.author_folder_root or r.proposed_author.strip()
+                r.proposed_author = _merged
+                r.author_source = f'{r.author_source}+metadata-coauthors'
+                _folder_author_widened += 1
 
         if _folder_author_widened:
             _log.info(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")

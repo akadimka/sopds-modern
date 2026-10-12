@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Рудольфович</middle-name>
+      <last-name>Свадковский</last-name>
+    </author>
+    <book-title>Судья богов</book-title>
+    <annotation>
+      <p>Подземные гробницы аритшеев полны ловушек и опасностей, орды нежити и мертвецов поджидают в лабиринтах темных коридоров тех, кто отважится туда спуститься. Магия хаоса, оружие из техно-миров, храбрость и хитрость или темная магия жрецов-аритшеев, армии воинов, даже после своей смерти хранящих покой своих владык, и страж врат, посланный самим Владыкой смерти. Что окажется сильнее? Об этом Вам предстоит узнать, если рискнете последовать вслед за героями к порогу владений самой смерти.</p>
+    </annotation>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Игра Хаоса" number="4"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name>Starkosta</last-name>
+    </author>
+    <program-used>FictionBook Editor Release 2.6</program-used>
+    <date value="2019-05-22">22 May 2019</date>
+    <id>DE0963F8-2E54-4004-AB90-36D8588E1E58</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info>
+    <publisher>СИ</publisher>
+    <year>2019</year>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

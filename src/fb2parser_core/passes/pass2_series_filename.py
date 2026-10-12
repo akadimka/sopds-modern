@@ -2627,6 +2627,32 @@ class Pass2SeriesFilename:
 
         # 2. Для каждого ключа: если ровно одна подсерия — ищем плоские записи того же автора
         for (author_k, root_k), entries in hier_map.items():
+            # Баг №133: корень — имя автора книги («Бессонов Алексей\Мир Алекса
+            # Королёва\3. Хикки» у книги с автором «[unknown]» в метаданных,
+            # «Свадковский Алексей\Игра Хаоса»): это папка автора, ошибочно
+            # попавшая в серию, а не именованная дуга. Подтверждать её как
+            # filename_named_arc нельзя — иначе её уже не снимет постчек
+            # «серия совпадает с автором».
+            # Корень может быть и псевдонимом из папки автора, когда у записи
+            # уже настоящее имя: «Эльтеррус Иар\Отзвуки серебряного ветра\…»
+            # у автора «Тертышный Игорь» из папки «Эльтеррус Иар (Тертышный
+            # Игорь)» — тогда корень и автор оба в имени одной папки-предка.
+            def _words(s: str) -> set:
+                return set(re.split(r'[\s,;.()\[\]]+', _norm_s(s))) - {''}
+
+            _root_words = _words(re.sub(r'\([^)]*\)|\[[^\]]*\]', ' ', root_k))
+
+            def _root_is_author(rec) -> bool:
+                _aw = _words(rec.proposed_author or '')
+                if not _root_words or not _aw:
+                    return False
+                if _root_words <= _aw:
+                    return True
+                return any(_root_words <= _pw and _aw <= _pw
+                           for _pw in map(_words, Path(rec.file_path).parts[:-1]))
+
+            if any(_root_is_author(e[2]) for e in entries):
+                continue
             # Проверяем, что все иерархические записи имеют одну и ту же подсерию
             subs = {_norm_s(e[1]) for e in entries}
             if len(subs) != 1:

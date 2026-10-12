@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Алексей</first-name>
+      <middle-name>Рудольфович</middle-name>
+      <last-name>Свадковский</last-name>
+    </author>
+    <book-title>Право на жизнь</book-title>
+    <annotation>
+      <p>Невидимые барабаны грохочут в твоих ушах, отдаваясь во всем теле и заставляя замирать душу, а врата Великой Арены готовы раскрыть свой голодный зев. Значит пришло время Турнира, и Владыка хаоса созывает Игроков, где бы они ни были. Пора показать все, чему научился: сражаться, выживать, маскироваться и убегать. На Турнире в ход пойдет все - важна каждая крупица на весах победы. Ведь твой враг такой же Игрок, желающий выжить не меньше тебя. Пришло время доказать свое право на жизнь!</p>
+    </annotation>
+    <keywords>битвы и сражения, боевая фантастика, любовь вопреки, магический мир, опасные приключения, реалрпг</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#_0.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>ru</src-lang>
+    <sequence name="Игра Хаоса" number="3"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name/>
+      <last-name>Admin</last-name>
+    </author>
+    <program-used>calibre 3.26.1, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2018-10-18">18.10.2018</date>
+    <id>bf2dff11-b7ba-45d3-b484-9a5141ee7a29</id>
+    <version>1.0</version>
+  </document-info>
+  <publish-info/>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

@@ -860,6 +860,25 @@ class RegenCSVService:
                     return (self._surnames_match_folder(author, folder)
                             or (_author_n != author and self._surnames_match_folder(_author_n, folder)))
 
+                # Баг №133: «Серия - «Магия фэнтези» (Альфа)\Свадковский Алексей\
+                # Игра Хаоса (608)\…» — автор здесь ещё из метаданных, с отчеством
+                # или инициалом («Алексей Рудольфович Свадковский», «Игорь Н.
+                # Конычев»), а у книги соавторов — оба имени («Сергей Витальевич
+                # Карелин; Яна В. Икрамова»). Проверка «все слова автора есть в
+                # папке» на этом проваливалась, папка автора становилась корнем
+                # серии: «Свадковский Алексей\Игра Хаоса». Папка — имя автора,
+                # если все её слова входят в имена авторов книги (папка
+                # соавторов «Маркелов Олег, Матюшкин Александр» — в имена
+                # обоих); псевдоним в скобках («Клеванский (Дрой) Кирилл»)
+                # не учитываем.
+                _author_words = set(
+                    self._normalize_name_for_comparison(f'{author} {_author_n}').replace('-', ' ').split())
+
+                def _is_author_name(name: str) -> bool:
+                    _bare = re.sub(r'\([^)]*\)|\[[^\]]*\]', ' ', name)
+                    _nw = set(self._normalize_name_for_comparison(_bare).replace('-', ' ').split())
+                    return bool(_nw) and _nw <= _author_words
+
                 series_folders = []
                 for _sf in subfolders:
                     # Папка-буква алфавитного указателя («С», «А», «Б»…) — типичная
@@ -873,6 +892,10 @@ class RegenCSVService:
                         # Дополнительная проверка: папка = латинский логин/транслит автора
                         if self._folder_is_author_login(_sf, author):
                             continue  # папка автора, не серия
+                        # Папка одного из соавторов («Карелин Сергей» у книги
+                        # Карелина и Икрамовой) — тоже папка автора (баг №133).
+                        if author and _is_author_name(_sf):
+                            continue
                         # Дополнительная проверка: папка начинается с жанрово-издательской метки
                         # («Фэнтези МИФ. ...», «Детектив МИФ. ...») — это sub-collection,
                         # а не серия. Серия извлекается из имени файла.
@@ -986,6 +1009,7 @@ class RegenCSVService:
                         _extr_norm in _auth_norm or _auth_norm in _extr_norm
                         or (_auth_words and _auth_words.issubset(_extr_words))
                         or (_auth_words_h and _auth_words_h.issubset(_extr_words_h))
+                        or _is_author_name(_extracted)
                     ))
                     if _extracted and _extr_norm != _auth_norm and not _is_author_variant:
                         # Используем УЖЕ ОЧИЩЕННОЕ значение (_extracted), а не сырое
@@ -3240,7 +3264,7 @@ class RegenCSVService:
 
     def _postcheck_infer_first_volume(self) -> None:
         """Проставляет series_number=1 единственной книге серии без номера, если
-        у ВСЕХ остальных книг той же серии/автора номер ≥2 и нигде уже нет «1»
+        у ВСЕХ остальных книг той же серии/автора номер ≥2, наименьший — ровно 2
         (частая практика: первую книгу серии издают без явного номера, а сиквелы
         уже нумеруют с 2).
 
@@ -3275,7 +3299,12 @@ class RegenCSVService:
                     ok = False  # диапазон ("1-2"), дробное ("8.1") или иной формат — пропускаем группу
                     break
                 nums.append(int(sn))
-            if not ok or not nums or 1 in nums or min(nums) < 2:
+            # Только когда не хватает РОВНО тома 1 (сиквелы начинаются с 2).
+            # Баг №133: «Игра Хаоса» — тома 3-10, томов 1-2 нет вовсе, а
+            # «ИГРА. Краткое пособие для Новичков» без номера получала «1»:
+            # при пропуске нескольких томов книга без номера — не обязательно
+            # первая.
+            if not ok or not nums or 1 in nums or min(nums) != 2:
                 continue
 
             target = unnumbered[0]

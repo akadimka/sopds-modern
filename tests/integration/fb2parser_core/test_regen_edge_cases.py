@@ -1145,3 +1145,66 @@ class TestPublisherSeriesNamedAfterAuthorsCycle:
         groups = [g for g in FB2CompilerService().find_groups(records, LIBRARY_ROOT)
                   if g.author == "Осояну Наталия"]
         assert [g.series for g in groups] == ["Дети великого шторма"]
+
+
+class TestAuthorFolderIsNotASeriesRootInPublisherFolder:
+    """«Серия - «Магия фэнтези» (Альфа)\\Автор\\Цикл (номера)\\…» (баг №133):
+    папка автора становилась корнем серии («Свадковский Алексей\\Игра
+    Хаоса»). Серии из папок считаются, пока автор ещё из метаданных — с
+    отчеством или инициалом («Алексей Рудольфович Свадковский», «Игорь Н.
+    Конычев»), с соавторами; проверка «все слова автора есть в имени
+    папки» проваливалась. А _resolve_hierarchical_flat_mismatch закреплял
+    такой корень как filename_named_arc, и постчек его уже не снимал."""
+
+    ROOT = "Серия - «Магия фэнтези» (Альфа)"
+
+    @pytest.mark.parametrize("folder, filename, series", [
+        (("Свадковский Алексей", "Игра Хаоса (608)"), "3. Право на жизнь (СИ).fb2", "Игра Хаоса"),
+        (("Свадковский Алексей", "Игра Хаоса (608)"), "4. Судья богов (СИ).fb2", "Игра Хаоса"),
+        (("Конычев Игорь", "Пятый магистр (490,510,531)"), "1. Пятый магистр.fb2", "Пятый магистр"),
+        (("Конычев Игорь", "Пятый магистр (490,510,531)"), "2. Северные волки.fb2", "Пятый магистр"),
+        (("Астахова Людмила", "Печать богини Нюйвы (591)"), "1. Печать богини Нюйвы.fb2",
+         "Печать богини Нюйвы"),
+    ])
+    def test_series_without_author_root(self, records, folder, filename, series):
+        rec = _by_suffix(records, self.ROOT, *folder, filename)
+        assert rec.proposed_series == series
+
+    def test_coauthor_folder_is_not_a_series(self, records):
+        """«Карелин Сергей\\Творец (575).fb2» — книга Карелина и Икрамовой:
+        папка одного из соавторов — не серия."""
+        rec = _by_suffix(records, self.ROOT, "Карелин Сергей", "Творец (575).fb2")
+        assert rec.proposed_series == ""
+
+    def test_standalone_book_keeps_metadata_coauthors(self, records):
+        """Соавтор из метаданных у книги вне серии сохраняется (раньше его
+        добавляла только ложная серия «Карелин Сергей»), а при синхронизации
+        книга остаётся в папке автора, где лежала, — решение пользователя."""
+        rec = _by_suffix(records, self.ROOT, "Карелин Сергей", "Творец (575).fb2")
+        assert rec.proposed_author == "Икрамова Яна, Карелин Сергей"
+        assert rec.author_folder_root == "Карелин Сергей"
+
+    def test_unnumbered_book_is_not_volume_one_when_two_volumes_missing(self, records):
+        """«Игра Хаоса» — тома 3, 4…, томов 1-2 нет: «ИГРА. Краткое пособие для
+        Новичков» без номера — не обязательно том 1, номер не проставляем."""
+        rec = _by_suffix(records, self.ROOT, "Свадковский Алексей", "Игра Хаоса (608)",
+                         "ИГРА. Краткое пособие для Новичков.fb2")
+        assert rec.proposed_series == "Игра Хаоса"
+        assert rec.series_number == ""
+
+
+class TestPseudonymAuthorFolderIsNotANamedArcRoot:
+    """«Эльтеррус Иар (Тертышный Игорь)\\Отзвуки серебряного ветра\\7. Иная
+    Терра» (баг №133): у книг с автором «[unknown]» в метаданных корнем
+    серии становился псевдоним «Эльтеррус Иар», и шаг 3
+    _resolve_hierarchical_flat_mismatch закреплял его как именованную дугу —
+    у автора записи там уже настоящее имя «Тертышный Игорь», а псевдоним есть
+    только в имени папки. Golden-снапшот до фикса хранил эту ошибку."""
+
+    FOLDER = ("Русский фантастический боевик", "Эльтеррус Иар (Тертышный Игорь)",
+              "Отзвуки серебряного ветра", "7. Иная Терра")
+
+    @pytest.mark.parametrize("filename", ["1. Иной путь.fb2", "2. Иной смысл.fb2", "3. Иная вера.fb2"])
+    def test_same_hierarchy_as_other_arcs(self, records, filename):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_series == r"Отзвуки серебряного ветра\7. Иная Терра"
