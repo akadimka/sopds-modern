@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Александр</first-name>
+      <middle-name>Александрович</middle-name>
+      <last-name>Тамоников</last-name>
+    </author>
+    <book-title>Тени южных скал</book-title>
+    <annotation>
+      <p>На оккупированной немцами территории Крыма запланирована масштабная партизанская акция. Несколько групп должны одновременно взорвать коммуникации фашистов и тем самым помешать им собрать в кулак свои силы. Но в последний момент с одним из отрядов пропадает связь. Выяснить судьбу «замолчавшего» подразделения поручено опытному разведчику капитану Глебу Шубину. Он переходит линию фронта и сталкивается с девушками из пропавшего отряда, которые, как выясняется, тоже не знают, что произошло с их товарищами. Шубин организует расследование, результаты которого серьезно настораживают советское командование…</p>
+    </annotation>
+    <keywords>Боевики,Боевые операции,Военная разведка,Военная служба,Книги о войне,Мужская проза,Остросюжетная литература,Фронтовые будни</keywords>
+    <date>2024</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  <genre>Военная проза</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Aleks_Sim</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2024-10-20">2024-10-20</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=70968571&amp;lfrom=23664292</src-url>
+    <id>754C39A7-1216-424C-B813-E5A45D7426FE</id>
+    <version>1.0</version>
+    <history>
+      <p>1.0 — создание</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Тени южных скал / Александр Тамоников</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2024</year>
+    <isbn>978-5-04-208953-4</isbn>
+    <sequence name="Фронтовая разведка 41-го"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

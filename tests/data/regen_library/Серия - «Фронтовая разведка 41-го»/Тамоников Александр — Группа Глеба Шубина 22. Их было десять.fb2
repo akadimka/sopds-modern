@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Александр</first-name>
+    <middle-name>Александрович</middle-name>
+    <last-name>Тамоников</last-name>
+    <home-page>http://www.litlib.net/author/300</home-page>
+    <id>36733</id>
+   </author>
+   <book-title>Их было десять</book-title>
+   <annotation><p>Боевые романы о ежедневном подвиге советских фронтовых разведчиков. Поединок силы и духа, когда до переднего края врага всего несколько шагов. Подробности жестоких боев, о которых не рассказывают даже ветераны-участники тех событий.<br/>
+    Их было всего десять – добровольцев, вызвавшихся провести разведку боем. В полосе наступления батальона, где разведчиком капитан Глеб Шубин, противник создал неприступный рубеж обороны. Выявить огневые точки и систему укреплений – задача не из легких. Но Шубину, который на фронте с самого начала войны, приходилось решать и не такие головоломки. Поначалу все шло по плану: разведчикам удалось скрытно подобраться к первой линии немецких постов и спровоцировать вражеский огонь. А дальше… удача отвернулась от капитана. Числиться бы всей группе в списке погибших, если бы в самый отчаянный момент на помощь смельчакам не пришла… немецкая техника…<br/>
+    Общий тираж книг автора – более 10 миллионов экземпляров.</p>
+   </annotation>
+   <keywords>Великая Отечественная война,военная разведка,спецоперации,военные боевики,книги о разведчиках</keywords>
+   <date value="2022-01-01">2022</date>
+   <coverpage><image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Фронтовая разведка 41-го. Боевая проза Тамоникова" number="0"/>
+  <genre>Военная проза</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name/>
+    <last-name/>
+   </author>
+   <program-used> Presto, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2025-01-15">15.01.2025</date>
+   <src-url>http://www.litres.ru/pages/biblio_book/?art=71534257</src-url>
+   <id>8c781ddf-d30a-11ef-8ce3-0cc47af30fe4</id>
+   <version>1</version>
+   <history>
+    <p>v1.0 – Roland</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Их было десять</book-name>
+   <publisher>Эксмо</publisher>
+   <year>2025</year>
+   <isbn>978-5-04-169445-6</isbn>
+  </publish-info>
+  <custom-info info-type="librusec-id">785740</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

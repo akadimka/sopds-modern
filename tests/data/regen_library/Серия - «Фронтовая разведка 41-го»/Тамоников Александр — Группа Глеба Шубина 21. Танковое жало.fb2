@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Александр</first-name>
+      <middle-name>Александрович</middle-name>
+      <last-name>Тамоников</last-name>
+    </author>
+    <book-title>Танковое жало</book-title>
+    <annotation>
+      <p>Боевые романы о ежедневном подвиге советских фронтовых разведчиков. Поединок силы и духа, когда до переднего края врага всего несколько шагов. Подробности жестоких боев, о которых не рассказывают даже ветераны – участники тех событий.</p>
+      <p>Выходя из окружения, капитан разведки Глеб Шубин встречает парнишку по имени Баро. Тот, рискуя жизнью, спас тяжело раненного советского бойца, который пробирался к своим. Боец сообщил Шубину, что несколько часов назад немецкие танки прорвали нашу оборону и скоро окажутся в советском тылу. Связь со штабом прервана, предупредить командование невозможно. Капитан решает выяснить, куда именно движется немецкая колонна. Баро просит разведчика взять его с собой, ссылаясь на то, что отлично знает местность. Глеб соглашается взять паренька в рейд, еще не зная, что в скором времени столкнется со смертельной опасностью…</p>
+    </annotation>
+    <keywords>Великая Отечественная война,смертельная опасность,военные приключения,военные боевики,книги о разведчиках,фронтовые будни</keywords>
+    <date value="2024-01-01">2024</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  <genre>Военная проза</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Александр</first-name>
+      <last-name>Умняков</last-name>
+      <nickname>shum29</nickname>
+      <email>au.shum@gmail.com</email>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2024-10-09">09 October 2024</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=71195572</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>b8100dec-8629-11ef-8ce3-0cc47af30fe4</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание файла – shum29</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>Эксмо (новый каталог ОСНОВНОЙ)</last-name>
+      <id>3a54c9f9-d10d-11ec-876c-0cc47af30fe4</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Танковое жало / Александр Тамоников</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2024</year>
+    <isbn>978-5-04-212294-1</isbn>
+    <sequence name="Фронтовая разведка 41-го. Боевая проза Тамоникова"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Александр</first-name>
+      <middle-name>Александрович</middle-name>
+      <last-name>Тамоников</last-name>
+    </author>
+    <book-title>Морозный ветер атаки</book-title>
+    <annotation>
+      <p>Ноябрь 1941 года. Враг наступает, Красная армия из последних сил сдерживает натиск вермахта у самых стен Москвы. В числе защитников города – взвод фронтовой разведки лейтенанта Глеба Шубина. Им приказано проникнуть в расположение противника и выяснить, где сосредоточены танковые колонны немцев. Разведчики выполняют задачу, но на обратном пути неожиданно узнают, что все обнаруженные ими приготовления фашистов – хитрая уловка. Главный удар по нашим позициям будет нанесен совсем не там, где его ожидают. Чтобы сообщить об этом командованию, у Шубина есть всего несколько часов…</p>
+    </annotation>
+    <keywords>Великая Отечественная война,военная разведка,военные приключения,спецоперации,книги о разведчиках,фронтовые будни</keywords>
+    <date/>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Разведка 41-го"/>
+  <genre>Военная проза</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Наталия</first-name>
+      <last-name>Цветкова</last-name>
+      <nickname>nvcvet</nickname>
+    </author>
+    <program-used>calibre 5.24.0, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2021-04-05">05.04.2021</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=64770547&amp;lfrom=309355109</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>5b5dde05-9c6e-4b81-b7c6-4f193999dd80</id>
+    <version>1.1</version>
+    <history>
+      <p>v1.0 – создание fb2</p>
+      <p>v1.1 – "-", доп. форматирование, скрипты (LeV)</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Морозный ветер атаки / Александр Тамоников</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-04-118291-5</isbn>
+    <sequence name="Фронтовая разведка 41-го. Боевая проза Тамоникова"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

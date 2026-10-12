@@ -1208,3 +1208,29 @@ class TestPseudonymAuthorFolderIsNotANamedArcRoot:
     def test_same_hierarchy_as_other_arcs(self, records, filename):
         rec = _by_suffix(records, *self.FOLDER, filename)
         assert rec.proposed_series == r"Отзвуки серебряного ветра\7. Иная Терра"
+
+
+class TestLongDashAuthorSeparator:
+    """«Тамоников Александр — Группа Глеба Шубина 20. Тени южных скал.fb2»
+    (баг №134): автор отделён длинным тире «—», разбор знал только « - »,
+    и автором становилось «Тамоников Александр — Группа Глеба Шубина 20»,
+    а серии не было вовсе — компилятору нечего было группировать.
+    Метаданные здесь не помогают: у файлов только издательская серия."""
+
+    FOLDER = ("Серия - «Фронтовая разведка 41-го»",)
+
+    @pytest.mark.parametrize("filename, number", [
+        ("Тамоников Александр — Группа Глеба Шубина 20. Тени южных скал.fb2", "20"),
+        ("Тамоников Александр — Группа Глеба Шубина 21. Танковое жало.fb2", "21"),
+        ("Тамоников Александр — Группа Глеба Шубина 22. Их было десять.fb2", "22"),
+    ])
+    def test_author_and_series_from_filename(self, records, filename, number):
+        rec = _by_suffix(records, *self.FOLDER, filename)
+        assert rec.proposed_author == "Тамоников Александр"
+        assert rec.proposed_series == "Группа Глеба Шубина"
+        assert rec.series_number == number
+
+    def test_compiler_groups_the_series(self, records):
+        groups = [g for g in FB2CompilerService().find_groups(records, LIBRARY_ROOT)
+                  if g.author == "Тамоников Александр"]
+        assert [(g.series, len(g.books)) for g in groups] == [("Группа Глеба Шубина", 3)]
