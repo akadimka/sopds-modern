@@ -1244,16 +1244,26 @@ class SynchronizationService:
     # 222 символа, т.е. проверка выше (по символам полного пути) в принципе
     # не могла это поймать.
     _MAX_NAME_BYTES = 255
+    # Баг №137: к имени файла в библиотеке потом дописываются хвосты —
+    # проверка уже сжатой копии (`имя.zip`, _move_files), «Сжать»
+    # (`имя.zip.tmp`, fb2_utils.compress_fb2), смена жанра (`имя.tmp`).
+    # Имя, обрезанное ровно до 255 байт, с таким хвостом снова превышало
+    # лимит: на Linux (ext4 — 255 БАЙТ, кириллица по 2 байта)
+    # синхронизация падала с "[Errno 36] File name too long" ещё на
+    # проверке `имя.zip`. Оставляем запас под самый длинный хвост.
+    _NAME_SUFFIX_RESERVE = len('.zip.tmp')
 
     def _shorten_filename_for_path_limit(self, target_dir: Path, filename: str) -> str:
         """Укоротить `filename`, если итоговый путь в `target_dir` превышает
         MAX_PATH ИЛИ само имя файла превышает лимит байт файловой системы —
         обрезаем "хвост" имени файла (не каталог: он определяется
         жанром/автором/серией и трогать его нельзя), сохраняя расширение.
+        Оба лимита — с запасом _NAME_SUFFIX_RESERVE под `.zip`/`.zip.tmp`.
         """
         def _over_limit(name: str) -> bool:
-            full_len = len(str(target_dir / name))
-            return full_len > self._MAX_PATH or len(name.encode('utf-8')) > self._MAX_NAME_BYTES
+            full_len = len(str(target_dir / name)) + self._NAME_SUFFIX_RESERVE
+            name_bytes = len(name.encode('utf-8')) + self._NAME_SUFFIX_RESERVE
+            return full_len > self._MAX_PATH or name_bytes > self._MAX_NAME_BYTES
 
         if not _over_limit(filename):
             return filename

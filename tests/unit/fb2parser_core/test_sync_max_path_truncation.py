@@ -87,6 +87,23 @@ class TestShortenFilenameForFilesystemByteLimit:
         assert result.endswith(".fb2")
         assert result != name
 
+    def test_room_left_for_zip_suffixes(self, tmp_path):
+        """Баг №137: имя обрезалось ровно до 255 байт, а синхронизация тут же
+        проверяла `имя.zip` (уже сжатая копия в библиотеке) — на Linux
+        "[Errno 36] File name too long", ни один из 5 файлов не перенесён.
+        «Сжать» пишет ещё и `имя.zip.tmp`. Запас — под самый длинный хвост."""
+        sync = _sync()
+        name = (
+            "Шкенев Сергей - Штрафбат Павла Первого_ Штрафбат Его Императорского "
+            "Величества. Спецназ Его Величества. Диверсанты Его Величества. "
+            "Заградотряд Его Величества (Тетралогия).fb2"
+        )
+        assert len((name + ".zip").encode("utf-8")) > SynchronizationService._MAX_NAME_BYTES
+        result = sync._shorten_filename_for_path_limit(tmp_path, name)
+        assert result.endswith(".fb2")
+        for suffix in (".zip", ".zip.tmp", ".tmp"):
+            assert len((result + suffix).encode("utf-8")) <= SynchronizationService._MAX_NAME_BYTES
+
     def test_ascii_name_never_touched_by_byte_limit(self):
         # Чисто ASCII-имя такой же длины символов не превышает байтовый
         # лимит (1 символ = 1 байт) — не должно обрезаться. Короткая
