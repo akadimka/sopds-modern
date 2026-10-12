@@ -3326,6 +3326,33 @@ class FB2CompilerService:
                 _measured[id(b)] = (len(_SPACE_RE.sub('', _TAG_RE.sub('', text))), images)
             return _measured[id(b)]
 
+        REVISION_OVERLAP = 0.3  # доля общих 6-словных фрагментов у редакций одной книги
+        _WORD_RE = re.compile(r'[^\W\d_]+|\d+')
+        _shingles: Dict[int, set] = {}
+
+        def _shingles_of(b: CompilationBook) -> set:
+            if id(b) not in _shingles:
+                try:
+                    raw = _BINARY_BLOCK_RE.sub(b'', read_fb2_bytes(b.abs_path))
+                except OSError:
+                    raw = b''
+                m = _ENCODING_RE.search(raw[:200])
+                encoding = m.group(1).decode('ascii') if m else 'utf-8'
+                try:
+                    text = raw.decode(encoding, errors='replace')
+                except LookupError:
+                    text = raw.decode('utf-8', errors='replace')
+                body = text[text.find('<body'):] if '<body' in text else text
+                words = _WORD_RE.findall(_TAG_RE.sub(' ', body).lower().replace('ё', 'е'))
+                _shingles[id(b)] = {hash(tuple(words[i:i + 6])) for i in range(len(words) - 5)}
+            return _shingles[id(b)]
+
+        def _shingle_overlap(a: CompilationBook, b: CompilationBook) -> float:
+            sa, sb = _shingles_of(a), _shingles_of(b)
+            if not sa or not sb:
+                return 0.0
+            return len(sa & sb) / min(len(sa), len(sb))
+
         def _keep_a(a: CompilationBook, b: CompilationBook) -> bool:
             """Из двух изданий одного текста оставить a? Больше текста — лучше;
             но при практически равном тексте (±1%) — издание с заметно бОльшим
@@ -3366,7 +3393,20 @@ class FB2CompilerService:
                 else:
                     ratio = SequenceMatcher(None, text_a, text_b).ratio()
                 if ratio < similarity_threshold:
-                    continue
+                    # Баг №138: «Сармат. Кофе на крови» (2004) и «Сармат.
+                    # Группа первая, резус положительный» (2010) — одна книга
+                    # в другой редакции: начало переписано, сравнение первых
+                    # 2000 символов её не ловило, и обе оставались томом 1.
+                    # Для книг на ОДНОЙ позиции серии сверяем текст целиком:
+                    # у редакций одной книги ~половина 6-словных фрагментов
+                    # общая, у разных книг — ноль.
+                    if not (_pa[0] == 0 and _pb[0] == 0 and _pa[1] != 0
+                            and _pa[1:] == _pb[1:]):
+                        continue
+                    overlap = _shingle_overlap(book_a, book_b)
+                    if overlap < REVISION_OVERLAP:
+                        continue
+                    ratio = overlap
                 # Похожи: решаем, какую оставить.
                 # Приоритет 1: точность позиции в серии (прямой arc > косвенный subseries).
                 # Приоритет 2 (тайбрейкер): размер файла — больший файл содержит больше текста.
