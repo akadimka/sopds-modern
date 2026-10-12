@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Iterable, List
 
 from .fb2_author_extractor import _TITLE_INFO_RE, _genres_from_title_info
-from .fb2_utils import fb2_rglob, read_fb2_bytes
+from .fb2_utils import fb2_rglob, read_fb2_head
 
 _HEAD_BYTES = 65536  # <title-info> всегда в начале файла
 _ENCODING_RE = re.compile(rb'encoding\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
@@ -38,11 +38,7 @@ class FolderCheck:
 
 
 def _decode_head(path: Path) -> str:
-    if path.name.lower().endswith(".zip"):
-        raw = read_fb2_bytes(path)[:_HEAD_BYTES]
-    else:
-        with open(path, "rb") as f:
-            raw = f.read(_HEAD_BYTES)
+    raw = read_fb2_head(path, _HEAD_BYTES)
     m = _ENCODING_RE.search(raw[:256])
     declared = m.group(1).decode("ascii", "replace") if m else ""
     for enc in ("utf-8", declared, "cp1251"):

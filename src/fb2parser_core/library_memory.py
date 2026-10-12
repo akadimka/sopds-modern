@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
-from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE
+from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE, read_fb2_head
 
 _log = logging.getLogger(__name__)
 
@@ -128,8 +128,8 @@ def read_head_text(path: Path) -> Optional[str]:
                 with z.open(names[0]) as f:
                     data = f.read(HEAD_BYTES)
         else:
-            with open(path, "rb") as f:
-                data = f.read(HEAD_BYTES)
+            # не меньше, чем до конца <title-info> (баг №136)
+            data = read_fb2_head(path, HEAD_BYTES)
     except (OSError, zipfile.BadZipFile, KeyError) as e:
         _log.warning("library_memory: не прочитан %s: %s", path, e)
         return None

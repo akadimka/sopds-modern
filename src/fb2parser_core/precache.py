@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Optional, Set, Tuple
 
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES
+from .fb2_utils import read_fb2_head
 from .passes.folder_author_parser import parse_author_from_folder_name
 
 _log = logging.getLogger(__name__)
@@ -46,8 +47,7 @@ def _maybe_swap_via_metadata(folder: Path, author_name: str) -> str:
                 continue
             checked += 1
             try:
-                with item.open('rb') as f:
-                    raw = f.read(65536)
+                raw = read_fb2_head(item)
                 try:
                     text = raw.decode('utf-8')
                 except UnicodeDecodeError:

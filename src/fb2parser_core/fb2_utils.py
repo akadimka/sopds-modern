@@ -7,6 +7,7 @@ fb2.zip — это обычный ZIP-архив, содержащий один 
 from __future__ import annotations
 
 import io
+import re
 import zipfile
 from pathlib import Path
 from typing import List
@@ -20,6 +21,37 @@ def fb2_rglob(directory: Path) -> List[Path]:
 
 
 MAX_FB2_UNCOMPRESSED_SIZE = 200 * 1024 * 1024  # 200 МБ — см. read_fb2_bytes (баг №97)
+
+# Баг №136: <description> обычно в начале файла, и метаданные читаются из
+# первых 64 КБ. Но бывают файлы, где перед ним стоит <binary> с обложкой
+# («Нанана-Нана - Покорять подземелье…\01. Том 1.fb2»: <title-info> на
+# 181-м КБ) — тогда жанр, автор и название не находились, и смена жанра
+# «не срабатывала». Если в прочитанном начале нет конца <title-info>,
+# дочитываем, но не дальше этого предела.
+TITLE_INFO_SCAN_LIMIT = 32 * 1024 * 1024
+TITLE_INFO_END_RE = re.compile(r'</(?:[\w.-]+:)?title-info\s*>')
+_TITLE_INFO_END_BYTES_RE = re.compile(rb'</(?:[\w.-]+:)?title-info\s*>')
+
+
+def read_fb2_head(path: Path, head_bytes: int = 65536) -> bytes:
+    """Начало FB2 (байты XML, в т.ч. из .fb2.zip), гарантированно включающее
+    конец <title-info>, если он есть в пределах TITLE_INFO_SCAN_LIMIT."""
+    if path.name.lower().endswith('.zip'):
+        raw = read_fb2_bytes(path)
+        end = _TITLE_INFO_END_BYTES_RE.search(raw, 0, TITLE_INFO_SCAN_LIMIT)
+        return raw[:max(head_bytes, end.end() if end else head_bytes)]
+    with open(path, 'rb') as f:
+        data = f.read(head_bytes)
+        searched_from = 0
+        while not _TITLE_INFO_END_BYTES_RE.search(data, searched_from) \
+                and len(data) < TITLE_INFO_SCAN_LIMIT:
+            chunk = f.read(4 * head_bytes)
+            if not chunk:
+                break
+            # тег может разрезаться границей куска — перекрытие в 64 байта
+            searched_from = max(0, len(data) - 64)
+            data += chunk
+    return data
 
 
 def read_fb2_bytes(path: Path) -> bytes:

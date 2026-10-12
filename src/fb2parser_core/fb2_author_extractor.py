@@ -17,6 +17,7 @@ import html
 import re
 from pathlib import Path
 
+from .fb2_utils import TITLE_INFO_END_RE, TITLE_INFO_SCAN_LIMIT
 from .settings_manager import SettingsManager
 
 # Любой префикс пространства имён (<fb:genre>, <FictionBook:genre>…) и
@@ -185,10 +186,23 @@ class FB2AuthorExtractor:
             pass
 
         def _read_limited(encoding, errors='strict'):
-            """Читать файл целиком или до max_bytes (если задан)."""
+            """Читать файл целиком или до max_bytes (если задан) — но не
+            меньше, чем до конца <title-info> (баг №136: обложка <binary>
+            перед <description> отодвигает его за первые 64 КБ)."""
             try:
                 with open(fb2_path, 'r', encoding=encoding, errors=errors) as f:
-                    return f.read(max_bytes) if max_bytes > 0 else f.read()
+                    if max_bytes <= 0:
+                        return f.read()
+                    text = f.read(max_bytes)
+                    searched_from = 0
+                    while not TITLE_INFO_END_RE.search(text, searched_from) \
+                            and len(text) < TITLE_INFO_SCAN_LIMIT:
+                        chunk = f.read(4 * max_bytes)
+                        if not chunk:
+                            break
+                        searched_from = max(0, len(text) - 64)
+                        text += chunk
+                    return text
             except Exception:
                 return None
 
