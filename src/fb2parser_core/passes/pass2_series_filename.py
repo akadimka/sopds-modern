@@ -31,8 +31,8 @@ from typing import Any, Dict, List
 
 from ..block_level_pattern_matcher import BlockLevelPatternMatcher
 from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
+from ..evidence import author_named_series, keeps_author_series, log_decision
 from ..evidence import folder_has_signal as _folder_has_signal_fn
-from ..evidence import log_decision
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from ..filename_stem import file_name, file_stem
 from ..keyword_match import contains_any_keyword, contains_keyword, starts_with_keyword
@@ -3381,9 +3381,13 @@ class Pass2SeriesFilename:
 
             # Имя папки-коллекции (нормализованное для сравнения)
             folder_name_norm = Path(folder_path).name.lower().replace('ё', 'е').strip()
+            author_series = author_named_series(files_in_folder)
 
             for record in files_in_folder:
                 if not record.proposed_series:
+                    continue
+                # Издательская серия, названная по циклу одного из авторов (баг №132)
+                if keeps_author_series(record, author_series):
                     continue
                 # Папочный источник авторитетен — не сбрасываем
                 if record.series_source in ('folder_dataset', 'folder_hierarchy',

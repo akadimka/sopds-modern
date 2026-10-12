@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Наталья</first-name>
+      <middle-name>Георгиевна</middle-name>
+      <last-name>Осояну</last-name>
+    </author>
+    <book-title>Звёздный огонь</book-title>
+    <annotation>
+      <p>Раздобыв первую часть артефакта, который позволит отыскать древний корабль Основателей, команда живого фрегата «Невеста ветра» продолжает путь навстречу новым приключениям и опасностям. Над миром-архипелагом сгущаются тучи: загадочные черные корабли все чаще атакуют Окраину, вблизи от населенных островов появляются безымянные твари, способные одолеть любого противника. Герои еще не знают, что очень скоро судьба подвергнет их жестоким испытаниям, проверяя решимость и стойкость: на что они пойдут, чтобы отыскать бесценное сокровище? Рискнут ли дружбой, любовью, разумом, своими и чужими жизнями?</p>
+      <p>И хватит ли им отваги, чтобы встретиться лицом к лицу с собственным прошлым?</p>
+    </annotation>
+    <keywords>пираты,магические миры,поиск артефактов,поиск сокровищ,волшебные существа</keywords>
+    <date value="2020-01-01">2020</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Дети Великого Шторма" number="2"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Alesh</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2009-03-26">2009-03-26</date>
+    <src-url>http://www. /pages/biblio_book/?art=179538</src-url>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>7b789ea9-6b24-102c-a19b-edc40df1930e</id>
+    <version>1.02</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (Alesh)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Звёздный огонь</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2020</year>
+    <isbn>978-5-17-116871-1</isbn>
+    <sequence name="Дети Великого Шторма (АСТ)"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

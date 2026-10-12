@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    
+    <author>
+      <first-name>Ася</first-name>
+      <last-name>Михеева</last-name>
+      <nickname>Джиджи Рацирахонана</nickname>
+    </author>
+    <book-title>Мост</book-title>
+    <annotation>
+      <p>Любой мост – это труд, затраченный на создание близости между людьми. В предельном случае мосту безразлично, как далеко друг от друга в пространстве, времени или типе реальности те, кого он должен связать. Но постройка и поддержание в рабочем состоянии предельного инженерного сооружения – занятие не простое.</p>
+      <p>Жил да был человек, который придумал себе такую жену, чтобы она могла выдержать всё, что ему сулило будущее. Вот только он забыл задаться вопросом – а выдержит ли эту женщину его будущее, сама его реальность, что будет с ним самим – и выстоит ли Мост.</p>
+      <p>
+        <emphasis>Содержит нецезурную брань.</emphasis>
+      </p>
+    </annotation>
+    <keywords>превратности любви,в поисках счастья,сверхспособности,романтическое фэнтези</keywords>
+    <date value="2022-01-01">2022</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <sequence name="Мост"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>irul</nickname>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>OOoFBTools-2.40 (ExportToFB21), FictionBook Editor Release 2.6</program-used>
+    <date value="2022-10-25">25.10.2022</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=68348738</src-url>
+    <src-ocr>текст предоставлен правообладателем</src-ocr>
+    <id>772ac5ba-51c7-11ed-9637-ac1f6b0b3464</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 (irul)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ (новый каталог ОСНОВНОЙ)</last-name>
+      <id>44e6f33a-d1d4-11ec-a192-0cc47af30dde</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Ася Михеева. Мост</book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>Москва</city>
+    <year>2022</year>
+    <isbn>978-5-17-147036-4</isbn>
+    <sequence name="Дети Великого Шторма [АСТ]"/>
+  </publish-info>
+  <custom-info info-type="">Иллюстрации Дарьи «Kilgarra» Гурьевой В оформлении обложки использована иллюстрация Алисы Плис © Ася Михеева, текст, 2022 © Дарья «Kilgarra» Гурьева, ил., 2022 © Алиса Плис, обложка, 2022 © ООО «Издательство АСТ», 2022</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

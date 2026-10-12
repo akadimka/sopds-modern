@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Наталья</first-name>
+    <middle-name>Георгиевна</middle-name>
+    <last-name>Осояну</last-name>
+   </author>
+   <book-title>Невеста ветра</book-title>
+   <annotation>
+    <p>Бескрайний океан полон опасностей: на его просторах моряков поджидают сирены, кракены, кархадоны и безымянные твари — те, после встречи с которыми не остается никого, кто мог бы об этом рассказать. Но моряки — бесстрашный народ, привыкший рисковать. Вознеся хвалу Заступнице и полагаясь на всемогущего капитана, они отправляются в путь. Целительница Эсме еще не знает, что вскоре покинет родной город и отправится на поиски древнего сокровища в компании темных, но весьма примечательных личностей на борту пиратского корабля.</p>
+   </annotation>
+   <date>2007</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <sequence name="Дети Великого Шторма" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>Fiction Book Designer, FB Writer v1.1, FB Editor v2.0, FictionBook Editor Release 2.6.7</program-used>
+   <date value="2021-08-27">27.08.2021</date>
+   <id>4a3aee11-a5cc-102a-94d5-07de47c81719</id>
+   <version>1.01</version>
+  </document-info>
+  <publish-info>
+   <book-name>Невеста ветра</book-name>
+   <publisher>Астрель-СПб</publisher>
+   <city>Санкт-Петербург</city>
+   <year>2021</year>
+   <isbn>978-5-17-112655-1</isbn>
+   <sequence name="Дети великого шторма"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

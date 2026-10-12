@@ -22,8 +22,13 @@ from types import SimpleNamespace
 
 from .author_normalizer_extended import AuthorNormalizer
 from .evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
+from .evidence import (
+    author_named_series,
+    keeps_author_series,
+    log_decision,
+    series_source_rank,
+)
 from .evidence import folder_has_signal as _folder_has_signal_fn
-from .evidence import log_decision, series_source_rank
 from .extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from .fb2_author_extractor import FB2AuthorExtractor
 from .filename_stem import file_stem, normalize_stem
@@ -3457,9 +3462,13 @@ class RegenCSVService:
                 continue
 
             folder_name_norm = _P(folder_path).name.lower().replace('ё', 'е').strip()
+            author_series = author_named_series(files_in_folder)
 
             for record in files_in_folder:
                 if not record.proposed_series:
+                    continue
+                # Издательская серия, названная по циклу одного из авторов (баг №132)
+                if keeps_author_series(record, author_series):
                     continue
                 # Папочный источник авторитетен — пользователь сам создал структуру
                 if record.series_source in ('folder_dataset', 'folder_hierarchy',

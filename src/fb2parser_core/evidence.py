@@ -25,6 +25,7 @@ high/low), `pass3_series_normalize.py` (своя 6-уровневая шкала
 `pass2_series_filename.py` вместо трёх независимых копий одного и того
 же цикла.
 """
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Sequence, Tuple
 
@@ -214,6 +215,58 @@ def folder_has_signal(
         elif folder not in result:
             result[folder] = False
     return result
+
+
+def _series_key(text: str) -> str:
+    """Название серии для сравнения: регистр, ё/е, пунктуация не важны."""
+    text = (text or '').lower().replace('ё', 'е')
+    return ' '.join(re.sub(r'[^\w]+', ' ', text).split())
+
+
+def author_named_series(records: Iterable[object]) -> set:
+    """id записей, чья серия — собственный цикл автора, даже если она
+    совпадает с названием папки издательской серии (баг №132).
+
+    Издательскую серию называют по циклу одного из авторов: в папке
+    «Серия - «Дети великого шторма»» лежат книги десятка авторов, а у
+    Осояну — свой цикл с тем же названием, тома 1–3. Очистка
+    «многоавторская папка → серия с её именем — это импринт» стирала
+    серию и у неё.
+
+    Цикл автора — серия, которая стоит И в имени файла, И в
+    metadata_series, у ≥2 книг ОДНОГО автора с разными номерами томов. В
+    подборке издательства так не бывает: её ярлык если и есть, то только
+    в метаданных («МИФ. Проза»), а не в именах файлов с нумерацией.
+    Возвращаются все книги такого автора с этой серией в имени файла и
+    метаданных, включая ненумерованный сборник цикла («Трилогия»).
+    """
+    from .filename_stem import file_stem
+
+    by_key: Dict[Tuple[str, str], list] = {}
+    for rec in records:
+        series = _series_key(getattr(rec, 'metadata_series', ''))
+        author = (getattr(rec, 'proposed_author', '') or '').strip()
+        if len(series) < 3 or not author:
+            continue
+        if f' {series} ' not in f" {_series_key(file_stem(getattr(rec, 'file_path', '')))} ":
+            continue
+        by_key.setdefault((author, series), []).append(rec)
+
+    result = set()
+    for recs in by_key.values():
+        numbers = [(getattr(r, 'series_number', '') or '').strip() for r in recs]
+        numbers = [n for n in numbers if n]
+        if len(set(numbers)) >= 2:
+            result.update(id(r) for r in recs)
+    return result
+
+
+def keeps_author_series(record: object, protected: set) -> bool:
+    """Серия записи — цикл автора (см. `author_named_series`) и сейчас
+    стоит именно она."""
+    return (id(record) in protected
+            and _series_key(getattr(record, 'proposed_series', ''))
+            == _series_key(getattr(record, 'metadata_series', '')))
 
 
 def log_decision(record: object, message: str) -> None:

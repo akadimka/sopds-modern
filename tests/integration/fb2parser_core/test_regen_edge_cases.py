@@ -1108,3 +1108,40 @@ class TestSurnameDotSeriesFolderInPublisherFolder:
         assert rec.proposed_series == "Путь некроманта"
         assert rec.series_source == "folder_dataset"
         assert rec.series_number == number
+
+
+class TestPublisherSeriesNamedAfterAuthorsCycle:
+    """«Серия - «Дети великого шторма»» (баг №132): издательская серия
+    названа по циклу Осояну. Папка многоавторская, поэтому серия с её
+    именем стиралась как ярлык подборки (Pass2 и пост-чек сохранения CSV)
+    — и у самой Осояну, хотя «Дети великого шторма» стоит и в имени файла,
+    и в метаданных её книг, с томами 1-3. Компилятор не видел серии."""
+
+    ROOT = "Серия - «Дети великого шторма»"
+
+    @pytest.mark.parametrize("filename, number", [
+        ("Осояну Наталия - Дети великого шторма 1. Невеста ветра.fb2", "1"),
+        ("Осояну Наталия - Дети великого шторма 2. Звёздный огонь.fb2", "2"),
+        ("Осояну Наталия - Дети великого шторма 3. Белый фрегат.fb2", "3"),
+        # номер «Трилогии» («1-3» или пусто) зависит от кешей настроек
+        # предыдущих тестов процесса — здесь проверяется только серия
+        ("Осояну Наталия - Дети великого шторма. Трилогия.fb2", None),
+    ])
+    def test_authors_cycle_keeps_its_series(self, records, filename, number):
+        rec = _by_suffix(records, self.ROOT, filename)
+        assert rec.proposed_series == "Дети великого шторма"
+        if number is not None:
+            assert rec.series_number == number
+
+    @pytest.mark.parametrize("filename", [
+        "Осояну Наталия - Первая печать.fb2",
+        "Кокоулин Андрей - Мастер осенних листьев.fb2",
+        "Михеева Ася - Мост.fb2",
+    ])
+    def test_other_books_in_the_imprint_get_no_series(self, records, filename):
+        assert _by_suffix(records, self.ROOT, filename).proposed_series != "Дети великого шторма"
+
+    def test_compiler_groups_the_cycle(self, records):
+        groups = [g for g in FB2CompilerService().find_groups(records, LIBRARY_ROOT)
+                  if g.author == "Осояну Наталия"]
+        assert [g.series for g in groups] == ["Дети великого шторма"]

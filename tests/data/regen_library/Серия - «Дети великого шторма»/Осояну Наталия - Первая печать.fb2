@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Наталья</first-name>
+      <middle-name>Георгиевна</middle-name>
+      <last-name>Осояну</last-name>
+    </author>
+    <book-title>Первая печать</book-title>
+    <annotation>
+      <p>Этот мир поделили между собой три народа: люди, дьюсы и фаэ. Всякая рукотворная вещь в нем пробуждается, если ее не сдерживать печатью, и всякая сущность, связанная с живой и неживой природой, может оказаться разумной, могущественной и весьма коварной. По его необъятным и опасным просторам странствует человек, чьи глаза и правая рука выглядят так, будто сделаны из золота. Он повсюду чужак, и его не боятся лишь те, кому нечего терять. Никто не в силах объяснить, притягивают ли странного путешественника неприятности, или же он притягивает их. Ему открыты все пути, он способен разгадать любую тайну и подобрать ключ к любому замку, пусть даже за это придется заплатить страданием.</p>
+      <p>Его зовут Теймар Парцелл, и это – его история.</p>
+    </annotation>
+    <keywords>спасение мира,фантасмагория,магические миры,приключенческое фэнтези,сверхспособности</keywords>
+    <date value="2022-01-01">2022</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>irul</nickname>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>OOoFBTools-2.40 (ExportToFB21), FictionBook Editor Release 2.6</program-used>
+    <date value="2022-04-26">26.04.2022</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=179539</src-url>
+    <src-ocr>текст предоставлен правообладателем</src-ocr>
+    <id>93554118-6b24-102c-a19b-edc40df1930e</id>
+    <version>1.01</version>
+    <history>
+      <p>v 1.0 – создание fb2 (irul)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Наталия Осояну. Первая печать</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2022</year>
+    <isbn>978-5-17-146246-8</isbn>
+    <sequence name="Дети Великого Шторма (АСТ)"/>
+  </publish-info>
+  <custom-info info-type="">В оформлении обложки использована иллюстрация Максима Никифорова Издательство благодарит литературное агентство «Банке, Гумен и Смирнова» за содействие в приобретении прав на книгу © Наталия Осояну, текст, 2022 © Максим Никифоров, обложка, 2022 © ООО «Издательство АСТ», 2022</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

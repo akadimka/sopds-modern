@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    <author>
+      <first-name>Андрей</first-name>
+      <middle-name>Алексеевич</middle-name>
+      <last-name>Кокоулин</last-name>
+    </author>
+    <book-title>Мастер осенних листьев</book-title>
+    <annotation>
+      <p>Когда в местечко Подонье Саморского надела прибывают мастера, чтобы набрать учеников, жизнь тринадцатилетней Эльги Галкавы меняется безвозвратно. Неожиданно для себя она становится ученицей Униссы Мару, мастера листьев. С этой поры ее судьба складывается из дорог и местечек, уроков по сложению волшебных картин и боли в пальцах. Огромный сак с листьями она носит за спиной.</p>
+      <p>В то же время где-то на западе начинает свой поход еще один мастер. Мастер смерти.</p>
+      <p>Встреча их, видимо, неизбежна.</p>
+    </annotation>
+    <keywords>ученик и учитель,магические способности,секреты мастерства,пророчества и предсказания,иные миры</keywords>
+    <date value="2021-01-01">2021</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Наталия</first-name>
+      <last-name>Цветкова</last-name>
+      <nickname>nvcvet</nickname>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>ExportToFB21, FictionBook Editor Release 2.6.6</program-used>
+    <date value="2021-12-02">02.12.2021</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=66860368</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>b63be25b-55be-11ec-ab26-441ea1508474</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание FB2 – (nvcvet)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Мастер осенних листьев / Андрей Кокоулин</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-17-137804-2</isbn>
+    <sequence name="Дети Великого Шторма (АСТ)"/>
+  </publish-info>
+  <custom-info info-type="">©Андрей Кокоулин, текст, 2021 © Татьяна Веряйская, обложка, 2021 © ООО «Издательство АСТ», 2021 В оформлении обложки использована иллюстрация Татьяны Веряйской Серийное оформление и дизайн обложки: Юлия Межова</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>
