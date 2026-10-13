@@ -468,6 +468,24 @@
     </div>
     {% endif %}
 
+    <div class="s-section-title">{% trans "Sign-in security" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="admin_login_code" {% if autosync.admin_login_code %}checked{% endif %}{% if not can_edit_exec_fields %} disabled{% endif %}>
+            <span>{% trans "Sign-in code for administrators via Telegram" %}</span>
+        </label>
+        <div class="s-hint">{% trans "After the password, administrators enter a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the administrator chat above. If the code cannot be delivered, administrators cannot sign in; on the server it is turned off with “manage.py admin_login_code off”." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="opds_app_passwords_only" {% if sopds.opds_app_passwords_only %}checked{% endif %}{% if not can_edit_exec_fields %} disabled{% endif %}>
+            <span>{% trans "Readers (OPDS) sign in only with reader passwords" %}</span>
+        </label>
+        <div class="s-hint">{% trans "Reader apps store the password and send it with every request. A reader password (created in the profile) works only for the OPDS catalog, not for the site. With this option the site password is no longer accepted in reader apps." %}</div>
+    </div>
+
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
 

@@ -16,6 +16,8 @@ _CONFIG_PATH = os.path.normpath(
 _DEFAULTS: dict = {
     'root_lib': '',
     'auth': True,
+    # OPDS (Basic) принимает только пароли для читалок, не основной пароль сайта
+    'opds_app_passwords_only': False,
     'maxitems': 10,
     'alphabet_menu': True,
     'splititems': 100,
@@ -52,6 +54,7 @@ _DEFAULTS: dict = {
 # Маппинг SOPDS_KEY -> json_key
 _KEY_MAP: dict[str, str] = {
     'SOPDS_AUTH': 'auth',
+    'SOPDS_OPDS_APP_PASSWORDS_ONLY': 'opds_app_passwords_only',
     'SOPDS_MAXITEMS': 'maxitems',
     'SOPDS_ALPHABET_MENU': 'alphabet_menu',
     'SOPDS_SPLITITEMS': 'splititems',

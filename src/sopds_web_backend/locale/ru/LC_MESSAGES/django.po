@@ -1200,6 +1200,142 @@ msgstr ""
 "боту не хватает права удалять подписчиков — он не сможет убирать из канала "
 "тех, кто отвязал Telegram или чей аккаунт заблокирован"
 
+msgid ""
+"Could not send the sign-in code to Telegram, so administrators cannot sign "
+"in right now. Check the bot settings; on the server the code can be turned "
+"off with “manage.py admin_login_code off”."
+msgstr ""
+"Не удалось отправить код входа в Telegram — администраторы сейчас не могут "
+"войти. Проверьте настройки бота; на сервере код отключается командой "
+"«manage.py admin_login_code off»."
+
+msgid "Too many wrong codes — sign in again."
+msgstr "Слишком много неверных кодов — войдите заново."
+
+msgid "The code has expired — sign in again."
+msgstr "Срок кода истёк — войдите заново."
+
+msgid "Wrong code."
+msgstr "Неверный код."
+
+msgid ""
+"To turn on the sign-in code, set the bot token and link your Telegram in the"
+" profile (or set the administrator chat id) — otherwise you could not sign "
+"in."
+msgstr ""
+"Чтобы включить код входа, укажите токен бота и привяжите свой Telegram в "
+"профиле (или укажите chat id администратора) — иначе вы не сможете войти."
+
+msgid ""
+"We sent a sign-in code to Telegram — to your chat with the library bot and "
+"to the administrator chat."
+msgstr ""
+"Мы отправили код входа в Telegram — в ваш чат с ботом библиотеки и в чат "
+"администратора."
+
+msgid "Code from Telegram"
+msgstr "Код из Telegram"
+
+msgid "6 digits"
+msgstr "6 цифр"
+
+msgid "Sign in"
+msgstr "Войти"
+
+msgid "The code is valid for 5 minutes."
+msgstr "Код действует 5 минут."
+
+msgid "Sign in again"
+msgstr "Войти заново"
+
+msgid "Sign-in security"
+msgstr "Безопасность входа"
+
+msgid "Sign-in code for administrators via Telegram"
+msgstr "Код входа для администраторов через Telegram"
+
+msgid ""
+"After the password, administrators enter a code that the bot sends to their "
+"own chat with the bot (Telegram linked in the profile) and to the "
+"administrator chat above. If the code cannot be delivered, administrators "
+"cannot sign in; on the server it is turned off with “manage.py "
+"admin_login_code off”."
+msgstr ""
+"После пароля администратор вводит код, который бот присылает в его личный "
+"чат с ботом (Telegram, привязанный в профиле) и в чат администратора выше. "
+"Если код не доставлен, администраторы не смогут войти; на сервере он "
+"отключается командой «manage.py admin_login_code off»."
+
+msgid "Readers (OPDS) sign in only with reader passwords"
+msgstr "Читалки (OPDS) входят только по паролям для читалок"
+
+msgid ""
+"Reader apps store the password and send it with every request. A reader "
+"password (created in the profile) works only for the OPDS catalog, not for "
+"the site. With this option the site password is no longer accepted in reader"
+" apps."
+msgstr ""
+"Читалки хранят пароль и отправляют его с каждым запросом. Пароль для читалок"
+" (создаётся в профиле) подходит только к OPDS-каталогу, не к сайту. С этой "
+"опцией пароль от сайта в читалках больше не принимается."
+
+msgid "Reader password (OPDS)"
+msgstr "Пароль для читалок (OPDS)"
+
+msgid ""
+"Reader apps store the password and send it with every request. Give them "
+"this separate password instead of your site password: it works only for the "
+"OPDS catalog and can be revoked without changing your main password."
+msgstr ""
+"Читалки хранят пароль и отправляют его с каждым запросом. Дайте им этот "
+"отдельный пароль вместо пароля от сайта: он подходит только к OPDS-каталогу "
+"и отзывается без смены основного пароля."
+
+msgid "Catalog address:"
+msgstr "Адрес каталога:"
+
+msgid "Username:"
+msgstr "Логин:"
+
+msgid "Password:"
+msgstr "Пароль:"
+
+msgid "Copy it now — it is shown only once."
+msgstr "Скопируйте его сейчас — он показывается только один раз."
+
+#, python-format
+msgid "Created %(created)s."
+msgstr "Создан %(created)s."
+
+#, python-format
+msgid "Last used %(used)s."
+msgstr "Последний вход %(used)s."
+
+msgid "Not used yet."
+msgstr "Ещё не использовался."
+
+msgid "Create a new reader password? The old one stops working."
+msgstr "Создать новый пароль для читалок? Старый перестанет действовать."
+
+msgid "Create a new password"
+msgstr "Создать новый пароль"
+
+msgid "Create a reader password"
+msgstr "Создать пароль для читалок"
+
+msgid "Revoke the reader password? Reader apps using it will stop working."
+msgstr ""
+"Отозвать пароль для читалок? Читалки с этим паролем перестанут работать."
+
+msgid "Revoke"
+msgstr "Отозвать"
+
+msgid ""
+"For administrators: when the sign-in code is turned on, it is sent to this "
+"Telegram."
+msgstr ""
+"Для администраторов: когда включён код входа, он приходит в этот Telegram."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

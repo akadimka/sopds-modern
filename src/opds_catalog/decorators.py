@@ -59,10 +59,25 @@ def sopds_auth_validate(view_function):
         except (binascii.Error, UnicodeDecodeError, ValueError):
             return _unauthed()
 
-        user = auth.authenticate(request, username=username, password=password)
+        # Сначала — пароль для читалок; основной пароль сайта — только если
+        # это не запрещено настройкой (SOPDS_OPDS_APP_PASSWORDS_ONLY).
+        from sopds_web_backend import opds_passwords
+
+        record = opds_passwords.authenticate(username, password)
+        if record is not None:
+            user, mark = record.user, opds_passwords.session_mark(record.token_hash)
+        elif not config.SOPDS_OPDS_APP_PASSWORDS_ONLY:
+            user, mark = auth.authenticate(request, username=username, password=password), opds_passwords.MARK_MAIN
+        else:
+            user = None
         if user and user.is_active:
+            # Сессия нужна, чтобы не проверять пароль на каждый запрос читалки
+            # (обложки, страницы фида), но действует только для /opds/ —
+            # иначе вход через читалку обходил бы код входа администратора
+            # на сайте (OpdsOnlySessionMiddleware).
+            auth.login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            request.session[opds_passwords.SESSION_KEY] = mark
             request.user = user
-            auth.login(request, user)
             return view_function(*args, **kwargs)
 
         return _unauthed()

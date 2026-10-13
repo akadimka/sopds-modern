@@ -15,6 +15,7 @@ urlpatterns = [
     re_path(r"^genre/$", views.GenresView, name="genre"),
     re_path(r"^series/$", views.SeriesView, name="series"),
     re_path(r"^login/$", views.LoginView, name="login"),
+    re_path(r"^login/code/$", views.LoginCodeView, name="login_code"),
     re_path(r"^logout/$", views.LogoutView, name="logout"),
     re_path(r"^bs/delete/$", views.BSDelView, name="bsdel"),
     re_path(r"^bs/clear/$", views.BSClearView, name="bsclear"),

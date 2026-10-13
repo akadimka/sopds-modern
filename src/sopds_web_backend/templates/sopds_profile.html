@@ -78,9 +78,49 @@
   </form>
 </div>
 
+<!-- ── Пароль для читалок (OPDS) ─────────────────────────────── -->
+<div class="s-section" style="margin-bottom:1.5rem;">
+  <div class="s-section-title">{% trans "Reader password (OPDS)" %}</div>
+  <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
+    {% trans "Reader apps store the password and send it with every request. Give them this separate password instead of your site password: it works only for the OPDS catalog and can be revoked without changing your main password." %}
+  </p>
+  {% if opds_new_password %}
+  <div class="callout success" style="padding:0.6rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">
+    <div>{% trans "Catalog address:" %} <code>{{ opds_url }}</code></div>
+    <div>{% trans "Username:" %} <code>{{ request.user.username }}</code></div>
+    <div>{% trans "Password:" %} <strong><code>{{ opds_new_password }}</code></strong></div>
+    <div style="font-size:0.82rem; color:var(--text-muted);">{% trans "Copy it now — it is shown only once." %}</div>
+  </div>
+  {% elif opds_record %}
+  <p style="margin-bottom:0.8rem; font-size:0.9rem;">
+    {% blocktrans with created=opds_record.created|date:"d.m.Y H:i" %}Created {{ created }}.{% endblocktrans %}
+    {% if opds_record.last_used %}{% blocktrans with used=opds_record.last_used|date:"d.m.Y H:i" %}Last used {{ used }}.{% endblocktrans %}{% else %}{% trans "Not used yet." %}{% endif %}
+  </p>
+  {% endif %}
+  <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+    <form method="post" action="{% url 'web:profile' %}" style="margin:0;"
+          {% if opds_record or opds_new_password %}onsubmit="return confirm('{% trans "Create a new reader password? The old one stops working." %}');"{% endif %}>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="opds_new">
+      <button type="submit" class="button" style="margin:0;">{% if opds_record or opds_new_password %}{% trans "Create a new password" %}{% else %}{% trans "Create a reader password" %}{% endif %}</button>
+    </form>
+    {% if opds_record or opds_new_password %}
+    <form method="post" action="{% url 'web:profile' %}" style="margin:0;"
+          onsubmit="return confirm('{% trans "Revoke the reader password? Reader apps using it will stop working." %}');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="opds_revoke">
+      <button type="submit" class="button secondary" style="margin:0;">{% trans "Revoke" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
 <!-- ── Telegram (бот и канал библиотеки) ─────────────────────── -->
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">Telegram</div>
+  {% if request.user.is_staff and telegram_enabled %}
+  <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For administrators: when the sign-in code is turned on, it is sent to this Telegram." %}</p>
+  {% endif %}
   {% if not telegram_enabled %}
   <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "The library's Telegram bot is not set up yet." %}</p>
   {% elif tg_link and tg_link.linked %}

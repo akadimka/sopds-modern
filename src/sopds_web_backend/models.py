@@ -56,3 +56,23 @@ class TelegramFile(models.Model):
         verbose_name = "Telegram file"
         verbose_name_plural = "Telegram files"
         constraints = [models.UniqueConstraint(fields=["book", "fmt"], name="telegram_file_book_fmt")]
+
+
+class OpdsPassword(models.Model):
+    """Отдельный пароль для читалок (OPDS, HTTP Basic): подходит только к
+    /opds/, не к сайту. Читалка хранит его и шлёт с каждым запросом —
+    утечка из её настроек не даёт войти на сайт, а отзывается он без смены
+    основного пароля. Хранится только SHA-256: пароль случайный (100 бит),
+    медленный хеш не нужен."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="opds_password")
+    token_hash = models.CharField(max_length=64)
+    created = models.DateTimeField()
+    last_used = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "OPDS password"
+        verbose_name_plural = "OPDS passwords"
+
+    def __str__(self):
+        return f"OpdsPassword({self.user.username})"

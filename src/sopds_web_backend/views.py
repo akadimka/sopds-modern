@@ -760,6 +760,24 @@ def _apply_autosync_settings(sm, post):
 _TELEGRAM_CHAT_RE = re.compile(r'^(-?\d+|@[A-Za-z]\w{3,})$')
 
 
+def _apply_login_security(sm, post, user):
+    """«Безопасность входа» (только суперпользователь): код входа для
+    администраторов и пароли для читалок. Включить код можно, только если
+    его есть куда доставить самому включающему — иначе он закрыл бы вход
+    себе."""
+    from .login_codes import channels
+    errors = []
+    sm.settings.setdefault('sopds', {})['opds_app_passwords_only'] = post.get('opds_app_passwords_only') == 'on'
+    values = sm.settings['autosync']
+    want = post.get('admin_login_code') == 'on'
+    if want and not values.get('admin_login_code') and not channels(user, values):
+        errors.append(_('To turn on the sign-in code, set the bot token and link your Telegram in the profile '
+                        '(or set the administrator chat id) — otherwise you could not sign in.'))
+        want = False
+    values['admin_login_code'] = want
+    return errors
+
+
 def _telegram_form_settings(request):
     """Токен/чаты/прокси из формы (ещё не сохранённые), иначе — сохранённые."""
     import os
@@ -923,6 +941,7 @@ def sopds_settings(request):
             sopds[f] = value
         if request.user.is_superuser:
             errors.extend(_apply_autosync_settings(sm, request.POST))
+            errors.extend(_apply_login_security(sm, request.POST, request.user))
         sm.save()
 
         # Сохранение настроек с включённой галочкой гарантирует, что фоновый сбор
@@ -1265,7 +1284,20 @@ def LoginView(request):
 
     user = authenticate(request, username=username, password=password)
     if user is not None and user.is_active:
-        login(request, user)
+        from . import login_codes
+        if login_codes.required_for(user):
+            # Второй шаг для администраторов: код из Telegram (login_codes.py).
+            if login_codes.start(request, user, user.backend, next_url):
+                return redirect(reverse("web:login_code"))
+            logger.warning("Login refused: login code for '%s' could not be delivered", username)
+            args["system_message"] = {
+                "text": _("Could not send the sign-in code to Telegram, so administrators cannot sign in right "
+                          "now. Check the bot settings; on the server the code can be turned off with "
+                          "“manage.py admin_login_code off”."),
+                "type": "alert",
+            }
+            return handler403(request, args)
+        _full_login(request, user)
         return redirect(next_url)
     # Неактивный аккаунт не отличаем от неверного логина/пароля: иначе
     # сообщение «This account is not active» подтверждало бы, что логин и
@@ -1294,6 +1326,39 @@ def handler403(request, args):
     return response
 
 
+def _full_login(request, user):
+    """Полный вход на сайт. Метку «только OPDS» (сессия читалки,
+    OpdsOnlySessionMiddleware) снимаем — login() того же пользователя
+    сохраняет данные сессии."""
+    from .opds_passwords import SESSION_KEY as OPDS_ONLY
+    login(request, user)
+    request.session.pop(OPDS_ONLY, None)
+
+
+@vary_on_headers("HTTP_ACCEPT_LANGUAGE")
+@require_http_methods(["GET", "POST"])
+def LoginCodeView(request):
+    """Второй шаг входа администратора: код, присланный в Telegram."""
+    from . import login_codes
+    args = {"breadcrumbs": [_("Login")]}
+    if login_codes.pending(request) is None:
+        return redirect(reverse("web:login"))
+    if request.method == "POST":
+        user, error, next_url = login_codes.verify(request, request.POST.get("code", ""))
+        if user is not None:
+            _full_login(request, user)
+            return redirect(next_url or reverse("web:main"))
+        if error != login_codes.ERR_WRONG:
+            args["system_message"] = {
+                "text": _("Too many wrong codes — sign in again.") if error == login_codes.ERR_TOO_MANY
+                else _("The code has expired — sign in again."),
+                "type": "alert",
+            }
+            return handler403(request, args)
+        args["system_message"] = {"text": _("Wrong code."), "type": "alert"}
+    return render(request, "sopds_login_code.html", args)
+
+
 # ── Профиль пользователя ─────────────────────────────────────────────────────
 
 @sopds_login(url="web:login")
@@ -1301,7 +1366,7 @@ def handler403(request, args):
 def user_profile(request):
     from django.contrib.auth import update_session_auth_hash
 
-    from sopds_web_backend.models import UserProfile
+    from sopds_web_backend.models import OpdsPassword, UserProfile
 
     user = request.user
     # Не "_": это gettext модуля — затенённый флагом created, он падал
@@ -1309,6 +1374,7 @@ def user_profile(request):
     profile, _created = UserProfile.objects.get_or_create(user=user)
     errors = {}
     success = None
+    opds_new_password = ""
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -1349,6 +1415,16 @@ def user_profile(request):
             new_link_code(user)
             success = "telegram"
 
+        elif action == "opds_new":
+            from .opds_passwords import generate
+            opds_new_password = generate(user)
+            success = "opds"
+
+        elif action == "opds_revoke":
+            from .opds_passwords import revoke
+            revoke(user)
+            success = "opds"
+
         elif action == "tg_unlink":
             from .models import TelegramLink
             from .telegram_users import unlink
@@ -1371,6 +1447,9 @@ def user_profile(request):
         "errors": errors,
         "success": success,
         **_profile_telegram_context(user),
+        "opds_record": OpdsPassword.objects.filter(user=user).first(),
+        "opds_new_password": opds_new_password,
+        "opds_url": request.build_absolute_uri(reverse("opds:main")),
     })
 
 
