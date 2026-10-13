@@ -1,18 +1,22 @@
-"""Код входа для администраторов: второй шаг после пароля, через Telegram.
+"""Второй шаг входа на сайт после пароля: код из приложения или из Telegram.
 
-Включается в настройках (раздел Telegram, только суперпользователь), действует
-для всех аккаунтов с is_staff — у них после пароля открывается доступ к
-/fb2parser/ (файлы сервера), управлению пользователями и настройкам.
+1. Подключено приложение-аутентификатор (профиль → «Приложение-
+   аутентификатор», totp.py) — спрашивается его код. У любого пользователя,
+   который его подключил, независимо от настроек.
+2. Иначе — для администраторов (is_staff), если в настройках включён
+   «второй фактор для администраторов»: код (6 цифр, 5 минут) бот
+   отправляет по двум каналам сразу — в личный чат администратора с ботом
+   (Telegram, привязанный в профиле) и в чат администратора из настроек.
+   Не доставлен ни в один — вход не выполняется (иначе второй шаг ничего
+   бы не защищал).
 
-Код (6 цифр, 5 минут, 5 попыток) бот отправляет по двум каналам сразу —
-если один не сработал, остаётся другой:
-- в личный чат администратора с ботом (Telegram, привязанный в профиле);
-- в чат администратора из настроек (тот же, куда идут отчёты).
-Не доставлен ни в один — вход не выполняется (иначе второй шаг ничего бы
-не защищал). Выход из тупика — на сервере: `manage.py admin_login_code off`.
+5 неверных кодов — заново пароль. Выход из тупика — на сервере:
+`manage.py totp_reset <логин>` (потерян телефон с приложением),
+`manage.py admin_login_code off` (не доходит Telegram-код).
 
-Пока код не введён, в сессии лежит только «ожидание» (id пользователя, хеш
-кода, срок, попытки) — сама сессия анонимная; полный вход — после кода.
+Пока код не введён, в сессии лежит только «ожидание» (id пользователя,
+способ, хеш Telegram-кода, срок, попытки) — сама сессия анонимная; полный
+вход — после кода.
 """
 from __future__ import annotations
 
@@ -32,6 +36,9 @@ MAX_ATTEMPTS = 5
 SEND_TIMEOUT = 8.0
 SESSION_KEY = "pending_login_code"
 
+METHOD_TOTP = "totp"
+METHOD_TELEGRAM = "telegram"
+
 ERR_EXPIRED = "expired"
 ERR_WRONG = "wrong"
 ERR_TOO_MANY = "too_many"
@@ -47,8 +54,14 @@ def enabled() -> bool:
     return bool(_settings().get("admin_login_code"))
 
 
-def required_for(user) -> bool:
-    return bool(user.is_staff) and enabled()
+def method_for(user) -> Optional[str]:
+    """Какой второй шаг нужен этому пользователю (None — не нужен)."""
+    from .totp import device_for
+    if device_for(user) is not None:
+        return METHOD_TOTP
+    if user.is_staff and enabled():
+        return METHOD_TELEGRAM
+    return None
 
 
 def _code_hash(code: str) -> str:
@@ -92,17 +105,19 @@ def _deliver(user, code: str, ip: str) -> int:
     return delivered
 
 
-def start(request, user, backend: str, next_url: str) -> bool:
-    """Отправить код и запомнить ожидание в сессии. False — не доставлен."""
+def start(request, user, method: str, backend: str, next_url: str) -> bool:
+    """Запомнить ожидание второго шага в сессии (для Telegram — сначала
+    отправить код). False — Telegram-код не доставлен ни в один канал."""
     from sopds.client_ip import client_ip
-    code = "".join(secrets.choice("0123456789") for _ in range(CODE_DIGITS))
-    if not _deliver(user, code, client_ip(request)):
-        request.session.pop(SESSION_KEY, None)
-        return False
-    request.session[SESSION_KEY] = {
-        "user_id": user.pk, "hash": _code_hash(code), "expires": time.time() + CODE_TTL_SECONDS,
-        "attempts": 0, "backend": backend, "next": next_url,
-    }
+    state = {"user_id": user.pk, "method": method, "hash": "", "expires": time.time() + CODE_TTL_SECONDS,
+             "attempts": 0, "backend": backend, "next": next_url}
+    if method == METHOD_TELEGRAM:
+        code = "".join(secrets.choice("0123456789") for _ in range(CODE_DIGITS))
+        if not _deliver(user, code, client_ip(request)):
+            request.session.pop(SESSION_KEY, None)
+            return False
+        state["hash"] = _code_hash(code)
+    request.session[SESSION_KEY] = state
     return True
 
 
@@ -120,8 +135,17 @@ def verify(request, code: str) -> Tuple[Optional[object], str, str]:
     if time.time() > state["expires"]:
         request.session.pop(SESSION_KEY, None)
         return None, ERR_EXPIRED, ""
+    from . import totp
+    user = get_user_model().objects.filter(pk=state["user_id"], is_active=True).first()
+    if user is None:
+        request.session.pop(SESSION_KEY, None)
+        return None, ERR_EXPIRED, ""
     code = "".join(c for c in (code or "") if c.isdigit())
-    if not constant_time_compare(_code_hash(code), state["hash"]):
+    if state.get("method") == METHOD_TOTP:
+        ok = totp.verify(user, code)
+    else:
+        ok = constant_time_compare(_code_hash(code), state["hash"])
+    if not ok:
         state["attempts"] += 1
         if state["attempts"] >= MAX_ATTEMPTS:
             request.session.pop(SESSION_KEY, None)
@@ -129,8 +153,5 @@ def verify(request, code: str) -> Tuple[Optional[object], str, str]:
         request.session[SESSION_KEY] = state
         return None, ERR_WRONG, ""
     request.session.pop(SESSION_KEY, None)
-    user = get_user_model().objects.filter(pk=state["user_id"], is_active=True).first()
-    if user is None:
-        return None, ERR_EXPIRED, ""
     user.backend = state["backend"]
     return user, "", state["next"]

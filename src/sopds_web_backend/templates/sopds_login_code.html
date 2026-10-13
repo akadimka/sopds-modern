@@ -4,17 +4,21 @@
 {% block ext-body %}
 <div class="cell small-6 medium-4 large-3 small-offset-3 medium-offset-4 large-offset-4">
 
+{% if method == "totp" %}
+<p>{% trans "Enter the code from your authenticator app." %}</p>
+{% else %}
 <p>{% trans "We sent a sign-in code to Telegram — to your chat with the library bot and to the administrator chat." %}</p>
+{% endif %}
 <form method="post" action='{% url "web:login_code" %}'>
 {% csrf_token %}
-      <label>{% trans "Code from Telegram" %}
+      <label>{% if method == "totp" %}{% trans "Code from the app" %}{% else %}{% trans "Code from Telegram" %}{% endif %}
         <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" autofocus
                placeholder="{% trans "6 digits" %}">
       </label>
 	  <input type="submit" class="button" value="{% trans "Sign in" %}">
 </form>
 <p style="font-size:0.85rem; color:var(--text-muted);">
-  {% trans "The code is valid for 5 minutes." %}
+  {% if method != "totp" %}{% trans "The code is valid for 5 minutes." %}{% endif %}
   <a href="{% url 'web:login' %}">{% trans "Sign in again" %}</a>
 </p>
 </div>

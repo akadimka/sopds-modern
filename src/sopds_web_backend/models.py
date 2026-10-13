@@ -76,3 +76,26 @@ class OpdsPassword(models.Model):
 
     def __str__(self):
         return f"OpdsPassword({self.user.username})"
+
+
+class TotpDevice(models.Model):
+    """Приложение-аутентификатор (TOTP, RFC 6238): второй фактор входа на сайт.
+
+    Пока confirmed=False — подключение начато, но первый код из приложения
+    ещё не введён (секрет есть только на этой странице профиля). last_step —
+    номер 30-секундного шага последнего принятого кода: тот же код (и более
+    ранние) повторно не принимаются. Потерян телефон —
+    `manage.py totp_reset <логин>` на сервере."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="totp")
+    secret = models.CharField(max_length=64)  # base32
+    confirmed = models.BooleanField(default=False)
+    created = models.DateTimeField()
+    last_step = models.BigIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "TOTP device"
+        verbose_name_plural = "TOTP devices"
+
+    def __str__(self):
+        return f"TotpDevice({self.user.username}, {'on' if self.confirmed else 'pending'})"

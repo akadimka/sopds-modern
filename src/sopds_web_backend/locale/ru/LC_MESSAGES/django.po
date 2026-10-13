@@ -1336,6 +1336,98 @@ msgid ""
 msgstr ""
 "Для администраторов: когда включён код входа, он приходит в этот Telegram."
 
+msgid "An authenticator app is already connected — turn it off first."
+msgstr "Приложение-аутентификатор уже подключено — сначала отключите его."
+
+msgid ""
+"Wrong code — check that the time on the phone is correct and try again."
+msgstr ""
+"Неверный код — проверьте, что время на телефоне точное, и попробуйте ещё "
+"раз."
+
+msgid ""
+"To turn on the second factor, connect an authenticator app in your profile, "
+"or set the bot token and link your Telegram (or set the administrator chat "
+"id) — otherwise you could not sign in."
+msgstr ""
+"Чтобы включить второй фактор, подключите приложение-аутентификатор в профиле"
+" или укажите токен бота и привяжите свой Telegram (или укажите chat id "
+"администратора) — иначе вы не сможете войти."
+
+msgid "Enter the code from your authenticator app."
+msgstr "Введите код из приложения-аутентификатора."
+
+msgid "Code from the app"
+msgstr "Код из приложения"
+
+msgid "Second factor required for administrators"
+msgstr "Второй фактор обязателен для администраторов"
+
+msgid ""
+"After the password, administrators enter a code: from their authenticator "
+"app (connected in the profile), otherwise a code that the bot sends to their"
+" own chat with the bot (Telegram linked in the profile) and to the "
+"administrator chat above. If the code cannot be delivered, administrators "
+"without an app cannot sign in. On the server: “manage.py admin_login_code "
+"off” turns this off, “manage.py totp_reset <username>” removes a lost app."
+msgstr ""
+"После пароля администратор вводит код: из приложения-аутентификатора "
+"(подключается в профиле), а без него — код, который бот присылает в его "
+"личный чат с ботом (Telegram, привязанный в профиле) и в чат администратора "
+"выше. Если код не доставлен, администраторы без приложения не смогут войти. "
+"На сервере: «manage.py admin_login_code off» отключает эту настройку, "
+"«manage.py totp_reset <логин>» убирает потерянное приложение."
+
+msgid "Authenticator app"
+msgstr "Приложение-аутентификатор"
+
+#, python-format
+msgid ""
+"Connected on %(since)s. After the password the site asks for a code from the"
+" app."
+msgstr "Подключено %(since)s. После пароля сайт спрашивает код из приложения."
+
+msgid "Current code from the app"
+msgstr "Текущий код из приложения"
+
+msgid "Turn off"
+msgstr "Отключить"
+
+msgid ""
+"1. Scan the QR code in the authenticator app (Google Authenticator, Yandex "
+"Key, Aegis…) or enter the key manually."
+msgstr ""
+"1. Отсканируйте QR-код в приложении-аутентификаторе (Google Authenticator, "
+"Яндекс Ключ, Aegis…) или введите ключ вручную."
+
+msgid "Key:"
+msgstr "Ключ:"
+
+msgid "2. Enter the code the app shows:"
+msgstr "2. Введите код, который показывает приложение:"
+
+msgid "Connect"
+msgstr "Подключить"
+
+msgid ""
+"A second step after the password: a 6-digit code from an app on your phone "
+"that changes every 30 seconds. Works without the internet. If you lose the "
+"phone, the server administrator turns it off for your account."
+msgstr ""
+"Второй шаг после пароля: 6-значный код из приложения на телефоне, меняется "
+"каждые 30 секунд. Работает без интернета. Если потеряете телефон, "
+"администратор сервера отключит его для вашего аккаунта."
+
+msgid "Connect an authenticator app"
+msgstr "Подключить приложение-аутентификатор"
+
+msgid ""
+"For administrators without an authenticator app: the sign-in code is sent to"
+" this Telegram."
+msgstr ""
+"Для администраторов без приложения-аутентификатора: код входа приходит в "
+"этот Telegram."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

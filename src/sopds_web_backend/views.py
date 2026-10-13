@@ -761,18 +761,21 @@ _TELEGRAM_CHAT_RE = re.compile(r'^(-?\d+|@[A-Za-z]\w{3,})$')
 
 
 def _apply_login_security(sm, post, user):
-    """«Безопасность входа» (только суперпользователь): код входа для
-    администраторов и пароли для читалок. Включить код можно, только если
-    его есть куда доставить самому включающему — иначе он закрыл бы вход
-    себе."""
+    """«Безопасность входа» (только суперпользователь): второй фактор для
+    администраторов и пароли для читалок. Включить второй фактор можно,
+    только если он есть у самого включающего (подключено приложение-
+    аутентификатор или есть куда доставить Telegram-код) — иначе он закрыл
+    бы вход себе."""
     from .login_codes import channels
+    from .totp import device_for
     errors = []
     sm.settings.setdefault('sopds', {})['opds_app_passwords_only'] = post.get('opds_app_passwords_only') == 'on'
     values = sm.settings['autosync']
     want = post.get('admin_login_code') == 'on'
-    if want and not values.get('admin_login_code') and not channels(user, values):
-        errors.append(_('To turn on the sign-in code, set the bot token and link your Telegram in the profile '
-                        '(or set the administrator chat id) — otherwise you could not sign in.'))
+    if want and not values.get('admin_login_code') and device_for(user) is None and not channels(user, values):
+        errors.append(_('To turn on the second factor, connect an authenticator app in your profile, or set the '
+                        'bot token and link your Telegram (or set the administrator chat id) — otherwise you '
+                        'could not sign in.'))
         want = False
     values['admin_login_code'] = want
     return errors
@@ -1285,9 +1288,10 @@ def LoginView(request):
     user = authenticate(request, username=username, password=password)
     if user is not None and user.is_active:
         from . import login_codes
-        if login_codes.required_for(user):
-            # Второй шаг для администраторов: код из Telegram (login_codes.py).
-            if login_codes.start(request, user, user.backend, next_url):
+        method = login_codes.method_for(user)
+        if method is not None:
+            # Второй шаг: код из приложения-аутентификатора или Telegram (login_codes.py).
+            if login_codes.start(request, user, method, user.backend, next_url):
                 return redirect(reverse("web:login_code"))
             logger.warning("Login refused: login code for '%s' could not be delivered", username)
             args["system_message"] = {
@@ -1356,6 +1360,7 @@ def LoginCodeView(request):
             }
             return handler403(request, args)
         args["system_message"] = {"text": _("Wrong code."), "type": "alert"}
+    args["method"] = (login_codes.pending(request) or {}).get("method", login_codes.METHOD_TELEGRAM)
     return render(request, "sopds_login_code.html", args)
 
 
@@ -1415,6 +1420,34 @@ def user_profile(request):
             new_link_code(user)
             success = "telegram"
 
+        elif action == "totp_start":
+            from . import totp
+            try:
+                totp.begin(user)
+            except ValueError:
+                errors["totp"] = _("An authenticator app is already connected — turn it off first.")
+            success = "totp"
+
+        elif action == "totp_confirm":
+            from . import totp
+            if totp.confirm(user, request.POST.get("code", "")):
+                success = "totp_on"
+            else:
+                errors["totp"] = _("Wrong code — check that the time on the phone is correct and try again.")
+
+        elif action == "totp_cancel":
+            from .models import TotpDevice
+            TotpDevice.objects.filter(user=user, confirmed=False).delete()
+            success = "totp"
+
+        elif action == "totp_disable":
+            from . import totp
+            if totp.verify(user, request.POST.get("code", "")):
+                totp.disable(user)
+                success = "totp_off"
+            else:
+                errors["totp"] = _("Wrong code.")
+
         elif action == "opds_new":
             from .opds_passwords import generate
             opds_new_password = generate(user)
@@ -1450,7 +1483,19 @@ def user_profile(request):
         "opds_record": OpdsPassword.objects.filter(user=user).first(),
         "opds_new_password": opds_new_password,
         "opds_url": request.build_absolute_uri(reverse("opds:main")),
+        **_profile_totp_context(user),
     })
+
+
+def _profile_totp_context(user):
+    """Раздел «Приложение-аутентификатор» профиля."""
+    from . import totp
+    pending = totp.pending_for(user)
+    return {
+        "totp_device": totp.device_for(user),
+        "totp_pending_secret": pending.secret if pending else "",
+        "totp_pending_uri": totp.provisioning_uri(pending.secret, user.username) if pending else "",
+    }
 
 
 def _profile_telegram_context(user):

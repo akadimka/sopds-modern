@@ -1,5 +1,5 @@
 {% extends "sopds_main.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block ext-body %}
 <div class="cell medium-8 large-6">
@@ -78,6 +78,70 @@
   </form>
 </div>
 
+<!-- ── Приложение-аутентификатор (второй фактор входа) ──────── -->
+<div class="s-section" style="margin-bottom:1.5rem;">
+  <div class="s-section-title">{% trans "Authenticator app" %}</div>
+  {% if errors.totp %}
+  <div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">{{ errors.totp }}</div>
+  {% endif %}
+  {% if totp_device %}
+  <p style="margin-bottom:0.8rem; font-size:0.9rem;">
+    {% blocktrans with since=totp_device.created|date:"d.m.Y" %}Connected on {{ since }}. After the password the site asks for a code from the app.{% endblocktrans %}
+  </p>
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="totp_disable">
+    <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+      <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required
+             placeholder="{% trans 'Current code from the app' %}" style="margin:0; max-width:220px;">
+      <button type="submit" class="button secondary" style="margin:0;">{% trans "Turn off" %}</button>
+    </div>
+  </form>
+  {% elif totp_pending_secret %}
+  <p style="font-size:0.9rem; margin-bottom:0.6rem;">
+    {% trans "1. Scan the QR code in the authenticator app (Google Authenticator, Yandex Key, Aegis…) or enter the key manually." %}
+  </p>
+  <div id="totp-qr" style="background:#fff; display:inline-block; padding:8px; border-radius:6px; margin-bottom:0.6rem;"
+       data-uri="{{ totp_pending_uri }}"></div>
+  <div style="font-size:0.85rem; margin-bottom:0.8rem;">{% trans "Key:" %} <code style="word-break:break-all;">{{ totp_pending_secret }}</code></div>
+  <p style="font-size:0.9rem; margin-bottom:0.6rem;">{% trans "2. Enter the code the app shows:" %}</p>
+  <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
+    <form method="post" action="{% url 'web:profile' %}" style="margin:0; display:flex; gap:0.6rem; align-items:center;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="totp_confirm">
+      <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required autofocus
+             placeholder="{% trans '6 digits' %}" style="margin:0; max-width:140px;">
+      <button type="submit" class="button" style="margin:0;">{% trans "Connect" %}</button>
+    </form>
+    <form method="post" action="{% url 'web:profile' %}" style="margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="totp_cancel">
+      <button type="submit" class="button secondary" style="margin:0;">{% trans "Cancel" %}</button>
+    </form>
+  </div>
+  <script src="{% static 'js/vendor/qrcode.min.js' %}"></script>
+  <script>
+  (function() {
+      var box = document.getElementById('totp-qr');
+      if (!box || typeof qrcode === 'undefined') return;
+      var qr = qrcode(0, 'M');
+      qr.addData(box.dataset.uri);
+      qr.make();
+      box.innerHTML = qr.createSvgTag({cellSize: 5, margin: 2});
+  })();
+  </script>
+  {% else %}
+  <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
+    {% trans "A second step after the password: a 6-digit code from an app on your phone that changes every 30 seconds. Works without the internet. If you lose the phone, the server administrator turns it off for your account." %}
+  </p>
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="totp_start">
+    <button type="submit" class="button" style="margin:0;">{% trans "Connect an authenticator app" %}</button>
+  </form>
+  {% endif %}
+</div>
+
 <!-- ── Пароль для читалок (OPDS) ─────────────────────────────── -->
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">{% trans "Reader password (OPDS)" %}</div>
@@ -119,7 +183,7 @@
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">Telegram</div>
   {% if request.user.is_staff and telegram_enabled %}
-  <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For administrators: when the sign-in code is turned on, it is sent to this Telegram." %}</p>
+  <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For administrators without an authenticator app: the sign-in code is sent to this Telegram." %}</p>
   {% endif %}
   {% if not telegram_enabled %}
   <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "The library's Telegram bot is not set up yet." %}</p>

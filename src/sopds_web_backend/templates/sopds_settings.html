@@ -473,9 +473,9 @@
     <div class="s-field">
         <label class="s-check">
             <input type="checkbox" name="admin_login_code" {% if autosync.admin_login_code %}checked{% endif %}{% if not can_edit_exec_fields %} disabled{% endif %}>
-            <span>{% trans "Sign-in code for administrators via Telegram" %}</span>
+            <span>{% trans "Second factor required for administrators" %}</span>
         </label>
-        <div class="s-hint">{% trans "After the password, administrators enter a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the administrator chat above. If the code cannot be delivered, administrators cannot sign in; on the server it is turned off with “manage.py admin_login_code off”." %}</div>
+        <div class="s-hint">{% trans "After the password, administrators enter a code: from their authenticator app (connected in the profile), otherwise a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the administrator chat above. If the code cannot be delivered, administrators without an app cannot sign in. On the server: “manage.py admin_login_code off” turns this off, “manage.py totp_reset <username>” removes a lost app." %}</div>
     </div>
 
     <div class="s-field">
