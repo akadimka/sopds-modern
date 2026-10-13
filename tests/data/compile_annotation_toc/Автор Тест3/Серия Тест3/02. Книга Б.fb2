@@ -9,6 +9,6 @@
 </description>
 <body>
 <title><p>Книга Б</p></title>
-<section><p>Тестовый текст fixture.</p></section>
+<section><p>Тестовый текст fixture — книга Б, первая глава истории героя, его путь и выбор.</p></section>
 </body>
 </FictionBook>

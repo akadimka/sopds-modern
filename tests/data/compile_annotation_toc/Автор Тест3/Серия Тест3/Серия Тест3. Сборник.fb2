@@ -19,10 +19,10 @@
 </description>
 <body>
 <title><p>Серия Тест3. Сборник</p></title>
-<section><p>Тестовый текст fixture — книга А.</p></section>
-<section><p>Тестовый текст fixture — книга Б.</p></section>
-<section><p>Тестовый текст fixture — книга В.</p></section>
-<section><p>Тестовый текст fixture — книга Г.</p></section>
-<section><p>Тестовый текст fixture — книга Д.</p></section>
+<section><p>Тестовый текст fixture — книга А, первая глава истории героя, его путь и выбор.</p></section>
+<section><p>Тестовый текст fixture — книга Б, первая глава истории героя, его путь и выбор.</p></section>
+<section><p>Тестовый текст fixture — книга В, первая глава истории героя, его путь и выбор.</p></section>
+<section><p>Тестовый текст fixture — книга Г, первая глава истории героя, его путь и выбор.</p></section>
+<section><p>Тестовый текст fixture — книга Д, первая глава истории героя, его путь и выбор.</p></section>
 </body>
 </FictionBook>

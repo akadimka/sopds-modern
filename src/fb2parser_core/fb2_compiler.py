@@ -1056,10 +1056,13 @@ class FB2CompilerService:
                     _pp = pending_parts.pop(_b.abs_path, None)
                     if _pp:
                         g.duplicate_paths = list(g.duplicate_paths or []) + _pp[1]
+            if not self._verify_duplicate_paths(g, work_dir, rec_by_path):
+                return
             groups.append(g)
             if on_group:
                 on_group(g)
 
+        rec_by_path = {work_dir / r.file_path: r for r in ctx.records}
         pending_parts = self._collect_parts_of_sibling_omnibus(work_dir, ctx)
         for (_, _), recs in buckets.items():
             self._build_group_from_bucket(recs, work_dir, _emit, _punct_norm, _single_slot_by_root)
@@ -1079,6 +1082,84 @@ class FB2CompilerService:
             ))
         ctx.groups = groups
 
+
+    # Порог: ложные дубли аудита — 0–2% общего текста, переиздание в новой
+    # редакции (баг №138, «Сармат») — ~51%, настоящие копии — 83–100%.
+    _DUPLICATE_MIN_COVERAGE = 0.45
+    _SHINGLE_WORD_RE = re.compile(r'[^\W\d_]+|\d+')
+    _SHINGLE_BINARY_RE = re.compile(rb'<binary\b[^>]*>.*?</binary>', re.DOTALL | re.IGNORECASE)
+    _SHINGLE_ENCODING_RE = re.compile(rb'encoding\s*=\s*["\']([A-Za-z0-9_\-]+)')
+
+    def _text_shingles(self, path: Path) -> set:
+        """Множество хэшей 6-словных фрагментов текста книги (<body>), с кэшем
+        по пути и времени изменения файла."""
+        try:
+            st = path.stat()
+            key = (str(path), st.st_mtime_ns, st.st_size)
+        except OSError:
+            return set()
+        cache = self.__dict__.setdefault('_shingle_cache', {})
+        if key not in cache:
+            try:
+                raw = self._SHINGLE_BINARY_RE.sub(b'', read_fb2_bytes(path))
+            except (OSError, ValueError):
+                raw = b''
+            m = self._SHINGLE_ENCODING_RE.search(raw[:200])
+            encoding = m.group(1).decode('ascii') if m else 'utf-8'
+            try:
+                text = raw.decode(encoding, errors='replace')
+            except LookupError:
+                text = raw.decode('utf-8', errors='replace')
+            body = text[text.find('<body'):] if '<body' in text else text
+            words = self._SHINGLE_WORD_RE.findall(
+                re.sub(r'<[^>]+>', ' ', body).lower().replace('ё', 'е'))
+            cache[key] = {hash(tuple(words[i:i + 6])) for i in range(len(words) - 5)}
+        return cache[key]
+
+    def _verify_duplicate_paths(self, g: CompilationGroup, work_dir: Path, rec_by_path: dict) -> bool:
+        """Страховка: «дубль на удаление» — только файл, чей текст действительно
+        есть в остающихся файлах группы (не меньше _DUPLICATE_MIN_COVERAGE).
+
+        Баг №141 (аудит «СЕРИЯ.LitRPG», docs/litrpg-audit.md): из 47 «дублей» в
+        29 группах настоящих оказалось 4, остальные 43 — уникальные книги
+        (0–2% общего текста): «Том 3» рядом с «Том 1 и 2», «Ark. Том 10 —
+        Главы 1-9» вместо томов 1–9, части одного тома и т.д. Механизмы,
+        помечающие дубли, разные; удалять книгу без подтверждения по тексту
+        нельзя ни в одном из них. Неподтверждённый файл не удаляется: в
+        обычной группе — исключается (не компилируется, остаётся на месте,
+        его можно вернуть в компиляцию), в cleanup-группе — просто снимается;
+        cleanup-группа без подтверждённых дублей не выводится.
+
+        Возвращает False, если группу выводить не нужно.
+        """
+        if not g.duplicate_paths:
+            return True
+        others = [b.abs_path for b in g.books] + list(g.kept_paths or [])
+        covered_by: set = set()
+        for o in others:
+            covered_by |= self._text_shingles(o)
+        confirmed: List[Path] = []
+        for dup in g.duplicate_paths:
+            if not dup.exists():
+                confirmed.append(dup)  # удалять нечего — терять тоже
+                continue
+            own = self._text_shingles(dup)
+            share = len(own & covered_by) / len(own) if own else 0.0
+            if own and share >= self._DUPLICATE_MIN_COVERAGE:
+                confirmed.append(dup)
+                continue
+            self._log(
+                f"  ⚠ {dup.name}: помечен дублем, но его текст есть в остальных файлах "
+                f"группы лишь на {share:.0%} — не удаляется"
+            )
+            if g.cleanup_only:
+                continue
+            g.excluded_paths.append(dup)
+            rec = rec_by_path.get(dup)
+            if rec is not None and not any(b.abs_path == dup for b in g.original_books or []):
+                g.original_books = list(g.original_books or []) + [self._make_book(rec, work_dir)]
+        g.duplicate_paths = confirmed
+        return bool(confirmed) or not g.cleanup_only
 
     def _collect_parts_of_sibling_omnibus(self, work_dir, ctx) -> Dict[Path, Tuple[object, List[Path]]]:
         """find_groups, шаг 3а: тома подпапки, которая повторяет книгу-сборник рядом.
@@ -3327,28 +3408,8 @@ class FB2CompilerService:
             return _measured[id(b)]
 
         REVISION_OVERLAP = 0.3  # доля общих 6-словных фрагментов у редакций одной книги
-        _WORD_RE = re.compile(r'[^\W\d_]+|\d+')
-        _shingles: Dict[int, set] = {}
-
-        def _shingles_of(b: CompilationBook) -> set:
-            if id(b) not in _shingles:
-                try:
-                    raw = _BINARY_BLOCK_RE.sub(b'', read_fb2_bytes(b.abs_path))
-                except OSError:
-                    raw = b''
-                m = _ENCODING_RE.search(raw[:200])
-                encoding = m.group(1).decode('ascii') if m else 'utf-8'
-                try:
-                    text = raw.decode(encoding, errors='replace')
-                except LookupError:
-                    text = raw.decode('utf-8', errors='replace')
-                body = text[text.find('<body'):] if '<body' in text else text
-                words = _WORD_RE.findall(_TAG_RE.sub(' ', body).lower().replace('ё', 'е'))
-                _shingles[id(b)] = {hash(tuple(words[i:i + 6])) for i in range(len(words) - 5)}
-            return _shingles[id(b)]
-
         def _shingle_overlap(a: CompilationBook, b: CompilationBook) -> float:
-            sa, sb = _shingles_of(a), _shingles_of(b)
+            sa, sb = self._text_shingles(a.abs_path), self._text_shingles(b.abs_path)
             if not sa or not sb:
                 return 0.0
             return len(sa & sb) / min(len(sa), len(sb))

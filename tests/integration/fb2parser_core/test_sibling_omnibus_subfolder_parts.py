@@ -111,9 +111,14 @@ def _build(tmp_path: Path, omnibus_repeat: int = 400, folder_series: bool = Fals
     """folder_series=True — у томов серия из имени своей подпапки (как
     после бага №131), иначе — общая "Летописи Разлома" из метаданных."""
     recs = []
+    # Как в жизни, сборники 2-4 содержат текст томов своей подпапки — иначе
+    # тома не дубли (страховка по содержимому, баг №141).
+    parts_text = {n: [("", f"Текст тома {title}. ") for _, title in parts]
+                  for n, (_, parts) in enumerate(_PART_FOLDERS, start=2)}
     for n, (name, title, books) in enumerate(_OMNIBUSES, start=1):
         _write(tmp_path / ROOT / name, title,
-               [(b, f"Текст сборника {n}, {b}. ") for b in books], omnibus_repeat)
+               [(b, f"Текст сборника {n}, {b}. ") for b in books] + parts_text.get(n, []),
+               omnibus_repeat)
         recs.append(_rec(f"{ROOT}\\{name}", title, str(n), "metadata"))
     for folder, parts in _PART_FOLDERS:
         for i, (name, title) in enumerate(parts, start=1):
