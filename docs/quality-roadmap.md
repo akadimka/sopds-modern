@@ -8946,3 +8946,27 @@ latin-1, а кириллический жанр при записи с `errors='
 («файл, вероятно, повреждён — не изменён»), файл не трогается, вместо
 молчаливых «?». Сам файл нужно заменить целой копией. Закреплено:
 `tests/unit/fb2parser_core/test_genre_assign_unencodable_genre.py`.
+
+## Баг №140: обход каталога через book.filename при чтении CAT_NORMAL — ✅ Починено
+
+Найдено при аудите безопасности (2026-10-13). Симметрично багу №95:
+`getFileData()` проверял через `_is_within_root_lib` только каталог
+(`full_path = root/book.path`), а реально читал
+`os.path.join(full_path, book.filename)` — `book.filename` в проверку не
+входил. Имя файла с диска — один компонент без разделителей, но
+`book.filename` в БД может прийти из стороннего источника (INPX-импорт),
+и значение вида `../secret/leak.fb2` читало бы файл за пределами
+библиотеки. Теперь итоговый путь чтения CAT_NORMAL проверяется отдельно
+(`src/opds_catalog/utils.py`).
+
+Заодно (тот же аудит, defense-in-depth, не эксплуатировалось): LoginView
+больше не отличает неактивный аккаунт от неверных кред в ответе — ветка
+«This account is not active» была недостижима (`ModelBackend.authenticate`
+и так возвращает None для неактивных), убран мёртвый дифференциал, причину
+отказа пишем только в серверный лог.
+
+Закреплено: `test_get_file_data.py::…test_dotdot_traversal_via_filename_refused`
+(fail-before/pass-after подтверждён `git stash`) и
+`test_login_view.py::TestLoginViewCredentialEnumeration`. Прочие пункты
+аудита (троттлинг кода бота, CSRF-токен вместо X-Requested-With в
+inline_save, HTTPS-закалка прода — уже в DEPLOY.md §12a) оставлены как есть.

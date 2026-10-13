@@ -193,6 +193,18 @@ def getFileData(book: Book) -> BytesIO | None:
     logger.info(f"Read file from {full_path}")
     if book.cat_type == opdsdb.CAT_NORMAL:
         file_path = os.path.join(full_path, book.filename)
+        # Защита от обхода каталога симметрична проверке full_path выше:
+        # book.filename дописывается к уже проверенному каталогу, но сам
+        # не проверяется — реальное имя файла с диска это один компонент
+        # без разделителей, однако book.filename в БД может прийти из
+        # стороннего источника (INPX-импорт, см. баг №95), поэтому итоговый
+        # путь чтения проверяем отдельно — защита на самой границе чтения.
+        if not _is_within_root_lib(file_path):
+            logger.error(
+                f"Book {book.id} file path resolves outside SOPDS_ROOT_LIB "
+                f"({file_path!r}), refusing to read"
+            )
+            return None
         logger.info(f"Reading file {book.filename} as regular file")
         return read_from_regular_file(file_path)
 

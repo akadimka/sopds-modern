@@ -1264,22 +1264,20 @@ def LoginView(request):
         next_url = reverse("web:main")
 
     user = authenticate(request, username=username, password=password)
-    if user is not None:
-        if user.is_active:
-            login(request, user)
-            return redirect(next_url)
-        else:
-            args["system_message"] = {
-                "text": _("This account is not active!"),
-                "type": "alert",
-            }
-            return handler403(request, args)
-    else:
-        args["system_message"] = {
-            "text": _("User does not exist or the password is incorrect!"),
-            "type": "alert",
-        }
-        return handler403(request, args)
+    if user is not None and user.is_active:
+        login(request, user)
+        return redirect(next_url)
+    # Неактивный аккаунт не отличаем от неверного логина/пароля: иначе
+    # сообщение «This account is not active» подтверждало бы, что логин и
+    # пароль верны (перечисление валидных учёток). Причину входа различаем
+    # только в серверном логе, не в ответе пользователю.
+    if user is not None and not user.is_active:
+        logger.warning("Login refused: account '%s' is inactive", username)
+    args["system_message"] = {
+        "text": _("User does not exist or the password is incorrect!"),
+        "type": "alert",
+    }
+    return handler403(request, args)
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")

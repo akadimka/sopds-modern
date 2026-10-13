@@ -120,6 +120,21 @@ class TestGetFileDataRefusesPathOutsideRootLib:
         book = book_factory(filename="262001.fb2", cat_type=0, path=".")
         assert getFileData(book) is not None
 
+    def test_dotdot_traversal_via_filename_refused(self, book_factory, tmp_path, override_config) -> None:
+        # Симметрично проверке book.path: для CAT_NORMAL итоговый путь —
+        # os.path.join(root/book.path, book.filename), и book.filename тоже
+        # может нести обход каталога (INPX-импорт), а проверялся раньше
+        # только каталог без имени файла. Теперь отказываем и по имени.
+        root = tmp_path / "library"
+        root.mkdir()
+        secret_dir = tmp_path / "secret"
+        secret_dir.mkdir()
+        (secret_dir / "leak.fb2").write_bytes(b"TOP-SECRET-CONTENT")
+
+        book = book_factory(filename="../secret/leak.fb2", cat_type=0, path=".")
+        with override_config(SOPDS_ROOT_LIB=str(root)):
+            assert getFileData(book) is None
+
 
 # ── get_fs_book_path ─────────────────────────────────────────────────────
 

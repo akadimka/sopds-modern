@@ -61,3 +61,32 @@ class TestLoginViewRedirect:
         )
         assert response.status_code == 302
         assert response["Location"] == "http://testserver/web/"
+
+
+@pytest.mark.django_db
+class TestLoginViewCredentialEnumeration:
+    """Неактивный аккаунт не должен отличаться в ответе от неверных кред —
+    иначе сообщение подтверждало бы, что логин и пароль верны (перечисление
+    валидных учёток)."""
+
+    _WRONG = "User does not exist or the password is incorrect!"
+
+    def test_inactive_account_shows_generic_message(self, django_user_model) -> None:
+        from django.test import Client
+        django_user_model.objects.create_user(username="ghost", password="secret", is_active=False)
+        resp = Client().post(reverse("web:login"), {"username": "ghost", "password": "secret"})
+        body = resp.content.decode()
+        assert self._WRONG in body
+        assert "not active" not in body
+
+    def test_wrong_password_shows_same_message(self, django_user) -> None:
+        from django.test import Client
+        resp = Client().post(reverse("web:login"), {"username": "test", "password": "nope"})
+        body = resp.content.decode()
+        assert self._WRONG in body
+        assert "not active" not in body
+
+    def test_unknown_user_shows_same_message(self) -> None:
+        from django.test import Client
+        resp = Client().post(reverse("web:login"), {"username": "nobody", "password": "x"})
+        assert self._WRONG in resp.content.decode()
