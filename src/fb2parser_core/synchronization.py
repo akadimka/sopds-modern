@@ -109,6 +109,55 @@ def _add_to_reconciliation_skip_set(file_path: str) -> None:
         json.dump(sorted(skip), f, ensure_ascii=False, indent=2)
 
 
+_CREATE_BOOKS_SQL = """
+    CREATE TABLE IF NOT EXISTS books (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        author TEXT,
+        author_source TEXT,
+        series TEXT,
+        series_source TEXT,
+        series_number TEXT DEFAULT '',
+        subseries TEXT DEFAULT '',
+        title TEXT,
+        file_path TEXT UNIQUE,
+        file_hash TEXT,
+        genre TEXT,
+        added_date TEXT,
+        updated_date TEXT,
+        last_sync_check TEXT
+    )
+"""
+
+# Вставка записи библиотеки; запись с тем же file_path — обновление (баг №143).
+_UPSERT_BOOK_SQL = """
+    INSERT INTO books (
+        author, author_source, series, series_source,
+        series_number, subseries, title, file_path, file_hash, genre,
+        added_date, updated_date, last_sync_check
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(file_path) DO UPDATE SET
+        author = excluded.author,
+        author_source = excluded.author_source,
+        series = excluded.series,
+        series_source = excluded.series_source,
+        series_number = excluded.series_number,
+        subseries = excluded.subseries,
+        title = excluded.title,
+        file_hash = excluded.file_hash,
+        genre = excluded.genre,
+        updated_date = excluded.updated_date,
+        last_sync_check = excluded.last_sync_check
+"""
+
+
+def _ensure_books_table(cursor) -> None:
+    cursor.execute(_CREATE_BOOKS_SQL)
+    try:
+        cursor.execute("ALTER TABLE books ADD COLUMN series_number TEXT DEFAULT ''")
+    except Exception:
+        pass  # Column already exists
+
+
 class SynchronizationService:
     """Service for synchronizing FB2 library into organized structure."""
     
@@ -1630,30 +1679,7 @@ class SynchronizationService:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
 
-            # Create table if not yet initialised
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS books (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    author TEXT,
-                    author_source TEXT,
-                    series TEXT,
-                    series_source TEXT,
-                    series_number TEXT DEFAULT '',
-                    subseries TEXT DEFAULT '',
-                    title TEXT,
-                    file_path TEXT UNIQUE,
-                    file_hash TEXT,
-                    genre TEXT,
-                    added_date TEXT,
-                    updated_date TEXT,
-                    last_sync_check TEXT
-                )
-            """)
-            # Migrate older DBs that pre-date the series_number column
-            try:
-                cursor.execute("ALTER TABLE books ADD COLUMN series_number TEXT DEFAULT ''")
-            except Exception:
-                pass  # Column already exists
+            _ensure_books_table(cursor)
 
             now = datetime.now().isoformat()
             rows_to_insert = []
@@ -1686,13 +1712,14 @@ class SynchronizationService:
                     self.stats['errors'] += 1
 
             if rows_to_insert:
-                cursor.executemany("""
-                    INSERT INTO books (
-                        author, author_source, series, series_source,
-                        series_number, subseries, title, file_path, file_hash, genre,
-                        added_date, updated_date, last_sync_check
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, rows_to_insert)
+                # Баг №143: файл, заменивший в библиотеке уже лежащий там
+                # (_resolve_target_collision), получает тот же file_path, что
+                # и старая запись. Простой INSERT падал на UNIQUE, исключение
+                # обрывало executemany целиком, и в БД не попадала НИ ОДНА
+                # запись прогона (сервер 2026-10-13: 1 710 файлов перенесено,
+                # 0 записано; в библиотеке ~8 900 файлов без записи от прошлых
+                # прогонов). Запись с тем же путём — это обновление.
+                cursor.executemany(_UPSERT_BOOK_SQL, rows_to_insert)
 
             inserted_count = len(rows_to_insert) - self.stats.get('errors', 0)
             self._log(f"Коммит базы данных... ({inserted_count} записей)")
@@ -1711,6 +1738,102 @@ class SynchronizationService:
             except Exception:
                 pass
     
+    _TITLE_INFO_RE = re.compile(r'<(?:\w+:)?title-info\b.*?</(?:\w+:)?title-info\s*>', re.S)
+    _FIRST_SEQUENCE_RE = re.compile(r'<(?:\w+:)?sequence\b([^>]*)>')
+    _VOLUME_SUFFIX_RE = re.compile(r'\bт\.\s*(\d+(?:[.\-]\d+)?)\s*$')
+
+    def index_missing_library_files(self, log: Optional[Callable] = None) -> Dict[str, int]:
+        """Добавить в БД библиотеки записи для файлов, у которых их нет.
+
+        Баг №143: из-за UNIQUE-конфликта при записи прогоны синхронизации
+        не вносили в БД ни одной записи (на сервере — ~8 900 файлов
+        библиотеки без записи). БД нужна, чтобы при следующих синхронизациях
+        распознавать дубли уже лежащих книг. Запись восстанавливается так,
+        как её внесла бы синхронизация: жанр и автор — из папок
+        «Жанр/Автор/…», серия — из папок между автором и файлом (в
+        написании первого <sequence>, если он им соответствует: без серии
+        синхронизация оставляет в файле исходный <sequence> издательства),
+        номер — из «т. N» в имени файла, иначе из <sequence number>,
+        название — из <book-title>.
+        """
+        from .fb2_utils import read_fb2_head
+
+        log = log or self._log
+        stats = {"library_files": 0, "already_indexed": 0, "added": 0, "errors": 0}
+        conn = sqlite3.connect(str(self.db_path))
+        try:
+            cursor = conn.cursor()
+            _ensure_books_table(cursor)
+            known = {row[0] for row in cursor.execute("SELECT file_path FROM books")}
+            now = datetime.now().isoformat()
+            rows = []
+            for root, _dirs, files in os.walk(self.library_path):
+                for name in files:
+                    low = name.lower()
+                    if not (low.endswith('.fb2') or low.endswith('.fb2.zip')):
+                        continue
+                    stats["library_files"] += 1
+                    full = Path(root) / name
+                    rel = full.relative_to(self.library_path).as_posix()
+                    # сжатый файл («Сжать») мог остаться в БД под путём без .zip
+                    if rel in known or (low.endswith('.zip') and rel[:-4] in known):
+                        stats["already_indexed"] += 1
+                        continue
+                    try:
+                        rows.append(self._library_row_from_file(full, rel, now, read_fb2_head))
+                    except Exception as e:  # noqa: BLE001 — один файл не должен срывать индексацию
+                        stats["errors"] += 1
+                        log(f"ОШИБКА индексации {rel}: {e}")
+            cursor.executemany(_UPSERT_BOOK_SQL, rows)
+            conn.commit()
+            stats["added"] = len(rows)
+        finally:
+            conn.close()
+        log(f"Индексация библиотеки: файлов {stats['library_files']}, уже в БД "
+            f"{stats['already_indexed']}, добавлено {stats['added']}, ошибок {stats['errors']}")
+        return stats
+
+    def _library_row_from_file(self, full: Path, rel: str, now: str, read_head) -> tuple:
+        parts = rel.split('/')
+        genre = parts[0] if len(parts) > 2 else ''
+        author = parts[1] if len(parts) > 2 else ''
+        folders = parts[2:-1]
+        stem = re.sub(r'\.fb2(?:\.zip)?$', '', parts[-1], flags=re.I)
+
+        raw = read_head(full)
+        m = re.search(rb'encoding\s*=\s*["\']([^"\']+)', raw[:200])
+        try:
+            text = raw.decode(m.group(1).decode('ascii') if m else 'utf-8', errors='replace')
+        except LookupError:
+            text = raw.decode('utf-8', errors='replace')
+        ti_m = self._TITLE_INFO_RE.search(text)
+        ti = ti_m.group(0) if ti_m else ''
+        bt_m = re.search(r'<(?:\w+:)?book-title[^>]*>(.*?)</', ti, re.S)
+        title = _html_mod.unescape(bt_m.group(1)).strip() if bt_m else stem
+
+        seq_name, seq_num = '', ''
+        sq_m = self._FIRST_SEQUENCE_RE.search(ti)
+        if sq_m:
+            nm = re.search(r'name\s*=\s*["\']([^"\']*)', sq_m.group(1))
+            nu = re.search(r'number\s*=\s*["\']([^"\']*)', sq_m.group(1))
+            seq_name = _html_mod.unescape(nm.group(1)).strip() if nm else ''
+            seq_num = nu.group(1).strip() if nu else ''
+
+        series = ''
+        if folders:
+            def _n(s):
+                return re.sub(r'\W+', ' ', s.lower().replace('ё', 'е')).strip()
+            folder_variants = {_n('\\'.join(folders)), _n(folders[-1]), _n('\\'.join(folders[-2:]))}
+            series = seq_name if seq_name and _n(seq_name) in folder_variants else '\\'.join(folders)
+
+        vol_m = self._VOLUME_SUFFIX_RE.search(stem)
+        number = vol_m.group(1) if vol_m else (seq_num if series else '')
+        return (
+            author, 'library_reindex', series, 'library_reindex' if series else '',
+            number, '', title, rel, self._calculate_file_hash(full), genre,
+            now, now, now,
+        )
+
     def _cleanup_empty_folders(self, filter_paths=None) -> None:
         """Remove folders from source directory after FB2 files have been moved.
 

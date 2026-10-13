@@ -6,7 +6,6 @@
 одной строкой с родителем) и допускает только те, у которых все FB2-файлы на
 любой глубине размечены жанрами дерева; старт перепроверяет правило."""
 import json
-from types import SimpleNamespace
 
 import pytest
 from django.contrib.auth.models import User
@@ -41,8 +40,7 @@ def env(tmp_path, monkeypatch, settings, client):
     gm.add_node("Космическая фантастика", "Фантастика")
     monkeypatch.setattr(bridge, "get_genres_manager", lambda: gm)
     started = []
-    monkeypatch.setattr(views, "threading",
-                        SimpleNamespace(Thread=lambda target, daemon: SimpleNamespace(start=lambda: started.append(1))))
+    monkeypatch.setattr(views, "_spawn_sync_process", lambda: started.append(1))
     views.sync_job.reset()
     client.force_login(User.objects.create_user("staff", password="Kx7#vQ2!mLp9", is_staff=True))
 
@@ -93,3 +91,21 @@ def test_start_rechecks_the_rule_on_the_server(env):
     client.post(url, {"scan_path": str(scan), "paths": json.dumps([str(scan / "Готово")])})
     assert started == [1]
     assert views.sync_job.get()["allowed_folders"] == {str(scan / "Готово")}
+
+
+def test_status_clears_a_dead_sync_process(env, monkeypatch):
+    """Баг №144: состояние «идёт», а процесса синхронизации уже нет (gunicorn
+    убил его по WORKER TIMEOUT) — статус сам снимает «идёт» и блокировку,
+    а не висит часами с нерабочей кнопкой «Стоп»."""
+    client, _scan, _ = env
+    from fb2parser_core import sync_lock
+
+    views.sync_job.finish()  # блокировку мог оставить предыдущий тест запуска
+    assert views.sync_job.try_start(pid=999999)
+    monkeypatch.setattr(sync_lock, "_pid_alive", lambda pid: False)
+
+    client.get(reverse("fb2parser:sync_status"))
+
+    state = views.sync_job.get()
+    assert state["running"] is False and state["error"]
+    assert views.sync_job.try_start()  # блокировка снята — можно запускать снова

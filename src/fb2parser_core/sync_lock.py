@@ -47,7 +47,13 @@ def _pid_alive(pid: int) -> bool:
         return False
     except PermissionError:
         return True
-    return True
+    # Завершившийся, но ещё не прибранный родителем процесс («зомби») на
+    # os.kill(pid, 0) отвечает как живой.
+    try:
+        with open(f"/proc/{pid}/stat", encoding="ascii", errors="replace") as f:
+            return f.read().rsplit(")", 1)[-1].split()[0] != "Z"
+    except OSError:
+        return True
 
 
 def _is_stale(path: Path, info: dict, stale_after: float) -> bool:

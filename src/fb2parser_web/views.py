@@ -3291,6 +3291,7 @@ def sync_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
         return HttpResponseNotAllowed(["POST"])
+    _reap_dead_sync_job()
     if sync_job["running"]:
         return _render_sync_status(sync_job.get())
     scan_path = request.POST.get("scan_path", "").strip() or None
@@ -3318,12 +3319,56 @@ def sync_start(request):
     ):
         return _render_sync_status(sync_job.get())
 
-    threading.Thread(target=_run_sync_thread, daemon=True).start()
+    _spawn_sync_process()
     return _render_sync_status(sync_job.get())
+
+
+def _spawn_sync_process():
+    """Запустить синхронизацию отдельным процессом (баг №144).
+
+    Внутри рабочего процесса gunicorn долгая синхронизация с автокомпиляцией
+    погибала вместе с ним (WORKER TIMEOUT на сервере 2026-10-13), а
+    состояние «идёт» оставалось в кэше. Своему процессу таймауты gunicorn не
+    страшны; всё общение с ним — через общий кэш, как и было.
+    """
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from django.conf import settings as dj_settings
+
+    base = Path(dj_settings.BASE_DIR)
+    kwargs = {"cwd": str(base), "stdin": subprocess.DEVNULL,
+              "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    log_dir = base / "log"
+    if log_dir.is_dir():
+        kwargs["stderr"] = open(log_dir / "sync-job.log", "ab")  # noqa: SIM115 — передаётся процессу
+    if os.name == "posix":
+        kwargs["start_new_session"] = True
+    proc = subprocess.Popen([sys.executable, str(base / "manage.py"), "fb2parser_sync_job"], **kwargs)
+    if kwargs["stderr"] is not subprocess.DEVNULL:
+        kwargs["stderr"].close()
+    sync_job.update(pid=proc.pid)
+    # Прибрать завершившийся процесс, чтобы он не висел «зомби» у этого воркера.
+    threading.Thread(target=proc.wait, daemon=True).start()
+
+
+def _reap_dead_sync_job():
+    """Состояние «идёт», а процесса синхронизации нет — снять «идёт» (баг №144)."""
+    from fb2parser_core.sync_lock import _pid_alive
+
+    state = sync_job.get()
+    pid = state.get("pid")
+    if state.get("running") and isinstance(pid, int) and not _pid_alive(pid):
+        sync_job.update(running=False, error=str(_(
+            "The synchronization process ended unexpectedly. Files already moved stay in "
+            "the library; see the operation log.")))
+        sync_job.finish()
 
 
 @staff_member_required(login_url="/web/login/")
 def sync_status(request):
+    _reap_dead_sync_job()
     return _render_sync_status(sync_job.get())
 
 
