@@ -65,6 +65,32 @@ def test_unique_volume_is_not_deleted(tmp_path):
     assert "2. Сила рода. Том 3.fb2" in kept
 
 
+def test_false_range_does_not_swallow_next_volume(tmp_path):
+    """Баг №142: «1. … Том 1. Том 2» — не сборник томов 1-2 серии: книга на
+    позиции 2 («Том 3») в нём не содержится. Все три книги — в компиляции,
+    по порядку, ничего не исключено."""
+    recs = [
+        _book(tmp_path, "1. Сила рода. Том 1. Том 2.fb2", "Сила рода. Том 1 и Том 2", "1-2",
+              _text(1) + " " + _text(2)),
+        _book(tmp_path, "2. Сила рода. Том 3.fb2", "Сила рода. Том 3", "2", _text(3)),
+        _book(tmp_path, "3. Сила рода. Том 4.fb2", "Сила рода. Том 4", "3", _text(4)),
+    ]
+    group = _group(tmp_path, recs)
+    assert [b.abs_path.name for b in group.books] == [
+        "1. Сила рода. Том 1. Том 2.fb2", "2. Сила рода. Том 3.fb2", "3. Сила рода. Том 4.fb2"]
+    assert not group.excluded_paths and not group.duplicate_paths
+
+
+def test_volumes_outside_false_range_title_are_kept(tmp_path):
+    """«Ark. Том 10» с «Главы 1-9» в названии — не сборник томов 1-9."""
+    recs = [_book(tmp_path, f"{n}. Том {n}.fb2", f"The Ark - Том {n}", str(n), _text(n))
+            for n in range(1, 4)]
+    recs.append(_book(tmp_path, "10. Том 10.fb2", "The_Ark_-_Tom_X_-_Glavy_1-9", "10", _text(10)))
+    group = _group(tmp_path, recs)
+    assert not group.duplicate_paths and not group.excluded_paths
+    assert [b.abs_path.name for b in group.books][:3] == ["1. Том 1.fb2", "2. Том 2.fb2", "3. Том 3.fb2"]
+
+
 def test_real_copy_is_still_deleted(tmp_path):
     """Копия, текст которой целиком есть в другом файле, по-прежнему дубль."""
     recs = [
@@ -75,3 +101,20 @@ def test_real_copy_is_still_deleted(tmp_path):
     ]
     group = _group(tmp_path, recs)
     assert {p.name for p in group.duplicate_paths} == {"1. Сила рода. Том 1.fb2"}
+
+
+def test_demoted_book_keeps_its_file_position(tmp_path):
+    """Гарцевич «В Эфире»: «2. Изгои Авроры» с названием «В Эфире. Дилогия»
+    — номер в серии к шагу понижения уже переписан на «1-2». Позиция
+    понижённого файла берётся из префикса имени («2.»), а не из «1-2»."""
+    recs = [
+        _book(tmp_path, "1. Добро пожаловать на Аврору!.fb2", "Добро пожаловать на Аврору!", "1", _text(1)),
+        _book(tmp_path, "2. Изгои Авроры.fb2", "В Эфире. Дилогия (СИ)", "2", _text(2)),
+        _book(tmp_path, "3. Боги Авроры.fb2", "Боги Авроры", "3", _text(3)),
+    ]
+    group = _group(tmp_path, recs)
+    assert [(b.abs_path.name, b.volume_label) for b in group.books] == [
+        ("1. Добро пожаловать на Аврору!.fb2", "1"),
+        ("2. Изгои Авроры.fb2", "2"),
+        ("3. Боги Авроры.fb2", "3"),
+    ]

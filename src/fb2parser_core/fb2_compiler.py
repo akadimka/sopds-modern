@@ -1116,6 +1116,27 @@ class FB2CompilerService:
             cache[key] = {hash(tuple(words[i:i + 6])) for i in range(len(words) - 5)}
         return cache[key]
 
+    def _range_not_backed_by_text(self, book: CompilationBook, lo: int, hi: int,
+                                  books: List[CompilationBook]) -> bool:
+        """True, если в группе есть книги на позициях lo..hi, но ни одна из них
+        не содержится в `book` по тексту — диапазон `book` ложный (баг №142).
+
+        Нет книг в диапазоне или их текст не прочитать (нет файлов) — судить не
+        по чему, False: прежнее поведение.
+        """
+        in_range = [b for b in books
+                    if b is not book and b.sort_key[0] == 0 and lo <= b.sort_key[1] <= hi]
+        if not in_range:
+            return False
+        own = self._text_shingles(book.abs_path)
+        if not own:
+            return False
+        for b in in_range:
+            other = self._text_shingles(b.abs_path)
+            if not other or len(other & own) / len(other) >= self._DUPLICATE_MIN_COVERAGE:
+                return False
+        return True
+
     def _verify_duplicate_paths(self, g: CompilationGroup, work_dir: Path, rec_by_path: dict) -> bool:
         """Страховка: «дубль на удаление» — только файл, чей текст действительно
         есть в остающихся файлах группы (не меньше _DUPLICATE_MIN_COVERAGE).
@@ -1767,6 +1788,28 @@ class FB2CompilerService:
                     precompiled.append((book, lo, hi))
                     continue
             lo, hi = self._precompiled_range(book, series, _group_titles, _max_known_pos)
+            if hi > lo and self._range_not_backed_by_text(book, lo, hi, books):
+                # Баг №142: диапазон N-M по имени/названию, а ни одна книга
+                # группы на позициях N..M в этом файле не содержится — это не
+                # сборник этих томов («1. Том 1 и 2» рядом с «2. Том 3»,
+                # «Ark. Том 10 — Главы 1-9», «Книга 1 (Том 1-3)»…). Обычная
+                # книга на своей позиции.
+                # Позиция — из префикса имени файла («6. Кузнец. Том VII - VIII»
+                # → 6): series_number к этому шагу уже мог быть переписан
+                # диапазоном («7-8», «1-2» по «Дилогии»).
+                _pos_m = (re.match(r'^\s*(\d{1,3})(?=[.\s_-])', book.abs_path.stem)
+                          or re.match(r'^\s*(\d+)', book.record.series_number or ''))
+                pos = int(_pos_m.group(1)) if _pos_m else (book.sort_key[1] or lo)
+                self._log(
+                    f"  ℹ {book.abs_path.name}: диапазон {lo}-{hi} не подтверждён текстом "
+                    f"книг на этих позициях — обычная книга, позиция {pos}"
+                )
+                book.sort_key = ((0, pos) + tuple(book.sort_key[2:])
+                                 if book.sort_key[1] == pos else (0, pos, 0, 0))
+                book.volume_label = str(pos)
+                if book.sort_source == 'filename_range':
+                    book.sort_source = 'series_number'
+                hi = lo
             if hi > lo:
                 # Обновляем sort_key и volume_label по реальному диапазону файла.
                 # Без этого "1-2. Название.fb2" получает sk=(0,2,0) vl='2' вместо
