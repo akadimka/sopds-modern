@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from typing import Dict, List
 
 from ..author_normalizer_extended import AuthorNormalizer
-from ..evidence import log_decision, series_source_rank
+from ..evidence import UMBRELLA_ARC_SN_SOURCE, log_decision, series_source_rank
 from ..filename_stem import file_name, file_stem
 from ..name_normalizer import AuthorName
 from ..series_normalizer import _nfc_lower_yo
@@ -878,6 +878,11 @@ class Pass4Consensus:
             m = re.match(r'[\s\-]*0*(\d{1,4}(?:\s*[-–—]\s*\d{1,4})?)\s*(?:[\.\s]|$)', after)
             if not m:
                 # Номера в стеме нет — не перебиваем series_number (остаётся из меты)
+                continue
+            # Баг №145: у подцикла «зонтика» («Сумеречные охотники 1. Адские
+            # механизмы 2.») номер тома уже взят после ИМЕНИ ПОДЦИКЛА; число
+            # после корня — номер самого подцикла, не тома.
+            if record.series_number_source == UMBRELLA_ARC_SN_SOURCE:
                 continue
             fn_num = re.sub(r'\s*[-–—]\s*', '-', m.group(1).strip())
             fn_num_lo = int(fn_num.split('-')[0])

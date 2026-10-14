@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Кассандра</first-name>
+      <last-name>Клэр</last-name>
+    </author>
+    <book-title>Механический принц</book-title>
+    <annotation>
+      <p>Англия. Лондон, Викторианская эпоха. Получив письмо от пропавшего брата. Тесс Грей приезжает в Англию. Оказавшись в Лондоне, она обнаруживает Нижний мир. по улицам которого бродят вампиры, могущественные чародеи и оборотни. Письмо брата оказывается ловушкой, и Тесс попадает в беду. Спастись ей помогают Сумеречные охотники, но тучи вокруг снова сгущаются.</p>
+      <p>Теперь Тесс угрожает таинственный Магистр, который не остановится ни перед чем. чтобы использовать в своих целях ее способность превращаться в любого человека и читать чужие мысли. Тайны прошлого и настоящего ждут того, кто сумеет их разгадать…</p>
+    </annotation>
+    <keywords>спасение мира,сверхъестественные способности,викторианская Англия,темная магия</keywords>
+    <date value="2011-01-01">2011</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Екатерина</first-name>
+      <middle-name>Ильинична</middle-name>
+      <last-name>Колябина</last-name>
+    </translator>
+    <sequence name="Адские механизмы (АСТ)" number="2"/>
+    <sequence name="Сумеречные охотники"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Олег</first-name>
+      <last-name>Власов</last-name>
+      <nickname>prussol</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2015-12-06">06 December 2015</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=14128135</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>17db64be-9b7f-11e5-a168-00259059d1c3</id>
+    <version>1</version>
+    <history>
+      <p>V 1.0 by prussol</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Адские Механизмы. Книга II. Механический принц / К. Клэр; пер. с англ. Е. Колябиной. . 2015.</book-name>
+    <publisher>ACT</publisher>
+    <city>Москва</city>
+    <year>2015</year>
+    <isbn>978-5-17-092866-8</isbn>
+  </publish-info>
+  <custom-info info-type="">Copyright © 2011 by Cassandra Clare, LLC © E. Колябина, перевод на русский язык © ООО «Издательство АСТ», 2015 </custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

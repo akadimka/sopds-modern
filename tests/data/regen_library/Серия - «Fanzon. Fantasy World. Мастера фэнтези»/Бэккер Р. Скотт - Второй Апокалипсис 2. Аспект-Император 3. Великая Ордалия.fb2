@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Скотт</middle-name>
+      <last-name>Бэккер</last-name>
+    </author>
+    <book-title>Великая Ордалия</book-title>
+    <annotation>
+      <p>Великая Ордалия продолжает свое эпическое наступление на север. Запасы постепенно истощаются, и Аспект-Император дозволяет начать употреблять мясо убитых шранков в пищу. Это может привести к последствиям, которые даже Он не может предвидеть.</p>
+      <p>Боевые барабаны Фаним стучат у стен города императрицы, безуспешно ищущей своего сына.</p>
+      <p>Глубоко в недрах Ишуали волшебник Ахкеймион борется со своим страхом, что все его действия бесцельны и бессмысленны.</p>
+      <p>История «Второго Апокалипсиса» продолжается. Р. Скотт Бэккер возвращает нас в свой мир оживших мифов, запретной магии и нечеловеческих народов.</p>
+    </annotation>
+    <keywords>эпическое фэнтези,темные силы,волшебные миры,боевая магия,темное фэнтези / dark fantasy</keywords>
+    <date value="2016-01-01">2016</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Юрий</first-name>
+      <middle-name>Ростиславович</middle-name>
+      <last-name>Соколов</last-name>
+    </translator>
+    <translator>
+      <first-name>А.</first-name>
+      <last-name>Баранов</last-name>
+    </translator>
+    <sequence name="Аспект-Император" number="3"/>
+    <sequence name="Второй Апокалипсис"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>AlenaCh</nickname>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2021-05-16">2021-05-16</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=65101836</src-url>
+    <src-ocr>текст предоставлен правообладателем</src-ocr>
+    <id>aaa9fafe-b60b-11eb-9ea9-0cc47a5f137d</id>
+    <version>1.0</version>
+    <history>
+      <p>v – 1.0 – создание fb2 – AlenaCh</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция (13)</last-name>
+      <id>f1cf9a61-1afb-11e9-b9d6-0cc47a520474</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Великая Ордалия</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-04-120280-4</isbn>
+    <sequence name="Fantasy World. Лучшая современная фэнтези"/>
+  </publish-info>
+  <custom-info info-type="">© А. Баранов, перевод на русский язык, 2021 © Ю. Соколов, перевод на русский язык, 2021 © Издание на русском языке, оформление.ООО «Издательство «Эксмо», 2021</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

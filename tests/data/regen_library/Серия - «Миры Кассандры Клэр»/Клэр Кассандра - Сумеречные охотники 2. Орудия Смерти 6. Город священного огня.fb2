@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   
+   <author>
+    <first-name>Кассандра</first-name>
+    <last-name>Клэр</last-name>
+    <home-page>http://www.litmir.net/a/?id=54856</home-page>
+   </author>
+   <book-title>Город священного огня (др. перевод) (ЛП)</book-title>
+   <annotation>
+    <p>– &#917;RCHOMAI, – СКАЗАЛ СЕБАСТЬЯН. Я иду. В мир Сумеречных Охотников возвращается тьма. Пока основа их общества рушится, Клэри, Джейс, Саймон и их друзья должны сплотиться, чтобы побороть худшее зло, с которым приходилось встречаться Нефилимам: родным братом Клэри. Ничто в мире не может его победить – может, им поискать способ в ином мире? Многие лишатся жизней, пожертвуют любовью, и весь мир изменится в шестой и последней части в серии «Орудия Смерти»! Переведено для группы: http://vk.com/e_books_vk  </p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>перевод</first-name>
+    <last-name>Любительский</last-name>
+    <home-page>http://www.litmir.net/a/?id=43619</home-page>
+   </translator>
+   <sequence name="Сумеречные охотники" number="6"/>
+   <sequence name="Орудия смерти" number="6"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name>Nastya</last-name>
+   </author>
+   <program-used>calibre 1.39.0, FictionBook Editor Release 2.6.6</program-used>
+   <date value="2015-02-03">2.2.2015</date>
+   <src-url>http://www.litmir.net</src-url>
+   <id>ff9ad9c3-06f0-4f5e-b0b2-cee7964c6ace</id>
+   <version>1.1</version>
+   <history>
+    <p>v 1.1 – исправление структуры, примечания – enkr</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <year>2015</year>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

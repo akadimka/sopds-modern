@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Кассандра</first-name>
+      <last-name>Клэр</last-name>
+    </author>
+    <book-title>Железная цепь</book-title>
+    <annotation>
+      <p>У Корделии Карстерс, кажется, есть все, о чем только можно мечтать. Она помолвлена с Джеймсом Эрондейлом, которого любит с детства. Ее лучшая подруга, Люси Эрондейл, рядом, так же, как и верный меч – Кортана. И отец, которого Корделия так любит, наконец вернулся домой. Но это лишь праздничный фасад. На самом деле все гораздо мрачнее.</p>
+      <p>Брак с Джеймсом – ложь, необходимая, чтобы спасти репутацию Корделии. Кортана обжигает руку хозяйки, стоит той прикоснуться к ней. Да и возвращение отца прошло совсем не так, как хотелось.</p>
+      <p>В Лондоне тоже неспокойно. Серийный убийца преследует Сумеречных охотников на темных лондонских улицах… Многие уже погибли от его руки Корделия, Джеймс и Люси пытаются выследить убийцу и сохранить тайну – каждый свою, страшную, способную безвозвратно изменить многое.</p>
+    </annotation>
+    <keywords>демоны,магические способности,бестселлеры The New York Times,монстры,страшные тайны,охота на нечисть,приключенческое фэнтези,иные миры,young adult</keywords>
+    <date value="2021-01-01">2021</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Ольга</first-name>
+      <middle-name>В.</middle-name>
+      <last-name>Ратникова</last-name>
+    </translator>
+    <sequence name="Последние часы" number="2"/>
+    <sequence name="Сумеречные охотники"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>cleed</nickname>
+    </author>
+    <program-used>OOoFBTools-2.37 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2021-09-10">10.09.2021</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=66259534</src-url>
+    <src-ocr>indd предоставлен правообладателем</src-ocr>
+    <id>3330d0e8-0b11-11ec-b099-441ea1508474</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – cleed</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ (БЕЗ ПОДПИСКИ)</last-name>
+      <id>9971362c-2daa-11e8-9a05-0cc47a52085c</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Кассандра Клэр Последние часы. Книга II. Железная цепь</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-17-127164-0</isbn>
+    <sequence name="Миры Кассандры Клэр"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

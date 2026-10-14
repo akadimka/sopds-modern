@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   
+   
+   
+   <author>
+    <first-name>Кассандра</first-name>
+    <last-name>Клэр</last-name>
+    <id>a8d4756jya9-3tyik768f-1r6tut62-adtr8uty3-00r68yj6</id>
+   </author>
+   <book-title>Леди Полночь</book-title>
+   <annotation>
+    <p>Прошло пять лет после событий, описанных в романе «Город Небесного Огня». Эмма Карстерс выросла. Она стала Сумеречной Охотницей и хочет найти виновных в смерти своих родителей. </p>
+    <p>Вместе со своим парабатаем Джулианом Блэкторном, она патрулирует улицы мистического Лос-Анджелеса, где вампиры устраивают вечеринки на Сансет-стрип, а фэйри на волоске от открытой войны с Сумеречными Охотниками.</p>
+    <p>Расследуя загадочные убийства людей и фэйри, Эмма приближается к разгадке терзающей ее тайны. У нее появляется шанс отомстить за смерть близких, а у Джулиана – вернуть похищенного брата. Но времени у них мало – всего две недели. А потом убийца возьмется за них…</p>
+   </annotation>
+   <keywords>спасение мира,сверхъестественные способности,темная магия,загадочные происшествия</keywords>
+   <date value="2016-01-01">2016</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Евгения</first-name>
+    <last-name>Фоменко</last-name>
+   </translator>
+   <sequence name="Тёмные искусства" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <src-title-info>
+   
+   <author>
+    <first-name>Cassandra </first-name>
+    <last-name>Clare</last-name>
+   </author>
+   <book-title>The Dark Artifices. Book I. Lady Midnight</book-title>
+   <date></date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name>Padma</first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2016-08-02">02.08.2016</date>
+   <id>49d56umjD-98o0lA-4y98,kF6-978okuhk,2-i99F71gy8ki8</id>
+   <version>1.0</version>
+   <history>
+    <p>Version 1.0 – Создание документа – Padma</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Темные искусства. Книга I. Леди Полночь</book-name>
+   <publisher>АСТ</publisher>
+   <city>Москва</city>
+   <year>2016</year>
+   <isbn>978-5-17-097279-1</isbn>
+   <sequence name="Миры Кассандры Клэр"/>
+  </publish-info>
+  <custom-info info-type="">УДК 821.111(73) ББК 84(7 Сое) К 51 Литературно-художественное издание Для широкого круга читателей Заведующий редакцией Сергей Тишков Ответственный редактор Мария Рожнова Технический редактор Татьяна Тимошина Корректор Валентина Авдеева Верстка Юлии Анищенко Copyright © 2016 by Cassandra Clare, LLC Jacket design by Russell Gordon Jacket photo-illustration copyright © 2016 by Cliff Nielsen © E. Фоменко, перевод на русский язык © ООО «Издательство ACT», 2016</custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

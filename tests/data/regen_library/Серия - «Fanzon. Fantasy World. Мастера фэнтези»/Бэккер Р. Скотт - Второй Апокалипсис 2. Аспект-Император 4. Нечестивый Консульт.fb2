@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Скотт</middle-name>
+      <last-name>Бэккер</last-name>
+    </author>
+    <book-title>Нечестивый Консульт</book-title>
+    <annotation>
+      <p>«Нечестивый Консульт» – ожидаемый финальный роман в знаменитой серии «Второй Апокалипсис» Р. Скотта Бэккера, действие которого разворачивается в ярком мире мифов, войн и магии. Благодаря своему грандиозному размаху, богатым деталям, философской глубине и захватывающему сюжету эта серия стоит рядом с лучшими образцами жанра.</p>
+    </annotation>
+    <keywords>апокалипсис,эпическое фэнтези,темные силы,волшебные миры,боевая магия,темное фэнтези / dark fantasy</keywords>
+    <date value="2017-01-01">2017</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Александр</first-name>
+      <middle-name>Владимирович</middle-name>
+      <last-name>Баранов</last-name>
+    </translator>
+    <sequence name="Аспект-Император" number="4"/>
+    <sequence name="Второй Апокалипсис"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Alesh</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2021-08-26">2021-08-26</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=66217442</src-url>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>e774fa4d-0642-11ec-b099-441ea1508474</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (Alesh)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция (13)</last-name>
+      <id>785289c3-3c37-11e9-96df-0cc47a545a1e</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Нечестивый Консульт</book-name>
+    <publisher>Эксмо</publisher>
+    <city>Москва</city>
+    <year>2021</year>
+    <isbn>978-5-04-157748-3</isbn>
+    <sequence name="Fantasy World. Лучшая современная фэнтези"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

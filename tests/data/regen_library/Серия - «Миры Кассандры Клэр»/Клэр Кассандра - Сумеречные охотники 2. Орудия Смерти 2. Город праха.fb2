@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Кассандра</first-name>
+    <last-name>Клэр</last-name>
+   </author>
+   <book-title>Город праха</book-title>
+   <annotation>
+    <p>Перед вами — вторая часть легендарной трилогии Кассандры Клэр о Сумеречных охотниках! </p>
+    <p>Клэри Фрэй мечтает снова жить обычной жизнью, но это невозможно. Какая уж тут нормальная жизнь! Клэри теперь Сумеречный охотник, истребительница демонов, ее окружают вампиры, оборотни и фейри, а ее мама уснула волшебным сном. Клэри хотела бы проводить больше времени со своим лучшим другом Саймоном, но этому все время мешает новообретенный брат — жестокий и прекрасный Джейс. Единственный шанс Клэри помочь маме — выследить и отыскать своего отца Валентина, Сумеречного охотника, осмелившегося противостоять Конклаву. Когда кто-то крадет второе Орудие Смерти, подозрение Инквизитора падает на Джейса. Неужели он способен предать свои убеждения ради отца?</p>
+   </annotation>
+   <date>2008</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Елена</first-name>
+    <last-name>Алексеева</last-name>
+   </translator>
+   <sequence name="Сумеречные охотники" number="2"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <nickname>krgz</nickname>
+   </author>
+   <program-used>Fiction Book Designer, FictionBook Editor Release 2.6</program-used>
+   <date value="2011-02-01">01.02.2011</date>
+   <src-ocr>OCR: Индиль; Spellcheck: DaMpiRka</src-ocr>
+   <id>FBD-8F3DE4-2ECF-CA4E-C0B3-71F5-0FC6-6BAA18</id>
+   <version>1.2</version>
+   <history>
+    <p>v1.1 — редактирование структуры, добавление сносок, скрипты (Hornet)</p>
+    <p>v. 1.2 — устранение опечаток — сравнение с 339818,  lib.rus.ec/b/447158, замена обложки на б<emphasis>о</emphasis>льшую,  скрипты — l</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Кассандра Клэр "Город праха"</book-name>
+   <publisher>Рипол Классик</publisher>
+   <city>Москва</city>
+   <year>2011</year>
+   <isbn>978-5-386-02826-8</isbn>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

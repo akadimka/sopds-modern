@@ -31,7 +31,12 @@ from typing import Any, Dict, List
 
 from ..block_level_pattern_matcher import BlockLevelPatternMatcher
 from ..evidence import FOLDER_SOURCES as _SHARED_FOLDER_SOURCES
-from ..evidence import author_named_series, keeps_author_series, log_decision
+from ..evidence import (
+    UMBRELLA_ARC_SN_SOURCE,
+    author_named_series,
+    keeps_author_series,
+    log_decision,
+)
 from ..evidence import folder_has_signal as _folder_has_signal_fn
 from ..extraction_constants import FILE_EXTENSION_FOLDER_NAMES, is_no_series_folder
 from ..filename_stem import file_name, file_stem
@@ -1980,11 +1985,36 @@ class Pass2SeriesFilename:
             key = (_norm_s(rec.proposed_author or ''), _norm_s(root_base), _norm_s(arc), _folder_k2)
             existing_arcs[key].append((rec, vol_num, root_base, arc))
 
+        umbrella_keys, tom_subcycles = self._umbrella_roots(records, existing_arcs)
+
         for (_ak, _rk, _srk, _fk), arc_entries in existing_arcs.items():
             if len(arc_entries) < 2:
                 continue
             vols = sorted(vol_num for _, vol_num, _, _ in arc_entries)
             lo, hi = vols[0], vols[-1]
+
+            # Баг №145: корень-«зонтик» («Сумеречные охотники 1. Адские механизмы 1…»,
+            # «… 2. Орудия Смерти 1…») — у корня нет СВОИХ томов, все книги лежат в
+            # подциклах, а N — номер подцикла, не позиция тома. Каждый подцикл —
+            # самостоятельная серия «Корень\Подцикл» с собственной нумерацией томов:
+            # компилируется отдельно (Трилогия, Гексалогия…), а не одной книгой на
+            # всю вселенную. С собственными томами у корня («Отряд «Сигма» 1-17»,
+            # где «Такер Уэйн» — позиция 8) — прежняя гостевая форма ниже.
+            if lo == hi and (_ak, _rk, _fk) in umbrella_keys:
+                _arc_norm_u = _norm_s(arc_entries[0][3])
+                _umb_series = f'{arc_entries[0][2]}\\{arc_entries[0][3]}'
+
+                def _pos_in_arc(entry, _anl=_arc_norm_u):
+                    _m = re.search(re.escape(_anl) + r'[\s.]+(\d{1,3})', _norm_s(file_stem(entry[0].file_path)))
+                    return int(_m.group(1)) if _m else None
+
+                for _i, _entry in enumerate(sorted(arc_entries, key=lambda e: _pos_in_arc(e) or 9999), 1):
+                    _rec = _entry[0]
+                    _rec.proposed_series = _umb_series
+                    _rec.series_number = str(_pos_in_arc(_entry) or _i)
+                    _rec.series_number_source = UMBRELLA_ARC_SN_SOURCE
+                    _rec.series_source = 'filename_named_arc'
+                continue
 
             # Когда ВСЕ книги арка имеют ОДИНАКОВЫЙ vol_num (lo == hi) — это
             # «временная подсерия» (пример: «Такер Уэйн» входит в том 8 «Отряда Сигма»).
@@ -2036,7 +2066,82 @@ class Pass2SeriesFilename:
                 rec.series_number = str(vol_num)
                 rec.series_number_source = 'filename_named_arc'
                 rec.series_source = 'filename_named_arc'
+
+        # Подциклы «зонтика», названные «Корень N. Подцикл. Книга M» (без своего
+        # номера после имени подцикла: «Сумеречные охотники 5. Призраки
+        # Сумеречного базара. Книга 1») — та же форма «Корень\Подцикл», том M.
+        for _key, _items in tom_subcycles.items():
+            if _key not in umbrella_keys:
+                continue
+            for _rec, _root_disp, _sub, _book_n in _items:
+                _rec.proposed_series = f'{_root_disp}\\{_sub}'
+                _rec.series_number = str(_book_n)
+                _rec.series_number_source = UMBRELLA_ARC_SN_SOURCE
+                _rec.series_source = 'filename_named_arc'
         ctx._ARC_RE2 = _ARC_RE2
+
+    # «Корень N. Подцикл. Книга M» — подцикл без собственного номера после имени
+    _TOM_SUBCYCLE_RE = re.compile(
+        r'^(?:.+?\s+-\s+)?(.+?)\s+(\d{1,4})\.\s+([^.]{3,}?)\.\s+(?:Том|Книга|Часть|кн\.)\s+(\d{1,3})\b',
+        re.IGNORECASE | re.UNICODE,
+    )
+
+    def _umbrella_roots(self, records, existing_arcs):
+        """Корни-«зонтики» (баг №145): (автор, корень, папка), где ВСЕ книги
+        лежат в нумерованных подциклах «Корень N. Подцикл M. …» (у каждой
+        книги подцикла свой номер M сразу после имени подцикла), а собственных
+        томов корня нет. Собственный том — любая другая книга этого корня,
+        в том числе подцикл из одной книги или ненумерованный подцикл
+        («Хроника Убийцы Короля 1. День первый. Имя ветра» + «2. День второй.
+        Страхи мудреца. Том 1/2» — одна книга в двух томах, не подцикл).
+        Книги «Корень N. Подцикл. Книга M» — тоже подциклы, без своего номера
+        после имени (возвращаются отдельно, по тому же ключу)."""
+        from collections import defaultdict
+
+        def _numbered(entries):
+            arc = _norm_s(entries[0][3])
+            return all(re.search(re.escape(arc) + r'[\s.]+\d{1,3}', _norm_s(file_stem(e[0].file_path)))
+                       for e in entries)
+
+        arc_keys, numbered_arcs = set(), set()
+        arcs_by_root = defaultdict(list)
+        for arc_key, entries in existing_arcs.items():
+            _ak, _rk, _srk, _fk = arc_key
+            if len(entries) >= 2 and len({e[1] for e in entries}) == 1 and _numbered(entries):
+                arc_keys.add((_ak, _rk, _fk))
+                numbered_arcs.update(id(e[0]) for e in entries)
+                arcs_by_root[(_ak, _rk, _fk)].append((_norm_s(entries[0][3]), arc_key))
+        if not arc_keys:
+            return set(), {}
+        own_volumes, tom_subcycles = set(), defaultdict(list)
+        for rec in records:
+            s = (rec.proposed_series or '').strip()
+            if not s or id(rec) in numbered_arcs:
+                continue
+            root = re.sub(r'(?:\s+\d{1,4})+\s*$', '', s.split('\\', 1)[0]).strip()
+            key = (_norm_s(rec.proposed_author or ''), _norm_s(root), str(Path(rec.file_path).parent))
+            if key not in arc_keys:
+                continue
+            # Том нумерованного подцикла, который другие шаги записали иначе
+            # («… 2. Орудия Смерти 8. Хроники Академии… Книга 1» → плоская
+            # «Сумеречные охотники»): «<имя подцикла> M.» в имени файла —
+            # присоединяем к подциклу (existing_arcs дополняется на месте).
+            _stem_n = _norm_s(file_stem(rec.file_path))
+            _arc_hit = next((ak for an, ak in arcs_by_root[key]
+                             if re.search(re.escape(an) + r'[\s.]+\d{1,3}', _stem_n)), None)
+            if _arc_hit is not None:
+                _first = existing_arcs[_arc_hit][0]
+                existing_arcs[_arc_hit].append((rec, _first[1], _first[2], _first[3]))
+                continue
+            # По имени файла, а не по текущей форме серии: предыдущие шаги
+            # записывают такой подцикл то плоско («Корень 5 5»), то как
+            # «Корень 5\Подцикл. Книга» — в зависимости от соседей.
+            m = self._TOM_SUBCYCLE_RE.match(file_stem(rec.file_path))
+            if m and _norm_s(m.group(1)) == key[1]:
+                tom_subcycles[key].append((rec, root, m.group(3).strip(), int(m.group(4))))
+            else:
+                own_volumes.add(key)
+        return arc_keys - own_volumes, tom_subcycles
 
 
     def _named_arcs_apply_back_to_flat(self, records, ctx) -> None:
@@ -2309,6 +2414,11 @@ class Pass2SeriesFilename:
                     )
                 if not m2:
                     continue
+            # Баг №145: у подцикла «зонтика» («Сумеречные охотники 1. Адские
+            # механизмы 2. …») номер тома уже взят после ИМЕНИ ПОДЦИКЛА, а число
+            # после корня — номер самого подцикла, не тома.
+            if record.series_number_source == UMBRELLA_ARC_SN_SOURCE:
+                continue
             fn_val2 = re.sub(r'\s*[-–—]\s*', '-', m2.group(1).strip())
             fn_lo2 = int(fn_val2.split('-')[0])
             if 1900 <= fn_lo2 <= 2099:

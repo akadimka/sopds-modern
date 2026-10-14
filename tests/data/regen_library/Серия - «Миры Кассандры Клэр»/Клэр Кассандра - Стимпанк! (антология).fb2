@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Келли</first-name>
+      <last-name>Линк</last-name>
+    </author>
+    <author>
+      <first-name>Гевин</first-name>
+      <middle-name>Дж.</middle-name>
+      <last-name>Грант</last-name>
+    </author>
+    <author>
+      <first-name></first-name>
+      <last-name>Коллектив авторов</last-name>
+    </author>
+    <book-title>Стимпанк!</book-title>
+    <annotation>
+      <p>Добро пожаловать на страницы антологии, в которой собрано четырнадцать рассказов в жанре стимпанк – четырнадцать причудливых картин прошлого, будущего и не-вполне-настоящего!</p>
+      <p>Поклонники стимпанка найдут в этой книге всё, чего ожидают: здесь будут и переулки, смутно освещенные газовыми фонарями, и бесстрашные беспризорники, и паровые машины, и небывалые изобретения. Писатели и художники, чьи произведения вошли в нашу антологию, переосмыслили романтику и приключения стимпанка, перетасовали его элементы по-своему и заново слепили весь жанр из другого теста – или, вернее сказать, собрали из других колесиков и шестеренок.</p>
+    </annotation>
+    <keywords>альтернативная реальность,стимпанк,приключенческое фэнтези</keywords>
+    <date value="2011-01-01">2011</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Анна</first-name>
+      <middle-name>Иосифовна</middle-name>
+      <last-name>Блейз</last-name>
+    </translator>
+    <translator>
+      <first-name>Алексей</first-name>
+      <middle-name>Геннадьевич</middle-name>
+      <last-name>Осипов</last-name>
+    </translator>
+    <sequence name="Миры Кассандры Клэр"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Александр</first-name>
+      <last-name>Умняков</last-name>
+      <nickname>shum29</nickname>
+      <email>au.shum@gmail.com</email>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2015-11-26">26 November 2015</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=12952794</src-url>
+    <src-ocr>Издательский текст</src-ocr>
+    <id>4b2a0a43-9509-11e5-b0a1-0cc47a520474</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание файла</p>
+    </history>
+    <publisher>
+      <first-name/>
+      <last-name>Литагент «АСТ»</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Стимпанк!</book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>М.</city>
+    <year>2016</year>
+    <isbn>978-5-17-090640-6</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Кассандра</first-name>
+      <last-name>Клэр</last-name>
+    </author>
+    <author>
+      <first-name>Морин</first-name>
+      <last-name>Джонсон</last-name>
+    </author>
+    <author>
+      <first-name>Сара</first-name>
+      <middle-name>Риз</middle-name>
+      <last-name>Бреннан</last-name>
+    </author>
+    <book-title>Хроники Бейна</book-title>
+    <annotation>
+      <p>Поклонников серий «Орудия смерти» и «Адские механизмы» ждет настоящий подарок! Теперь они смогут насладиться полным собранием всех «Хроник Бейна» в одном томе. Совместное творение Кассандры Клэр, Морин Джонсон и Сары Риз Бреннан также дополнено превосходными иллюстрациями Кассандры Джин.</p>
+      <p>Перед вами эксклюзивная коллекция из одиннадцати захватывающих рассказов, посвященных жизни загадочного Магнуса Бейна, чьи соблазнительные личность, яркий стиль и остроумие сделали книги Кассандры Клэр неизменными бестселлерами #1 New York Times. Вас ждет по-настоящему захватывающее чтение!</p>
+    </annotation>
+    <keywords>вампиры,романтическая фантастика,магические миры,магическое фэнтези,приключенческое фэнтези</keywords>
+    <date value="2013-01-01">2013</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>А.</first-name>
+      <middle-name>Н.</middle-name>
+      <last-name>Зайцев</last-name>
+    </translator>
+    <translator>
+      <first-name>Виктор</first-name>
+      <middle-name>Михайлович</middle-name>
+      <last-name>Липка</last-name>
+    </translator>
+    <translator>
+      <first-name>Юлия</first-name>
+      <middle-name>Владимировна</middle-name>
+      <last-name>Васильева</last-name>
+    </translator>
+    <translator>
+      <first-name>Ангелина</first-name>
+      <middle-name>Вячеславовна</middle-name>
+      <last-name>Гришина</last-name>
+    </translator>
+    <translator>
+      <first-name>М.</first-name>
+      <middle-name>С.</middle-name>
+      <last-name>Бажанова</last-name>
+    </translator>
+    <sequence name="Хроники Бейна (Клэр)"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>Alesh</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-06-22">2016-06-22</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=19210587</src-url>
+    <src-ocr>Текст предоставлен издательством</src-ocr>
+    <id>d190602e-3889-11e6-9c02-0cc47a5203ba</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (Alesh)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>РИПОЛ</last-name>
+      <id>15e304c3-8310-102d-9ab1-2309c0a91052</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Хроники Бейна</book-name>
+    <publisher>РИПОЛ классик</publisher>
+    <city>Москва</city>
+    <year>2016</year>
+    <isbn>978-5-386-08842-2</isbn>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

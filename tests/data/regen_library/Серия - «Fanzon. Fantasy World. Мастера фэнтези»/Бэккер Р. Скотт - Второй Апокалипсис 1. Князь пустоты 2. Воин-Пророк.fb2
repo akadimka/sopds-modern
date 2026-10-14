@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Скотт</middle-name>
+      <last-name>Бэккер</last-name>
+    </author>
+    <book-title>Воин-Пророк</book-title>
+    <annotation>
+      <p>Над миром Эарвы, когда-то пережившим первый Апокалипсис, вновь собирается тьма, возвещающая возвращение Не-бога Мог-Фарау. И народы Трех Морей, собранные под знамена шрайи Тысячи Храмов, выдвигаются на войну против язычников фаним, чтобы вернуть Священный город Шайме! Но каждая фракция этого воинства преследует свою тайную цель, и шпионы-оборотни наводнили его ряды. И только Анасуримбору Келлхусу, загадочному монаху-дунианину, под силу снять с них маски и встать во главе Священного воинства, ведь все зовут его не иначе как Воин-Пророк…</p>
+    </annotation>
+    <keywords>спасение мира, «Темный Властелин», магические способности, эпическое фэнтези, темное фэнтези / dark fantasy, сверхспособности, иные миры</keywords>
+    <date>2004</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Оксана</first-name>
+      <middle-name>М.</middle-name>
+      <last-name>Степашкина</last-name>
+    </translator>
+    <sequence name="Князь Пустоты" number="2"/>
+  </title-info>
+  <src-title-info>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>R.</first-name>
+      <middle-name>Scott</middle-name>
+      <last-name>Bakker</last-name>
+    </author>
+    <book-title>The Warrior Prophet</book-title>
+    <date>2004</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>Sergius</nickname>
+    </author>
+    <program-used>ePub_to_FB2, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2018-01-05">05.01.2018</date>
+    <src-url>https://www.litres.ru/r-skott-bekker/knyaz-pustoty-kniga-vtoraya-voin-prorok/</src-url>
+    <id>2709A2D3-E3CC-4235-A356-71F8F410791A</id>
+    <version>1.1</version>
+    <history>
+      <p>ver 1.1 — создание fb2 из epub (Sergius).</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Бэккер, Р. Скотт. Князь Пустоты. Книга вторая. Воин-Пророк</book-name>
+    <publisher>Эксмо, Домино</publisher>
+    <city>Москва</city>
+    <year>2017</year>
+    <isbn>978-5-699-99925-5</isbn>
+    <sequence name="Fantasy World"/>
+    <sequence name="Второй Апокалипсис"/>
+  </publish-info>
+  <custom-info info-type="">© 2004 by R. Scott Bakker © О. Степашкина, перевод на русский язык, 2017 © Издание на русском языке, оформление. ООО «Издательство «Э», 2017</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+</FictionBook>

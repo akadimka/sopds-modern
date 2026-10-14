@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Кассандра</first-name>
+    <last-name>Клэр</last-name>
+   </author>
+   <book-title>Город стекла</book-title>
+   <annotation>
+    <p>Клэри вслед за семейством Лайтвудов и Джейсом оказывается в Аликанте, столице Идриса, где хранится последнее орудие — Зеркало смерти, — за которым охотится Валентин. Отстоит и обретет мир только тот, в чьих руках окажется это Зеркало. В борьбе с Валентином нефилимы объединятся с оборотнями и прочей нежитью, а Клэри из рук ангела Итуриэля получит новую руну, но что она означает, девушка узнает только после решающей битвы. Все тайны и все загадки будут разгаданы, но главное — какое будущее уготовано Джейсу и Клэри? — узнает тот, кто перевернет последнюю страницу трилогии.</p>
+   </annotation>
+   <date>2009</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Н.</first-name>
+    <last-name>Абдуллин</last-name>
+   </translator>
+  <genre>Фантастика</genre>
+  </title-info>
+  <src-title-info>
+   
+   <author>
+    <first-name>Cassandra</first-name>
+    <last-name>Clare</last-name>
+   </author>
+   <book-title>City Of Glass</book-title>
+   <date>2009</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Муррмусик</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2014-03-02">02 March 2014</date>
+   <id>5CCCA6F7-60BA-41EA-B63C-E68CDEA4E9DA</id>
+   <version>1.1</version>
+   <history>
+    <p>v. 1.1 — устранение опечаток — сравнение с 234870,  lib.rus.ec/b/447159, скрипты, уменьшение обложки  — l</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Сумеречные охотники. Город стекла / К. Клэр; пер. с англ. Н. Абдуллина</book-name>
+   <publisher>РИПОЛ классик</publisher>
+   <city>Москва</city>
+   <year>2011</year>
+   <isbn>978-5-386-03197-8</isbn>
+   <sequence name="Орудия Смерти"/>
+  </publish-info>
+  <custom-info info-type="">Генеральный директор издательства С. М. Макаренков
+Редактор А. Питчер 
+Ведущий редактор Е. Яковлева 
+Выпускающий редактор Е. Крылова 
+Компьютерная верстка: А. Дятлов 
+Корректоры: Т. Е. Антонова, Л. А. Мухина </custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

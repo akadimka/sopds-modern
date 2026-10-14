@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf_epic</genre>
+   <genre>sf_fantasy</genre>
+   <author>
+    <first-name>Ричард Скотт</first-name>
+    <last-name>Бэккер</last-name>
+   </author>
+   <book-title>Око Судии</book-title>
+   <annotation>
+    <p>Спустя 20 лет после Первой Священной войны и падения города Шайме Анасуримбор Келлхус вновь ведет Великую Ордалию против Консульта. Пока народы Трех Морей держат путь в Голготерат, заговор в столице может лишить Келлхуса власти. Богиня Ятвер объявляет войну роду Анасуримборов, колдун в изгнании Друз Ахкеймион и ведьма Мимара должны раскрыть тайну аспект-императора с помощью Ока Судии. Не-Бог будет побежден или... грядет Второй Апокалипсис.</p>
+   </annotation>
+   <date>2013</date>
+   <coverpage>
+    <image l:href="#cover1__w600.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Елена</first-name>
+    <last-name>Кисленкова</last-name>
+   </translator>
+   <sequence name="Аспект-Император" number="1"/>
+  </title-info>
+  <src-title-info>
+   <genre>sf_epic</genre>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <book-title></book-title>
+   <date></date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.7</program-used>
+   <date></date>
+   <id>E92A79DB-18C9-4481-B405-85D27F3A49F0</id>
+   <version>1.0</version>
+  </document-info>
+  <publish-info>
+   <book-name>Око Судии</book-name>
+   <publisher>Эксмо</publisher>
+   <city>М.</city>
+   <year>2018</year>
+   <isbn>978-5-04-092883-5</isbn>
+   <sequence name="Fantasy World"/>
+  </publish-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+</FictionBook>

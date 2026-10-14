@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    <genre>sf_action</genre>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Скотт</middle-name>
+      <last-name>Бэккер</last-name>
+    </author>
+    <book-title>Князь Пустоты. Книга третья. Тысячекратная Мысль</book-title>
+    <annotation>
+      <p>Опасный поход через опустевшие земли к далекому городу Шайме под началом Воина-Пророка Келлхуса Анасуримбора приближается к кульминации. Заключительный роман трилогии «Князь Пустоты» решит судьбу Священного воинства и будущее Нансурской империи. Рожденные для жестокости рыцари и маги, адепты различных школ и учений сойдутся в битве, чтобы открыть изящную формулу Тысячекратной Мысли, по которой в грядущие темные века будет переписана история.</p>
+    </annotation>
+    <keywords>спасение мира,темный властелин,магические способности,эпическое фэнтези,темное фэнтези / dark fantasy,сверхспособности,иные миры</keywords>
+    <date value="2006-01-01">2006</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Наталия</first-name>
+      <middle-name>Владимировна</middle-name>
+      <last-name>Некрасова</last-name>
+    </translator>
+    <sequence name="Второй Апокалипсис"/>
+    <sequence name="Князь Пустоты" number="3"/>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>nys23</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2018-03-10">2018-03-10</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=30091822</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>a9400a82-2421-11e8-9a05-0cc47a52085c</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (nys23)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>1 редакция</last-name>
+      <id>0058d61b-69a7-11e4-a35a-002590591ed2</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Князь Пустоты. Книга третья. Тысячекратная Мысль</book-name>
+    <publisher>Э</publisher>
+    <city>Москва</city>
+    <year>2018</year>
+    <isbn>978-5-699-99926-2</isbn>
+    <sequence name="Fantasy World"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Кассандра</first-name>
+    <last-name>Клэр</last-name>
+   </author>
+   <book-title>Город костей</book-title>
+   <annotation>
+    <p>Кассандра Клэр хорошо известна во всем мире как автор трилогии «Драко» по мотивам серии книг о Гарри Поттере, где малоприятный мальчишка Драко Малфой оказался положительным, хотя и не лишенным отрицательного очарования, героем.</p>
+    <p>В своей новой трилогии «Орудия Смерти» Клэр создала захватывающий Сумеречный мир, в котором происходит борьба добра и зла, а главное, решается судьба всего человечества. Неожиданно для себя главная героиня оказывается свидетельницей убийства в нью-йоркском клубе «Адское логово». Так происходит первая встреча Клэри с Сумеречными охотниками — воинами, призванными избавить землю от нашествия демонов…</p>
+    <p>В Сумеречном мире Клэри ждут удивительные и невероятные события, которые полностью изменят ее жизнь…</p>
+   </annotation>
+   <date>2010</date>
+   <coverpage>
+    <image l:href="#cover.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>О.</first-name>
+    <last-name>Акопян</last-name>
+   </translator>
+   <sequence name="Сумеречные охотники" number="1"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <src-title-info>
+   
+   <author>
+    <first-name>Cassandra</first-name>
+    <last-name>Clare</last-name>
+   </author>
+   <book-title>City Of Bones</book-title>
+   <date>2007</date>
+   <lang>en</lang>
+  </src-title-info>
+  <document-info>
+   <author>
+    <nickname>Муррмусик</nickname>
+   </author>
+   <program-used>FictionBook Editor Release 2.6</program-used>
+   <date value="2013-06-21">21 June 2013</date>
+   <id>DC049E75-5908-4020-B744-3C53F0C0C3CA</id>
+   <version>1.1</version>
+   <history>
+    <p>v.1.1 — исправление опечаток  — сравнение с 236118 и lib.rus.ec/b/447157 , уменьшение обложки  — l</p>
+   </history>
+  </document-info>
+  <publish-info>
+   <book-name>Город костей / К. Клэр ; пер. с англ. О. Акопян</book-name>
+   <publisher>РИПОЛ классик</publisher>
+   <city>Москва</city>
+   <year>2010</year>
+   <isbn>978-5-386-02292-1</isbn>
+   <sequence name="Орудия Смерти"/>
+  </publish-info>
+  <custom-info info-type="">Генеральный директор издательства С. М. Макаренков
+Контрольный редактор Л. А. Мухина 
+Компьютерная верстка: А. В. Дятлов 
+Корректор: Т. Е. Антонова </custom-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

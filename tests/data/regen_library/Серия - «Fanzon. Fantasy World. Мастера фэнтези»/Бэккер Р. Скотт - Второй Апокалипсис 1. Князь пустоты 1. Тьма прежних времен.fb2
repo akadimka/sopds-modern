@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    <genre>sf_fantasy</genre>
+    <genre>sf_heroic</genre>
+    <author>
+      <first-name>Ричард</first-name>
+      <middle-name>Скотт</middle-name>
+      <last-name>Бэккер</last-name>
+    </author>
+    <book-title>Тьма прежних времен</book-title>
+    <annotation>
+      <p>Две тысячи лет прошло с тех пор, как явившийся в мир темный He-бог едва не поверг его в прах. Миновали века, древние ужасы давно позабыты — и только адепты Завета зорко всматриваются в приметы времени, опасаясь возвращения бессмертных слуг Темного Властелина. А в мире действительно происходят события, о причинах которых стоит задуматься. Новый шрайя, церковный глава, созывает, к примеру, всех правоверных на Священную войну против язычников…</p>
+    </annotation>
+    <keywords>спасение мира, «Темный Властелин», эпическое фэнтези, темное фэнтези, иные миры, опасные приключения</keywords>
+    <date>2003</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Анна</first-name>
+      <middle-name>Сергеевна</middle-name>
+      <last-name>Хромова</last-name>
+    </translator>
+    <sequence name="Князь Пустоты" number="1"/>
+  </title-info>
+  <src-title-info>
+    <genre>sf_fantasy</genre>
+    <author>
+      <first-name>R.</first-name>
+      <middle-name>Scott</middle-name>
+      <last-name>Bakker</last-name>
+    </author>
+    <book-title>The Darkness That Comes Before</book-title>
+    <date>2003</date>
+    <lang>en</lang>
+  </src-title-info>
+  <document-info>
+    <author>
+      <nickname>Sergius</nickname>
+    </author>
+    <program-used>ePub_to_FB2, FictionBook Editor Release 2.6.7</program-used>
+    <date value="2017-10-20">20.10.2017</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=129729&amp;lfrom=30440123</src-url>
+    <id>ACBE84BC-B9AD-4FA7-87EA-9A75BBA5E889</id>
+    <version>1.1</version>
+    <history>
+      <p>ver 1.1 — создание fb2 из epub (Sergius).</p>
+    </history>
+  </document-info>
+  <publish-info>
+    <book-name>Бэккер, Р. Скотт. Князь Пустоты. Книга первая. Тьма прежних времен</book-name>
+    <publisher>Эксмо, Домино</publisher>
+    <city>Москва</city>
+    <year>2017</year>
+    <isbn>978-5-699-98970-6</isbn>
+    <sequence name="Fantasy World"/>
+    <sequence name="Второй Апокалипсис"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+</FictionBook>

@@ -656,6 +656,54 @@ class Pass2Filename:
 
         return False
 
+    @staticmethod
+    def _name_words(name: str) -> List[str]:
+        """Слова имени для сравнения: нижний регистр, ё→е, без кавычек/скобок
+        и без инициалов."""
+        import re
+        words = re.split(r'[\s,;«»"\'()\[\]\-]+', (name or '').lower().replace('ё', 'е'))
+        return [w.rstrip('.') for w in words if len(w.rstrip('.')) >= 3]
+
+    @staticmethod
+    def _same_word(word: str, folder_word: str) -> bool:
+        """Совпадение слова имени со словом папки с допуском на падежное
+        окончание: «кассандра» ↔ «кассандры», «клэр» ↔ «клэр»."""
+        if word == folder_word:
+            return True
+        common = 0
+        for a, b in zip(word, folder_word):
+            if a != b:
+                break
+            common += 1
+        return common >= 4 and common >= len(word) - 2 and abs(len(word) - len(folder_word)) <= 2
+
+    def _coauthor_named_in_folder(self, record) -> Optional[str]:
+        """Автор книги в соавторстве, которого называют сразу и имя файла, и
+        папка: «Серия - «Миры Кассандры Клэр»\\Клэр Кассандра - …», в
+        метаданных Клэр + Джонсон + Бреннан → «Клэр Кассандра».
+
+        Срабатывает, только если имя файла называет ОДНОГО автора, он есть в
+        метаданных и его же (фамилия и имя, с допуском на падеж) называет
+        одна из папок. Имя файла с несколькими авторами («Гуров Валерий,
+        Дамиров Рафаэль - …») или без автора — прежнее правило соавторства.
+        None — не подошло."""
+        stem = normalize_stem(Path(record.file_path.replace('\\', '/')).stem)
+        if ' - ' not in stem:
+            return None
+        file_author = stem.split(' - ', 1)[0].strip()
+        file_words = self._name_words(file_author)
+        if len(file_words) != 2 or any(sep in file_author for sep in (',', ';', ' и ', '&')):
+            return None
+        if not any(sorted(self._name_words(m)) == sorted(file_words)
+                   for m in (record.metadata_authors or '').replace(';', ',').split(',')):
+            return None
+        folder_words = []
+        for part in Path(record.file_path.replace('\\', '/')).parts[:-1]:
+            folder_words.extend(self._name_words(part))
+        if all(any(self._same_word(w, fw) for fw in folder_words) for w in file_words):
+            return file_author
+        return None
+
     def _count_authors(self, authors_str: str) -> int:
         """Count number of authors in metadata authors string.
         
@@ -719,10 +767,22 @@ class Pass2Filename:
             if record.author_source != "folder_dataset":
                 author_count = self._count_authors(record.metadata_authors)
                 if author_count >= 3:
-                    if self._is_collection(record.file_path, getattr(record, 'file_title', '')):
-                        record.proposed_author = "Сборник"
-                    else:
-                        record.proposed_author = "Соавторство"
+                    _is_coll = self._is_collection(record.file_path, getattr(record, 'file_title', ''))
+                    _folder_author = None if _is_coll else self._coauthor_named_in_folder(record)
+                    if _folder_author:
+                        # Баг №146: одного из соавторов называет папка («Серия -
+                        # «Миры Кассандры Клэр»», в метаданных Клэр + Джонсон +
+                        # Бреннан) — книга его. Источник — как у остальных книг
+                        # этого автора в папке (имя файла, подтверждённое папкой),
+                        # НЕ folder_dataset: тот включает логику папки-датасета —
+                        # дописывание соавторов из метаданных и раздачу автора
+                        # всем файлам папки.
+                        record.proposed_author = _folder_author
+                        record.author_source = "filename"
+                        record.needs_filename_fallback = False
+                        processed_count += 1
+                        continue
+                    record.proposed_author = "Сборник" if _is_coll else "Соавторство"
                     record.author_source = "collection"
                     record.needs_filename_fallback = False
                     processed_count += 1

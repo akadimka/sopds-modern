@@ -1267,3 +1267,102 @@ class TestAuthorsDashSeriesFolderName:
         ]
         assert sorted(p.name for p in group.duplicate_paths) == [
             "1. Молот и крест.fb2", "2. Крест и Король.fb2"]
+
+
+class TestUmbrellaRootOfMultiVolumeCycles:
+    """Корень-«зонтик» (баг №145): «Сумеречные охотники N. Подцикл M. Название»
+    — у корня нет собственных томов, N — номер подцикла, M — том в нём.
+    Раньше подциклы становились «Сумеречные охотники N\Подцикл» с номерами
+    «N.M», и компилятор склеивал всю вселенную в один сборник
+    «Сумеречные охотники 1-4» (+ отдельно «6»), а «Призраки Сумеречного
+    базара» (без номера после имени подцикла) уходили в серию
+    «Сумеречные охотники 5». Теперь каждый подцикл — серия «Корень\Подцикл»
+    с томами 1..M и компилируется отдельно. Корень СО своими томами
+    («Округ Форд 2-4» + «Джейк Брайгенс» на позиции 1) — прежняя форма."""
+
+    CLARE = "Серия - «Миры Кассандры Клэр»"
+    BAKKER = "Серия - «Fanzon. Fantasy World. Мастера фэнтези»"
+
+    @pytest.mark.parametrize("cycle_n, cycle, vol, title, series", [
+        (1, "Адские механизмы", 1, "Механический ангел", "Адские механизмы"),
+        (1, "Адские механизмы", 3, "Механическая принцесса", "Адские механизмы"),
+        (2, "Орудия Смерти", 1, "Город костей", "Орудия Смерти"),
+        (2, "Орудия Смерти", 6, "Город священного огня", "Орудия Смерти"),
+        (3, "Тёмные искусства", 2, "Лорд Теней", "Темные искусства"),
+        (4, "Последние часы", 3, "Терновая цепь", "Последние часы"),
+        (6, "Древние проклятия", 2, "Потерянная Белая книга", "Древние проклятия"),
+    ])
+    def test_each_cycle_is_its_own_series(self, records, cycle_n, cycle, vol, title, series):
+        rec = _by_suffix(records, self.CLARE,
+                         f"Клэр Кассандра - Сумеречные охотники {cycle_n}. {cycle} {vol}. {title}.fb2")
+        assert rec.proposed_series == f"Сумеречные охотники\{series}"
+        assert rec.series_number == str(vol)
+
+    @pytest.mark.parametrize("book", [1, 2])
+    def test_cycle_without_own_number(self, records, book):
+        rec = _by_suffix(records, self.CLARE,
+                         f"Клэр Кассандра - Сумеречные охотники 5. Призраки Сумеречного базара. Книга {book}.fb2")
+        assert rec.proposed_series == "Сумеречные охотники\Призраки Сумеречного базара"
+        assert rec.series_number == str(book)
+
+    @pytest.mark.parametrize("folder, author_word, expected", [
+        (CLARE, "Кассандра", {
+            "Сумеречные охотники\Адские механизмы": ["1", "2", "3"],
+            # 7-9 — «Хроники Бейна»/«Хроники Академии» (в соавторстве): по
+            # имени файла — тома 7-9 «Орудий Смерти» (баг №146)
+            "Сумеречные охотники\Орудия Смерти": ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+            "Сумеречные охотники\Темные искусства": ["1", "2", "3"],
+            "Сумеречные охотники\Последние часы": ["1", "2", "3"],
+            "Сумеречные охотники\Призраки Сумеречного базара": ["1", "2"],
+            "Сумеречные охотники\Древние проклятия": ["1", "2"],
+        }),
+        (BAKKER, "Бэккер", {
+            "Второй Апокалипсис\Князь пустоты": ["1", "2", "3"],
+            "Второй Апокалипсис\Аспект-Император": ["1", "2", "3", "4"],
+        }),
+    ])
+    def test_compiler_builds_one_book_per_cycle(self, records, folder, author_word, expected):
+        groups = {g.series: [b.volume_label for b in g.books]
+                  for g in FB2CompilerService().find_groups(records, LIBRARY_ROOT)
+                  if author_word in g.author and str(g.books[0].abs_path.parent).endswith(folder)}
+        assert groups == expected
+
+    def test_root_with_own_volumes_keeps_the_slot_form(self, records):
+        rec = _by_suffix(records, "Гришэм Джон - Сборник",
+                         "Гришэм. Округ Форд 1. Джейк Брайгенс 3. Время милосердия.fb2")
+        assert rec.proposed_series == "Округ Форд\Джейк Брайгенс"
+        assert rec.series_number == "1"
+
+    @pytest.mark.parametrize("vol, title", [
+        (7, "Хроники Бейна"),
+        (8, "Хроники Академии Сумеречных охотников. Книга 1"),
+        (9, "Хроники Академии Сумеречных охотников. Книга 2"),
+    ])
+    def test_coauthored_book_belongs_to_the_author_named_by_the_folder(self, records, vol, title):
+        """Баг №146: в метаданных 3-4 соавтора («Соавторство» по общему
+        правилу), но папка «Миры Кассандры Клэр» называет одного из них — и
+        имя файла начинается с него же."""
+        rec = _by_suffix(records, self.CLARE, f"Клэр Кассандра - Сумеречные охотники 2. Орудия Смерти {vol}. {title}.fb2")
+        assert rec.proposed_author == "Клэр Кассандра"
+        assert rec.proposed_series == "Сумеречные охотники\Орудия Смерти"
+        assert rec.series_number == str(vol)
+
+    def test_anthology_stays_a_collection(self, records):
+        rec = _by_suffix(records, self.CLARE, "Клэр Кассандра - Стимпанк! (антология).fb2")
+        assert rec.proposed_author == "Сборник"
+
+    @pytest.mark.parametrize("folder, author_word, expected", [
+        (CLARE, "Клэр", {"Сумеречные охотники 1. Адские механизмы", "Сумеречные охотники 2. Орудия Смерти",
+                         "Сумеречные охотники 3. Темные искусства", "Сумеречные охотники 4. Последние часы",
+                         "Сумеречные охотники 5. Призраки Сумеречного базара",
+                         "Сумеречные охотники 6. Древние проклятия"}),
+        (BAKKER, "Бэккер", {"Второй Апокалипсис 1. Князь пустоты", "Второй Апокалипсис 2. Аспект-Император"}),
+    ])
+    def test_compiled_name_keeps_the_reading_order(self, records, folder, author_word, expected):
+        """Имя сборника подцикла — по правилу проекта «Корень. Подцикл», но с
+        номером подцикла из имён файлов: порядок чтения вселенной."""
+        svc = FB2CompilerService()
+        names = {svc._series_to_display(svc._clean_series_name(svc._group_series_for_naming(g)))
+                 for g in svc.find_groups(records, LIBRARY_ROOT)
+                 if author_word in g.author and str(g.books[0].abs_path.parent).endswith(folder)}
+        assert names == expected

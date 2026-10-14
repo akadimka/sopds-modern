@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Кассандра</first-name>
+      <last-name>Клэр</last-name>
+    </author>
+    <book-title>Механический ангел</book-title>
+    <annotation>
+      <p>Получив письмо от пропавшего брата, Тесс Грей приезжает в Англию. Оказавшись в Лондоне, она обнаруживает Нижний Мир, по улицам которого бродят вампиры, могущественные чародеи и оборотни. Письмо брата оказывается ловушкой, и Тесс похищают Темные Сестры, которые используют ее способность превращаться в любого человека и читать чужие мысли. Спасенная из плена Сумеречным охотником, Тесс попадает в сети интриг и с ужасом понимает, что над ним и всеми нефилимами нависла смертельная опасность. Ей предстоит принять непростое решение – освободить брата или вместе с Сумеречными охотниками вступить в битву за спасение мира. Любовь бывает опаснее и страшнее любой магии.</p>
+    </annotation>
+    <keywords>спасение мира,сверхъестественные способности,викторианская Англия,темная магия</keywords>
+    <date value="2010-01-01">2010</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>И.</first-name>
+      <last-name>Панаев</last-name>
+    </translator>
+    <sequence name="Адские механизмы (АСТ)" number="1"/>
+    <sequence name="Сумеречные охотники"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <nickname>On84ly</nickname>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.7</program-used>
+    <date value="2015-10-27">2015-10-27</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=12052663</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>22ea6ce9-7c8b-11e5-b0d0-0025905b9d93</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание fb2 – (On84ly)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Адские Механизмы. Книга I. Механический ангел</book-name>
+    <publisher>АСТ</publisher>
+    <city>Москва</city>
+    <year>2015</year>
+    <isbn>978-5-17-091967-3</isbn>
+    <sequence name="Миры Кассандры Клэр"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

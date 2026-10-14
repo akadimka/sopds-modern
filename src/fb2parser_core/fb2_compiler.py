@@ -25,6 +25,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
+from .evidence import UMBRELLA_ARC_SN_SOURCE
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
 from .keyword_match import contains_any_keyword
 from .roman_numerals import roman_to_int
@@ -208,8 +209,35 @@ class FB2CompilerService:
         идёт в `_clean_series_name`/`_series_to_display` дальше — ни на
         группировку, ни на поиск precompiled-диапазонов это не влияет.
         """
+        series = group.series
+        cycle_n = FB2CompilerService._umbrella_cycle_number(group)
+        if cycle_n is not None:
+            # Баг №145: номер подцикла «зонтика» — порядок чтения вселенной
+            # («Сумеречные охотники 1. Адские механизмы (Трилогия)», «… 2.
+            # Орудия Смерти (…)»); в группировке номера нет — только в имени.
+            root, sub = series.split('\\', 1)
+            series = f'{root}\\{cycle_n}. {sub}'
         display_root = getattr(group, 'display_root', '') or ''
-        return f"{display_root}\\{group.series}" if display_root else group.series
+        return f"{display_root}\\{series}" if display_root else series
+
+    @staticmethod
+    def _umbrella_cycle_number(group) -> Optional[int]:
+        """Номер подцикла «зонтика» для сборника этого подцикла: общий «Корень N.»
+        в именах файлов всех его книг (баг №145). None — не подцикл «зонтика»
+        или номера в именах расходятся."""
+        if '\\' not in group.series or not group.books:
+            return None
+        if not all(getattr(b.record, 'series_number_source', '') == UMBRELLA_ARC_SN_SOURCE for b in group.books):
+            return None
+        root = group.series.split('\\', 1)[0].strip().replace('ё', 'е')
+        root_re = re.compile(re.escape(root) + r'\s+(\d{1,3})\.', re.IGNORECASE)
+        numbers = set()
+        for b in group.books:
+            m = root_re.search(b.abs_path.stem.replace('ё', 'е'))
+            if m is None:
+                return None
+            numbers.add(int(m.group(1)))
+        return numbers.pop() if len(numbers) == 1 else None
 
     @classmethod
     def _clean_series_name(cls, series: str) -> str:
@@ -4268,11 +4296,15 @@ class FB2CompilerService:
         sub_ordinal = 0
         subseries_name = (rec.proposed_series or '').split('\\')[-1].strip()
         if subseries_name:
+            # ё/е: имя подсерии в proposed_series нормализовано («Темные
+            # искусства»), а в имени файла — как есть («Тёмные искусства 1»).
+            def _yo(s: str) -> str:
+                return s.replace('ё', 'е').replace('Ё', 'Е')
             _sub_re = re.compile(
-                re.escape(subseries_name) + r'\s+(\d{1,4})',
+                re.escape(_yo(subseries_name)) + r'\s+(\d{1,4})',
                 re.IGNORECASE | re.UNICODE,
             )
-            _sm = _sub_re.search(stem) or _sub_re.search(rec.file_title or '')
+            _sm = _sub_re.search(_yo(stem)) or _sub_re.search(_yo(rec.file_title or ''))
             if _sm:
                 _sc = int(_sm.group(1))
                 if _sc < 1900:

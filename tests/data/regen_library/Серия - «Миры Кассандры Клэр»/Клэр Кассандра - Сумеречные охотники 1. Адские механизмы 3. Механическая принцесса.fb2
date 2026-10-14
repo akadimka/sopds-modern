@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description>
+  <title-info>
+    
+    
+    <author>
+      <first-name>Кассандра</first-name>
+      <last-name>Клэр</last-name>
+    </author>
+    <book-title>Механическая принцесса</book-title>
+    <annotation>
+      <p>Англия, Лондон, викторианская эпоха. Получив письмо от пропавшего брата, Тесс Грей приезжает в Англию. Оказавшись в Лондоне, она обнаруживает Нижний мир, по улицам которого бродят вампиры, могущественные чародеи и оборотни. Письмо брата оказывается ловушкой, и Тесс попадает в беду. Спастись ей помогают Сумеречные охотники, но тучи снова сгущаются. Целая армия безжалостных роботов создана, чтобы уничтожить Охотников. Таинственный Магистр мечтает заполучить Тесс, ведь она – недостающий элемент темного плана. Уилл и Джем готовы на все ради ее спасения…</p>
+    </annotation>
+    <keywords>спасение мира,викторианская Англия,темное фэнтези / dark fantasy,сверхспособности</keywords>
+    <date value="2013-01-01">2013</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Евгения</first-name>
+      <middle-name>Андреевна</middle-name>
+      <last-name>Фоменко</last-name>
+    </translator>
+    <sequence name="Адские механизмы (АСТ)" number="3"/>
+    <sequence name="Сумеречные охотники"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Александр</first-name>
+      <last-name>Умняков</last-name>
+      <nickname>shum29</nickname>
+      <email>au.shum@gmail.com</email>
+    </author>
+    <program-used>FictionBook Editor Release 2.6.6</program-used>
+    <date value="2016-03-31">31 March 2016</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=17196099</src-url>
+    <src-ocr>Издательский текст </src-ocr>
+    <id>F6348104-4A9A-4803-8CA0-98221858A7A1</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание файла</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Адские Механизмы. Книга III. Механическая принцесса</book-name>
+    <publisher>Издательство АСТ</publisher>
+    <city>М.</city>
+    <year>2016</year>
+    <isbn>978-5-17-092907-8</isbn>
+    <sequence name="Миры Кассандры Клэр"/>
+  </publish-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>

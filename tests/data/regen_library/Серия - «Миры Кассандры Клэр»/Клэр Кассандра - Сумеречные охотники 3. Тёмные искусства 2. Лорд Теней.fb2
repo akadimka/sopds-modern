@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   
+   <author>
+    <first-name>Кассандра</first-name>
+    <last-name>Клэр</last-name>
+   </author>
+   <book-title>Лорд Теней</book-title>
+   <annotation>
+    <p>Эмма Карстаирс наконец отомстила за своих родителей. Она думала, что ей станет легче. Но ей совсем не спокойно. Терзаясь между своим желанием к ее Парабатаю Джулиану и своим желанием защитить его от жестоких последствий отношений между Парабатаями, она стала встречаться с его братом, Марком. Но Марк провел последние пять лет заключенным у Фейри; сможет ли он когда-нибудь вновь стать Сумеречным Охотником?</p>
+    <p>Во дворе фейри неспокойно. Король Неблагого Двора устал от Холодного перемирия и не собирается больше подчиняться требованиям Сумеречных Охотников. На перепутье между требованиями фейри и законами Конклава, Эмма, Джулиан и Марк должны найти способ объединиться и защитить все, что им дорого, пока еще не поздно.</p>
+   </annotation>
+   <date></date>
+   <coverpage>
+    <image l:href="#qPZ6Gtp7jM.jpg"/></coverpage>
+   <lang>ru</lang>
+   <src-lang>en</src-lang>
+   <translator>
+    <first-name>Ксения</first-name>
+    <last-name>Скрябина</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Елена</first-name>
+    <last-name>Драгунова</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Анастасия</first-name>
+    <last-name>Андреева</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Юлия</first-name>
+    <last-name>Сказка</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Ксения</first-name>
+    <last-name>Рождественская</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Дарья</first-name>
+    <last-name>Клименко</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Юлия</first-name>
+    <last-name>Руденко</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <translator>
+    <first-name>Юлия</first-name>
+    <last-name>Родина</last-name>
+    <home-page>vk.com/shadowhunters_rus</home-page>
+   </translator>
+   <sequence name="Темные искусства" number="2"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+   <author>
+    <first-name></first-name>
+    <last-name></last-name>
+    <home-page>www.litlib.net</home-page>
+   </author>
+   <program-used>FictionBook Editor Release 2.6.6</program-used>
+   <date value="2017-11-11">11 November 2017</date>
+   <id>44A2665E-6E29-4200-BEBF-ED65F8FEE2BF</id>
+   <version>1.0</version>
+   <history>
+    <p>1.0 — создание файла</p>
+   </history>
+  </document-info>
+ </description>
+ <body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ <body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body>
+ 
+</FictionBook>

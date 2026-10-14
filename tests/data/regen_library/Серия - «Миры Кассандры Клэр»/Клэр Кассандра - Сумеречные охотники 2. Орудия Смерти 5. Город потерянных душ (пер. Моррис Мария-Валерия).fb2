@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns:l="http://www.w3.org/1999/xlink" xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+<description>
+  <title-info>
+    
+    
+    
+    <author>
+      <first-name>Кассандра</first-name>
+      <last-name>Клэр</last-name>
+    </author>
+    <book-title>Город потерянных душ</book-title>
+    <annotation>
+      <p>Клэри Фрей предстоит отправиться в самое сердце Тьмы. Затеяв опасную игру, она бросает вызов раю и аду, чтобы спасти Джейса, которого она любит больше жизни. Джейс теперь – верный слуга Тьмы и неразрывно связан с Себастьяном, который собирается уничтожить Сумеречных охотников. Только Клэри и семья Джейса считают, что его можно спасти. Будущее Сумеречных охотников зависит от успеха этой миссии. Клэри готова на все ради Джейса, даже если цена, которую придется заплатить за любовь, будет слишком высока.</p>
+    </annotation>
+    <keywords>магические способности,нежить,волшебные существа,охота на нечисть,приключенческое фэнтези</keywords>
+    <date value="2012-01-01">2012</date>
+    <coverpage>
+      <image l:href="#cover.jpg"/>
+    </coverpage>
+    <lang>ru</lang>
+    <src-lang>en</src-lang>
+    <translator>
+      <first-name>Мария-Валерия</first-name>
+      <middle-name>Викторовна</middle-name>
+      <last-name>Моррис</last-name>
+    </translator>
+    <sequence name="Орудия смерти" number="5"/>
+  <genre>Фантастика</genre>
+  </title-info>
+  <document-info>
+    <author>
+      <first-name>Наталия</first-name>
+      <last-name>Цветкова</last-name>
+      <nickname>nvcvet</nickname>
+    </author>
+    <author>
+      <nickname>Colourban</nickname>
+    </author>
+    <program-used>OOoFBTools-2.27 (ExportToFB21), FictionBook Editor Release 2.6.6</program-used>
+    <date value="2019-01-30">30.01.2019</date>
+    <src-url>http://www.litres.ru/pages/biblio_book/?art=6654429</src-url>
+    <src-ocr>Текст предоставлен правообладателем</src-ocr>
+    <id>e2ac7dd8-aa07-11e3-a340-0025905a0812</id>
+    <version>1.0</version>
+    <history>
+      <p>v 1.0 – создание FB2 – (nvcvet)</p>
+    </history>
+    <publisher>
+      <first-name>Литагент</first-name>
+      <last-name>АСТ</last-name>
+      <id>c9a05514-1ce6-11e2-86b3-b737ee03444a</id>
+    </publisher>
+  </document-info>
+  <publish-info>
+    <book-name>Орудия смерти. Город потерянных душ : [роман] / К. Клэр</book-name>
+    <publisher>АСТ: Mainstream</publisher>
+    <city>Москва</city>
+    <year>2019</year>
+    <isbn>978-5-17-102975-3</isbn>
+    <sequence name="Миры Кассандры Клэр"/>
+  </publish-info>
+  <custom-info info-type="">Cassandra Clare THE MORTAL INSTRUMENTS City of Lost Souls Copyright © 2012 by Cassandra Clare, LLC © М. Моррис, перевод на русский язык © ООО «Издательство АСТ», 2019 Дизайн обложки Екатерины Климовой</custom-info>
+</description>
+<body><title><p>Fixture stub 1</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body><body name="notes"><title><p>Fixture stub 2</p></title><p>Тестовый текст для fixture-набора regen_csv. Не является реальным содержимым книги.</p></body></FictionBook>
