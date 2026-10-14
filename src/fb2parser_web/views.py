@@ -922,6 +922,7 @@ def server_restart(request):
         )
     import pathlib
     import threading
+    import time
     manage_py = pathlib.Path(__file__).parent.parent / "manage.py"
     def _touch():
         time.sleep(0.3)
@@ -3088,7 +3089,7 @@ def sync_genre_conflict_resolve(request):
     })
 
 
-def _run_compile_pass(target_path, on_log, label, filter_paths=None):
+def _run_compile_pass(target_path, on_log, label, filter_paths=None, pending=None):
     """Скомпилировать серии, найденные в target_path (папка-источник или библиотека).
 
     ``compile_group`` пишет результат рядом с исходными файлами группы (см.
@@ -3102,6 +3103,8 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
         label: подпись прохода для лога ("до перемещения" / "по библиотеке").
         filter_paths: опциональный набор разрешённых подпапок — ограничивает
             обработку только ими (как в synchronize()).
+        pending: PendingCompile — после завершённой компиляции из него
+            убираются filter_paths (баг №150); при «Стоп» или сбое остаются.
 
     Returns:
         Tuple[int, int]: (успешно скомпилировано групп, ошибок).
@@ -3131,6 +3134,8 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
             filter_paths=filter_paths, progress_callback=_progress,
         )
         on_log(f"✅ Компиляция завершена: {result['ok']} групп, ошибок: {result['fail']}")
+        if pending is not None and filter_paths:
+            pending.discard(filter_paths)
         return result["ok"], result["fail"]
     except InterruptedError:
         on_log("⏹ Автокомпиляция остановлена пользователем")
@@ -3143,6 +3148,7 @@ def _run_compile_pass(target_path, on_log, label, filter_paths=None):
 def _run_sync_thread():
     from django import db
 
+    from fb2parser_core.pending_compile import PendingCompile
     from fb2parser_core.sync_lock import SyncBusy, sync_lock
 
     from .fb2parser_bridge import _sync_lock_path, get_sync_service
@@ -3175,6 +3181,11 @@ def _run_sync_thread():
             sync_job["log"] = log_lines[-200:]
 
         compiled_groups = compile_errors = 0
+        # Папки, ждущие автокомпиляции, — на диске, а не только в памяти
+        # процесса: компиляцию, не доделанную прерванной синхронизацией,
+        # доделывает следующая (баг №150).
+        pending = PendingCompile.beside(_sync_lock_path()) if auto_compile else None
+        svc.pending_compile = pending
 
         with sync_lock(_sync_lock_path(), "web"):
             stats = dict(svc.synchronize(
@@ -3183,8 +3194,11 @@ def _run_sync_thread():
                 allowed_folders=allowed_folders,
             ) or {})
 
-            files_moved = stats.get("files_moved", 0)
-            if auto_compile and files_moved > 0:
+            touched_dirs = set(stats.get("touched_author_dirs") or ())
+            leftover = (pending.load() - touched_dirs) if pending else set()
+            if leftover:
+                on_log(f"Доделываю автокомпиляцию прерванной синхронизации: авторов — {len(leftover)}")
+            if auto_compile and (touched_dirs or leftover):
                 # Компилируем ПОСЛЕ перемещения в библиотеку — так find_groups()
                 # видит все тома серии разом, в т.ч. одиночные тома, лежавшие в
                 # библиотеке ещё до этой синхронизации, и корректно решает,
@@ -3209,10 +3223,9 @@ def _run_sync_thread():
                 # нужно. При синхронизации 5-10 файлов одного автора это сотни, а
                 # не тысячи файлов на прогон, если в библиотеке есть другие,
                 # никак не связанные авторы.
-                touched_dirs = stats.get("touched_author_dirs") or set()
                 ok, fail = _run_compile_pass(
                     svc.library_path, on_log, "по затронутым авторам",
-                    filter_paths=touched_dirs or None,
+                    filter_paths=touched_dirs | leftover, pending=pending,
                 )
                 compiled_groups += ok
                 compile_errors += fail

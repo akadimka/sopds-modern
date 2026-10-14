@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from .genre_voting import BookEvidence, GenreVoter, UnitDecision
 from .library_memory import LibraryMemory, is_book_file, read_evidence
+from .pending_compile import PendingCompile
 from .settings_manager import SettingsManager
 from .sync_lock import SyncBusy, sync_lock
 
@@ -464,11 +465,15 @@ class AutosyncService:
             from .synchronization import SynchronizationService
             sync = SynchronizationService(self.config_path)
         sync.last_scan_path = root
+        # Папки авторов, ждущие автокомпиляции, — на диске: если процесс до
+        # компиляции не доживёт, её доделает следующий прогон (баг №150).
+        pending = PendingCompile.beside(self.lock_path)
+        sync.pending_compile = pending
         stats = sync.synchronize(log_callback=_log.info, allowed_folders=batches, hold_files=hold | failed) or {}
 
         # 3) Автокомпиляция серий у затронутых авторов — как в ручной синхронизации.
-        touched = stats.get("touched_author_dirs") or set()
-        if stats.get("files_moved") and touched:
+        touched = set(stats.get("touched_author_dirs") or ()) | pending.load()
+        if touched:
             if progress:
                 progress(f"Автокомпиляция ({len(touched)} авторов)…")
             compile_fn = self._compile_fn
@@ -478,6 +483,8 @@ class AutosyncService:
                 compile_fn(str(sync.library_path), config_path=self.config_path, filter_paths=touched)
             except Exception:
                 _log.exception("autosync: сбой автокомпиляции")
+            else:
+                pending.discard(touched)
         return stats, failed
 
     @staticmethod

@@ -185,6 +185,11 @@ class SynchronizationService:
         # «Стоп» во время переноса файлов: перенос прерывается после текущего
         # файла, но запись в БД и чистка папок доводятся до конца (см. synchronize).
         self._stop_requested = False
+        # Если задан (fb2parser_core.pending_compile.PendingCompile), папка
+        # автора записывается в него при переносе первой книги — чтобы
+        # автокомпиляцию можно было доделать, даже если этот процесс до неё
+        # не доживёт (баг №150).
+        self.pending_compile = None
         
         # Statistics tracking
         # Смешанные значения (счётчики, списки заметок, множества путей).
@@ -1601,7 +1606,11 @@ class SynchronizationService:
                     shutil.move(str(source_file), str(target_file))
                     self._log("  ✓ Успешно перемещён")
                     self.stats['files_moved'] += 1
-                    self.stats['touched_author_dirs'].add(str(self.library_path / genre / author))
+                    author_dir = str(self.library_path / genre / author)
+                    if author_dir not in self.stats['touched_author_dirs']:
+                        self.stats['touched_author_dirs'].add(author_dir)
+                        if self.pending_compile is not None:
+                            self.pending_compile.add({author_dir})
 
                     # Patch FB2 metadata: author, series, book-title.
                     # Автор: перезаписываем только если:
