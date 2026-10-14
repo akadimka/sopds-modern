@@ -37,10 +37,39 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _win_pid_alive(pid: int) -> bool:
+    """Windows: процесс есть и ещё не завершился (код выхода STILL_ACTIVE).
+    Раньше на Windows всегда True — зависшее состояние синхронизации
+    («идёт», а процесса нет) не снималось никогда (баг №147)."""
+    import ctypes
+    from ctypes import wintypes
+
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    STILL_ACTIVE = 259
+    ERROR_ACCESS_DENIED = 5
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    if not handle:
+        # нет доступа — процесс существует, но чужой; иначе — его нет
+        return ctypes.get_last_error() == ERROR_ACCESS_DENIED
+    try:
+        code = wintypes.DWORD()
+        if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+            return True
+        return code.value == STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)
+
+
 def _pid_alive(pid: int) -> bool:
     if sys.platform == "win32":
         # os.kill(pid, 0) на Windows не проверяет, а завершает процесс.
-        return True
+        try:
+            return _win_pid_alive(pid)
+        except (OSError, AttributeError):
+            return True
     try:
         os.kill(pid, 0)
     except ProcessLookupError:

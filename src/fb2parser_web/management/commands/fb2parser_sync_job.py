@@ -20,5 +20,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from fb2parser_web.views import _run_sync_thread, sync_job
 
+        state = sync_job.get()
+        if not state.get("running") or not state.get("allowed_folders"):
+            # Баг №147: кэш этого процесса не общий с веб-сервером (LocMemCache)
+            # или задача уже снята — параметров нет, синхронизировать нечего.
+            self.stderr.write("fb2parser_sync_job: no running sync job with selected folders in the shared "
+                              "cache — refusing to synchronize anything.")
+            return
         sync_job.update(pid=os.getpid())
         _run_sync_thread()

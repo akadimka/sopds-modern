@@ -3153,6 +3153,13 @@ def _run_sync_thread():
         scan_path = _state.get("scan_path")
         allowed_folders = _state.get("allowed_folders")
         auto_compile = _state.get("auto_compile", False)
+        # Баг №147: без выбранных папок synchronize() берёт ВСЮ исходную
+        # папку — так дочерний процесс с пустым кэшем унёс в библиотеку весь
+        # Test1. Окно синхронизации без папок не запускает, значит, их нет
+        # только если параметры потерялись: ничего не трогаем.
+        if not _state.get("running") or not allowed_folders:
+            raise RuntimeError(str(_("Synchronization parameters were not received (no folders selected) — "
+                                     "nothing was moved.")))
         if scan_path:
             from pathlib import Path as _Path
             svc.last_scan_path = _Path(scan_path)
@@ -3337,6 +3344,15 @@ def _spawn_sync_process():
 
     from django.conf import settings as dj_settings
 
+    if not _cache_shared_between_processes():
+        # Баг №147: кэш в памяти процесса (LocMemCache — локальная разработка,
+        # тесты). Дочерний процесс получил бы СВОЙ пустой кэш: не увидел бы
+        # выбранных папок (и синхронизировал бы всё подряд), а этот процесс —
+        # ни прогресса, ни завершения. Здесь синхронизация — потоком, как до
+        # бага №144: таймаутов gunicorn в такой конфигурации нет.
+        threading.Thread(target=_run_sync_thread, daemon=True).start()
+        return
+
     base = Path(dj_settings.BASE_DIR)
     kwargs = {"cwd": str(base), "stdin": subprocess.DEVNULL,
               "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
@@ -3351,6 +3367,15 @@ def _spawn_sync_process():
     sync_job.update(pid=proc.pid)
     # Прибрать завершившийся процесс, чтобы он не висел «зомби» у этого воркера.
     threading.Thread(target=proc.wait, daemon=True).start()
+
+
+def _cache_shared_between_processes() -> bool:
+    """Видят ли другие процессы этот кэш (memcached/redis/БД/файлы — да;
+    LocMemCache и DummyCache — нет, у каждого процесса своя копия)."""
+    from django.core.cache import caches
+    from django.core.cache.backends.dummy import DummyCache
+    from django.core.cache.backends.locmem import LocMemCache
+    return not isinstance(caches["default"], (LocMemCache, DummyCache))
 
 
 def _reap_dead_sync_job():
