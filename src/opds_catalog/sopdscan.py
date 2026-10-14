@@ -30,6 +30,7 @@ class opdsScanner:
         self.t3 = self.t1
         self.books_added = 0
         self.books_skipped = 0
+        self.books_refreshed = 0
         self.books_deleted = 0
         self.arch_scanned = 0
         self.arch_skipped = 0
@@ -59,6 +60,7 @@ class opdsScanner:
         self.t2 = datetime.timedelta(seconds=time.time())
         self.logger.info("Books added      : " + str(self.books_added))
         self.logger.info("Books skipped    : " + str(self.books_skipped))
+        self.logger.info("Books refreshed  : " + str(self.books_refreshed))
         self.logger.info("Bad books        : " + str(self.bad_books))
         if config.SOPDS_DELETE_LOGICAL:
             self.logger.info("Books deleted    : " + str(self.books_deleted))
@@ -293,7 +295,23 @@ class opdsScanner:
             self.logger.debug(f"Attempt to add book {rel_path}/{name}")
             try:
                 existing_book = opdsdb.findbook(name, rel_path, 1)
-                if existing_book is not None and not existing_book.annotation:
+                if existing_book is not None and file_size and existing_book.filesize != file_size:
+                    # Файл на месте, но изменился (fb2parser поправил теги и т.п.) —
+                    # название и аннотация в каталоге перечитываются из файла.
+                    self.logger.info(f"Book {name} changed on disk, refreshing metadata")
+                    try:
+                        book_data = create_bookfile(file, name)
+                    except Exception as err:
+                        book_data = None
+                        self.logger.warning(f"Could not refresh metadata for {name}: {err}")
+                    if book_data:
+                        title = book_data.title.strip(strip_symbols) if book_data.title else n
+                        ann = book_data.description or ""
+                        if isinstance(ann, bytes):
+                            ann = ann.decode("utf-8")
+                        opdsdb.refreshbook(existing_book, title, ann.strip(strip_symbols), file_size)
+                        self.books_refreshed += 1
+                elif existing_book is not None and not existing_book.annotation:
                     # Книга уже в БД, но аннотация пустая — попробуем обновить
                     self.logger.info(f"Book {name} exists without annotation, refreshing metadata")
                     try:

@@ -447,6 +447,17 @@ def addbook(
     return book
 
 
+def refreshbook(book, title, annotation, size):
+    """Обновить у книги то, что читается из файла: файл на диске изменился."""
+    book.title = title[:SIZE_BOOK_TITLE]
+    book.search_title = title.upper()[:SIZE_BOOK_TITLE]
+    book.lang_code = getlangcode(title)
+    if annotation:
+        book.annotation = p(annotation, SIZE_BOOK_ANNOTATION)
+    book.filesize = size
+    book.save(update_fields=["title", "search_title", "lang_code", "annotation", "filesize"])
+
+
 def addauthor(full_name):
     author, created = Author.objects.get_or_create(
         full_name=full_name[:SIZE_AUTHOR_NAME],
