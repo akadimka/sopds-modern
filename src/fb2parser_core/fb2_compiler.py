@@ -850,28 +850,41 @@ class FB2CompilerService:
         # плоским корнем в бакет-группировке ниже — итог: ОДНА серия
         # "Отряд «Сигма»" 1-17, где позиция 8 — сама тетралогия внутри.
         _covered_positions: Dict[Tuple[str, str], set] = {}
+        _unnumbered_subs: set = set()
+        _parent_positions: Dict[Tuple[str, str], set] = {}
         for rec in records:
             _series_r = (rec.proposed_series or '').strip()
+            _author_r = (rec.proposed_author or '').strip()
+            _sn_r = (rec.series_number or '').split('.')[0].strip()
             if '\\' not in _series_r:
+                if _sn_r.isdigit():
+                    _parent_positions.setdefault(
+                        (_norm_key(_author_r), _punct_norm(_series_r)), set()).add(int(_sn_r))
                 continue
             _root_r = _series_r.split('\\', 1)[0].strip()
             if re.sub(r'\s+\d{1,4}(?:\s*[-–—]\s*\d{1,4})?\s*$', '', _root_r).strip() != _root_r:
                 continue  # корень уже с числом — не наш случай (отдельная логика выше)
-            _author_r = (rec.proposed_author or '').strip()
-            _sn_r = (rec.series_number or '').split('.')[0].strip()
-            if not _sn_r or not _sn_r.isdigit():
-                continue
             _slot_key = (_norm_key(_author_r), _series_r)
+            if not _sn_r or not _sn_r.isdigit():
+                _unnumbered_subs.add(_slot_key)
+                continue
             _covered_positions.setdefault(_slot_key, set()).add(int(_sn_r))
         # Только "однослотовые" под-циклы (ВСЕ записи делят один номер) считаются
         # гостевой вставкой — многопозиционная подсерия (своя нумерация 1..N)
         # остаётся настоящим самостоятельным пробелом, не закрытием позиции.
+        # Баг №154: и только в СВОБОДНЫЙ слот родителя, и только если номер
+        # есть у всех книг подсерии — побочный цикл «Царь зверей\Мир Царя
+        # зверей» («1. На полную мощность» + сборник рассказов без номера)
+        # выглядел гостем на позиции 1, занятой «1. Царь зверей».
         _single_slot_by_root: Dict[Tuple[str, str], set] = {}
         for (_author_k2, _series_k2), _positions in _covered_positions.items():
-            if len(_positions) != 1:
+            if len(_positions) != 1 or (_author_k2, _series_k2) in _unnumbered_subs:
                 continue
             _root_k2 = _series_k2.split('\\', 1)[0].strip()
-            _single_slot_by_root.setdefault((_author_k2, _punct_norm(_root_k2)), set()).update(_positions)
+            _root_key = (_author_k2, _punct_norm(_root_k2))
+            if _positions & _parent_positions.get(_root_key, set()):
+                continue
+            _single_slot_by_root.setdefault(_root_key, set()).update(_positions)
 
         buckets: Dict[Tuple[str, str], List] = {}
         for rec in records:
@@ -1086,11 +1099,14 @@ class FB2CompilerService:
                         break
             # Дедупликация по имени файла (case-insensitive): из пары с одинаковым
             # именем оставляем больший файл в books, меньший → duplicate_paths.
+            # Только на одной позиции группы: «3. Универсал/1. Часть первая» и
+            # «4. Демон Разума/1. Часть первая» (позиции 3.1 и 4.1) — первые
+            # тома разных подциклов, не копии (баг №152).
             if not g.cleanup_only and g.books:
-                _seen: dict = {}  # lower_name → CompilationBook (наибольший)
+                _seen: dict = {}  # (lower_name, sort_key) → CompilationBook (наибольший)
                 _name_dups: list = []
                 for _b in g.books:
-                    _key = _b.abs_path.name.lower()
+                    _key = (_b.abs_path.name.lower(), tuple(_b.sort_key))
                     if _key not in _seen:
                         _seen[_key] = _b
                     else:
@@ -2752,6 +2768,36 @@ class FB2CompilerService:
         return None
 
     @classmethod
+    def _innermost_volume_number(cls, title: str, stem: str) -> Optional[int]:
+        """Номер самой вложенной части, если ключевых слов тома в названии
+        несколько: «Книга 2. Конвейер душ. Часть 1» → 1, «Жестокая игра. Книга
+        5. Древние боги. Том 2» → 2; одно ключевое слово или ни одного — None.
+
+        Баг №153: _extract_inline_volume_number берёт ПЕРВОЕ число («Книга
+        2», «книга 5») — у частей одного тома оно общее, и части сталкивались
+        на одной позиции (одна уходила в дубли).
+
+        Только вложенность РАЗНЫХ слов («книга → часть», «том → часть»):
+        повтор одного («Том 1. Том 2», «ТОМ 1 и ТОМ 2») — два тома в одном
+        файле, диапазон, а не часть второго тома.
+        """
+        for text in (title, stem):
+            if not text:
+                continue
+            hits = [(re.match(r'[^\W\d_]+', m.group(0).lower()).group(0), int(m.group(1)))
+                    for m in cls._VOLUME_KEYWORDS_RE.finditer(unicodedata.normalize('NFKC', text))]
+            hits = [h for h in hits if h[1] <= 500]
+            if len(hits) >= 2:
+                return hits[-1][1] if hits[-1][0] != hits[0][0] else None
+        return None
+
+    @staticmethod
+    def _number_in_stem(n: int, stem: str) -> bool:
+        """Число n есть в имени файла (в т.ч. с ведущими нулями: «05»)."""
+        return bool(re.search(r'\b' + str(n) + r'\b', stem)
+                    or re.search(r'(?<!\d)0*' + str(n) + r'(?!\d)', stem))
+
+    @classmethod
     def _extract_inline_volume_range(cls, title: str, stem: str) -> Optional[Tuple[int, int]]:
         """Извлечь диапазон томов «Том V-VI», «Том VII — VIII» и т.п. — баг
         №116: файл-издание, физически объединяющий несколько томов.
@@ -4012,6 +4058,22 @@ class FB2CompilerService:
                         )
                         if _rr is not None and _rr[0] == roman_inline:
                             _roman_range_end = _rr[1]
+                    # Баг №153: «3. … Книга 2. Конвейер душ. Часть 1» — номер
+                    # позиции в имени файла, внутренний — последнее ключевое
+                    # слово («Часть 1»), а не первое («Книга 2», общее у частей).
+                    _innermost = self._innermost_volume_number(
+                        stem if _ft2_is_series else (_ft2 or stem), stem
+                    )
+                    if (_innermost is not None and _roman_range_end is None
+                            and self._number_in_stem(meta_num, stem)):
+                        if _innermost != meta_num:
+                            return (
+                                (0, meta_num, _innermost, 0),
+                                'series_number_inner_tom',
+                                False,
+                                f'{meta_num}.{_innermost}',
+                            )
+                        roman_inline = None
                     if roman_inline is not None and roman_inline != meta_num:
                         # Если meta_num явно присутствует в стеме — доверяем метаданным.
                         # Иначе "Аватар Х. Часть 2" с meta_num=7 даёт roman_inline=2 →
@@ -4134,6 +4196,10 @@ class FB2CompilerService:
                 _inline_tom = self._extract_inline_volume_number(
                     rec.file_title or stem, stem
                 )
+                # Баг №153: несколько ключевых слов — внутренний том по последнему.
+                _innermost = self._innermost_volume_number(rec.file_title or stem, stem)
+                if _innermost is not None and self._number_in_stem(fn_num_from_sn, stem):
+                    _inline_tom = None if _innermost == fn_num_from_sn else _innermost
                 if _inline_tom is not None and _inline_tom != fn_num_from_sn:
                     # Баг №118: приведённый выше комментарий предполагает, что
                     # fn_num_from_sn ВСЕГДА подтверждён в имени файла ("12.
