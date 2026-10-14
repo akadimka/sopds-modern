@@ -19,6 +19,9 @@ child) — docs/quality-roadmap.md, баг №109.
 ("Рубеж\\Сирийский рубеж (т. 5-8) ⊂ Рубеж (1-11)") по-прежнему работает
 корректно: там подсерия и родитель реально делят одни и те же файлы,
 поэтому хэши совпадают.
+
+Баг №151: подавление требует ещё и совпадения по тексту — у «тех же
+файлов» в этом тесте и текст тот же (`text=`).
 """
 from pathlib import Path
 
@@ -29,15 +32,19 @@ _STUB_FB2 = """<?xml version="1.0" encoding="utf-8"?>
 <FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
 <description><title-info><author><first-name>Тест</first-name><last-name>Автор</last-name></author>
 <book-title>{title}</book-title></title-info></description>
-<body><title><p>{title}</p></title><section><p>Текст.</p></section></body>
+<body><title><p>{title}</p></title><section><p>{text}</p></section></body>
 </FictionBook>
 """
 
 
-def _write(tmp_path: Path, rel_path: str, title: str) -> str:
+def _body(key: str) -> str:
+    return " ".join(f"Книга {key}, фраза {i}: герой идёт дальше по дороге." for i in range(50))
+
+
+def _write(tmp_path: Path, rel_path: str, title: str, text: str = "Текст.") -> str:
     p = tmp_path / rel_path
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(_STUB_FB2.format(title=title), encoding="utf-8")
+    p.write_text(_STUB_FB2.format(title=title, text=text), encoding="utf-8")
     return rel_path
 
 
@@ -77,7 +84,7 @@ class TestParentChildSuppressionRequiresContentHashMatch:
     def test_genuine_shared_content_subseries_still_suppressed(self, tmp_path):
         # "Рубеж" (родитель, т. 1-3) — hash shared-hash-1/2/3.
         parent_recs = [
-            _rec(_write(tmp_path, f"Рубеж\\{n}. Р{n}.fb2", f"Р{n}"),
+            _rec(_write(tmp_path, f"Рубеж\\{n}. Р{n}.fb2", f"Р{n}", _body(f"Р{n}")),
                  f"Р{n}", "Рубеж", str(n), f"shared-hash-{n}")
             for n in (1, 2, 3)
         ]
@@ -90,7 +97,7 @@ class TestParentChildSuppressionRequiresContentHashMatch:
         # Рубеж (1-11)": подсерия физически содержит те же файлы, что и
         # часть родителя, просто под другим именем/нумерацией).
         child_recs = [
-            _rec(_write(tmp_path, f"Рубеж\\Сирийский рубеж\\{n}. С{n}.fb2", f"С{n}"),
+            _rec(_write(tmp_path, f"Рубеж\\Сирийский рубеж\\{n}. С{n}.fb2", f"С{n}", _body(f"Р{n - 3}")),
                  f"С{n}", "Рубеж\\Сирийский рубеж", str(n), f"shared-hash-{n - 3}")
             for n in (5, 6)
         ]

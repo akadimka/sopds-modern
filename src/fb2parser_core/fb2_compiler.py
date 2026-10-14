@@ -1199,6 +1199,32 @@ class FB2CompilerService:
                 return False
         return True
 
+    def _group_text_covered(self, small: CompilationGroup, large: CompilationGroup) -> bool:
+        """Текст каждой книги `small` есть в книгах `large` (не меньше
+        _DUPLICATE_MIN_COVERAGE) — `small` можно целиком отдать в дубли.
+
+        Баг №151: `_suppress_covered_groups` идёт после страховки №141 и
+        подавлял группу по content_hash (первые 256 КБ) или по совпадению
+        названий у 75% книг — оставшиеся 25%, уникальные книги, удалялись, как
+        и книги с теми же названиями, но другим текстом. Файла нет — удалять
+        нечего, судить не по чему (как в _verify_duplicate_paths).
+        """
+        covered_by: set = set()
+        for b in large.books:
+            covered_by |= self._text_shingles(b.abs_path)
+        for b in small.books:
+            if not b.abs_path.exists():
+                continue
+            own = self._text_shingles(b.abs_path)
+            share = len(own & covered_by) / len(own) if own else 0.0
+            if not own or share < self._DUPLICATE_MIN_COVERAGE:
+                self._log(
+                    f"  ⚠ «{small.series}» не подавлена группой «{large.series}»: текст "
+                    f"{b.abs_path.name} есть в ней лишь на {share:.0%}"
+                )
+                return False
+        return True
+
     def _verify_duplicate_paths(self, g: CompilationGroup, work_dir: Path, rec_by_path: dict) -> bool:
         """Страховка: «дубль на удаление» — только файл, чей текст действительно
         есть в остающихся файлах группы (не меньше _DUPLICATE_MIN_COVERAGE).
@@ -1407,7 +1433,7 @@ class FB2CompilerService:
                         if _small.series.startswith(_large.series + '\\'):
                             _sh, _lh = _hashes(_small), _hashes(_large)
                             _covered = bool(_sh) and bool(_lh) and _sh <= _lh
-                            if _covered:
+                            if _covered and self._group_text_covered(_small, _large):
                                 _small.cleanup_only = True
                                 _small.duplicate_paths = [b.abs_path for b in _small.books]
                                 _small.kept_paths = []
@@ -1437,7 +1463,7 @@ class FB2CompilerService:
                                 if _small.books and _matches / len(_small.books) >= 0.75:
                                     _covered = True
 
-                            if _covered:
+                            if _covered and self._group_text_covered(_small, _large):
                                 _small.cleanup_only = True
                                 _small.duplicate_paths = [b.abs_path for b in _small.books]
                                 _small.kept_paths = []
