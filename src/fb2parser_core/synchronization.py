@@ -1630,6 +1630,10 @@ class SynchronizationService:
                     if derived:
                         if self._is_title_erroneous(record.file_title, record.proposed_author):
                             patch_title = derived
+                        elif self._title_with_series_prefix(record.file_title, derived):
+                            # Баг №148: «Серия N. Название» из имени файла — это
+                            # настоящее название с приставкой серии, не замена ему.
+                            patch_title = None
                         elif (record.file_title or '').strip().lower() != derived.lower():
                             patch_title = derived
                     self._patch_fb2_tags(
@@ -1637,6 +1641,8 @@ class SynchronizationService:
                         patch_author,
                         record.proposed_series or "",
                         patch_title,
+                        series_number=record.series_number or None,
+                        root_sequence=self._umbrella_root_sequence(record, source_file),
                     )
 
                     # Update record with new path (relative to library_path)
@@ -1972,9 +1978,90 @@ class SynchronizationService:
             parts = stem.split(' - ', 1)
             candidate = parts[1].strip()
             if candidate:
-                return candidate
+                return SynchronizationService._strip_series_prefix(candidate, record.proposed_series)
 
         return stem.strip() if stem.strip() else None
+
+    @staticmethod
+    def _strip_series_prefix(title: str, series: Optional[str]) -> str:
+        """«Серия N. Название» → «Название» по известной серии записи (и её
+        подсерии: «Сумеречные охотники 1. Адские механизмы 2. Механический
+        ангел» → «Механический ангел»). Баг №148: приставка уходила в <book-title>."""
+        parts = [p.strip() for p in (series or '').split('\\') if p.strip()]
+        result = title
+        changed = True
+        while changed and parts:
+            changed = False
+            for part in parts:
+                m = re.match(re.escape(part.replace('ё', 'е')) + r'\s+\d{1,4}(?:\s*[-–—]\s*\d{1,4})?\s*[.:]\s+',
+                             result.replace('ё', 'е'), re.IGNORECASE)
+                if m and m.end() < len(result):
+                    result = result[m.end():].strip()
+                    changed = True
+        return result or title
+
+    class _Span:
+        def __init__(self, start: int, end: int, tag: str):
+            self._s, self._e, self._tag = start, end, tag
+
+        def start(self) -> int:
+            return self._s
+
+        def end(self) -> int:
+            return self._e
+
+        def group(self, _n: int = 0) -> str:
+            return self._tag
+
+    @classmethod
+    def _sequence_element(cls, text: str, name_re: Optional[str] = None):
+        """Первый элемент <sequence> ЦЕЛИКОМ — с вложенными <sequence> и
+        закрывающим тегом (баг №148: заменялся только открывающий тег
+        «<sequence name="А"><sequence name="Б"/></sequence>», и в файле
+        оставался лишний </sequence> — FB2 становился некорректным XML).
+        name_re — только элемент с таким именем (regex, уже экранированный).
+        Возвращает объект со start()/end()/group(0) (открывающий тег) или None."""
+        name_part = (r'[^>]*name\s*=\s*["\']' + name_re + r'["\']') if name_re else ''
+        m = re.search(r'<sequence\b' + name_part + r'[^>]*?(/?)\s*>', text, re.IGNORECASE)
+        if not m:
+            return None
+        if m.group(1) == '/':
+            return cls._Span(m.start(), m.end(), m.group(0))
+        depth, pos = 1, m.end()
+        for t in re.finditer(r'<(/?)sequence\b[^>]*?(/?)\s*>', text[pos:], re.IGNORECASE):
+            if t.group(1) == '/':
+                depth -= 1
+            elif t.group(2) != '/':
+                depth += 1
+            if depth == 0:
+                return cls._Span(m.start(), pos + t.end(), m.group(0))
+        return cls._Span(m.start(), m.end(), m.group(0))  # без закрывающего — только тег
+
+    @staticmethod
+    def _title_with_series_prefix(file_title: str, derived: str) -> bool:
+        """Название из имени файла = настоящее название с приставкой серии:
+        «Власть пса 1. Власть пса», «Сумеречные охотники 1. Адские механизмы 1.
+        Механический ангел» при <book-title> «Механический ангел» (баг №148).
+        Раньше такая строка записывалась в <book-title> вместо названия."""
+        title = (file_title or '').strip().lower().replace('ё', 'е')
+        cand = (derived or '').strip().lower().replace('ё', 'е')
+        if not title or len(cand) <= len(title) or not cand.endswith(title):
+            return False
+        prefix = cand[:-len(title)]
+        return bool(re.search(r'\d+\s*[.\-–—:]?\s*$', prefix))
+
+    @staticmethod
+    def _umbrella_root_sequence(record, source_file: Path) -> Optional[Tuple[str, int]]:
+        """(корень, номер подцикла) для тома подцикла «зонтика» — номер из
+        исходного имени файла «Корень N. Подцикл M. …» (баг №148); иначе None."""
+        from .evidence import UMBRELLA_ARC_SN_SOURCE
+        series = record.proposed_series or ''
+        if record.series_number_source != UMBRELLA_ARC_SN_SOURCE or '\\' not in series:
+            return None
+        root = series.split('\\', 1)[0].strip()
+        m = re.search(re.escape(root.replace('ё', 'е')) + r'\s+(\d{1,3})\.',
+                      source_file.stem.replace('ё', 'е'), re.IGNORECASE)
+        return (root, int(m.group(1))) if m else None
 
     @staticmethod
     def _is_title_erroneous(file_title: str, proposed_author: str) -> bool:
@@ -2036,8 +2123,16 @@ class SynchronizationService:
         proposed_author: Optional[str],
         proposed_series: str,
         proposed_title: Optional[str] = None,
+        series_number: Optional[str] = None,
+        root_sequence: Optional[Tuple[str, int]] = None,
     ) -> None:
         """Overwrite <author>, <sequence> and <book-title> tags in a FB2 file.
+
+        series_number — номер тома в серии (тот же, что «т. N» в новом имени
+        файла); без него сохраняется номер первой исходной <sequence>.
+        root_sequence — (корень, номер подцикла) для подцикла «зонтика»
+        («Сумеречные охотники», 1): пишется отдельной <sequence>, чтобы номер
+        подцикла пережил переименование файла (баг №148).
 
         The file is read and written back with its **original** encoding
         (detected from the XML declaration or trial-decoded).
@@ -2166,11 +2261,18 @@ class SynchronizationService:
 
             # ---- 2. patch series tag ----
             if proposed_series:
-                seq_m = re.search(r'<sequence\b[^>]*/?\s*>', ti_body, re.IGNORECASE)
+                seq_m = self._sequence_element(ti_body)
 
-                # preserve existing <number> attribute if any
+                # Номер — тот, под которым том лежит в библиотеке («т. N» в имени
+                # файла). Раньше всегда сохранялся номер ПЕРВОЙ исходной
+                # <sequence>, а она часто про другую (под)серию: «… Хроники
+                # Академии. Книга I (сборник)» — том 8 «Орудий Смерти», но
+                # number="1"; в библиотеке метаданные спорили с именем файла
+                # (баг №148). Без номера — сохраняем исходный, как раньше.
                 number_attr = ''
-                if seq_m:
+                if series_number:
+                    number_attr = f' number="{_html_mod.escape(series_number)}"'
+                elif seq_m:
                     num_m = re.search(
                         r'number\s*=\s*["\']([^"\']*)["\']',
                         seq_m.group(0), re.IGNORECASE,
@@ -2183,8 +2285,23 @@ class SynchronizationService:
                 new_seq = f'<sequence name="{safe_series}"{number_attr}/>'
                 if seq_m:
                     ti_body = ti_body[:seq_m.start()] + new_seq + ti_body[seq_m.end():]
+                    insert_after = seq_m.start() + len(new_seq)
                 else:
                     ti_body = ti_body.rstrip() + '\n    ' + new_seq + '\n  '
+                    insert_after = ti_body.rfind(new_seq) + len(new_seq)
+                if root_sequence:
+                    # Остальные <sequence> с именем корня (обычно без номера)
+                    # убираем целиком — иначе в файле два противоречащих корня.
+                    root_name, root_n = root_sequence
+                    root_esc = re.escape(_html_mod.escape(root_name))
+                    head, tail = ti_body[:insert_after], ti_body[insert_after:]
+                    while True:
+                        m = self._sequence_element(tail, name_re=root_esc)
+                        if not m:
+                            break
+                        tail = tail[:m.start()] + tail[m.end():]
+                    ti_body = (head + f'\n    <sequence name="{_html_mod.escape(root_name)}" number="{root_n}"/>'
+                               + tail)
 
             # ---- 3. patch book-title tag ----
             if proposed_title:

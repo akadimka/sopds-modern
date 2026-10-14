@@ -209,35 +209,69 @@ class FB2CompilerService:
         идёт в `_clean_series_name`/`_series_to_display` дальше — ни на
         группировку, ни на поиск precompiled-диапазонов это не влияет.
         """
-        series = group.series
-        cycle_n = FB2CompilerService._umbrella_cycle_number(group)
-        if cycle_n is not None:
-            # Баг №145: номер подцикла «зонтика» — порядок чтения вселенной
-            # («Сумеречные охотники 1. Адские механизмы (Трилогия)», «… 2.
-            # Орудия Смерти (…)»); в группировке номера нет — только в имени.
-            root, sub = series.split('\\', 1)
-            series = f'{root}\\{cycle_n}. {sub}'
         display_root = getattr(group, 'display_root', '') or ''
-        return f"{display_root}\\{series}" if display_root else series
+        series = f"{display_root}\\{group.series}" if display_root else group.series
+        if '\\' in series:
+            root, sub = series.split('\\', 1)
+            cycle_n = FB2CompilerService._umbrella_cycle_number(group, root.strip())
+            if cycle_n is not None and not re.match(r'^\d+\.\s', sub.strip()):
+                # Баг №145/№148: номер подцикла «зонтика» — порядок чтения
+                # вселенной («Сумеречные охотники 1. Адские механизмы
+                # (Трилогия)», «… 2. Орудия Смерти (…)»); в группировке номера
+                # нет — только в имени и <sequence> сборника.
+                series = f'{root}\\{cycle_n}. {sub}'
+        return series
 
     @staticmethod
-    def _umbrella_cycle_number(group) -> Optional[int]:
-        """Номер подцикла «зонтика» для сборника этого подцикла: общий «Корень N.»
-        в именах файлов всех его книг (баг №145). None — не подцикл «зонтика»
-        или номера в именах расходятся."""
-        if '\\' not in group.series or not group.books:
+    def _umbrella_cycle_number(group, root: str) -> Optional[int]:
+        """Номер подцикла «зонтика» для сборника этого подцикла, общий для всех
+        его книг (баг №145; None — не подцикл «зонтика» или номера расходятся):
+        - в исходной папке — «Корень N.» в именах файлов (тома с номером
+          `filename_umbrella_arc`);
+        - в библиотеке, где синхронизация переименовала файлы, — из метаданных:
+          <sequence name="Корень" number="N"> (пишет синхронизация, баг №148)
+          или <sequence name="Корень\\N. Подцикл"> (так подписан сборник)."""
+        if not group.books or not root:
             return None
-        if not all(getattr(b.record, 'series_number_source', '') == UMBRELLA_ARC_SN_SOURCE for b in group.books):
-            return None
-        root = group.series.split('\\', 1)[0].strip().replace('ё', 'е')
-        root_re = re.compile(re.escape(root) + r'\s+(\d{1,3})\.', re.IGNORECASE)
+        root_n = root.replace('ё', 'е')
         numbers = set()
-        for b in group.books:
-            m = root_re.search(b.abs_path.stem.replace('ё', 'е'))
-            if m is None:
-                return None
-            numbers.add(int(m.group(1)))
+        if all(getattr(b.record, 'series_number_source', '') == UMBRELLA_ARC_SN_SOURCE for b in group.books):
+            root_re = re.compile(re.escape(root_n) + r'\s+(\d{1,3})\.', re.IGNORECASE)
+            for b in group.books:
+                m = root_re.search(b.abs_path.stem.replace('ё', 'е'))
+                if m is None:
+                    return None
+                numbers.add(int(m.group(1)))
+        else:
+            esc = re.escape(_html.escape(root_n))
+            seq_re = re.compile(
+                r'<(?:\w+:)?sequence\b[^>]*name\s*=\s*"' + esc
+                + r'(?:"[^>]*number\s*=\s*"(\d{1,3})"|\\(\d{1,3})\.\s)', re.IGNORECASE)
+            for b in group.books:
+                m = seq_re.search(FB2CompilerService._title_info_text(b.abs_path).replace('ё', 'е'))
+                if m is None:
+                    return None
+                numbers.add(int(m.group(1) or m.group(2)))
         return numbers.pop() if len(numbers) == 1 else None
+
+    @staticmethod
+    def _title_info_text(path: Path) -> str:
+        """<title-info> файла в правильной кодировке ('' — не прочитался)."""
+        try:
+            raw = read_fb2_bytes(path)[:65536]
+        except (OSError, ValueError):
+            return ''
+        m = re.search(rb'encoding\s*=\s*["\']([^"\']+)["\']', raw[:200])
+        for enc in ((m.group(1).decode('ascii', 'replace'),) if m else ()) + ('utf-8', 'cp1251'):
+            try:
+                text = raw.decode(enc)
+                break
+            except (UnicodeDecodeError, LookupError):
+                continue
+        else:
+            text = raw.decode('utf-8', 'replace')
+        ti = re.search(r'<(?:\w+:)?title-info>.*?</(?:\w+:)?title-info>', text, re.S)
+        return ti.group(0) if ti else ''
 
     @classmethod
     def _clean_series_name(cls, series: str) -> str:
