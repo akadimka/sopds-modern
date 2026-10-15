@@ -35,6 +35,21 @@ from typing import Any, Callable, Dict, Iterable, Optional, Sequence, Tuple
 # номер тома» его не трогают — там номер самого подцикла (баг №145).
 UMBRELLA_ARC_SN_SOURCE = 'filename_umbrella_arc'
 
+
+def umbrella_cycle_number(file_names: Iterable[str], root: str) -> Optional[int]:
+    """Номер подцикла «зонтика» по именам файлов его томов («Корень N. …»),
+    общий для всех (None — у кого-то номера нет или номера расходятся).
+    В CSV номер подцикла не хранится — его показывают компиляция и
+    нормализация (баги №145, №155)."""
+    root_re = re.compile(re.escape(root.strip().replace('ё', 'е')) + r'\s+(\d{1,3})\.', re.IGNORECASE)
+    numbers = set()
+    for name in file_names:
+        m = root_re.search(name.replace('ё', 'е'))
+        if m is None:
+            return None
+        numbers.add(int(m.group(1)))
+    return numbers.pop() if len(numbers) == 1 else None
+
 # Тир 3 — папочная структура. Создана человеком вручную (или её явное
 # отсутствие подтверждено — "no_series_folder") — самый надёжный
 # источник из всех. Точное множество трижды дублировалось байт-в-байт

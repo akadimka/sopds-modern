@@ -1787,3 +1787,7 @@ msgid ""
 msgstr ""
 "Параметры синхронизации не получены (не выбраны папки) — ничего не "
 "перемещено."
+
+#: fb2parser_web/templates/fb2parser/normalize_table.html
+msgid "Subcycle number: computed from file names for display, not stored in the CSV"
+msgstr "Номер подцикла: вычисляется по именам файлов для отображения, в CSV не хранится"

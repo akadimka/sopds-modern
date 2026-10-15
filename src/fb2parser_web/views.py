@@ -1703,6 +1703,44 @@ def _render_norm_status(state):
     return _render_job("fb2parser/normalize_bar.html", state)
 
 
+def _with_umbrella_cycle_numbers(page, all_records):
+    """Строки таблицы нормализации с номером подцикла «зонтика» (баг №155).
+
+    В CSV его нет (`proposed_series` — «Корень\\Подцикл», ключ группировки
+    и путь в библиотеке), его показывает компиляция («Сумеречные охотники 1.
+    Адские механизмы»). Здесь — тот же расчёт по именам файлов
+    (`evidence.umbrella_cycle_number`) для серии автора, все тома которой
+    пронумерованы как тома подцикла; строке добавляются `series_root`,
+    `series_sub`, `cycle_n` — только для отображения."""
+    from collections import defaultdict
+
+    from fb2parser_core.evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
+
+    def key(r):
+        return (r.get("proposed_author") or "", r.get("proposed_series") or "")
+
+    groups = defaultdict(list)
+    for r in all_records:
+        if "\\" in key(r)[1]:
+            groups[key(r)].append(r)
+    cycles = {}
+    for (author, series), rows in groups.items():
+        if all(r.get("series_number_source") == UMBRELLA_ARC_SN_SOURCE for r in rows):
+            names = (re.split(r"[\\/]", r.get("file_path") or "")[-1] for r in rows)
+            n = umbrella_cycle_number(names, series.split("\\", 1)[0])
+            if n is not None:
+                cycles[(author, series)] = n
+    out = []
+    for r in page:
+        n = cycles.get(key(r))
+        root, _sep, sub = key(r)[1].partition("\\")
+        if n is None or re.match(r"^\d+\.\s", sub.strip()):
+            out.append(r)
+        else:
+            out.append(dict(r, series_root=root, series_sub=sub, cycle_n=n))
+    return out
+
+
 @staff_member_required(login_url="/web/login/")
 def normalize_table(request):
     """Возвращает HTML-строки таблицы нормализации (постранично)."""
@@ -1715,7 +1753,7 @@ def normalize_table(request):
     if q:
         records = [r for r in records if any(q in str(v).lower() for v in r.values())]
     total = len(records)
-    page = records[offset:offset + limit]
+    page = _with_umbrella_cycle_numbers(records[offset:offset + limit], _state["records"])
     has_more = (offset + limit) < total
     from django.template.loader import render_to_string
     html = render_to_string("fb2parser/normalize_table.html", {

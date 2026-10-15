@@ -25,7 +25,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
-from .evidence import UMBRELLA_ARC_SN_SOURCE
+from .evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
 from .fb2_utils import read_fb2_bytes, write_fb2_bytes
 from .keyword_match import contains_any_keyword
 from .roman_numerals import roman_to_int
@@ -233,25 +233,18 @@ class FB2CompilerService:
           или <sequence name="Корень\\N. Подцикл"> (так подписан сборник)."""
         if not group.books or not root:
             return None
-        root_n = root.replace('ё', 'е')
-        numbers = set()
         if all(getattr(b.record, 'series_number_source', '') == UMBRELLA_ARC_SN_SOURCE for b in group.books):
-            root_re = re.compile(re.escape(root_n) + r'\s+(\d{1,3})\.', re.IGNORECASE)
-            for b in group.books:
-                m = root_re.search(b.abs_path.stem.replace('ё', 'е'))
-                if m is None:
-                    return None
-                numbers.add(int(m.group(1)))
-        else:
-            esc = re.escape(_html.escape(root_n))
-            seq_re = re.compile(
-                r'<(?:\w+:)?sequence\b[^>]*name\s*=\s*"' + esc
-                + r'(?:"[^>]*number\s*=\s*"(\d{1,3})"|\\(\d{1,3})\.\s)', re.IGNORECASE)
-            for b in group.books:
-                m = seq_re.search(FB2CompilerService._title_info_text(b.abs_path).replace('ё', 'е'))
-                if m is None:
-                    return None
-                numbers.add(int(m.group(1) or m.group(2)))
+            return umbrella_cycle_number((b.abs_path.stem for b in group.books), root)
+        esc = re.escape(_html.escape(root.replace('ё', 'е')))
+        seq_re = re.compile(
+            r'<(?:\w+:)?sequence\b[^>]*name\s*=\s*"' + esc
+            + r'(?:"[^>]*number\s*=\s*"(\d{1,3})"|\\(\d{1,3})\.\s)', re.IGNORECASE)
+        numbers = set()
+        for b in group.books:
+            m = seq_re.search(FB2CompilerService._title_info_text(b.abs_path).replace('ё', 'е'))
+            if m is None:
+                return None
+            numbers.add(int(m.group(1) or m.group(2)))
         return numbers.pop() if len(numbers) == 1 else None
 
     @staticmethod

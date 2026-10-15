@@ -7,7 +7,7 @@
     <td class="nt-cell nt-proposed">{{ r.proposed_author }}</td>
     <td class="nt-src">{{ r.author_source }}</td>
     <td class="nt-cell">{{ r.metadata_series }}</td>
-    <td class="nt-cell nt-proposed">{{ r.proposed_series }}</td>
+    <td class="nt-cell nt-proposed">{% if r.cycle_n %}{{ r.series_root }} <span class="nt-cycle" title="{% trans 'Subcycle number: computed from file names for display, not stored in the CSV' %}">{{ r.cycle_n }}</span>\{{ r.series_sub }}{% else %}{{ r.proposed_series }}{% endif %}</td>
     <td class="nt-src">{{ r.series_source }}</td>
     <td class="nt-cell nt-proposed">{{ r.series_number }}</td>
     <td class="nt-src">{{ r.series_number_source }}</td>
