@@ -1047,6 +1047,10 @@ class FB2CompilerService:
         # потому что их plain-серия текстово совпала с корнем арки. Требуем то же
         # metadata-подтверждение, что и основной цикл: хотя бы одна запись из
         # бакета арки должна иметь metadata_series, совпадающий с plain-корнем.
+        def _bucket_positions(recs) -> set:
+            return {int(n) for n in ((r.series_number or '').split('.')[0].strip() for r in recs)
+                    if n.isdigit()}
+
         _all_keys = list(buckets.keys())
         for (ak, sk) in _all_keys:
             if (ak, sk) not in buckets:
@@ -1067,6 +1071,12 @@ class FB2CompilerService:
                         for r in arc_recs
                     )
                     if not confirmed:
+                        continue
+                    # Баг №157: номера арки пересекаются с номерами родителя
+                    # («Свободные агенты» 1-3 и «Свободные агенты\Версия 2.0»
+                    # 1-3) — это вариант серии со своей нумерацией, отдельный
+                    # сборник, а не тома, заполняющие пробелы родителя.
+                    if _bucket_positions(arc_recs) & _bucket_positions(buckets[(ak, sk)]):
                         continue
                     # sk — plain umbrella, sk2 — её подсерия, подтверждено metadata → сливаем
                     buckets[(ak, sk)].extend(buckets.pop((ak2, sk2)))
@@ -1257,19 +1267,23 @@ class FB2CompilerService:
         for o in others:
             covered_by |= self._text_shingles(o)
         confirmed: List[Path] = []
+        old_editions = self.__dict__.get('_old_edition_paths', ())
         for dup in g.duplicate_paths:
-            if not dup.exists():
+            if dup in old_editions:
+                pass  # старая редакция (№156): только исключается — никогда не удаляется
+            elif not dup.exists():
                 confirmed.append(dup)  # удалять нечего — терять тоже
                 continue
-            own = self._text_shingles(dup)
-            share = len(own & covered_by) / len(own) if own else 0.0
-            if own and share >= self._DUPLICATE_MIN_COVERAGE:
-                confirmed.append(dup)
-                continue
-            self._log(
-                f"  ⚠ {dup.name}: помечен дублем, но его текст есть в остальных файлах "
-                f"группы лишь на {share:.0%} — не удаляется"
-            )
+            else:
+                own = self._text_shingles(dup)
+                share = len(own & covered_by) / len(own) if own else 0.0
+                if own and share >= self._DUPLICATE_MIN_COVERAGE:
+                    confirmed.append(dup)
+                    continue
+                self._log(
+                    f"  ⚠ {dup.name}: помечен дублем, но его текст есть в остальных файлах "
+                    f"группы лишь на {share:.0%} — не удаляется"
+                )
             if g.cleanup_only:
                 continue
             g.excluded_paths.append(dup)
@@ -1498,6 +1512,7 @@ class FB2CompilerService:
         if self._group_filter_precompiled(_emit, ctx):
             return
         self._group_filter_dominant_folder(ctx)
+        self._group_prefer_new_edition(ctx)
         self._group_dedupe_by_title(ctx)
         self._group_dedupe_by_position(ctx)
         if self._group_dedupe_by_content(_emit, ctx):
@@ -2274,6 +2289,58 @@ class FB2CompilerService:
                     books = new_books
         ctx.books = books
 
+
+    # Пометка новой редакции в имени файла: «(новая редакция)», «(иная
+    # редакция)», «новая версия», «Ребилд»… (баг №156).
+    _EDITION_MARK_RE = re.compile(
+        r'\(\s*[^()]*?(?:нов|ин|втор|треть|переработанн|исправленн|авторск|полн)\w*\s+'
+        r'(?:редакц|верси)\w*[^()]*\)'
+        r'|\b(?:нов|ин|втор|переработанн|исправленн)\w*\s+(?:редакц|верси)\w*'
+        r'|\b(?:ребилд|rebuild|ремастер|remaster)\b',
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _edition_title_key(cls, stem: str) -> str:
+        """Название из имени файла без номера-префикса и пометки редакции."""
+        s = re.sub(r'^\s*\d{1,4}\s*[.\-–—_)]*\s*', '', stem)
+        s = cls._EDITION_MARK_RE.sub(' ', s).lower().replace('ё', 'е')
+        return ' '.join(re.findall(r'[^\W_]+', s))
+
+    def _group_prefer_new_edition(self, ctx) -> None:
+        """Группа компиляции, шаг 8.5: две редакции одной книги на одной позиции.
+
+        Баг №156 (аудит LitRPG, решение пользователя): «1. Новая жизнь (новая
+        версия)» и «1. Новая жизнь» — в сборник идёт помеченная как новая
+        редакция, старая исключается: остаётся на месте отдельным файлом, не
+        удаляется (даже если её текст почти целиком есть в новой). Только при
+        том же названии без пометки и той же позиции — «Игра богов (версия
+        2.0)» под своим номером не трогается.
+        """
+        by_pos: Dict[tuple, List[CompilationBook]] = {}
+        for b in ctx.books:
+            if b.sort_key[0] == 0:
+                by_pos.setdefault(tuple(b.sort_key), []).append(b)
+        old_editions = []
+        for same in by_pos.values():
+            if len(same) < 2:
+                continue
+            marked = [b for b in same if self._EDITION_MARK_RE.search(b.abs_path.stem)]
+            if len(marked) != 1:
+                continue
+            key = self._edition_title_key(marked[0].abs_path.stem)
+            for b in same:
+                if b is not marked[0] and key and self._edition_title_key(b.abs_path.stem) == key:
+                    old_editions.append(b)
+                    self._log(f"  ℹ {b.abs_path.name}: старая редакция «{marked[0].abs_path.name}» — "
+                              "не компилируется, остаётся отдельным файлом")
+        if not old_editions:
+            return
+        keep = self.__dict__.setdefault('_old_edition_paths', set())
+        for b in old_editions:
+            keep.add(b.abs_path)
+            ctx.duplicate_paths.append(b.abs_path)
+        ctx.books = [b for b in ctx.books if b not in old_editions]
 
     def _group_dedupe_by_title(self, ctx) -> None:
         """Группа компиляции, шаг 9: Фильтр 2: дедупликация по нормализованному названию."""

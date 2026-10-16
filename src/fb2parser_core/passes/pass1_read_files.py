@@ -135,6 +135,14 @@ def _split_series_head(folder_name: str) -> str:
     return folder_name
 
 
+def _real_parent(fb2_file: Path) -> Path:
+    """Папка файла без служебных папок форматов («FB2», «fb2.zip»…)."""
+    parent = fb2_file.parent
+    while parent.name.lower() in FILE_EXTENSION_FOLDER_NAMES and parent.parent != parent:
+        parent = parent.parent
+    return parent
+
+
 def _find_author_series_by_metadata(
     fb2_file: Path, work_dir: Path,
     metadata_authors: str, folder_parse_limit: int
@@ -177,7 +185,16 @@ def _find_author_series_by_metadata(
             continue
         folder_words = _norm_words(current.name)
         if folder_words == meta_words:
-            series_name = _split_series_head(child.name) if child else ''
+            series_name = ''
+            # Баг №157: файл глубже папки серии («Свободные агенты/Версия 2.0/…»)
+            # — уровни серии считает _compute_folder_series (regen_csv) со всеми
+            # правилами (варианты, подсерии); здесь была бы только верхняя папка.
+            if child is not None and _real_parent(fb2_file) == child:
+                series_name = _split_series_head(child.name)
+                # «Старатели. Новая история» рядом с папкой «Старатели» —
+                # отдельная серия-вариант, а не «серия + описание».
+                if series_name != child.name and (current / series_name).is_dir():
+                    series_name = child.name
             # Normalize folder name: replace hyphen-as-separator so "Фамилия-Имя" → "Фамилия Имя"
             folder_normalized = current.name.replace('-', ' ').strip() if '-' in current.name else current.name
             return folder_normalized, series_name

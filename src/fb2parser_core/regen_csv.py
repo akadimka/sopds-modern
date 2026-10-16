@@ -48,7 +48,7 @@ from .passes.pass2_series_filename import Pass2SeriesFilename
 from .passes.pass3_series_normalize import Pass3SeriesNormalize
 from .pattern_converter import compile_patterns
 from .precache import Precache
-from .series_helpers import _bl_matches
+from .series_helpers import _bl_matches, is_content_variant_folder
 from .settings_manager import SettingsManager
 
 _log = logging.getLogger(__name__)
@@ -1031,8 +1031,11 @@ class RegenCSVService:
                 series_folders_clean = []
                 for _sf in series_folders:
                     _sf_lower = _sf.lower().replace('ё', 'е')
-                    if any(_bl_matches(_vk, _sf_lower) for _vk in _vkw):
+                    if (any(_bl_matches(_vk, _sf_lower) for _vk in _vkw)
+                            and not is_content_variant_folder(_sf)):
                         continue  # вариантная папка — пропускаем
+                    # Баг №157: «Версия 2.0», «… (альтернативное продолжение)»
+                    # — другой текст, свой уровень серии (отдельный сборник).
                     series_folders_clean.append(_sf)
                 series_folders = _drop_blacklisted(tuple(series_folders_clean))
                 if series_folders:
@@ -1075,7 +1078,14 @@ class RegenCSVService:
 
                 if author_folder_index >= 0 or _work_dir_is_author:
                     # Нашли папку автора → всё глубже = серия
-                    series_folders = _drop_blacklisted(parent_parts[author_folder_index + 1:])
+                    # (кроме форматных вариантов «СИ», «ЛП»… — как в ветке выше;
+                    # баг №157: вложенные файлы сюда теперь доходят и из Pass 1).
+                    _vkw2 = getattr(self, '_variant_kw', [])
+                    series_folders = _drop_blacklisted(tuple(
+                        _sf for _sf in parent_parts[author_folder_index + 1:]
+                        if not (any(_bl_matches(_vk, _sf.lower().replace('ё', 'е')) for _vk in _vkw2)
+                                and not is_content_variant_folder(_sf))
+                    ))
                     if series_folders:
                         if any(is_no_series_folder(f, self._no_series_names) for f in series_folders):
                             result = ('', 'no_series_folder')

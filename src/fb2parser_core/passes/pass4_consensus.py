@@ -35,7 +35,12 @@ class Pass4Consensus:
     - consensus: Already has consensus from previous folder
     - empty string: Only undetermined files get new consensus
     """
-    
+
+    # Служебные слова, которыми кончается обрывок названия («Назад в»),
+    # а не подсерия («Чернильный маг») — см. _dotted_series_to_subseries.
+    _SERIES_FRAGMENT_TAIL_WORDS = frozenset(
+        'в во на с со к ко о об обо у и а но по за из от до без для под над при про через или'.split())
+
     def __init__(self, logger, settings=None, series_filename_extractor=None):
         """Initialize PASS 4.
 
@@ -712,9 +717,14 @@ class Pass4Consensus:
                 # Не конвертируем неполные фрагменты: подсерия должна быть самостоятельным
                 # значимым словом (≥4 символов) или содержать хотя бы 3 слова.
                 # "Назад в" — фрагмент (2 слова, последнее — предлог), не подсерия.
+                # Баг №157: короткое последнее слово само по себе не обрывок —
+                # «Чернильный маг» (подсерия «Сопряжения»), обрывок — это
+                # служебное слово в конце («Назад в», «Путь к»).
                 elif len(subseries) >= 4 and (
                     len(subseries.split()) >= 3 or
-                    (len(subseries.split()) >= 1 and len(subseries.split()[-1]) >= 4)
+                    (len(subseries.split()) >= 1 and len(subseries.split()[-1]) >= 4) or
+                    (len(subseries.split()) >= 2
+                     and subseries.split()[-1].lower() not in self._SERIES_FRAGMENT_TAIL_WORDS)
                 ):
                     record.proposed_series = f"{base}\\{subseries}"
                     hierarchical_unification_count += 1

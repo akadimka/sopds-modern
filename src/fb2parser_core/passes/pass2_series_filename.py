@@ -45,6 +45,7 @@ from ..logger import Logger
 from ..name_normalizer import AuthorName
 from ..pattern_converter import compile_patterns
 from ..roman_numerals import roman_to_int as _roman_to_int
+from ..series_helpers import is_content_variant_folder
 from ..series_normalizer import _nfc_lower_yo
 from ..settings_manager import SettingsManager
 from .pass1_read_files import BookRecord
@@ -974,7 +975,8 @@ class Pass2SeriesFilename:
 
                         # Если подпапка — это "вариант" / "альт. перевод" / "СИ" и т.п.,
                         # она НЕ является названием серии — серия берётся из папки автора.
-                        elif self._is_variant_folder(series_folder):
+                        elif (self._is_variant_folder(series_folder)
+                              and not is_content_variant_folder(series_folder)):  # №157
                             series_name = self._extract_series_from_folder_name(part)
                             if series_name:
                                 record.proposed_series = series_name

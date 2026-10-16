@@ -1757,6 +1757,75 @@ class SynchronizationService:
     _FIRST_SEQUENCE_RE = re.compile(r'<(?:\w+:)?sequence\b([^>]*)>')
     _VOLUME_SUFFIX_RE = re.compile(r'\bт\.\s*(\d+(?:[.\-]\d+)?)\s*$')
 
+    def rename_library_author(self, old: str, new: str, apply: bool = False,
+                              log: Optional[Callable] = None) -> Dict[str, int]:
+        """Переименовать автора, уже лежащего в библиотеке (баг №158).
+
+        Когда меняется то, как пайплайн пишет имя автора («Призывающий Оро» →
+        «Оро Призывающий»), следующая синхронизация положила бы его новые книги
+        в другую папку — автор раздвоился бы. Для каждой папки жанра:
+        <жанр>/<old> → <жанр>/<new> (в уже существующую — слиянием), файлы
+        «old - …» → «new - …», тег <author> — как пишет синхронизация
+        (_patch_fb2_tags), записи БД библиотеки — новый путь и автор. Файл,
+        чьё новое имя уже занято, не трогается (в отчёте). apply=False —
+        только отчёт, ничего не меняется. Каталог OPDS подхватит новые пути
+        при плановом сканировании.
+        """
+        log = log or (lambda m: None)
+        stats = {'files': 0, 'moved': 0, 'conflicts': 0, 'errors': 0, 'db_rows': 0}
+        conn = None
+        if apply and self.db_path.exists():
+            conn = sqlite3.connect(str(self.db_path))
+        try:
+            for genre_dir in sorted(p for p in self.library_path.iterdir() if p.is_dir()):
+                src_dir = genre_dir / old
+                if not src_dir.is_dir():
+                    continue
+                dst_dir = genre_dir / new
+                log(f"{src_dir.relative_to(self.library_path)} → {dst_dir.relative_to(self.library_path)}"
+                    + (" (слияние с существующей папкой)" if dst_dir.exists() else ""))
+                for src in sorted(p for p in src_dir.rglob('*') if p.is_file()):
+                    stats['files'] += 1
+                    rel_inside = src.relative_to(src_dir)
+                    name = src.name
+                    if name.startswith(f"{old} - "):
+                        name = f"{new} - " + name[len(old) + 3:]
+                    dst = dst_dir / rel_inside.parent / name
+                    if dst.exists():
+                        stats['conflicts'] += 1
+                        log(f"  ⚠ занято, не трогаю: {dst.relative_to(self.library_path)}")
+                        continue
+                    stats['moved'] += 1
+                    if not apply:
+                        continue
+                    try:
+                        dst.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(str(src), str(dst))
+                        if name.lower().endswith(('.fb2', '.fb2.zip')):
+                            self._patch_fb2_tags(dst, new, "", None)
+                        if conn is not None:
+                            old_rel = src.relative_to(self.library_path)
+                            cur = conn.execute(
+                                "UPDATE books SET file_path = ?, author = ? WHERE file_path IN (?, ?)",
+                                (str(dst.relative_to(self.library_path)), new,
+                                 str(old_rel), old_rel.as_posix()))
+                            stats['db_rows'] += cur.rowcount
+                    except Exception as exc:  # noqa: BLE001 — один файл не должен остановить остальные
+                        stats['errors'] += 1
+                        log(f"  ✗ {src.name}: {exc}")
+                if apply:
+                    for d in sorted((p for p in src_dir.rglob('*') if p.is_dir()), reverse=True) + [src_dir]:
+                        try:
+                            d.rmdir()
+                        except OSError:
+                            pass
+            if conn is not None:
+                conn.commit()
+        finally:
+            if conn is not None:
+                conn.close()
+        return stats
+
     def index_missing_library_files(self, log: Optional[Callable] = None) -> Dict[str, int]:
         """Добавить в БД библиотеки записи для файлов, у которых их нет.
 
