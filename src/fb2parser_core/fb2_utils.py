@@ -119,9 +119,13 @@ def compress_fb2_file(path: Path) -> int:
     if path.name.lower().endswith('.fb2.zip'):
         raise ValueError(f"Уже сжат: {path}")
 
-    original_bytes = path.read_bytes()
     target = path.with_name(path.name + '.zip')
     tmp = path.with_name(path.name + '.zip.tmp')
+    # Рядом уже лежит «книга.fb2.zip» — rename молча перезаписал бы его
+    # (на POSIX), а там может быть другая редакция/текст.
+    if target.exists():
+        raise FileExistsError(f"Уже есть {target.name} — не перезаписываю")
+    original_bytes = path.read_bytes()
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
@@ -138,8 +142,10 @@ def compress_fb2_file(path: Path) -> int:
         raise
 
     original_size = path.stat().st_size
-    path.unlink()
+    # Сначала архив под своим именем, потом удаление оригинала: при сбое между
+    # шагами остаются оба файла, а не один .tmp.
     tmp.rename(target)
+    path.unlink()
     return original_size - len(zip_bytes)
 
 

@@ -694,15 +694,33 @@ def _run_compress_thread(library_path):
         from pathlib import Path
 
         from fb2parser_core.compress_service import compress_library
+        from fb2parser_core.sync_lock import SyncBusy, sync_lock
+
+        from .compress_catalogs import catalog_updater
+        from .fb2parser_bridge import _sync_lock_path
 
         def _on_progress(done, total, current):
             compress_job.update(processed=done, total=total, current=current)
 
-        result = compress_library(
-            Path(library_path),
-            progress_callback=_on_progress,
-            stop_check=compress_stop_flag.is_set,
-        )
+        # Баг №159: сжатие меняет пути книг — каталог OPDS и БД библиотеки
+        # обновляются на месте (catalog_updater); синхронизация/компиляция в это
+        # время не должны переносить и удалять файлы библиотеки.
+        try:
+            with sync_lock(_sync_lock_path(), "compress"):
+                update, close = catalog_updater(Path(library_path))
+                try:
+                    result = compress_library(
+                        Path(library_path),
+                        progress_callback=_on_progress,
+                        stop_check=compress_stop_flag.is_set,
+                        on_compressed=update,
+                    )
+                finally:
+                    close()
+        except SyncBusy:
+            compress_job.update(error=str(_("Synchronization is running right now — try again later.")),
+                                running=False)
+            return
         compress_job.update(
             done=True, running=False,
             processed=result["processed"], total=result["total"],
@@ -752,9 +770,60 @@ def compress_start(request):
     if not compress_job.try_start(library_path=library_path):
         return _render_compress_status(compress_job.get())
 
-    t = threading.Thread(target=_run_compress_thread, args=(library_path,), daemon=True)
-    t.start()
+    _spawn_compress_process(library_path)
     return _render_compress_status(compress_job.get())
+
+
+def _spawn_compress_process(library_path):
+    """Сжатие — отдельным процессом с низким приоритетом (баг №159): часы
+    работы по всей библиотеке не должны ни грузить сервер, ни погибать вместе
+    с рабочим процессом gunicorn (таймаут, перезапуск службы) — как
+    синхронизация (баг №144). Без общего кэша (LocMemCache) — потоком."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from django.conf import settings as dj_settings
+
+    if not _cache_shared_between_processes():
+        threading.Thread(target=_run_compress_thread, args=(library_path,), daemon=True).start()
+        return
+    base = Path(dj_settings.BASE_DIR)
+    cmd = [sys.executable, str(base / "manage.py"), "fb2parser_compress"]
+    kwargs = {"cwd": str(base), "stdin": subprocess.DEVNULL,
+              "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    if os.name == "posix":
+        kwargs["start_new_session"] = True
+        cmd = _low_priority_cmd(cmd)
+    log_dir = base / "log"
+    if log_dir.is_dir():
+        kwargs["stderr"] = open(log_dir / "compress-job.log", "ab")  # noqa: SIM115 — передаётся процессу
+    proc = subprocess.Popen(cmd, **kwargs)
+    if kwargs["stderr"] is not subprocess.DEVNULL:
+        kwargs["stderr"].close()
+    compress_job.update(pid=proc.pid)
+    threading.Thread(target=proc.wait, daemon=True).start()
+
+
+def _low_priority_cmd(cmd, have_ionice=None):
+    """Команда с наименьшим приоритетом процессора (nice 19) и диска (ionice
+    idle — диск получает, только когда он больше никому не нужен)."""
+    if have_ionice is None:
+        import shutil
+        have_ionice = bool(shutil.which("ionice"))
+    return ["nice", "-n", "19"] + (["ionice", "-c3"] if have_ionice else []) + list(cmd)
+
+
+def _reap_dead_compress_job():
+    """Состояние «идёт», а процесса сжатия нет — снять «идёт»."""
+    from fb2parser_core.sync_lock import _pid_alive
+
+    state = compress_job.get()
+    pid = state.get("pid")
+    if state.get("running") and isinstance(pid, int) and not _pid_alive(pid):
+        compress_job.update(running=False, error=str(_(
+            "The compression process ended unexpectedly. Files already compressed stay compressed.")))
+        compress_job.finish()
 
 
 @staff_member_required(login_url="/web/login/")
@@ -766,6 +835,7 @@ def compress_stop(request):
 
 @staff_member_required(login_url="/web/login/")
 def compress_status(request):
+    _reap_dead_compress_job()
     return _render_compress_status(compress_job.get())
 
 
