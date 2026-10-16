@@ -142,7 +142,14 @@ class opdsScanner:
         opdsdb.avail_check_prepare()
         self.scan_path(config.SOPDS_ROOT_LIB)
 
-        if config.SOPDS_DELETE_LOGICAL:
+        guard = opdsdb.deletion_guard(config.SOPDS_ROOT_LIB)
+        if guard:
+            # Библиотека недоступна / пропала большая её часть — скорее
+            # отвалился диск или сетевая папка, чем книги удалены: записи и
+            # рейтинги не трогаем (с физическим удалением их было бы не вернуть).
+            self.logger.warning(f"Books deletion skipped: {guard}")
+            self.books_deleted = 0
+        elif config.SOPDS_DELETE_LOGICAL:
             self.books_deleted = opdsdb.books_del_logical()
         else:
             self.books_deleted = opdsdb.books_del_phisical()

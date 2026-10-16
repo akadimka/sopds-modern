@@ -197,6 +197,32 @@ def avail_check_prepare():
     Book.objects.exclude(avail=0).update(avail=1)
 
 
+# Доля книг, пропавших за одно полное сканирование, выше которой удаление
+# пропускается (и не меньше стольких книг — маленькие библиотеки не блокируем).
+DELETION_GUARD_SHARE = 0.3
+DELETION_GUARD_MIN_BOOKS = 100
+
+
+def deletion_guard(root_lib: str) -> str:
+    """Причина НЕ удалять пропавшие книги после полного сканирования ('' —
+    удалять можно). Используется только в sopdscan.scan_all.
+
+    Книги, найденные сканом, — avail=2, не найденные — avail=1 (см.
+    avail_check_prepare). Нет папки библиотеки или не найдена большая часть
+    книг разом — это недоступный диск/сетевая папка, а не удаление: с
+    физическим удалением (SOPDS_DELETE_LOGICAL=False) каталог со всеми
+    рейтингами и полками был бы потерян.
+    """
+    if not root_lib or not os.path.isdir(root_lib):
+        return f"library folder {root_lib!r} is not available"
+    missing = Book.objects.filter(avail=1).count()
+    found = Book.objects.filter(avail=2).count()
+    if missing > DELETION_GUARD_MIN_BOOKS and missing > (missing + found) * DELETION_GUARD_SHARE:
+        return (f"{missing} of {missing + found} books were not found in one scan "
+                f"(more than {DELETION_GUARD_SHARE:.0%}) — check that the library is mounted")
+    return ""
+
+
 def books_del_logical():
     # Используется только в sopdscan. Возможно, не используется вообще
     row_count = Book.objects.filter(avail=1).update(avail=0)

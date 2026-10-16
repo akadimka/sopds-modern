@@ -159,6 +159,12 @@ class Command(BaseCommand):
                 )
 
     def _flush(self, dirs: list, scanner) -> None:
+        if not os.path.isdir(config.SOPDS_ROOT_LIB):
+            # Пропала вся библиотека (диск/сетевая папка) — не повод удалять
+            # книги «исчезнувших» папок (см. opdsdb.deletion_guard); сверку
+            # сделает следующий полный скан.
+            self.stdout.write(f"Library {config.SOPDS_ROOT_LIB} is not available — rescan skipped")
+            return
         self._reconnect_if_needed()
         self.stdout.write(f"Rescanning {len(dirs)} changed folder(s)...")
         books_added_before = scanner.books_added
