@@ -16,8 +16,16 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import time
 from pathlib import Path
 from typing import Callable, Optional, Tuple
+
+from django.db.utils import OperationalError
+
+# Занятая база каталога: повторять до ~10 минут (и каждая попытка сама ждёт
+# timeout SQLite).
+LOCK_RETRIES = 40
+LOCK_WAIT_SECONDS = 15
 
 
 def catalog_updater(library_path: Path, db_path: Optional[Path] = None
@@ -43,14 +51,27 @@ def catalog_updater(library_path: Path, db_path: Optional[Path] = None
         except ValueError:
             return False
 
+    def _update_opds(old: Path, new: Path) -> None:
+        rel_dir = os.path.relpath(old.parent, root)
+        rel_zip = os.path.relpath(new, root)
+        books = Book.objects.filter(filename=old.name[:SIZE_BOOK_FILENAME], path=rel_dir[:SIZE_BOOK_PATH])
+        if books.exists():
+            cat = opdsdb.addcattree(rel_zip, opdsdb.CAT_ZIP, new.stat().st_size)
+            books.update(path=rel_zip[:SIZE_BOOK_PATH], catalog=cat, cat_type=opdsdb.CAT_ZIP)
+
     def update(old: Path, new: Path) -> None:
         if root is not None and _within(old, root):
-            rel_dir = os.path.relpath(old.parent, root)
-            rel_zip = os.path.relpath(new, root)
-            books = Book.objects.filter(filename=old.name[:SIZE_BOOK_FILENAME], path=rel_dir[:SIZE_BOOK_PATH])
-            if books.exists():
-                cat = opdsdb.addcattree(rel_zip, opdsdb.CAT_ZIP, new.stat().st_size)
-                books.update(path=rel_zip[:SIZE_BOOK_PATH], catalog=cat, cat_type=opdsdb.CAT_ZIP)
+            # База каталога занята пересканированием sopds-watch (одна
+            # транзакция на сотни папок, минуты) — ждать, а не сдаваться: иначе
+            # сканер заведёт книге новую запись (сервер 2026-10-16: 24 книги).
+            for attempt in range(LOCK_RETRIES):
+                try:
+                    _update_opds(old, new)
+                    break
+                except OperationalError as exc:
+                    if "locked" not in str(exc).lower() or attempt == LOCK_RETRIES - 1:
+                        raise
+                    time.sleep(LOCK_WAIT_SECONDS)
         if conn is not None and _within(old, library_path):
             rel_old = old.relative_to(library_path)
             rel_new = new.relative_to(library_path)

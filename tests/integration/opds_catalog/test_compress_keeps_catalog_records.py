@@ -77,3 +77,41 @@ def test_existing_zip_is_not_overwritten(tmp_path):
     assert plain.exists()
     with zipfile.ZipFile(other) as zf:
         assert zf.read("книга.fb2") == "другая редакция".encode()
+
+
+@pytest.mark.django_db
+def test_busy_catalog_database_is_waited_for(tmp_path, override_config, monkeypatch):
+    """Баг №161: база каталога занята пересканированием sopds-watch (сервер
+    2026-10-16, 24 книги) — обновление записи ждёт и повторяет, а не
+    сдаётся: иначе сканер заводит книге новую запись."""
+    from django.db.utils import OperationalError
+
+    import fb2parser_web.compress_catalogs as cc
+
+    opdsdb.clear_all()
+    folder = tmp_path / "Фантастика" / "Оро Призывающий"
+    folder.mkdir(parents=True)
+    (folder / "Книга.fb2").write_text(_FB2.format(title="Книга"), encoding="utf-8")
+    real = opdsdb.addcattree
+    calls = []
+
+    def busy_once(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise OperationalError("database is locked")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(cc, "LOCK_WAIT_SECONDS", 0)
+    with override_config(SOPDS_ROOT_LIB=str(tmp_path)):
+        opdsScanner().scan_all()
+        [book] = Book.objects.all()
+        monkeypatch.setattr(opdsdb, "addcattree", busy_once)
+        update, close = catalog_updater(tmp_path, db_path=tmp_path / "нет.db")
+        try:
+            result = compress_library(tmp_path, on_compressed=update)
+        finally:
+            close()
+
+    assert not result["errors"] and len(calls) >= 2   # первая попытка — «locked», повтор прошёл
+    book.refresh_from_db()
+    assert book.cat_type == opdsdb.CAT_ZIP and book.path.endswith("Книга.fb2.zip")
