@@ -26,7 +26,7 @@ from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
 from .evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
-from .fb2_utils import read_fb2_bytes, write_fb2_bytes
+from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
 from .keyword_match import contains_any_keyword
 from .roman_numerals import roman_to_int
 from .series_normalizer import _nfc_lower_yo as _norm_key
@@ -5162,9 +5162,9 @@ class FB2CompilerService:
                         series_complete=getattr(group, 'series_complete', True),
                     )
                     clean_series = self._clean_series_name(self._group_series_for_naming(group))
-                    safe_author = re.sub(r'[\\/:*?"<>|]', '_', group.author)
+                    safe_author = re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(group.author))
                     safe_series = re.sub(r'[/:*?"<>|]', '_',
-                                        self._series_to_display(clean_series))
+                                        replace_control_chars(self._series_to_display(clean_series)))
                     suffix = self._suppress_redundant_suffix(safe_series, suffix)
                     new_name = f"{safe_author} - {safe_series} ({suffix}).fb2" if suffix else f"{safe_author} - {safe_series}.fb2"
                     if old_path.name.lower().endswith('.fb2.zip'):
@@ -5333,8 +5333,8 @@ class FB2CompilerService:
             # <sequence name="…"> метаданных (_build_fb2 ниже), и в имя
             # файла — display_root подставляется в оба места сразу.
             clean_series = self._clean_series_name(self._group_series_for_naming(group))
-            safe_author = re.sub(r'[\\/:*?"<>|]', '_', group.author)
-            safe_series = re.sub(r'[/:*?"<>|]', '_', self._series_to_display(clean_series))
+            safe_author = re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(group.author))
+            safe_series = re.sub(r'[/:*?"<>|]', '_', replace_control_chars(self._series_to_display(clean_series)))
 
             # --- Папка назначения: явная или рядом с исходниками ---
             dest_dir = output_dir if output_dir is not None else group.books[0].abs_path.parent

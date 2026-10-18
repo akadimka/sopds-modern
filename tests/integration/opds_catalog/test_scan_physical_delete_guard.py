@@ -37,8 +37,9 @@ def _library(root, n):
 def test_missing_and_dead_books_are_removed(tmp_path, override_config):
     opdsdb.clear_all()
     folder = _library(tmp_path, 4)
-    with override_config(SOPDS_ROOT_LIB=str(tmp_path)):
-        opdsScanner().scan_all()                       # логическое удаление (по умолчанию)
+    # логическое удаление — явно: конфиг сервера может его уже выключать
+    with override_config(SOPDS_ROOT_LIB=str(tmp_path), SOPDS_DELETE_LOGICAL=True):
+        opdsScanner().scan_all()
         (folder / "Книга 0.fb2").unlink()
         opdsScanner().scan_all()
         assert Book.objects.filter(avail=0).count() == 1   # «мёртвая» запись осталась

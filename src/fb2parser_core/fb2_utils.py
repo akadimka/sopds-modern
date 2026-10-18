@@ -12,6 +12,17 @@ import zipfile
 from pathlib import Path
 from typing import List
 
+_CONTROL_CHARS_RE = re.compile(r'\s*[\x00-\x1f\x7f]+\s*')
+
+
+def replace_control_chars(value: str) -> str:
+    """Управляющие символы (перевод строки, табуляция…) в имени файла/папки —
+    на пробел (баг №162): из названия книги «Чудовище маяка\\nи другие
+    хонкаку» синхронизация делала имя файла с переводом строки. Пробелы
+    схлопываются только вокруг заменённого — двойные пробелы, бывшие в
+    имени изначально, не трогаются."""
+    return _CONTROL_CHARS_RE.sub(' ', value or '')
+
 
 def fb2_rglob(directory: Path) -> List[Path]:
     """Рекурсивно найти все FB2 и FB2.ZIP файлы в каталоге."""

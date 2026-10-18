@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .fb2_utils import has_fb2_files as _has_fb2_util
-from .fb2_utils import read_fb2_bytes, write_fb2_bytes
+from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
 from .logger import Logger
 from .path_safety import is_within
 from .regen_csv import RegenCSVService
@@ -55,7 +55,7 @@ def _sanitize_path_component(value: str, fallback: str) -> str:
     Здесь недопустимые символы вырезаются; если после этого сегмент пуст
     (как в случае "??????????" → '') — используется fallback.
     """
-    cleaned = _ILLEGAL_PATH_CHARS_RE.sub('', value).strip().strip('.')
+    cleaned = _ILLEGAL_PATH_CHARS_RE.sub('', replace_control_chars(value)).strip().strip('.')
     return cleaned or fallback
 
 
@@ -1274,8 +1274,9 @@ class SynchronizationService:
 
     @classmethod
     def _safe(cls, s: str) -> str:
-        """Заменить недопустимые символы в имени файла на '_'."""
-        return cls._UNSAFE_CHARS_RE.sub('_', s).strip()
+        """Заменить недопустимые символы в имени файла на '_', управляющие
+        (перевод строки из названия книги — баг №162) — на пробел."""
+        return cls._UNSAFE_CHARS_RE.sub('_', replace_control_chars(s)).strip()
 
     # Windows MAX_PATH без включённой поддержки длинных путей — реальный случай:
     # "Микишин Федор - Хан Батый и десантники. Книга 1. Выживание.
