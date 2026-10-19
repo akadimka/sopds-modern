@@ -40,6 +40,51 @@ def _dedup_nested(dirs) -> list:
     return result
 
 
+def _split_scopes(d: str, root: str) -> list:
+    """Разбить пересканируемую папку на части, у каждой — своя транзакция
+    (баг №163).
+
+    Папка без собственных файлов (корень библиотеки, папка жанра) заменяется
+    своими подпапками — рекурсивно, пока не дойдём до папок с книгами. Плюс
+    подпапки (и архивы), которые есть в каталоге, но пропали с диска: их
+    книги должна снять books_del_scoped, а обход существующих подпапок их не
+    увидит. Папка с файлами, пустая или несуществующая — одна часть.
+    """
+    if not os.path.isdir(d):
+        return [d]
+    try:
+        entries = list(os.scandir(d))
+    except OSError:
+        return [d]
+    if any(e.is_file(follow_symlinks=False) for e in entries):
+        return [d]
+    subdirs = sorted(e.path for e in entries if e.is_dir(follow_symlinks=False))
+    if not subdirs:
+        return [d]
+    scopes: list = []
+    for sub in subdirs:
+        scopes.extend(_split_scopes(sub, root))
+    scopes.extend(_vanished_children(d, root, {os.path.basename(s) for s in subdirs}))
+    return scopes
+
+
+def _vanished_children(d: str, root: str, present: set) -> list:
+    """Подпапки/архивы папки d, у которых в каталоге есть книги, а на диске их нет."""
+    from opds_catalog.models import Book
+
+    rel = os.path.relpath(d, root)
+    prefix = "" if rel == "." else rel + os.sep
+    books = Book.objects.filter(path__startswith=prefix) if prefix else Book.objects.all()
+    names = set()
+    for path in books.values_list("path", flat=True).iterator():
+        rest = path[len(prefix):]
+        # «.» — книги прямо в корне: часть «корень» снова была бы всей
+        # библиотекой; их снимет полный скан.
+        if rest and rest != ".":
+            names.add(rest.split(os.sep, 1)[0])
+    return [os.path.join(d, n) for n in sorted(names - present)]
+
+
 class LibraryDirtyTracker:
     """Копит "грязные" (изменившиеся) папки библиотеки между вызовами take_ready().
 
@@ -168,29 +213,38 @@ class Command(BaseCommand):
         self._reconnect_if_needed()
         self.stdout.write(f"Rescanning {len(dirs)} changed folder(s)...")
         books_added_before = scanner.books_added
-        with transaction.atomic():
-            for d in dirs:
+        for d in dirs:
+            if not os.path.isdir(d):
+                # Папка целиком исчезла (переименована/удалена) — всё
+                # равно нужно пройти books_del_scoped ниже,
+                # scan_path() по несуществующему пути просто ничего не найдёт.
+                self.stdout.write(f"  {d} (папка больше не существует)")
+            else:
+                self.stdout.write(f"  {d}")
+            scopes = _split_scopes(d, config.SOPDS_ROOT_LIB)
+            if len(scopes) > 1:
+                self.stdout.write(f"    по частям: {len(scopes)}")
+            for scope in scopes:
+                # Своя транзакция на каждую часть (баг №163): одна на весь
+                # набор папок держала базу минутами — на сервере 2 при первой
+                # индексации (вся библиотека — одна «папка») 15 минут, сайт не
+                # отвечал; при сжатии (№161) другие процессы не могли писать.
                 try:
-                    if not os.path.isdir(d):
-                        # Папка целиком исчезла (переименована/удалена) — всё
-                        # равно нужно пройти books_del_scoped ниже,
-                        # scan_path() по несуществующему пути просто ничего не найдёт.
-                        self.stdout.write(f"  {d} (папка больше не существует)")
-                    else:
-                        self.stdout.write(f"  {d}")
-                    rel_path = os.path.relpath(d, config.SOPDS_ROOT_LIB)
-                    opdsdb.avail_check_prepare_scoped(rel_path)
-                    if os.path.isdir(d):
-                        scanner.scan_path(d)
-                    opdsdb.books_del_scoped(rel_path, config.SOPDS_DELETE_LOGICAL)
+                    with transaction.atomic():
+                        rel_path = os.path.relpath(scope, config.SOPDS_ROOT_LIB)
+                        opdsdb.avail_check_prepare_scoped(rel_path)
+                        if os.path.isdir(scope):
+                            scanner.scan_path(scope)
+                        opdsdb.books_del_scoped(rel_path, config.SOPDS_DELETE_LOGICAL)
                 except OSError:
                     # Файл/папка исчезли между inotify-событием и этим
                     # пересканом (например их как раз переименовывает
                     # синхронизация fb2parser) — гонка, не баг; просто
                     # пропускаем эту папку, её подхватит следующий цикл.
                     logging.getLogger(__name__).exception(
-                        f"Skipping {d}: race with a concurrent filesystem change"
+                        f"Skipping {scope}: race with a concurrent filesystem change"
                     )
+        with transaction.atomic():
             opdsdb.cleanup_orphan_entities()
         # Та же логика, что при стартовом скане выше — новые книги от точечных
         # inotify-пересканов иначе никогда не анонсируются фетчерам рейтингов.
