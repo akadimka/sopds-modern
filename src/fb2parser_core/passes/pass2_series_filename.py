@@ -2913,12 +2913,23 @@ class Pass2SeriesFilename:
             # Скомпилированные файлы без Том-слова (e.g. «Война Великого Бога 2
             # (Дилогия)») в коллизионном bucket не блокируют детекцию: их Том-числа
             # просто не собираются (нет match → не попадают в список).
+            # Баг №164: номер подцикла должен стоять в имени файла сразу после
+            # названия серии («Война великого бога 2. …»). «Фоллетт. Столпы
+            # земли. Том 1/2» с <sequence name="Кингсбридж" number="1"/> у обоих
+            # томов: 1 — номер книги в ДРУГОЙ серии, а не подцикл «Столпов земли».
+            def _sn_after_series(r, sn) -> bool:
+                return bool(re.search(
+                    r'(?:^|\s)' + re.escape(_norm(r.proposed_series)) + r'\s+0*' + re.escape(sn) + r'(?:\s|$)',
+                    _norm(file_stem(r.file_path))))
+
             has_collision = False
             for sn, recs in sn_buckets.items():
                 if len(recs) < 2:
                     continue
                 tom_values = []
                 for r in recs:
+                    if not _sn_after_series(r, sn):
+                        continue
                     m = _TOM_RE.search(file_stem(r.file_path))
                     if m:
                         tom_values.append(int(m.group(1)))
