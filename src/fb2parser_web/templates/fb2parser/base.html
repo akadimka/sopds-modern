@@ -1,6 +1,6 @@
 {% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}" data-theme="light">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="dark">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -8,12 +8,6 @@
     <title>FB2Parser — {{ fb2_title }}</title>
     <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "css/theme.css" %}">
-    <script>
-        (function() {
-            var t = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', t);
-        })();
-    </script>
 </head>
 <body>
 <div class="grid-container fluid">
@@ -48,10 +42,6 @@
                 <a href="{% url 'web:profile' %}">{{ user.username }}</a>
                 (<a href="{% url 'web:logout' %}">{% trans "Logout" %}</a>)
             </span>
-            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
-                <span class="icon-moon">🌙</span>
-                <span class="icon-sun">☀️</span>
-            </button>
         </div>
     </div>
 
@@ -113,12 +103,6 @@
 <script>
     $(document).foundation();
 
-    function toggleTheme() {
-        var html = document.documentElement;
-        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-    }
 </script>
 {% block extra_js %}{% endblock %}
 <script>

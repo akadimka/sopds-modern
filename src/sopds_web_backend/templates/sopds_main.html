@@ -2,7 +2,7 @@
 {% spaceless %}
 <!DOCTYPE html>
 
-<html lang="ru" data-theme="light">
+<html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -17,12 +17,6 @@
     <title>{{ app_title }}{% if breadcrumbs.0 %} / {{ breadcrumbs.0.label }}{% endif %}</title>
     <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "css/theme.css" %}">
-    <script>
-        (function() {
-            var t = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', t);
-        })();
-    </script>
 </head>
 
 <body>

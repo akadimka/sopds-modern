@@ -3,10 +3,12 @@ import re
 import threading
 from random import randint
 from typing import Any
+from urllib.parse import urlencode
 
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Case, IntegerField, When
 from django.http import (
     HttpResponse,
     HttpResponseNotAllowed,
@@ -588,6 +590,9 @@ def GenresView(request):
     return render(request, "sopds_selectgenres.html", args)
 
 
+SUGGEST_LIMIT = 30
+
+
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
 def SearchSuggestView(request):
@@ -607,22 +612,36 @@ def SearchSuggestView(request):
         logger.info("suggestion query too short")
         return HttpResponse("")
 
+    # Те же варианты, что найдёт поиск по Enter (вхождение в любом месте, как
+    # searchtype=m), а не только начинающиеся с введённого; начинающиеся —
+    # первыми. Внизу — «Все результаты (N)» на полный список.
+    up = q.upper()
     if search_type == "title":
-        logger.info("Suggest books by title '{q}'")
-        items = visibility.visible_books(request.user).filter(search_title__startswith=q.upper())[:10]
+        field, qs, all_url = "search_title", visibility.visible_books(request.user), "web:searchbooks"
     elif search_type == "author":
-        items = visibility.visible_authors(
-            request.user, Author.objects.filter(search_full_name__startswith=q.upper()))[:10]
+        field, qs, all_url = ("search_full_name", visibility.visible_authors(request.user, Author.objects.all()),
+                              "web:searchauthors")
     elif search_type == "series":
-        items = visibility.visible_series(
-            request.user, Series.objects.filter(search_ser__startswith=q.upper()))[:10]
+        field, qs, all_url = "search_ser", visibility.visible_series(request.user, Series.objects.all()), "web:searchseries"
     else:
-        items = []
-
+        return render(request, "sopds_search_suggestions.html", {"items": [], "search_type": search_type})
+    qs = qs.filter(**{f"{field}__contains": up})
+    total = qs.count()
+    ordered = qs.annotate(_prefix=Case(When(**{f"{field}__startswith": up}, then=0), default=1,
+                                       output_field=IntegerField())).order_by("_prefix", field)
+    items, seen = [], set()
+    for obj in ordered[:SUGGEST_LIMIT * 3]:   # у книг одно название бывает у нескольких файлов
+        label = getattr(obj, "title", None) or getattr(obj, "full_name", None) or obj.ser
+        if label not in seen:
+            seen.add(label)
+            items.append(obj)
+        if len(items) == SUGGEST_LIMIT:
+            break
     return render(
         request,
         "sopds_search_suggestions.html",
-        {"items": items, "search_type": search_type},
+        {"items": items, "search_type": search_type, "total": total, "q": q,
+         "all_url": f"{reverse(all_url)}?{urlencode({'searchtype': 'm', 'searchterms': q})}"},
     )
 
 

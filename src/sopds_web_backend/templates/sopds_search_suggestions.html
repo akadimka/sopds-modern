@@ -13,3 +13,6 @@
 {% empty %}
     <span class="sopds-suggestion-empty">{% trans "No results" %}</span>
 {% endfor %}
+{% if total %}
+    <a href="{{ all_url }}" class="sopds-suggestion-item sopds-suggestion-all">{% blocktrans with count=total %}All results ({{ count }}) →{% endblocktrans %}</a>
+{% endif %}

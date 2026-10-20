@@ -44,10 +44,6 @@
             <span class="sep">/</span>
             {% if LANGUAGE_CODE == 'ru' %}<span class="active-lang">RU</span>{% else %}<a href="#" onclick="document.getElementById('lang-form-ru').submit();return false;">RU</a>{% endif %}
         </span>
-        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
-            <span class="icon-moon">🌙</span>
-            <span class="icon-sun">☀️</span>
-        </button>
     </div>
 
 </div>
@@ -70,11 +66,3 @@
     font-size:0.82rem; pointer-events:none;
 "></div>
 
-<script>
-function toggleTheme() {
-    var html = document.documentElement;
-    var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-}
-</script>

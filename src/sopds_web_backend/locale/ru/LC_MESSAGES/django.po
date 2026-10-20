@@ -1434,6 +1434,9 @@ msgstr "Суперпользователь"
 msgid "You cannot remove the superuser role from yourself."
 msgstr "Нельзя снять роль суперпользователя с самого себя."
 
+msgid "All results (%(count)s) →"
+msgstr "Все результаты (%(count)s) →"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
