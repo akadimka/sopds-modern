@@ -1523,6 +1523,7 @@ class FB2CompilerService:
         self._group_collection_correction(_emit, ctx)
         self._group_majority_numbering_correction(ctx)
         self._group_match_multipart_titles(ctx)
+        self._group_renumber_by_title_toms(ctx)
         if self._group_filter_precompiled(_emit, ctx):
             return
         self._group_filter_dominant_folder(ctx)
@@ -1876,6 +1877,65 @@ class FB2CompilerService:
                     book.sort_source = 'filename_range'
                     book.order_ambiguous = False
 
+
+    # «Том 3», «Том 1 и Том 2», «Том 1-2», «Том 1, Том 2», «( Том 1 и 2 )», «[том 9]».
+    _TITLE_TOM_RE = re.compile(
+        r'(?<![А-ЯЁа-яё])том\s*(\d{1,3})(?!\d)'
+        r'(?:\s*(?:[-–—,.]|\bи\b)\s*(?:том\s*)?(\d{1,3})(?!\d))?',
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _title_tom_span(cls, book: CompilationBook) -> Optional[Tuple[int, int]]:
+        """Тома из названия книги: «Том 3» → (3, 3), «Том 1 и Том 2» → (1, 2).
+        None — «Том» нет или он встречается несколько раз отдельно."""
+        title = book.record.file_title or book.abs_path.stem
+        found = list(cls._TITLE_TOM_RE.finditer(title))
+        if len(found) != 1:
+            return None
+        lo = int(found[0].group(1))
+        hi = int(found[0].group(2)) if found[0].group(2) else lo
+        if lo < 1 or hi < lo:
+            return None
+        return lo, hi
+
+    def _group_renumber_by_title_toms(self, ctx) -> None:
+        """Группа компиляции, шаг 6а: нумерация по томам из названий (баг №167).
+
+        «01. Демоническая экспансия. Том 1 и Том 2» + «02. … Том 3» (sequence
+        number="02"): префикс и метаданные считают ИЗДАННЫЕ КНИГИ, название —
+        ТОМА. Правило внутреннего тома (№62, «12. Сфера Богов том 1») давало
+        «2.3», фильтр ложных сборников (№142) сбрасывал «1-2» в «1» — итог
+        «(Дилогия)», «1-2.3». Если тома в названиях ВСЕХ книг группы вместе
+        дают ровный ряд без пропусков и наложений — нумеруем по томам. Нет
+        «Тома» хотя бы у одной книги («Сфера Богов» — тома только у 12-й
+        книги) или ряд не сходится — не трогаем.
+        """
+        books = ctx.books
+        if len(books) < 2:
+            return
+        spans = []
+        for b in books:
+            span = self._title_tom_span(b)
+            if span is None:
+                return
+            spans.append((span, b))
+        spans.sort(key=lambda s: s[0])
+        for (prev, _), (cur, _) in zip(spans, spans[1:]):
+            if cur[0] != prev[1] + 1:
+                return
+        if all(b.sort_key[0] == 0 and b.sort_key[1] == lo and b.sort_key[2] == 0
+               and (b.volume_label or '') == (f'{lo}-{hi}' if hi > lo else str(lo))
+               for (lo, hi), b in spans):
+            return
+        self._log(f"  ℹ «{ctx.series}»: нумерация по томам из названий "
+                  f"({', '.join(f'{lo}-{hi}' if hi > lo else str(lo) for (lo, hi), _ in spans)})")
+        for (lo, hi), b in spans:
+            b.sort_key = (0, lo, 0, 0)
+            b.volume_label = f'{lo}-{hi}' if hi > lo else str(lo)
+            b.sort_source = 'title_tom'
+            b.order_ambiguous = False
+            b.record.series_number = b.volume_label
 
     def _group_filter_precompiled(self, _emit, ctx) -> bool | None:
         """Группа компиляции, шаг 7: Фильтр 1: заранее скомпилированные файлы."""
