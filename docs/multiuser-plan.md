@@ -31,7 +31,16 @@
 
 ## Этап 1. Владение и фильтр видимости
 
-### Шаг 1.1. Модели и миграции
+### Шаг 1.1. Модели и миграции — ✅ сделано (2026-10-20)
+Модели — в `opds_catalog` (`LibraryFileOwner`, `BookOwner`, `LibraryShare`);
+миграции `opds_catalog/0013_library_ownership`, `0014_seed_library_owners`,
+`sopds_web_backend/0006_userprofile_library_fields`,
+`0007_profiles_admin_library_public`; профиль новому пользователю — сигнал
+в `sopds_web_backend/signals.py`. Тесты:
+`tests/integration/opds_catalog/test_library_ownership_migration.py`.
+Проверено на копии рабочей `sopds.db`: 6790 книг → 6790 записей владения,
+все у администратора, пути в каноническом виде.
+
 Файлы: `src/opds_catalog/models.py` (или новое приложение `library_access`
 — решить в начале шага: отдельное приложение чище изолирует, но `Book`
 нужен в FK; склоняюсь к `opds_catalog`), `src/sopds_web_backend/models.py`.

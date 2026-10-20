@@ -202,6 +202,70 @@ class bookshelf(models.Model):
         ]
 
 
+SIZE_LIBRARY_REL_PATH = SIZE_BOOK_PATH + SIZE_BOOK_FILENAME
+
+
+class LibraryFileOwner(models.Model):
+    """Владелец файла библиотеки (docs/multiuser-design.md).
+
+    Привязан к пути файла, а не к записи `Book`: при перемещении,
+    переименовании, сжатии файла сканер заводит новую `Book` с новым id,
+    а владение переносит операция, которая двигала файл
+    (opds_catalog/ownership.py). `rel_path` — канонический путь
+    относительно root_lib: разделитель «/», Unicode NFC; для книги в
+    zip — путь самого zip. У одного файла может быть несколько владельцев
+    (двое загрузили одну книгу)."""
+
+    SOURCE_MIGRATION = "migration"
+    SOURCE_UPLOAD = "upload"
+    SOURCE_ADMIN = "admin"
+    SOURCES = [(SOURCE_MIGRATION, "migration"), (SOURCE_UPLOAD, "upload"), (SOURCE_ADMIN, "admin")]
+
+    rel_path = models.CharField(max_length=SIZE_LIBRARY_REL_PATH, db_index=True)
+    user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE, related_name="library_files")
+    added_at = models.DateTimeField(default=timezone.now)
+    source = models.CharField(max_length=16, choices=SOURCES, default=SOURCE_ADMIN)
+    # Исходное имя и хеш файла на момент загрузки (до правки тегов
+    # синхронизацией) — по хешу ищутся дубли при следующих загрузках.
+    origin_name = models.CharField(max_length=SIZE_BOOK_FILENAME, blank=True, default="")
+    origin_sha256 = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    size = models.BigIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["rel_path", "user"], name="unique_library_file_owner"),
+        ]
+
+
+class BookOwner(models.Model):
+    """Владелец записи каталога — производная от `LibraryFileOwner` для
+    быстрых запросов видимости; заполняет сканер, сверяет
+    `library_owners_check`."""
+
+    book = models.ForeignKey(Book, db_index=True, on_delete=models.CASCADE, related_name="owners")
+    user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE, related_name="owned_books")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["book", "user"], name="unique_book_owner"),
+        ]
+
+
+class LibraryShare(models.Model):
+    """Владелец открыл свою библиотеку пользователю: только чтение и
+    скачивание, не транзитивно, отзывается удалением записи."""
+
+    owner = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE, related_name="library_shares_given")
+    grantee = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE, related_name="library_shares_received")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "grantee"], name="unique_library_share"),
+            models.CheckConstraint(condition=~models.Q(owner=models.F("grantee")), name="library_share_not_self"),
+        ]
+
+
 class CounterManager(models.Manager):
     """Менеджер для модели Counter.
 

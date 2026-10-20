@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
-from .models import TelegramLink
+from .models import TelegramLink, UserProfile
 
 
 @receiver(pre_delete, sender=TelegramLink)
@@ -24,3 +24,11 @@ def _kick_on_deactivate(sender, instance, **kwargs):
         from .telegram_users import kick_from_channel
         if kick_from_channel(link.telegram_id):
             TelegramLink.objects.filter(pk=link.pk).update(in_channel=False)
+
+
+@receiver(post_save, sender=User)
+def _create_profile(sender, instance, created, raw=False, **kwargs):
+    """Профиль — сразу у каждого нового пользователя: в нём настройки его
+    библиотеки (открыта всем, личные квоты — docs/multiuser-design.md)."""
+    if created and not raw:
+        UserProfile.objects.get_or_create(user=instance)
