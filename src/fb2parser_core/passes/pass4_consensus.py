@@ -705,6 +705,10 @@ class Pass4Consensus:
                 series = record.proposed_series or ''
                 if '\\' in series or '. ' not in series:
                     continue
+                # Баг №173: «Старатели. Новая история» — папка-вариант рядом с
+                # папкой «Старатели», отдельная серия, а не её подсерия.
+                if getattr(record, 'sibling_variant_series', None) == series:
+                    continue
                 dot_pos = series.find('. ')
                 base = series[:dot_pos]
                 if base not in base_only:
@@ -1781,6 +1785,8 @@ class Pass4Consensus:
                 series = record.proposed_series or ''
                 if '\\' in series or '. ' not in series:
                     continue
+                if getattr(record, 'sibling_variant_series', None) == series:   # баг №173
+                    continue
                 dot_pos = series.find('. ')
                 base = series[:dot_pos]
                 if base not in base_only:
@@ -1878,6 +1884,11 @@ class Pass4Consensus:
             # (дефис-разделитель, лишние слова) — не похоже на автора.
             if not all(1 <= len(a.split()) <= 3 and not re.search(r'[-–—\d]', a) for a in _raw):
                 return None
+            # Имя не латиницей/кириллицей («りりんら», «瑣織 とよた») — повтор имени
+            # на языке оригинала рядом с переводом/иллюстратором, не соавтор
+            # (баг №173: «Ririnra, Roy, りりんら» у серии Roy из одной книги).
+            if any(re.search(r"[^\sA-Za-zА-Яа-яЁё.'’]", a) for a in _raw):
+                return None
             _conv = [_meta_name_to_ru_order(a) for a in _raw]
             _seen: set = set()
             _uniq = []
@@ -1906,7 +1917,8 @@ class Pass4Consensus:
                                      for r in _recs if r.metadata_series and r.metadata_series.strip()}
             if len(_meta_series_vals_fw) > 1:
                 continue
-            _fd_recs = [r for r in _recs if (r.author_source or '').startswith('folder_dataset')]
+            _fd_recs = [r for r in _recs if (r.author_source or '').startswith('folder_dataset')
+                        and not getattr(r, 'hyphen_split_author', False)]   # баг №169
             if not _fd_recs:
                 continue
             def _own_tokens_of(r):
@@ -1978,7 +1990,8 @@ class Pass4Consensus:
             if (r.proposed_series or '').strip():
                 continue
             if not (r.author_source or '').startswith('folder_dataset') \
-                    or 'metadata-coauthors' in r.author_source:
+                    or 'metadata-coauthors' in r.author_source \
+                    or getattr(r, 'hyphen_split_author', False):
                 continue
             _cand = _plausible_meta_coauthors(r)
             if not _cand:
@@ -1997,6 +2010,26 @@ class Pass4Consensus:
                 r.proposed_author = _merged
                 r.author_source = f'{r.author_source}+metadata-coauthors'
                 _folder_author_widened += 1
+
+        # Баг №175: «2. Трудно быть мобом (соавт. Ольховская-Инга).fb2» — соавтор
+        # назван в имени файла. Голосование по серии выше молчит, если у книг
+        # серии разные <sequence> (Кучеренко, «Хроники Ала-Арна»). Пометка в
+        # имени файла + тот же человек в метаданных этой книги — соавтор.
+        for r in records:
+            _m = re.search(r'\(\s*(?:соавт\.?|при\s+участии)\s*([^()]+)\)', Path(r.file_path).name, re.I)
+            if not _m or not r.proposed_author or not r.metadata_authors:
+                continue
+            _co = ' '.join(_m.group(1).replace('-', ' ').split())
+            _co_words = {_nfc_lower_yo(w) for w in _co.split()}
+            if not any({_nfc_lower_yo(w) for w in a.split()} >= _co_words and len(_co_words) >= 2
+                       for a in re.split(r'[;,]', r.metadata_authors)):
+                continue
+            _have = [a.strip() for a in r.proposed_author.split(',') if a.strip()]
+            if any({_nfc_lower_yo(w) for w in a.split()} == _co_words for a in _have):
+                continue
+            r.proposed_author = ', '.join(sorted(_have + [_co]))
+            r.author_source = f'{r.author_source}+filename-coauthor'
+            _folder_author_widened += 1
 
         if _folder_author_widened:
             _log.info(f"[PASS 4] Widened {_folder_author_widened} folder_dataset authors using majority-confirmed metadata co-authors")

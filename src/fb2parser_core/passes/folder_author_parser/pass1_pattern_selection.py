@@ -5,6 +5,7 @@ Based on structural analysis, determines which pattern matches the folder name.
 7 possible patterns are checked in order of precedence.
 """
 
+import re
 from typing import Optional
 
 
@@ -132,6 +133,16 @@ def select_pattern(struct_info: dict,
                 not text_after_last and
                 male_names is not None and female_names is not None and
                 _is_person_name(text_before_first, male_names, female_names)):
+            pattern = "Author (CoAuthor)"
+
+    # 3c. «Автор (пер. Переводчик)», «Автор (соавт. Соавтор)» — автор до скобок,
+    # даже если его имени нет в словаре (баг №171: «Yoonaanee Maiks (пер.
+    # Грек-Максим)» шла в «Series (Author)» — автором становился переводчик).
+    if pattern is None:
+        _last_paren = re.search(r'\(([^()]*)\)\s*$', name)
+        if (_last_paren and text_before_first and not text_after_last
+                # «пер.» — точку после слова снимает предразбор («пер Грек-Максим»)
+                and re.match(r'\s*(?:пер\b|перев|соавт|при\s+участии)', _last_paren.group(1), re.IGNORECASE)):
             pattern = "Author (CoAuthor)"
 
     # 4. "Series (Author)" (95/90) - brackets at end WITHOUT comma WITHOUT text after

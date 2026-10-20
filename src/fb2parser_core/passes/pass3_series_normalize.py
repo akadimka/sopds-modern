@@ -55,6 +55,13 @@ class Pass3SeriesNormalize:
                 continue
 
             original = record.proposed_series
+            # Баг №173: «Избранный Богами (Перезагрузка)» рядом с папкой
+            # «Избранный богами» — вариант, отдельная серия; шаг 1.8 срезал бы
+            # «(Перезагрузка)» как пометку автора и слил бы их снова.
+            if getattr(record, 'sibling_variant_series', None) == original:
+                record.proposed_series = original.replace('ё', 'е').replace('Ё', 'Е')
+                record.sibling_variant_series = record.proposed_series
+                continue
             normalized = self._normalize_series_name(original)
             normalized = self._sanitize_for_folder(normalized)
 

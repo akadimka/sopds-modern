@@ -2804,6 +2804,8 @@ class FB2CompilerService:
         re.IGNORECASE | re.UNICODE,
     )
 
+    _PREFIX_NUM_PART_RE = re.compile(r'^\s*(\d{1,3})\s*[._-]\s*(\d{1,2})(?:-?я)?\s+часть\b', re.IGNORECASE)
+
     _roman_to_int = staticmethod(roman_to_int)
 
     @classmethod
@@ -2813,6 +2815,11 @@ class FB2CompilerService:
         Возвращает (volume, part) или None если паттерн не найден.
         volume — целое число тома, part — номер части (1, 2, …).
         """
+        # Баг №174: «2. 1 часть Великого похода. …» (Стариков «Игра в Жизнь») —
+        # номер книги префиксом, номер части — числом ПЕРЕД словом «часть».
+        m = cls._PREFIX_NUM_PART_RE.match(unicodedata.normalize('NFKC', stem or ''))
+        if m and 1 <= int(m.group(1)) <= 100 and 1 <= int(m.group(2)) <= 20:
+            return int(m.group(1)), int(m.group(2))
         for text in (title, stem):
             if not text:
                 continue
@@ -4318,6 +4325,13 @@ class FB2CompilerService:
         if not _series_ok_val and sn and re.match(r'^\d+$', sn):
             fn_num_from_sn = int(sn)
             if fn_num_from_sn < 1900:
+                # Баг №174: «N. M часть …» — без этого части 3-4 «Великого похода»
+                # (Стариков) вставали на одну позицию 2 без порядка. Только этот
+                # шаблон: «Том N. Часть M» здесь давно разбирается правилами
+                # внутреннего тома ниже (Савич «Первый», Клеванский).
+                _pnp = self._PREFIX_NUM_PART_RE.match(unicodedata.normalize('NFKC', stem))
+                if _pnp and int(_pnp.group(1)) == fn_num_from_sn and 1 <= int(_pnp.group(2)) <= 20:
+                    return (0, fn_num_from_sn, int(_pnp.group(2)), 0), 'volume_part', False, str(fn_num_from_sn)
                 # Баг №62: та же проверка на внутренний том, что и в ветке выше
                 # (_series_ok=True) — здесь просто ДРУГАЯ причина, по которой мы
                 # доверяем sn напрямую (metadata_series отличается от

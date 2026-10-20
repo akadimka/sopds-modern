@@ -740,6 +740,33 @@ class RegenCSVService:
             self.logger.log(f"[OK] PASS 2.5: Expanded abbreviated authors in {expanded25} files")
 
 
+    def _keep_sibling_variant_folder(self, series: str, parent_parts: tuple) -> str:
+        """Папка-вариант рядом с основной папкой серии — отдельная серия (баг №173).
+
+        «Старатели» + «Старатели. Новая история», «Избранный богами» +
+        «Избранный Богами (Перезагрузка)», «Вот такая вот, фентези жизнь» +
+        «… (Ugly Bastard)»: извлечение серии из имени папки срезает хвост
+        «. …»/«(…)» как пометку — обе папки давали одну серию, номера книг
+        сталкивались. Решение пользователя (№157): вариант — отдельная серия.
+        Если рядом есть папка, названная ровно как срезанная серия, — имя
+        папки-варианта сохраняем целиком.
+        """
+        folder = parent_parts[-1]
+        norm = lambda s: s.casefold().replace('ё', 'е')  # noqa: E731
+        if norm(folder) == norm(series) or not norm(folder).startswith(norm(series)):
+            return series
+        tail = folder[len(series):]
+        if not re.match(r'\s*(?:[.:]\s|\(|\[|\s[-–—]\s)', tail):
+            return series
+        cache = self.__dict__.setdefault('_sibling_names_cache', {})
+        parent = self.work_dir.joinpath(*parent_parts[:-1])
+        if parent not in cache:
+            try:
+                cache[parent] = {norm(p.name) for p in parent.iterdir() if p.is_dir()}
+            except OSError:
+                cache[parent] = set()
+        return folder if norm(series) in cache[parent] else series
+
     def _regen_series_from_folders(self, progress_callback, ctx) -> None:
         """regenerate, шаг 4: Серии из структуры папок (_compute_folder_series)."""
         # ===== SERIES EXTRACTION: From Folders (VARIANT B) =====
@@ -880,13 +907,31 @@ class RegenCSVService:
                     return bool(_nw) and _nw <= _author_words
 
                 series_folders = []
-                for _sf in subfolders:
+                for _sf_idx, _sf in enumerate(subfolders):
                     # Папка-буква алфавитного указателя («С», «А», «Б»…) — типичная
                     # структура крупных коллекций (авторы рассортированы по первой
                     # букве фамилии). Реальный случай (docs/quality-roadmap.md, баг
                     # №48): "Азбука Социальной Фантастики (833)\С\Стругацки Аркадий\
                     # ...fb2" — без этого фильтра "С" считалась частью серии.
                     if self._is_alphabet_index_folder(_sf):
+                        continue
+                    # Баг №171: «Бакланов-Серегей» (опечатка в папке) — Precache уже
+                    # признал её папкой автора «Бакланов Сергей», а сверка слов
+                    # («Серегей» ≠ «Сергей») — нет, и папка автора становилась
+                    # корнем серии. Папка без скобок («Серия (Автор)» — другой
+                    # случай), закэшированная как папка ЭТОГО автора, — не серия.
+                    if author and '(' not in _sf:
+                        _cached = self.author_folder_cache.get(
+                            self.work_dir.joinpath(*parent_parts[:_sf_idx + 2]))
+                        if _cached and _norm(_cached[0]) == _norm(author):
+                            continue
+                    # Баг №171: «Сигел-Джейсон (соавт. Миллер-Кирстен)», «Yoonaanee
+                    # Maiks (пер. Грек-Максим)» — папка автора с пометкой о соавторе/
+                    # переводчике. Точка в «соавт.» делила её как «Фамилия. Серия»,
+                    # серией становилось «Миллер-Кирстен)».
+                    _sf_bare = re.sub(r'\s*\((?:пер\b|перев|соавт|при\s+участии)[^)]*\)', '',
+                                      _sf, flags=re.IGNORECASE).strip()
+                    if author and _sf_bare != _sf and (_author_in(_sf_bare) or _is_author_name(_sf_bare)):
                         continue
                     if not author or not _author_in(_sf):
                         # Дополнительная проверка: папка = латинский логин/транслит автора
@@ -1159,6 +1204,12 @@ class RegenCSVService:
             author = record.proposed_author or ''
 
             series, source = _compute_folder_series(author, parent_parts)
+            if source and series and '\\' not in series and parent_parts:
+                _variant = self._keep_sibling_variant_folder(series, parent_parts)
+                if _variant != series:
+                    series = _variant
+                    # нормализация серий не должна снова срезать хвост варианта
+                    record.sibling_variant_series = _variant
             if source and series != author:
                 record.proposed_series = series
                 record.series_source = source
@@ -2584,10 +2635,21 @@ class RegenCSVService:
            (Pass 1 ошибочно использовал авторскую папку как серию — коллекция\\Автор\\файл.fb2)
         """
         from pathlib import Path as _P
-        _author_folder_names = {
-            _P(k).name.lower().replace('ё', 'е')
-            for k in self.author_folder_cache
-        }
+        _author_folders = {_P(k) for k in self.author_folder_cache}
+
+        def _own_author_folder_names(record) -> set:
+            # Баг №170: раньше — имена ВСЕХ папок авторов прогона. В коллекции
+            # есть авторы-псевдонимы «Дикарь», «Сумрак», «Мир» — их имена
+            # стирали одноимённые серии у других авторов (Усманов «Дикарь»,
+            # 11 томов; Ефремов «Сумрак», 7). Теперь — только папки авторов
+            # на пути самой книги.
+            names = set()
+            for folder in (self.work_dir / record.file_path).parents:
+                if folder in _author_folders:
+                    names.add(folder.name.lower().replace('ё', 'е'))
+                if folder == self.work_dir:
+                    break
+            return names
 
         _count = 0
         for record in self.records:
@@ -2605,7 +2667,8 @@ class RegenCSVService:
                     continue
 
             # Случай 2: серия — это имя авторской папки из кэша
-            if ps_norm in _author_folder_names and 'folder_dataset' in (record.series_source or ''):
+            if ('folder_dataset' in (record.series_source or '')
+                    and ps_norm in _own_author_folder_names(record)):
                 record.proposed_series = ''
                 record.series_source = ''
                 _count += 1

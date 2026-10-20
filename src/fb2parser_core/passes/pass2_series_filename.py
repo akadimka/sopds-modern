@@ -460,9 +460,17 @@ class Pass2SeriesFilename:
                             continue
                         if len(extracted_author.replace(' ', '')) < 3:
                             continue
+                        # Баг №171: «Yoonaanee Maiks (пер. Грек-Максим)» — в скобках
+                        # переводчик/соавтор, а не автор серии «Yoonaanee Maiks».
+                        if re.match(r'\s*(?:пер\b|перев|соавт|при\s+участии)', extracted_author, re.IGNORECASE):
+                            continue
                         cur_author_norm = record.proposed_author.strip().lower().replace('ё', 'е')
                         ext_series_norm = extracted_series.lower().replace('ё', 'е')
                         ext_author_norm = extracted_author.lower().replace('ё', 'е')
+                        # Баг №171: «В.-Виктор (Виктор В.)» — одно и то же имя до
+                        # скобок и в скобках: папка автора, а не «Серия (Автор)».
+                        if set(re.findall(r'\w+', ext_series_norm)) == set(re.findall(r'\w+', ext_author_norm)):
+                            continue
 
                         # Case A: папка взята как автор вместо серии — исправить автора.
                         # Требуем ≥2 слов в extracted_author: одно слово («Базилио») —
@@ -2257,6 +2265,8 @@ class Pass2SeriesFilename:
         # префикса выше/ниже. Якорим к началу стема (^), а не ищем по всей строке
         # (как Правило 5), чтобы не подхватить случайное число в середине названия.
         _PREFIX_SPACE_RE = re.compile(r'^(\d{1,3})\s+(?=[А-ЯЁA-Z«"(])', re.UNICODE)
+        # Баг №172: «02, NPC. Осознание.fb2» — запятая вместо точки после номера.
+        _PREFIX_COMMA_RE = re.compile(r'^(\d{1,3}),\s+(?=[А-ЯЁA-Z«"(])', re.UNICODE)
         # Правило 1.5: дробный префикс «N.M.» или «N.M_»
         _FRAC_PREFIX_RE = re.compile(r'^(\d{1,3}\.\d{1,4})[\._\s]', re.UNICODE)
         # Правило 3: диапазон томов в скобках имени файла
@@ -2352,6 +2362,14 @@ class Pass2SeriesFilename:
             if self.collection_keywords:
                 _stem_lower = stem.lower().replace('ё', 'е')
                 _title_lower = (record.file_title or '').lower().replace('ё', 'е')
+                # Баг №172: слово-маркер сборника внутри имени САМОЙ серии —
+                # не признак сборника («Великие земли АСКАР: Кредо наемника»,
+                # «великие» — маркер для «Великие писатели»): номер «2.» из
+                # имени файла пропускался, обе книги получали 1 из метаданных.
+                _ser_root = (record.proposed_series or '').split('\\')[0].strip().lower().replace('ё', 'е')
+                if len(_ser_root) >= 3:
+                    _stem_lower = _stem_lower.replace(_ser_root, ' ')
+                    _title_lower = _title_lower.replace(_ser_root, ' ')
                 if (contains_any_keyword(_stem_lower, self.collection_keywords)
                         or contains_any_keyword(_title_lower, self.collection_keywords)):
                     continue
@@ -2369,7 +2387,7 @@ class Pass2SeriesFilename:
                         record.series_number_source = 'filename_prefix_fraction'
                     continue
 
-            m = _PREFIX_RE.match(stem) or _PREFIX_SPACE_RE.match(stem)
+            m = _PREFIX_RE.match(stem) or _PREFIX_SPACE_RE.match(stem) or _PREFIX_COMMA_RE.match(stem)
             if m:
                 fn_num = int(m.group(1))
                 if not (1900 <= fn_num <= 2099):

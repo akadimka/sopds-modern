@@ -105,6 +105,7 @@ class Pass3Normalize:
 
         ctx = SimpleNamespace(normalized_count=normalized_count)
         self._fix_mixed_script_author_typos(records, ctx)
+        self._split_hyphen_folder_authors(records, ctx)
         self._normalize_author_names(records, ctx)
         self._capitalize_author_words(records, ctx)
         self._strip_author_colons(records, ctx)
@@ -124,6 +125,55 @@ class Pass3Normalize:
             if record.proposed_author:
                 record.proposed_author = _fix_mixed_script_homoglyphs(record.proposed_author)
 
+
+    # «Кавахара-Рэки», «Ставров-И.В»: два слова через дефис, оба с заглавной.
+    _HYPHEN_AUTHOR_RE = re.compile(r'([A-ZА-ЯЁ][^\s\-,;]*)-([A-ZА-ЯЁ][^\s\-,;]*)')
+    _AUTHOR_SEP_RE = re.compile(r'(\s*[;,]\s*)')
+
+    @staticmethod
+    def _name_words(name: str) -> List[str]:
+        return sorted(w.strip('.').lower().replace('ё', 'е') for w in name.split() if w.strip('.'))
+
+    def _split_hyphen_folder_authors(self, records, ctx) -> None:
+        """PASS 3, шаг 1а: «Фамилия-Имя» из папки автора → «Фамилия Имя» (баг №169).
+
+        В «СЕРИЯ.LitRPG» папки авторов названы «Фамилия-Имя». Папки внутри
+        коллекции — всегда автор; дефис убирался, только если второе слово
+        есть в словаре имён («Кириллов-Сергей»), — 146 авторов (473 книги)
+        остались «Кавахара-Рэки», «Ютин-Макар», «Шер-Вениамин». Убираем
+        дефис, если метаданные хоть одной книги этого автора называют те же
+        два слова раздельно («Рэки Кавахара»). Настоящие имена через дефис
+        («Wing-Span», «Коцвард-Франк») в метаданных тоже через дефис — не
+        трогаем; без подтверждения («Chu-Gong» ↔ «추공») — тоже.
+        """
+        confirmed = set()
+        for record in records:
+            meta = record.metadata_authors or ''
+            if not record.proposed_author or meta in ('', '[unknown]'):
+                continue
+            meta_words = {tuple(self._name_words(m)) for m in re.split(r'[;,]', meta)}
+            for part in self._AUTHOR_SEP_RE.split(record.proposed_author):
+                m = self._HYPHEN_AUTHOR_RE.fullmatch(part.strip())
+                if m and tuple(self._name_words(f'{m.group(1)} {m.group(2)}')) in meta_words:
+                    confirmed.add(part.strip())
+        # Порядок в папке — «Фамилия-Имя»: следующий шаг не должен переставлять
+        # «Кавахара Рэки» в «Рэки Кавахара» по метаданным.
+        ctx.hyphen_split_authors = {c.replace('-', ' ') for c in confirmed}
+        if not confirmed:
+            return
+        for record in records:
+            if not record.proposed_author or '-' not in record.proposed_author:
+                continue
+            parts = self._AUTHOR_SEP_RE.split(record.proposed_author)
+            new = ''.join(p.replace('-', ' ') if p.strip() in confirmed else p for p in parts)
+            if new != record.proposed_author:
+                record.proposed_author = new
+                # Pass 4 не дописывает таким авторам соавторов из метаданных:
+                # раньше дефисное имя с метаданными не совпадало и правило
+                # молчало; у японских ранобэ там иллюстраторы («Анеко Юсаги;
+                # Минами Сэйра», «Рэки Кавахара; abec»). Соавторы в этой
+                # коллекции — в имени папки («(соавт. …)»).
+                record.hyphen_split_author = True
 
     def _normalize_author_names(self, records, ctx) -> None:
         """PASS 3, шаг 2: Основная нормализация авторов (закреплённые фамилии не переставляются)."""
@@ -148,6 +198,9 @@ class Pass3Normalize:
             if record.proposed_author in _conversions:
                 record.proposed_author = _conversions[record.proposed_author]
                 normalized_count += 1
+                continue
+
+            if record.proposed_author in getattr(ctx, 'hyphen_split_authors', ()):
                 continue
 
             # Дедупликация авторов: "Гаусс Максим, Гаусс Максим" → "Гаусс Максим"
