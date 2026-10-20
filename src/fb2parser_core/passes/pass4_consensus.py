@@ -16,6 +16,7 @@ from ..series_normalizer import _nfc_lower_yo
 from ..series_processor import SeriesProcessor
 from ..settings_manager import SettingsManager
 from .pass2_series_filename import _TOM_WORD_RE
+from .pass3_normalize import is_latin_name
 
 _log = logging.getLogger(__name__)
 
@@ -1869,6 +1870,8 @@ class Pass4Consensus:
             # давая "Валерий Александрович Гуров, Дамиров Рафаэль" — не тот
             # порядок слов у первого автора при верном у второго.
             parts = raw.strip().split()
+            if is_latin_name(raw):   # баг №176: латиницу не переставляем
+                return ' '.join(parts)
             return f'{parts[-1]} {parts[0]}' if len(parts) >= 2 else raw.strip()
 
         def _plausible_meta_coauthors(rec):

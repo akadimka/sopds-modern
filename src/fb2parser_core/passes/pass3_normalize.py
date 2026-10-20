@@ -21,6 +21,14 @@ def _nfc_yo_to_ye(s: str) -> str:
 
 
 
+_LATIN_NAME_RE = re.compile(r"[A-Za-z][A-Za-z.'’]*(?:[\s,;]+[A-Za-z][A-Za-z.'’]*)+")
+
+
+def is_latin_name(name: str) -> bool:
+    """Имя (или список соавторов) только латиницей, два слова и больше."""
+    return bool(name) and bool(_LATIN_NAME_RE.fullmatch(name.strip()))
+
+
 def _strip_diacritics(s: str) -> str:
     """Remove stress accent marks only (U+0301 acute), preserving й, ё, etc."""
     return unicodedata.normalize('NFC',
@@ -184,7 +192,10 @@ class Pass3Normalize:
         _pinned_authors = {v.lower() for v in _conversions.values()}
 
         for record in records:
-            if not record.proposed_author or record.proposed_author == "Сборник":
+            # «Соавторство» (3+ авторов, баг №177: «Тевинтерские ночи», 12
+            # авторов) — как и «Сборник», не имя: normalize_format по
+            # метаданным подменял его первым автором («Райан Кормье»).
+            if not record.proposed_author or record.proposed_author in ("Сборник", "Соавторство"):
                 continue
 
             # Skip normalization for authors pinned via author_surname_conversions.
@@ -201,6 +212,12 @@ class Pass3Normalize:
                 continue
 
             if record.proposed_author in getattr(ctx, 'hyphen_split_authors', ()):
+                continue
+
+            # Баг №176 (решение пользователя): латинские имена не переставляем
+            # вообще — «Ascold Flow» оставался бы «Flow Ascold», «Get Lost» —
+            # «Lost Get». Порядок — как в папке/метаданных.
+            if is_latin_name(record.proposed_author):
                 continue
 
             # Дедупликация авторов: "Гаусс Максим, Гаусс Максим" → "Гаусс Максим"

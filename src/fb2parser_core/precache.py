@@ -13,6 +13,9 @@ from .passes.folder_author_parser import parse_author_from_folder_name
 
 _log = logging.getLogger(__name__)
 
+# Служебная папка коллекции — имя в подчёркиваниях («_Межавторские циклы_»).
+_SERVICE_FOLDER_RE = re.compile(r'_[^_].*_')
+
 _FIRST_NAME_RE = re.compile(r'<(?:fb:)?first-name>(.*?)</(?:fb:)?first-name>', re.DOTALL)
 _LAST_NAME_RE = re.compile(r'<(?:fb:)?last-name>(.*?)</(?:fb:)?last-name>', re.DOTALL)
 
@@ -286,7 +289,12 @@ class Precache:
                     try:
                         for subdir in folder.iterdir():
                             if subdir.is_dir() and not subdir.name.startswith('.'):
-                                scan_folder_hierarchy(subdir, depth + 1, force_author=True)
+                                # Баг №177: «_Межавторские циклы_» — служебная папка
+                                # (имя в подчёркиваниях), не автор: «Dragon Age»,
+                                # «Гаджет» — циклы разных авторов, автор у каждой
+                                # книги свой (имя файла, метаданные).
+                                _service = _SERVICE_FOLDER_RE.fullmatch(subdir.name)
+                                scan_folder_hierarchy(subdir, depth + 1, force_author=not _service)
                     except (PermissionError, OSError):
                         pass
                 return None

@@ -59,5 +59,7 @@ def test_real_name_still_surname_first(authors):
     assert authors["Кириллов-Сергей"] == {"Кириллов Сергей"}
 
 
-def test_unlisted_names_keep_surname_first(authors):
-    assert authors["Leon Hart"] == {"Hart Leon"}
+def test_latin_names_not_reordered(authors):
+    # Баг №176 (решение пользователя 2026-10-20): латинские имена не
+    # переставляются вообще — раньше здесь ожидалось «Hart Leon».
+    assert authors["Leon Hart"] == {"Leon Hart"}

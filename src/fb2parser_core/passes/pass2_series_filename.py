@@ -493,6 +493,10 @@ class Pass2SeriesFilename:
                             from ..name_normalizer import AuthorName as _AN
                             _an = _AN(extracted_author)
                             canonical_author = _an.normalized if (_an.is_valid and _an.normalized) else extracted_author
+                            # Баг №176: латинские имена не переставляем («Semyon Two»).
+                            from .pass3_normalize import is_latin_name
+                            if is_latin_name(extracted_author):
+                                canonical_author = extracted_author
                             record.proposed_author = canonical_author
                             record.author_source = 'folder_dataset'
 
