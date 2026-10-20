@@ -109,3 +109,13 @@ def test_logout_has_no_side_padding():
     css = THEME_CSS.read_text(encoding="utf-8")
     assert re.search(r"\.sp-logout-form button \{[^}]*padding: 0\.3rem 0;", css)
     assert re.search(r"\.fb2-topbar-links a\.fb2-logout \{ padding: 0\.3rem 0; \}", css)
+
+
+def test_header_items_share_one_line_height():
+    """«admin (Logout)» садился ниже ссылок Scan/FB2Parser/Settings: строчная
+    ссылка и кнопка со своей высотой строки. Пункты меню — flex по центру,
+    ссылки и кнопка выхода — одна высота строки."""
+    css = THEME_CSS.read_text(encoding="utf-8")
+    assert re.search(r"\.sopds-top-bar \.menu > li \{ display: flex; align-items: center;", css)
+    assert re.search(r"\.sopds-top-bar \.menu li a \{[^}]*line-height: 1;", css)
+    assert re.search(r"\.sopds-top-bar \.sp-logout-form button \{[^}]*line-height: 1;", css)

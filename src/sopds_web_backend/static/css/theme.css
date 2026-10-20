@@ -585,10 +585,15 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sp-lang-switcher .sep { color: rgba(255,255,255,0.3); }
 
 /* Top-bar action links */
-.sopds-top-bar .menu { background: transparent; }
+.sopds-top-bar .menu { background: transparent; align-items: center; }
+/* Все пункты — на одной высоте: пункт «admin (Logout)» — строка из ссылки,
+   скобок и кнопки-формы; без flex и общей высоты строки он садился ниже
+   ссылок Scan/FB2Parser/Settings. */
+.sopds-top-bar .menu > li { display: flex; align-items: center; font-size: 0.85rem; color: #6ee7b7; }
 .sopds-top-bar .menu li a {
     color: #6ee7b7;
     font-size: 0.85rem;
+    line-height: 1;
     padding: 0.3rem 0.6rem;
     border-radius: var(--radius-sm);
     transition: color var(--transition), background var(--transition);
@@ -599,7 +604,7 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sopds-top-bar .sp-logout-form button {
     background: none; border: 0; margin: 0; font: inherit; cursor: pointer;
     /* без отступов по бокам: «(Logout)», а не «( Logout )» */
-    color: #6ee7b7; font-size: 0.85rem; padding: 0.3rem 0;
+    color: #6ee7b7; font-size: 0.85rem; line-height: 1; padding: 0.3rem 0;
     transition: color var(--transition);
 }
 .sopds-top-bar .sp-logout-form button:hover { color: #fff; }
