@@ -603,6 +603,31 @@ class SynchronizationService:
             for t in re.split(r'[\s,;]+', name or '') if len(t) > 2
         }
 
+    def _existing_author_variant(self, genre: str, author: str) -> str:
+        """Имя существующей папки автора в жанре с теми же словами в другом
+        порядке (баг №178), иначе `author`. Несколько таких папок — не решаем."""
+        library = getattr(self, 'library_path', None)
+        if not library:
+            return author
+        cache = self.__dict__.setdefault('_author_variants_cache', {})
+        if genre not in cache:
+            by_key: Dict[str, list] = {}
+            try:
+                for d in (Path(library) / genre).iterdir():
+                    if d.is_dir():
+                        by_key.setdefault(self._word_set_key(d.name), []).append(d.name)
+            except OSError:
+                pass
+            cache[genre] = by_key
+        found = cache[genre].get(self._word_set_key(author), [])
+        if author in found or len(found) != 1:
+            return author
+        return found[0]
+
+    @staticmethod
+    def _word_set_key(name: str) -> str:
+        return ' '.join(sorted(re.findall(r'\w+', (name or '').lower().replace('ё', 'е'))))
+
     @staticmethod
     def _norm_text(s: str) -> str:
         return (s or '').strip().lower().replace('ё', 'е')
@@ -737,7 +762,18 @@ class SynchronizationService:
             series = _shorten_path_component(series) if series else ""
             subseries = _shorten_path_component(subseries) if subseries else ""
             display_root = _shorten_path_component(display_root) if display_root else ""
-            
+
+            # Баг №178: в библиотеке уже есть папка этого автора с теми же
+            # словами в другом порядке («Flow Ascold» — латинские имена до
+            # №176 переставлялись, а «Ascold Flow» — уже нет) — книга идёт
+            # туда, а не в новую соседнюю папку (решение пользователя, вариант А).
+            _variant = self._existing_author_variant(primary_genre, author)
+            if _variant != author:
+                self._log(f"  [{i+1}] Автор «{author}» → существующая папка «{_variant}»")
+                if (record.proposed_author or '').strip() == author:
+                    record.proposed_author = _variant
+                author = _variant
+
             # Detect duplicates
             #
             # Баг №74: для многотомных изданий, где КАЖДЫЙ физический файл
