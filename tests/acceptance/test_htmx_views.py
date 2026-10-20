@@ -36,9 +36,10 @@ class TestSearchSuggestView:
         assert b"No results" in response.content
 
     def test_suggest_title_match(
-        self, client, django_user, update_counters, book
+        self, client, django_user, update_counters, book, publish
     ) -> None:
         """Поиск по title находит книгу."""
+        publish(book)
         client.force_login(django_user)
         response = client.post(
             reverse("web:suggest"), {"searchterms": book.title[:3], "type": "title"}
@@ -48,9 +49,12 @@ class TestSearchSuggestView:
         assert b"sopds-suggestion-item" in response.content
 
     def test_suggest_author_match(
-        self, client, django_user, update_counters, author
+        self, client, django_user, update_counters, author, book, publish
     ) -> None:
-        """Поиск по author находит автора."""
+        """Поиск по author находит автора (у которого есть видимая книга)."""
+        from opds_catalog.models import bauthor
+        bauthor.objects.create(book=book, author=author)
+        publish(book)
         client.force_login(django_user)
         response = client.post(
             reverse("web:suggest"),

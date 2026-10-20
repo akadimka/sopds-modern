@@ -23,30 +23,6 @@ from opds_catalog.models import (
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture
-def lib(override_config, test_rootlib, simple_fb2):
-    with override_config(SOPDS_AUTH=True, SOPDS_ROOT_LIB=test_rootlib, SOPDS_DOUBLES_HIDE=False):
-        users = {n: User.objects.create_user(n, password="x") for n in ("anna", "boris")}
-        users["admin"] = User.objects.create_user("admin", password="x", is_superuser=True)
-        root = Catalog.objects.create(cat_name=".", path=".")
-        boris_cat = Catalog.objects.create(cat_name="Тайник Бориса", path="Тайник Бориса", parent=root)
-        genre = Genre.objects.create(genre="sf", section="Фантастика", subsection="Космос")
-        books = {}
-        for who, title, cat in (("anna", "Дневник Анны", root), ("boris", "Секрет Бориса", boris_cat)):
-            b = Book.objects.create(filename=simple_fb2, path=".", catalog=cat, avail=2, format="fb2",
-                                    docdate="", lang="ru", title=title, search_title=title.upper(),
-                                    annotation="", lang_code=1)
-            name = f"Автор {title.split()[1]}"
-            bauthor.objects.create(book=b, author=Author.objects.create(
-                full_name=name, search_full_name=name.upper(), lang_code=1))
-            bseries.objects.create(book=b, ser=Series.objects.create(
-                ser=f"Серия {title}", search_ser=f"СЕРИЯ {title}".upper(), lang_code=1))
-            bgenre.objects.create(book=b, genre=genre)
-            BookOwner.objects.create(book=b, user=users[who])
-            books[who] = b
-        yield users, books, boris_cat
-
-
 def _as(client, user):
     client.force_login(user)
     return client

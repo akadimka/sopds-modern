@@ -336,7 +336,7 @@ class TestSopdsProcessor:
             assert "lang_menu" in result
 
     def test_bookshelf_no_n_plus_one_queries(
-        self, rf, counter_with_books, django_user, catalog, override_config
+        self, rf, counter_with_books, django_user, catalog, override_config, publish
     ) -> None:
         """Баг №103: раньше на каждую строку книжной полки шёл отдельный
         Book.objects.get(id=...) — N+1, множится на КАЖДЫЙ рендер любой
@@ -348,16 +348,26 @@ class TestSopdsProcessor:
         for i in range(8):
             book = Book.objects.create(
                 filename=f"book{i}.fb2", path=".", format="fb2", cat_type=0,
-                title=f"Книга {i}", search_title=f"КНИГА {i}", catalog=catalog,
+                title=f"Книга {i}", search_title=f"КНИГА {i}", catalog=catalog, avail=2,
             )
+            publish(book)
             bauthor.objects.create(book=book, author=author)
             bookshelf.objects.create(user=django_user, book=book, readtime=timezone.now())
 
-        with override_config(SOPDS_AUTH=True):
+        def run():
             request = rf.get("/")
             request.user = django_user
             with CaptureQueriesContext(connection) as ctx:
                 result = sopds_processor(request)
+            return result, [q for q in ctx.captured_queries
+                            if "SAVEPOINT" not in q["sql"] and "RELEASE" not in q["sql"]]
+
+        with override_config(SOPDS_AUTH=True):
+            run()                                   # прогрев кэша счётчиков
+            result, db_queries = run()
+            bookshelf.objects.filter(user=django_user).exclude(
+                pk=bookshelf.objects.filter(user=django_user).order_by("pk").first().pk).delete()
+            _one, one_row_queries = run()
 
         assert len(result["bookshelf"]) == 8
         assert result["bookshelf"][0]["title"].startswith("Книга")
@@ -366,15 +376,11 @@ class TestSopdsProcessor:
         # отдельная история, не часть данного фикса.
         assert len(result["bookshelf"][0]["authors"]) == 1
 
-        db_queries = [
-            q for q in ctx.captured_queries
-            if "SAVEPOINT" not in q["sql"]
-            and "RELEASE" not in q["sql"]
-        ]
-        # 1 запрос на bookshelf+book (select_related) + 1 на статистику
-        # каталога (Counter) — раньше было бы ЕЩЁ +8 отдельных
-        # Book.objects.get(), один на каждую из 8 строк книжной полки.
-        assert len(db_queries) <= 3, (
-            f"Запросов: {len(db_queries)} ({[q['sql'][:60] for q in db_queries]}) "
-            "— не масштабируется с числом строк книжной полки?"
+        # Число запросов не зависит от числа строк книжной полки (раньше
+        # было бы +1 Book.objects.get() на каждую из 8 строк). Абсолютное
+        # число выросло на постоянную величину — проверка видимости книг
+        # (docs/multiuser-design.md).
+        assert len(db_queries) == len(one_row_queries), (
+            f"8 строк: {len(db_queries)} запросов, 1 строка: {len(one_row_queries)} "
+            "— масштабируется с числом строк книжной полки?"
         )

@@ -1,6 +1,6 @@
 from random import randint
 
-from opds_catalog import settings
+from opds_catalog import settings, visibility
 from opds_catalog.models import Book, Counter, bookshelf, lang_menu
 from opds_catalog.sopds_config import sopds_cfg as config
 
@@ -37,7 +37,8 @@ def sopds_processor(request):
             # рамок этого фикса.
             result = []
             rows = (
-                bookshelf.objects.filter(user=user)
+                # Книги, к которым доступ отозван, с полки не показываются.
+                bookshelf.objects.filter(user=user, book__in=visibility.visible_books(user))
                 .select_related("book")
                 .order_by("-readtime")[:8]
             )
@@ -58,6 +59,11 @@ def sopds_processor(request):
     stats = {d["name"]: d["value"] for d in stats_data}
     lastscan = [d["update_time"] for d in stats_data if d["name"] == "allbooks"]
     stats["lastscan_date"] = lastscan[0] if lastscan else None
+    # Числа — по видимым пользователю книгам (docs/multiuser-design.md), а не
+    # общий счётчик сканера.
+    counters = visibility.user_counters(request.user)
+    stats.update(allbooks=counters["books"], allcatalogs=counters["catalogs"], allauthors=counters["authors"],
+                 allgenres=counters["genres"], allseries=counters["series"])
     args["stats"] = stats
 
     scan_times = {d["name"]: d["update_time"] for d in stats_data}
@@ -69,12 +75,12 @@ def sopds_processor(request):
     if books_count:
         book_num = randint(1, books_count)
         try:
-            book = Book.objects.values("id").all()[book_num - 1 : book_num][0]
+            book = visibility.visible_books(request.user).order_by("id").values("id")[book_num - 1 : book_num][0]
             random_book = Book.objects.values("id", "title", "annotation").get(
                 id=book["id"]
             )
 
-        except Book.DoesNotExist:
+        except (IndexError, Book.DoesNotExist):
             random_book = None
     else:
         random_book = None

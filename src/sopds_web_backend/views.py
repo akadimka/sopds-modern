@@ -25,6 +25,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
 
 from fb2parser_web.job_state import JobState
+from opds_catalog import visibility
 from opds_catalog.models import (
     Author,
     Book,
@@ -155,8 +156,10 @@ def SearchBooksView(request):
     if request.GET:
         args.update(_extract_input_parameters(request))
 
+        # Пользователь, а не args["user"] (это имя для крошек): по нему
+        # фильтруется видимость книг.
         books = book_services.search_book(
-            args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
+            args["searchtype"], args["searchterms"], args["searchterms0"], request.user
         )
         book_url = reverse("web:book")
         _books_root = {"label": _("Books"), "url": book_url}
@@ -211,9 +214,11 @@ def SearchBooksView(request):
         elif args["searchtype"] == "u":
             # if config.SOPDS_AUTH:
             if SOPDS_AUTH:
-                books = Book.objects.filter(bookshelf__user=request.user).order_by(
-                    "-bookshelf__readtime"
-                )
+                # Книги, к которым доступ отозван, с полки скрываются (запись
+                # полки остаётся — вернётся доступ, вернётся и книга).
+                books = visibility.restrict_books(
+                    Book.objects.filter(bookshelf__user=request.user), request.user
+                ).order_by("-bookshelf__readtime")
                 args["breadcrumbs"] = [
                     _books_root,
                     {"label": _("Bookshelf"), "url": ""},
@@ -227,21 +232,20 @@ def SearchBooksView(request):
 
         # Поиск дубликатов для книги
         elif args["searchtype"] == "d":
-            book_id = int(args["searchterms"])  # type: ignore[call-overload]
-            mbook = Book.objects.get(id=book_id)
-            books = (
+            book_id = to_int(args["searchterms"], 0)
+            mbook = visibility.get_visible_book_or_404(request.user, book_id)
+            books = visibility.restrict_books(
                 Book.objects.filter(title=mbook.title, authors__in=mbook.authors.all())
                 .exclude(id=book_id)
-                .distinct()
-                .order_by("-docdate")
-            )
+                .distinct(), request.user
+            ).order_by("-docdate")
             args["breadcrumbs"] = [_books_root, {"label": _("Doubles for book"), "url": ""}, {"label": mbook.title, "url": ""}]
             args["searchobject"] = "title"
 
         # Поиск книги по ID
         elif args["searchtype"] == "i":
             book_id = to_int(args["searchterms"], 0)
-            books = Book.objects.filter(id=book_id)
+            books = visibility.visible_books(request.user).filter(id=book_id)
             try:
                 args["breadcrumbs"] = [_books_root, {"label": books[0].title, "url": ""}]
             except IndexError:
@@ -408,12 +412,11 @@ def CatalogsView(request):
         cat_id = None
         page_num = 1
 
-    try:
-        if cat_id is not None:
-            cat = Catalog.objects.get(id=cat_id)
-        else:
-            cat = Catalog.objects.get(parent__id=cat_id)
-    except Catalog.DoesNotExist:
+    # Папка, в которой нет видимых пользователю книг, — как несуществующая
+    # (имя папки — имя автора; цепочка родителей видимой папки видима сама).
+    cat = (catalog_services.get_by_id(cat_id, user=request.user) if cat_id is not None
+           else catalog_services.get_root())
+    if cat is DUMMY_CATALOG:
         cat = None
 
     items, op = catalog_services.paginated_catalog_content(
@@ -606,11 +609,13 @@ def SearchSuggestView(request):
 
     if search_type == "title":
         logger.info("Suggest books by title '{q}'")
-        items = Book.objects.filter(search_title__startswith=q.upper())[:10]
+        items = visibility.visible_books(request.user).filter(search_title__startswith=q.upper())[:10]
     elif search_type == "author":
-        items = Author.objects.filter(search_full_name__startswith=q.upper())[:10]
+        items = visibility.visible_authors(
+            request.user, Author.objects.filter(search_full_name__startswith=q.upper()))[:10]
     elif search_type == "series":
-        items = Series.objects.filter(search_ser__startswith=q.upper())[:10]
+        items = visibility.visible_series(
+            request.user, Series.objects.filter(search_ser__startswith=q.upper()))[:10]
     else:
         items = []
 
@@ -1011,23 +1016,28 @@ def offline_page(request):
 def hello(request):
     from datetime import timedelta
 
-    from django.db.models import Count
     from django.db.models.functions import TruncDate
 
     args: dict[str, Any] = {}
     args["breadcrumbs"] = []
+    # Всё на главной — по видимым пользователю книгам (docs/multiuser-design.md).
+    visible = visibility.visible_books(request.user)
+    counters = visibility.user_counters(request.user)
     args["stats"] = {
-        "allbooks":   Book.objects.count(),
-        "allauthors": Author.objects.values("full_name").distinct().count(),
-        "allgenres":  Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).values("genre").distinct().count(),
+        "allbooks":   counters["books"],
+        "allauthors": counters["authors"],
+        "allgenres":  counters["genres"],
     }
+    # Служебная статистика загрузки рейтингов («обработано N из M») — о всей
+    # библиотеке, только администратору.
+    show_rating_stats = request.user.is_superuser
 
     # Виджет "сейчас читаю" / статистика чтения — только записи, где реально
     # открывали ридер (progress_percent > 0), а не просто скачали файл
     # (Download/ConvertFB2 тоже создают bookshelf-запись, но с percent=0).
     reading_qs = bookshelf.objects.filter(user=request.user, progress_percent__gt=0)
     current_reading = (
-        reading_qs.filter(finished=False)
+        reading_qs.filter(finished=False, book__in=visible)
         .select_related("book")
         .prefetch_related("book__series")
         .order_by("-readtime")
@@ -1039,7 +1049,7 @@ def hello(request):
             bs = bseries.objects.filter(book=current_reading.book, ser=first_series).first()
             current_reading.series_name = first_series.ser
             current_reading.series_no = bs.ser_no if bs else None
-            current_reading.series_total = Book.objects.filter(series=first_series).count()
+            current_reading.series_total = visible.filter(series=first_series).count()
         else:
             current_reading.series_name = None
 
@@ -1064,10 +1074,11 @@ def hello(request):
         "books_finished_month": books_finished_month,
         "streak_days": streak,
     }
-    all_genres = list(Genre.objects.annotate(cnt=Count("bgenre")).filter(cnt__gt=0).order_by("-cnt"))
+    all_genres = list(Genre.objects.annotate(cnt=visibility.visible_book_count(request.user))
+                      .filter(cnt__gt=0).order_by("-cnt"))
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
-    args["recent_books"] = Book.objects.select_related(
+    args["recent_books"] = visible.select_related(
         "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
     ).order_by("-id").prefetch_related("genres")[:10]
     # Баг №104: order_by("?") компилируется в ORDER BY RANDOM() на SQLite —
@@ -1081,7 +1092,7 @@ def hello(request):
     if books_count:
         book_num = randint(1, books_count)
         try:
-            random_book_id = Book.objects.values("id").all()[book_num - 1 : book_num][0]["id"]
+            random_book_id = visible.order_by("id").values("id")[book_num - 1 : book_num][0]["id"]
             random_book = Book.objects.select_related(
                 "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
             ).get(id=random_book_id)
@@ -1090,7 +1101,7 @@ def hello(request):
     args["random_book"] = random_book
     args["samlib_rating_enabled"] = config.SOPDS_SAMLIB_RATING
     if config.SOPDS_SAMLIB_RATING:
-        args["popular_books"] = list(Book.objects.filter(
+        args["popular_books"] = list(visible.filter(
             samlib_rating__rating__isnull=False
         ).select_related("samlib_rating").prefetch_related("authors").order_by("-samlib_rating__rating")[:5])
         from opds_catalog.models import SamlibRating
@@ -1099,7 +1110,7 @@ def hello(request):
         with_rating = SamlibRating.objects.filter(rating__isnull=False).count()
         with_error  = SamlibRating.objects.filter(fetch_error=True).count()
         last_entry  = SamlibRating.objects.order_by("-fetched_at").first()
-        args["samlib_stats"] = {
+        args["samlib_stats"] = None if not show_rating_stats else {
             "total":       total_books,
             "processed":   processed,
             "pending":     max(0, total_books - processed),
@@ -1113,7 +1124,7 @@ def hello(request):
 
     args["authortoday_rating_enabled"] = config.SOPDS_AUTHORTODAY_RATING
     if config.SOPDS_AUTHORTODAY_RATING:
-        args["popular_books_at"] = list(Book.objects.filter(
+        args["popular_books_at"] = list(visible.filter(
             authortoday_rating__likes__gt=0
         ).select_related("authortoday_rating").prefetch_related("authors").order_by("-authortoday_rating__likes")[:5])
         from opds_catalog.models import AuthorTodayRating
@@ -1122,7 +1133,7 @@ def hello(request):
         with_likes_at  = AuthorTodayRating.objects.filter(likes__gt=0).count()
         with_error_at  = AuthorTodayRating.objects.filter(fetch_error=True).count()
         last_entry_at  = AuthorTodayRating.objects.order_by("-fetched_at").first()
-        args["authortoday_stats"] = {
+        args["authortoday_stats"] = None if not show_rating_stats else {
             "total":       total_books_at,
             "processed":   processed_at,
             "pending":     max(0, total_books_at - processed_at),
@@ -1136,7 +1147,7 @@ def hello(request):
 
     args["fantlab_rating_enabled"] = config.SOPDS_FANTLAB_RATING
     if config.SOPDS_FANTLAB_RATING:
-        args["popular_books_fl"] = list(Book.objects.filter(
+        args["popular_books_fl"] = list(visible.filter(
             fantlab_rating__rating__isnull=False
         ).select_related("fantlab_rating").prefetch_related("authors").order_by("-fantlab_rating__rating")[:5])
         from opds_catalog.models import FantlabRating
@@ -1145,7 +1156,7 @@ def hello(request):
         with_rating_fl = FantlabRating.objects.filter(rating__isnull=False).count()
         with_error_fl  = FantlabRating.objects.filter(fetch_error=True).count()
         last_entry_fl  = FantlabRating.objects.order_by("-fetched_at").first()
-        args["fantlab_stats"] = {
+        args["fantlab_stats"] = None if not show_rating_stats else {
             "total":       total_books_fl,
             "processed":   processed_fl,
             "pending":     max(0, total_books_fl - processed_fl),
@@ -1159,7 +1170,7 @@ def hello(request):
 
     args["litmarket_rating_enabled"] = config.SOPDS_LITMARKET_RATING
     if config.SOPDS_LITMARKET_RATING:
-        args["popular_books_lm"] = list(Book.objects.filter(
+        args["popular_books_lm"] = list(visible.filter(
             litmarket_rating__likes__gt=0
         ).select_related("litmarket_rating").prefetch_related("authors").order_by("-litmarket_rating__likes")[:5])
         from opds_catalog.models import LitmarketRating
@@ -1168,7 +1179,7 @@ def hello(request):
         with_likes_lm  = LitmarketRating.objects.filter(likes__gt=0).count()
         with_error_lm  = LitmarketRating.objects.filter(fetch_error=True).count()
         last_entry_lm  = LitmarketRating.objects.order_by("-fetched_at").first()
-        args["litmarket_stats"] = {
+        args["litmarket_stats"] = None if not show_rating_stats else {
             "total":       total_books_lm,
             "processed":   processed_lm,
             "pending":     max(0, total_books_lm - processed_lm),
@@ -1242,12 +1253,10 @@ def ratings_restart_cycle(request, source):
 def book_card(request, book_id):
     from django.http import Http404
 
-    from opds_catalog.models import Book
-    try:
-        book = Book.objects.select_related(
-            "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
-        ).prefetch_related("authors", "genres", "series").get(pk=book_id)
-    except Book.DoesNotExist:
+    book = visibility.visible_books(request.user).select_related(
+        "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
+    ).prefetch_related("authors", "genres", "series").filter(pk=book_id).first()
+    if book is None:   # нет или не видна пользователю — одинаково (docs/multiuser-design.md)
         raise Http404
     ser_no = None
     first_series = book.series.first()

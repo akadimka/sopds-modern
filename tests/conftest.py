@@ -12,6 +12,16 @@ import pytest
 pytest_plugins = ["tests.fixtures"]
 
 
+@pytest.fixture(autouse=True)
+def _fresh_cache():
+    """Кэш (счётчики видимости и т.п. — opds_catalog/visibility.py) не
+    переходит из теста в тест: база откатывается, и новый пользователь
+    получает id прежнего вместе с его закэшированными числами."""
+    from django.core.cache import cache
+    cache.clear()
+    yield
+
+
 @pytest.fixture(scope="session")
 def fb2_with_cover():
     """FB2 файл с обложкой.
