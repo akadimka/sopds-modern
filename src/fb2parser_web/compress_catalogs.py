@@ -33,7 +33,7 @@ def catalog_updater(library_path: Path, db_path: Optional[Path] = None
     """(update(было, стало), close()) для compress_library(on_compressed=...);
     db_path — БД библиотеки fb2parser (по умолчанию — та, что у синхронизации)."""
     from fb2parser_core.synchronization import SynchronizationService
-    from opds_catalog import opdsdb
+    from opds_catalog import opdsdb, ownership
     from opds_catalog.models import SIZE_BOOK_FILENAME, SIZE_BOOK_PATH, Book
     from opds_catalog.sopds_config import sopds_cfg as config
 
@@ -58,6 +58,8 @@ def catalog_updater(library_path: Path, db_path: Optional[Path] = None
         if books.exists():
             cat = opdsdb.addcattree(rel_zip, opdsdb.CAT_ZIP, new.stat().st_size)
             books.update(path=rel_zip[:SIZE_BOOK_PATH], catalog=cat, cat_type=opdsdb.CAT_ZIP)
+        # Владельцы файла переезжают на архив (docs/multiuser-design.md).
+        ownership.transfer(ownership.rel_path(old, root), ownership.rel_path(new, root))
 
     def update(old: Path, new: Path) -> None:
         if root is not None and _within(old, root):

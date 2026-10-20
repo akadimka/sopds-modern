@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop as _noop
 
 from book_tools.format.util import strip_symbols
+from opds_catalog import ownership
 from opds_catalog.models import (
     SIZE_AUTHOR_NAME,
     SIZE_BOOK_ANNOTATION,
@@ -470,6 +471,8 @@ def addbook(
         avail=2,
         lang_code=getlangcode(title),
     )
+    # Владельцы новой записи — владельцы её файла (docs/multiuser-design.md).
+    ownership.link_book(book)
     return book
 
 

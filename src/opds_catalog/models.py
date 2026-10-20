@@ -219,7 +219,12 @@ class LibraryFileOwner(models.Model):
     SOURCE_MIGRATION = "migration"
     SOURCE_UPLOAD = "upload"
     SOURCE_ADMIN = "admin"
-    SOURCES = [(SOURCE_MIGRATION, "migration"), (SOURCE_UPLOAD, "upload"), (SOURCE_ADMIN, "admin")]
+    # Файл без владельца (положен в обход учёта) автоматически отдан
+    # администратору сканером или сверкой — сверка может вернуть его настоящему
+    # владельцу, найдя переехавший файл по отпечатку текста.
+    SOURCE_AUTO = "auto"
+    SOURCES = [(SOURCE_MIGRATION, "migration"), (SOURCE_UPLOAD, "upload"), (SOURCE_ADMIN, "admin"),
+               (SOURCE_AUTO, "auto")]
 
     rel_path = models.CharField(max_length=SIZE_LIBRARY_REL_PATH, db_index=True)
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE, related_name="library_files")
@@ -249,6 +254,26 @@ class BookOwner(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["book", "user"], name="unique_book_owner"),
         ]
+
+
+class LibraryOwnershipLog(models.Model):
+    """Журнал изменений владения (opds_catalog/ownership.py): кто, что и
+    когда получил, потерял, куда переехал файл — для разбора расхождений и
+    для журнала администратора (этап 4 docs/multiuser-plan.md)."""
+
+    ASSIGN = "assign"
+    TRANSFER = "transfer"
+    MERGE = "merge"
+    RELEASE = "release"
+    TO_ADMIN = "to_admin"
+    ACTIONS = [(a, a) for a in (ASSIGN, TRANSFER, MERGE, RELEASE, TO_ADMIN)]
+
+    at = models.DateTimeField(default=timezone.now, db_index=True)
+    action = models.CharField(max_length=16, choices=ACTIONS)
+    rel_path = models.CharField(max_length=SIZE_LIBRARY_REL_PATH, db_index=True)
+    target_rel_path = models.CharField(max_length=SIZE_LIBRARY_REL_PATH, blank=True, default="")
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    actor = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
 
 
 class LibraryShare(models.Model):
