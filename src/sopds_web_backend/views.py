@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import threading
 from random import randint
@@ -9,7 +10,7 @@ from urllib.parse import urlencode
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Case, IntegerField, When
+from django.db.models import Case, Count, IntegerField, When
 from django.http import (
     HttpResponse,
     HttpResponseNotAllowed,
@@ -1034,31 +1035,21 @@ def offline_page(request):
     return render(request, 'sopds_offline.html')
 
 
-def _genres_by_name(genres, visible) -> list:
-    """Жанры для диаграммы на главной: одно название — один кусок (баг №166).
-
-    Жанр книги библиотеки берётся из папки верхнего уровня
-    (opdsdb.addgenre_from_folder: «Фантастика», подраздел пустой), жанр из тега
-    FB2 по genres.xml — «фантастика» с разделом и подразделом. Легенда
-    показывала только подраздел — у половины жанров пусто, одно и то же
-    название — двумя кусками. Название — подраздел, иначе раздел, иначе код;
-    записи с одним названием (без учёта регистра) — вместе, книги считаются
-    без повторов.
+def _genres_by_folder(visible) -> list:
+    """Жанры для блока «Жанры» на главной — ТОЛЬКО названия папок верхнего
+    уровня библиотеки (баг №166, решение пользователя): жанр книги — первая
+    часть её пути («Фантастика/Автор/…» → «Фантастика»), не тег FB2 и не
+    записи Genre. Считаются видимые пользователю книги.
     """
-    groups: dict = {}
-    for g in genres:
-        name = (g.subsection or g.section or g.genre or "").strip()
-        groups.setdefault(name.lower().replace("ё", "е"), []).append((name, g))
-    result = []
-    for items in groups.values():
-        items.sort(key=lambda it: -it[1].cnt)
-        if len(items) == 1:
-            cnt = items[0][1].cnt
-        else:
-            cnt = visible.filter(genres__in=[g for _, g in items]).distinct().count()
-        result.append(SimpleNamespace(name=items[0][0], cnt=cnt))
-    result.sort(key=lambda g: -g.cnt)
-    return result
+    from django.db.models import Value
+    from django.db.models.functions import Concat, StrIndex, Substr
+
+    sep = Value(os.sep)
+    folder = Substr("path", 1, StrIndex(Concat("path", sep), sep) - 1)
+    rows = (visible.order_by().annotate(genre_folder=folder)
+            .values("genre_folder").annotate(cnt=Count("id")).order_by("-cnt", "genre_folder"))
+    return [SimpleNamespace(name=r["genre_folder"], cnt=r["cnt"])
+            for r in rows if r["genre_folder"] not in ("", ".")]
 
 
 @sopds_login(url="web:login")
@@ -1123,9 +1114,7 @@ def hello(request):
         "books_finished_month": books_finished_month,
         "streak_days": streak,
     }
-    all_genres = _genres_by_name(
-        Genre.objects.annotate(cnt=visibility.visible_book_count(request.user)).filter(cnt__gt=0),
-        visible)
+    all_genres = _genres_by_folder(visible)
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
     args["recent_books"] = visible.select_related(

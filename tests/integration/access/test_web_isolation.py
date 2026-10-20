@@ -5,7 +5,7 @@
 import pytest
 from django.urls import reverse
 
-from opds_catalog.models import LibraryShare, bookshelf
+from opds_catalog.models import Book, LibraryShare, bookshelf
 
 pytestmark = pytest.mark.django_db
 
@@ -94,11 +94,14 @@ def test_main_page_and_every_page_context(client, lib):
     for _ in range(5):   # случайная книга — тоже только из видимых
         status, main = _page(client, users["anna"], "main")
         assert status == 200 and "Бориса" not in main
+    # Блок «Жанры» — по папкам библиотеки (баг №166): обе книги — в одной
+    # папке-жанре, Анна видит в нём только свою.
+    Book.objects.update(path="Фантастика")
     client.force_login(users["anna"])
     response = client.get(reverse("web:main"))
     assert response.context["stats"]["allbooks"] == 1
     assert response.context["random_book"].title == "Дневник Анны"
-    assert [g.cnt for g in response.context["chart_genres"]] == [1]
+    assert [(g.name, g.cnt) for g in response.context["chart_genres"]] == [("Фантастика", 1)]
 
 
 @pytest.mark.parametrize("name, params", [

@@ -1,5 +1,5 @@
-"""Диаграмма жанров на главной: у каждого куска есть название, одно
-название — один кусок (баг №166).
+"""Блок «Жанры» на главной: жанр — только название папки верхнего уровня
+библиотеки, не тег FB2 и не записи Genre (баг №166, решение пользователя).
 
 Жанр книги библиотеки берётся из папки верхнего уровня
 (`opdsdb.addgenre_from_folder`: «Фантастика», подраздел пустой), жанр из
@@ -8,6 +8,7 @@
 то же название — двумя кусками (сервер: «фантастика» 7 319 книг +
 «Фантастика» 4 456).
 """
+import os
 from datetime import datetime
 
 import pytest
@@ -25,10 +26,10 @@ def counter_with_books(db) -> None:
     Counter.obj.create(name="allbooks", value=0, update_time=timezone.make_aware(datetime(2024, 1, 1)))
 
 
-def _books(catalog, genre, n, start):
+def _books(catalog, genre, n, start, folder):
     for i in range(start, start + n):
-        b = Book.objects.create(filename=f"b{i}.fb2", path=".", format="fb2", cat_type=0,
-                                title=f"Книга {i}", search_title=f"КНИГА {i}", catalog=catalog, avail=2)
+        b = Book.objects.create(filename=f"b{i}.fb2", path=os.path.join(folder, f"Автор {i}"), format="fb2",
+                                cat_type=0, title=f"Книга {i}", search_title=f"КНИГА {i}", catalog=catalog, avail=2)
         bgenre.objects.create(book=b, genre=genre)
 
 
@@ -38,13 +39,13 @@ def test_genre_name_falls_back_to_section_and_code():
     assert Genre(genre="xxx", section="", subsection="").name == "xxx"
 
 
-def test_chart_merges_same_name_and_shows_labels(client, django_user, counter_with_books, catalog):
-    tag = Genre.objects.create(genre="фантастика", section="Фантастика", subsection="Фантастика")
-    folder = Genre.objects.create(genre="Фантастика", section="Фантастика", subsection="")
-    prose = Genre.objects.create(genre="Современная проза", section="Современная проза", subsection="")
-    _books(catalog, tag, 3, 0)
-    _books(catalog, folder, 2, 10)
-    _books(catalog, prose, 1, 20)
+def test_chart_counts_library_folders_only(client, django_user, counter_with_books, catalog):
+    # теги FB2 намеренно «чужие»: блок не должен на них смотреть
+    tag = Genre.objects.create(genre="sf_space", section="Фантастика", subsection="Космическая фантастика")
+    other = Genre.objects.create(genre="detective", section="Детектив", subsection="Детектив")
+    _books(catalog, tag, 3, 0, "Фантастика")
+    _books(catalog, other, 2, 10, "Фантастика")
+    _books(catalog, tag, 1, 20, "Современная проза")
 
     django_user.is_superuser = True   # суперпользователь видит все книги (видимость — по владельцам)
     django_user.save()
@@ -55,4 +56,4 @@ def test_chart_merges_same_name_and_shows_labels(client, django_user, counter_wi
     assert top == [("Фантастика", 5), ("Современная проза", 1)]
     html = response.content.decode()
     assert 'label: "Фантастика", cnt: 5' in html
-    assert 'label: "", ' not in html
+    assert "Космическая фантастика" not in html.split('id="genreChart"')[1].split("</table>")[0]
