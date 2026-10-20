@@ -76,7 +76,7 @@ class LibraryHandler:
                 return
             reader = linked_user(tg_user["id"])
             if reader is not None and DEEP_LINK_RE.match(payload):
-                self.open_deep_link(client, chat_id, payload)
+                self.open_deep_link(client, chat_id, payload, reader)
                 return
             client.send_message(chat_id, HELP if reader else INTRO)
             return
@@ -110,15 +110,17 @@ class LibraryHandler:
 
     def on_query(self, service, client, chat_id, user, text: str) -> None:
         from .telegram_search import results_screen, store_query
-        screen = results_screen(store_query(text), 0)
+        screen = results_screen(store_query(text), 0, user)
         if screen is not None:
             client.send_message(chat_id, screen[0], reply_markup=screen[1])
 
-    def open_deep_link(self, client, chat_id, payload: str) -> None:
-        """Серия или книга из ссылки в сводке новинок — с кнопками скачивания."""
+    def open_deep_link(self, client, chat_id, payload: str, user) -> None:
+        """Серия или книга из ссылки в сводке новинок — с кнопками скачивания
+        (если пользователь её видит)."""
         from .telegram_search import book_screen, series_screen
         object_id = int(payload[1:])
-        screen = series_screen(object_id) if payload[0] == "s" else book_screen(object_id)
+        screen = (series_screen(object_id, 0, "", user) if payload[0] == "s"
+                  else book_screen(object_id, "", user))
         if screen is None:
             client.send_message(chat_id, "Не нашлось — возможно, книга уже убрана из библиотеки. " + HELP)
             return
@@ -129,10 +131,11 @@ class LibraryHandler:
         from fb2parser_core.telegram_notify import TelegramError
 
         from .telegram_search import screen_for
-        if linked_user((cq.get("from") or {}).get("id")) is None:
+        user = linked_user((cq.get("from") or {}).get("id"))
+        if user is None:
             client.answer_callback(cq["id"], "Нет доступа — привяжите аккаунт в профиле на сайте библиотеки.")
             return
-        screen = screen_for(cq.get("data") or "")
+        screen = screen_for(cq.get("data") or "", user)
         if screen is None:
             client.answer_callback(cq["id"], "Это устарело — повторите поиск.")
             return
@@ -167,6 +170,7 @@ class LibraryHandler:
         from django.db import close_old_connections
 
         from fb2parser_core.telegram_notify import MAX_UPLOAD, TelegramError
+        from opds_catalog import visibility
         from opds_catalog.dl import (
             ConversionFailed,
             ConversionUnavailable,
@@ -174,12 +178,12 @@ class LibraryHandler:
             convert_book,
             original_file,
         )
-        from opds_catalog.models import Book, bookshelf
+        from opds_catalog.models import bookshelf
 
         from .models import TelegramFile
         close_old_connections()
         try:
-            book = Book.objects.exclude(avail=0).filter(id=book_id).prefetch_related("authors").first()
+            book = visibility.visible_books(user).filter(id=book_id).prefetch_related("authors").first()
             if book is None or fmt not in available_formats(book):
                 client.send_message(chat_id, "Эта книга или формат больше недоступны — повторите поиск.")
                 return

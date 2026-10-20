@@ -13,6 +13,7 @@ from fb2parser_core.telegram_notify import build_digest
 from opds_catalog import autosync_hooks as hooks
 from opds_catalog.models import Author, Book, Catalog, Series, bauthor, bseries
 from sopds_web_backend.telegram_library import INTRO, LibraryHandler
+from tests.fixtures.fixture_django import publish_books
 
 pytestmark = pytest.mark.django_db
 
@@ -23,6 +24,7 @@ def _book(cat, title, author, path, series=None):
     bauthor.objects.create(book=b, author=author)
     if series:
         bseries.objects.create(book=b, ser=series, ser_no=1)
+    publish_books(b)   # открытая всем библиотека — её видят все и показывает общий канал
     return b
 
 

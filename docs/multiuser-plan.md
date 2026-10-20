@@ -291,7 +291,20 @@ zip), `user_counters`. Владельцы заблокированных пол�
   (сейчас смещение по глобальному счётчику в нефильтрованной выборке —
   защита от `IndexError`); последние книги полки — только видимые.
 
-### Шаг 1.8. Telegram
+### Шаг 1.8. Telegram — ✅ сделано (2026-10-20)
+Сделано: `telegram_search` — обязательный `user` (поиск с числами книг
+автора/серии, экраны автора, серии, книги, `screen_for`); экран автора —
+только серии, где у него видимая книга; `telegram_library` передаёт
+привязанного пользователя в экраны, deep links и выдачу файла (чужая
+книга — «недоступна»). Общий канал новинок: `autosync_service.notify`
+получил фильтр `include` (отсеянная новинка помечается объявленной и не
+всплывает), `autosync_hooks.public_book_filter` пропускает только книги,
+видимые анониму (открытые всем библиотеки); ссылки сводки — тоже только на
+такие книги и серии. Отчёт администратору не фильтруется. Тесты:
+`tests/integration/access/test_telegram_isolation.py` (5),
+`test_autosync_run.py::test_notify_include_hides_books_from_channel_for_good`;
+тесты бота — книги в открытой всем библиотеке (`publish_books`).
+
 Файлы: `src/sopds_web_backend/telegram_search.py`, `telegram_library.py`,
 `src/fb2parser_web/autosync_hooks.py`.
 

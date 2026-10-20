@@ -18,6 +18,7 @@ from opds_catalog.models import (
 )
 from sopds_web_backend import telegram_search as ts
 from sopds_web_backend.telegram_library import LibraryHandler
+from tests.fixtures.fixture_django import publish_books
 
 pytestmark = pytest.mark.django_db
 
@@ -34,6 +35,7 @@ def _book(cat, title, authors, series=None, no=0, avail=2, annotation=""):
         bauthor.objects.create(book=b, author=a)
     if series:
         bseries.objects.create(book=b, ser=series, ser_no=no)
+    publish_books(b)   # открытая всем библиотека — её видят и аноним, и привязанные читатели
     return b
 
 
@@ -60,18 +62,18 @@ def _labels(screen):
 
 
 def test_words_any_order_and_title_required(library):
-    found = ts.search("сергей лукьяненко")
+    found = ts.search("сергей лукьяненко", None)
     assert [k for k, _i, _l in found] == ["a"]  # автор, а не простыня из всех его книг
 
-    found = ts.search("Лукьяненко дозор")
+    found = ts.search("Лукьяненко дозор", None)
     books = {i for k, i, _l in found if k == "b"}
     assert books == {library.night.id, library.day.id}  # не «Дозор у моря», не удалённый
 
 
 def test_series_and_author_counts_skip_deleted_books(library):
-    labels = [label for _k, _i, label in ts.search("дозор")]
+    labels = [label for _k, _i, label in ts.search("дозор", None)]
     assert any(label.startswith("📚 Дозоры (2)") for label in labels)
-    labels = [label for _k, _i, label in ts.search("лукьяненко")]
+    labels = [label for _k, _i, label in ts.search("лукьяненко", None)]
     assert labels == ["👤 Лукьяненко Сергей (3)"]
 
 
@@ -79,34 +81,34 @@ def test_results_paging_and_back_navigation(library, settings):
     for i in range(12):
         _book(Catalog.objects.first(), f"Книга {i:02d}", [library.other])
     qid = ts.store_query("книга")
-    first = ts.results_screen(qid, 0)
+    first = ts.results_screen(qid, 0, None)
     assert "Книги: 12" in first[0] and len(first[1]["inline_keyboard"]) == 11  # 10 + навигация
     nav = first[1]["inline_keyboard"][-1]
     assert [b["text"] for b in nav] == ["1/2", "▶"]
-    second = ts.screen_for(nav[-1]["callback_data"])
+    second = ts.screen_for(nav[-1]["callback_data"], None)
     assert len(second[1]["inline_keyboard"]) == 3  # 2 книги + навигация
 
 
 def test_author_series_and_book_screens(library):
     qid = ts.store_query("лукьяненко")
-    author = ts.screen_for(f"a:{library.luk.id}:0:{qid}")
+    author = ts.screen_for(f"a:{library.luk.id}:0:{qid}", None)
     assert "книг: 3" in author[0]
     labels = _labels(author)
     assert labels[0] == "📚 Дозоры (2)" and "🔍 К результатам" in labels
 
-    series = ts.screen_for(f"s:{library.dozory.id}:0:{qid}")
+    series = ts.screen_for(f"s:{library.dozory.id}:0:{qid}", None)
     assert _labels(series)[:2] == ["📖 1. Ночной Дозор", "📖 2. Дневной Дозор"]
 
-    card = ts.screen_for(f"b:{library.night.id}:{qid}")
+    card = ts.screen_for(f"b:{library.night.id}:{qid}", None)
     assert "<b>Ночной Дозор</b>" in card[0] and "Дозоры, № 1" in card[0] and "Фантастика" in card[0]
     assert "&lt;тени&gt;" in card[0]
     assert {"👤 Автор", "📚 Серия", "🔍 К результатам"} <= set(_labels(card))
 
 
 def test_deleted_or_unknown_is_none(library):
-    assert ts.screen_for(f"b:{library.deleted.id}:") is None
-    assert ts.screen_for("q:nope:0") is None
-    assert ts.screen_for("b:x") is None
+    assert ts.screen_for(f"b:{library.deleted.id}:", None) is None
+    assert ts.screen_for("q:nope:0", None) is None
+    assert ts.screen_for("b:x", None) is None
 
 
 # ---------- через обработчик бота ----------
@@ -162,5 +164,5 @@ def test_stranger_cannot_navigate(library, tmp_path):
 
 def test_yo_and_ye_are_the_same(library):
     _book(Catalog.objects.first(), "Ёжик в тумане", [library.other])
-    assert any(k == "b" for k, _i, _l in ts.search("ежик"))
-    assert any(k == "b" for k, _i, _l in ts.search("ЁЖИК"))
+    assert any(k == "b" for k, _i, _l in ts.search("ежик", None))
+    assert any(k == "b" for k, _i, _l in ts.search("ЁЖИК", None))

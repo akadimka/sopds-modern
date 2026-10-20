@@ -15,6 +15,7 @@ from opds_catalog.models import Author, Book, Catalog, bauthor, bookshelf
 from sopds_web_backend import telegram_search as ts
 from sopds_web_backend.models import TelegramFile
 from sopds_web_backend.telegram_library import LibraryHandler
+from tests.fixtures.fixture_django import publish_books
 
 pytestmark = pytest.mark.django_db
 
@@ -36,6 +37,7 @@ def book():
                             annotation="", avail=2, catalog=cat)
     bauthor.objects.create(book=b, author=Author.objects.create(full_name="Лукьяненко Сергей",
                                                                search_full_name="ЛУКЬЯНЕНКО СЕРГЕЙ"))
+    publish_books(b)   # открытая всем библиотека — её видят привязанные читатели
     return b
 
 
@@ -50,7 +52,7 @@ def test_available_formats_follow_site_rules(book, converters):
 
 
 def test_book_card_has_format_buttons(book, converters):
-    card = ts.book_screen(book.id)
+    card = ts.book_screen(book.id, "", None)
     first_row = [b["callback_data"] for b in card[1]["inline_keyboard"][0]]
     assert first_row == [f"f:{book.id}:fb2", f"f:{book.id}:epub", f"f:{book.id}:mobi"]
 

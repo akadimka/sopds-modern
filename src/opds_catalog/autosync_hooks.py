@@ -44,7 +44,7 @@ def notify_autosync(autosync: Optional[Tuple[Any, Any]], logger: Optional[loggin
     try:
         from fb2parser_core.autosync_service import notify
 
-        sent = notify(service, result, link=catalog_link(service))
+        sent = notify(service, result, link=catalog_link(service), include=public_book_filter())
     except Exception:
         log.exception("Autosync notification failed")
         return {}
@@ -64,6 +64,17 @@ def summary(autosync: Optional[Tuple[Any, Any]]) -> Optional[Dict[str, Any]]:
             "kept": r.kept, "removed": r.removed, "would_move": r.would_move, "error": r.error}
 
 
+def public_book_filter():
+    """Новинка попадает в общий канал, только если её книга видна всем —
+    лежит в открытой всем библиотеке (канал читают все привязанные
+    пользователи). Книги нет в каталоге — не показываем."""
+    from opds_catalog import visibility
+
+    public = visibility.visible_books(None)
+    return lambda row: find_book(row.get("library_path") or "", row.get("title") or "",
+                                 row.get("author") or "", books=public) is not None
+
+
 def catalog_link(service):
     """Ссылки сводки новинок: в бота библиотеки (t.me/<бот>?start=s<id серии> /
     b<id книги> — открывают серию/книгу с кнопками скачивания и работают без
@@ -80,14 +91,18 @@ def catalog_link(service):
         search = base + reverse("web:searchbooks")
 
     def link(item):
+        from opds_catalog import visibility
+
+        public = visibility.visible_books(None)   # ссылки в общем канале — только на видимое всем
         if item["kind"] == "series":
-            series = find_series(item.get("series") or "", item.get("author") or "", item.get("path") or "")
+            series = find_series(item.get("series") or "", item.get("author") or "", item.get("path") or "",
+                                 books=public)
             if series is None:
                 return None
             if bot:
                 return f"https://t.me/{bot}?start=s{series.id}"
             return f"{search}?{urlencode({'searchtype': 's', 'searchterms': series.id})}"
-        book = find_book(item.get("path") or "", item.get("title") or "", item.get("author") or "")
+        book = find_book(item.get("path") or "", item.get("title") or "", item.get("author") or "", books=public)
         if bot:
             return f"https://t.me/{bot}?start=b{book.id}" if book else None
         title = item.get("title")
@@ -116,13 +131,14 @@ def _bot_username(service) -> str:
     return username
 
 
-def find_book(library_path: str, title: str, author: str):
+def find_book(library_path: str, title: str, author: str, books=None):
     """Книга каталога по пути в библиотеке (каталог SOPDS обычно смотрит в
-    ту же библиотеку), иначе по названию и автору."""
+    ту же библиотеку), иначе по названию и автору; `books` — среди каких
+    книг искать (по умолчанию — все существующие)."""
     import os
 
     from opds_catalog.models import Book
-    books = Book.objects.exclude(avail=0)
+    books = books if books is not None else Book.objects.exclude(avail=0)
     if library_path:
         found = books.filter(path=os.path.dirname(library_path), filename=os.path.basename(library_path)).first()
         if found is not None:
@@ -133,11 +149,14 @@ def find_book(library_path: str, title: str, author: str):
     return None
 
 
-def find_series(name: str, author: str, library_path: str = ""):
+def find_series(name: str, author: str, library_path: str = "", books=None):
     """Серия каталога: через её книгу по пути, иначе по имени (и автору —
-    одноимённые серии у разных авторов не путаем)."""
+    одноимённые серии у разных авторов не путаем); `books` — только серии,
+    где есть книга из них."""
+    from django.db.models import Exists, OuterRef
+
     from opds_catalog.models import Series, bseries
-    book = find_book(library_path, "", "") if library_path else None
+    book = find_book(library_path, "", "", books=books) if library_path else None
     if book is not None:
         link = bseries.objects.filter(book=book).select_related("ser").first()
         if link is not None:
@@ -145,4 +164,6 @@ def find_series(name: str, author: str, library_path: str = ""):
     if not name:
         return None
     query = Series.objects.filter(ser=name)
+    if books is not None:
+        query = query.filter(Exists(books.filter(series=OuterRef("pk"))))
     return (query.filter(book__authors__full_name=author).first() if author else None) or query.first()

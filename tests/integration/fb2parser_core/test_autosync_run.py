@@ -418,3 +418,21 @@ def test_poll_answers_start_with_chat_id_and_remembers_chats(tmp_path, monkeypat
     assert bot.poll_once(None) == 12
     assert tg.sent[0][0] == "555" and "<code>555</code>" in tg.sent[0][1]
     assert {c["id"] for c in known_chats(svc.journal)} == {"555", "-1009"}
+
+
+def test_notify_include_hides_books_from_channel_for_good(tmp_path, monkeypatch):
+    """Канал общий для всех пользователей: новинка, которую фильтр `include`
+    не пропустил (книга не в открытой всем библиотеке), не показывается и
+    не всплывает в следующей сводке (docs/multiuser-design.md)."""
+    from fb2parser_core.autosync_service import notify
+    svc, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    tg = _FakeTelegram()
+
+    sent = notify(svc, svc.run(), client=tg, include=lambda row: False)
+
+    assert "channel" not in sent and not [t for c, t in tg.sent if c == "@news"]
+    assert [t for c, t in tg.sent if c == "42"]          # отчёт админу — как обычно
+    tg.sent.clear()
+    notify(svc, svc.run(), client=tg)
+    assert not [t for c, t in tg.sent if c == "@news"]

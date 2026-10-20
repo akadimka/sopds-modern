@@ -596,10 +596,15 @@ class AutosyncService:
 
 def notify(service: "AutosyncService", result: RunResult,
            link: Optional[Callable[[Dict[str, Any]], Optional[str]]] = None,
-           client=None) -> Dict[str, str]:
+           client=None, include: Optional[Callable[[Dict[str, Any]], bool]] = None) -> Dict[str, str]:
     """Telegram после планового запуска (и скана библиотеки): новинки — в
     канал, итог — админу. Ошибки Telegram не пробрасываются: их видно в
-    логе и в возвращаемом {адресат: "ok" | причина}."""
+    логе и в возвращаемом {адресат: "ok" | причина}.
+
+    `include(строка журнала)` — какие новинки можно показать в канале (он
+    общий для всех привязанных пользователей: только книги открытых всем
+    библиотек, docs/multiuser-design.md); остальные отмечаются объявленными
+    без показа."""
     from .telegram_notify import (
         TelegramClient,
         TelegramError,
@@ -618,6 +623,8 @@ def notify(service: "AutosyncService", result: RunResult,
     # Канал: всё перемещённое и ещё не объявленное (в т.ч. решения из «Входящих»).
     if cfg["telegram_channel"]:
         rows, run_ids = journal.unannounced()
+        if include is not None:
+            rows = [r for r in rows if include(r)]
         try:
             if rows:
                 client.send_message(cfg["telegram_channel"], build_digest(rows, link))
