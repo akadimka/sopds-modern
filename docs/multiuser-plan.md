@@ -192,7 +192,22 @@
 книг разных владельцев — две группы; полный набор `tests/integration/fb2parser_core`
 и «золотой снимок» без изменений.
 
-### Шаг 1.5. Ядро видимости
+### Шаг 1.5. Ядро видимости — ✅ сделано (2026-10-20)
+Сделано: `opds_catalog/visibility.py` — функции вместо собственного
+менеджера `Book` (менеджер по умолчанию не меняется): `visible_books(user,
+library=None)`, `accessible_owner_ids`, `get_visible_book_or_404`,
+`visible_authors/series/genres`, `visible_book_count` (для `annotate`),
+`visible_catalog_ids` (папки с видимыми книгами и их родители — через
+дерево `parent`, а не сравнение строк пути: разные разделители и пути
+zip), `user_counters`. Владельцы заблокированных пользователей не
+показываются. Кэш счётчиков и папок — с «поколением»: сбрасывается
+при каждом изменении владения (журнал `ownership._log`) и в конце любого
+скана (`opdsdb.cleanup_orphan_entities`), страховочный срок 5 минут.
+Тесты: `tests/integration/opds_catalog/test_visibility.py`. На рабочей базе
+(аноним видит открытую администраторскую библиотеку, 6790 книг):
+счётчики 0,33 с без кэша, страница книг 13 мс, подсчёт книг по авторам
+0,02 с.
+
 Файлы: `src/opds_catalog/models.py` (QuerySet), `src/opds_catalog/visibility.py`.
 
 - `Book.objects.visible_to(user, library=None)`: суперпользователь — всё

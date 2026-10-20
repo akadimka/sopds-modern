@@ -26,6 +26,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 
+from opds_catalog import visibility
 from opds_catalog.models import Book, BookOwner, LibraryFileOwner, LibraryOwnershipLog
 from opds_catalog.sopds_config import sopds_cfg as config
 
@@ -91,6 +92,7 @@ def owner_set_key(rel: str) -> tuple[int, ...]:
 def _log(action, rel, user=None, target="", actor=None):
     LibraryOwnershipLog.objects.create(action=action, rel_path=rel, target_rel_path=target,
                                        user_id=getattr(user, "pk", user), actor=actor)
+    visibility.invalidate()   # каждое изменение владения меняет то, что видят пользователи
 
 
 def _link_books(rel: str, user_ids: Iterable[int]) -> None:

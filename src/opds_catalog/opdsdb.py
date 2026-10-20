@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop as _noop
 
 from book_tools.format.util import strip_symbols
-from opds_catalog import ownership
+from opds_catalog import ownership, visibility
 from opds_catalog.models import (
     SIZE_AUTHOR_NAME,
     SIZE_BOOK_ANNOTATION,
@@ -302,6 +302,8 @@ def cleanup_orphan_entities():
     series_deleted = orphan_series.count()
     orphan_series.delete()
 
+    # Конец скана: что видят пользователи, могло измениться.
+    visibility.invalidate()
     return authors_deleted, genres_deleted, series_deleted
 
 
