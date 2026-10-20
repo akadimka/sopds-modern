@@ -206,36 +206,36 @@ class TestPaginatedBookContent:
 
 
 class TestPaginatedCatalogContent:
-    """Тесты catalog_services.paginated_catalog_content()."""
+    """Тесты catalog_services.paginated_catalog_content(, user=admin_user)."""
 
-    def test_empty_catalog(self, catalog):
+    def test_empty_catalog(self, catalog, admin_user):
         """Пустой каталог — пустой результат."""
-        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 10)
+        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 10, user=admin_user)
         assert items == []
         assert pager_data["number"] == 1
         assert pager_data["has_next"] is False
 
-    def test_only_catalogs(self, catalog):
+    def test_only_catalogs(self, catalog, admin_user):
         """Только подкаталоги, без книг."""
         for i in range(3):
             Catalog.objects.create(
                 parent=catalog, cat_name=f"Подкат{i}", path=f"./{i}", cat_type=0
             )
-        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 10)
+        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 10, user=admin_user)
         assert len(items) == 3
         assert all(item["is_catalog"] == 1 for item in items)
 
-    def test_only_books(self, catalog):
+    def test_only_books(self, catalog, admin_user):
         """Только книги, без подкаталогов."""
         _create_unique_books(catalog, 5)
-        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 10)
+        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 10, user=admin_user)
         assert len(items) == 5
         assert all(item["is_catalog"] == 0 for item in items)
 
     # Баг №101: маркер @pytest.mark.override_config(SOPDS_MAXITEMS=4) здесь
     # был лишним — paginated_catalog_content принимает pager_max_items
     # прямым аргументом, конфиг вообще не читает.
-    def test_mixed_catalog_first_page(self, catalog):
+    def test_mixed_catalog_first_page(self, catalog, admin_user):
         """3 подкаталога + 5 книг, MAXITEMS=4, страница 1 — 3 ката + 1 книга."""
         for i in range(3):
             Catalog.objects.create(
@@ -243,7 +243,7 @@ class TestPaginatedCatalogContent:
             )
         _create_unique_books(catalog, 5)
 
-        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 4)
+        items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 4, user=admin_user)
         # Единый список с Django Paginator: первые 4 из 8 элементов
         catalogs = [i for i in items if i["is_catalog"]]
         books = [i for i in items if not i["is_catalog"]]
@@ -252,7 +252,7 @@ class TestPaginatedCatalogContent:
         assert pager_data["has_next"] is True
         assert pager_data["num_pages"] == 2
 
-    def test_mixed_catalog_last_page(self, catalog):
+    def test_mixed_catalog_last_page(self, catalog, admin_user):
         """3 подкаталога + 5 книг, MAXITEMS=4, страница 2 — 4 книги."""
         for i in range(3):
             Catalog.objects.create(
@@ -260,7 +260,7 @@ class TestPaginatedCatalogContent:
             )
         _create_unique_books(catalog, 5)
 
-        items, pager_data = catalog_services.paginated_catalog_content(catalog, 2, 4)
+        items, pager_data = catalog_services.paginated_catalog_content(catalog, 2, 4, user=admin_user)
         # Единый список с Django Paginator: элементы 4-7 → 4 книги
         catalogs = [i for i in items if i["is_catalog"]]
         books = [i for i in items if not i["is_catalog"]]
@@ -268,17 +268,17 @@ class TestPaginatedCatalogContent:
         assert len(books) == 4
         assert pager_data["has_next"] is False
 
-    def test_mixed_catalog_page_out_of_range(self, catalog):
+    def test_mixed_catalog_page_out_of_range(self, catalog, admin_user):
         """Страница за пределами — возвращается последняя страница."""
         for i in range(3):
             Catalog.objects.create(
                 parent=catalog, cat_name=f"Подкат{i}", path=f"./{i}", cat_type=0
             )
-        items, pager_data = catalog_services.paginated_catalog_content(catalog, 99, 4)
+        items, pager_data = catalog_services.paginated_catalog_content(catalog, 99, 4, user=admin_user)
         # EmptyPage → последняя страница (страница 1, т.к. всего 3 элемента)
         assert len(items) == 3
 
-    def test_large_folder_does_not_fetch_all_books_at_once(self, catalog):
+    def test_large_folder_does_not_fetch_all_books_at_once(self, catalog, admin_user):
         """Баг №101: раньше вся папка материализовалась в Python-список
         ДО пагинации — запрос ОДНОЙ страницы вытягивал из БД ВСЕ строки
         книг папки независимо от размера страницы. Теперь книги (и
@@ -287,7 +287,7 @@ class TestPaginatedCatalogContent:
         _create_unique_books(catalog, 500)
 
         with CaptureQueriesContext(connection) as ctx:
-            items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 5)
+            items, pager_data = catalog_services.paginated_catalog_content(catalog, 1, 5, user=admin_user)
 
         assert len(items) == 5
         assert pager_data["num_pages"] == 100
@@ -333,6 +333,7 @@ def _create_unique_books(catalog: Catalog, count: int) -> list[Book]:
             title=title,
             search_title=title.upper(),
             catalog=catalog,
+            avail=2,
         )
         bauthor.objects.create(book=book, author=author)
         books.append(book)
@@ -353,6 +354,7 @@ def _create_books_for_author(
             title=title,
             search_title=title.upper(),
             catalog=catalog,
+            avail=2,
         )
         bauthor.objects.create(book=book, author=author)
         books.append(book)

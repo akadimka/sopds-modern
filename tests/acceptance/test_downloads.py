@@ -270,7 +270,7 @@ class TestConvertFB2:
         assert not any(tmp_path.iterdir())
 
     def test_convert_compressed_book_decompresses_before_converting(
-        self, client, catalog, override_config, tmp_path, test_rootlib
+        self, client, catalog, override_config, tmp_path, test_rootlib, publish
     ) -> None:
         """CAT_ZIP: конвертер должен получить РАСПАКОВАННОЕ содержимое, не сам .zip.
 
@@ -283,8 +283,9 @@ class TestConvertFB2:
         book = Book.objects.create(
             title="Zipped book", search_title="ZIPPED BOOK",
             format="fb2", filename="262001.fb2",
-            path="262001.zip", cat_type=opdsdb.CAT_ZIP, catalog=catalog,
+            path="262001.zip", cat_type=opdsdb.CAT_ZIP, catalog=catalog, avail=2,
         )
+        publish(book)
         # Сравниваем с содержимым ИЗ САМОГО .zip, а не с отдельным .fb2 на
         # диске — git на Windows-чекауте может перекодировать переводы строк
         # в текстовых файлах (LF→CRLF), тогда как бинарное содержимое .zip
@@ -323,7 +324,7 @@ class TestConvertFB2:
         assert captured["content"] == original_bytes
 
     def test_convert_malicious_zip_entry_name_stays_inside_temp_dir(
-        self, client, catalog, override_config, tmp_path
+        self, client, catalog, override_config, tmp_path, publish
     ) -> None:
         """Баг №96: book.filename с '../' (сырое имя ZIP-записи, см.
         sopdscan.processzip) не должно писать временный файл ЗА
@@ -344,8 +345,9 @@ class TestConvertFB2:
         book = Book.objects.create(
             title="Evil book", search_title="EVIL BOOK",
             format="fb2", filename=malicious_name,
-            path="books.zip", cat_type=opdsdb.CAT_ZIP, catalog=catalog,
+            path="books.zip", cat_type=opdsdb.CAT_ZIP, catalog=catalog, avail=2,
         )
+        publish(book)
 
         captured = {}
 

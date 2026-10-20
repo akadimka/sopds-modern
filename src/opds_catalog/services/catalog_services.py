@@ -7,8 +7,9 @@ import logging
 from django.db.models import Prefetch, QuerySet
 from django.utils.html import strip_tags
 
+from opds_catalog import visibility
 from opds_catalog.models import Book, Catalog, bookshelf
-from opds_catalog.utils import get_lang_name
+from opds_catalog.utils import get_lang_name, to_int
 
 DUMMY_CATALOG = Catalog(id=0, cat_name="Empty", cat_type=0)
 
@@ -25,16 +26,19 @@ def get_root() -> Catalog:
     return DUMMY_CATALOG
 
 
-def get_by_id(id: int) -> Catalog:
+def get_by_id(id: int, *, user) -> Catalog:
     """Возвращает каталог по идентификатору.
 
     :param id: Идентификатор каталога
     :type id: int
 
     :returns: Найденный каталог или каталог-заглушку если каталога с таким идентификатором
-    не существует
+    не существует или в нём нет видимых пользователю книг (имя папки — имя автора)
     :rtype: Catalog
     """
+    visible = visibility.visible_catalog_ids(user)
+    if visible is not None and to_int(id) not in visible:
+        return DUMMY_CATALOG
     try:
         return Catalog.objects.get(id=id)
     except Catalog.DoesNotExist:
@@ -42,7 +46,7 @@ def get_by_id(id: int) -> Catalog:
         return DUMMY_CATALOG
 
 
-def get_catalogs_query(root: Catalog | None) -> QuerySet[Catalog, Catalog]:
+def get_catalogs_query(root: Catalog | None, *, user) -> QuerySet[Catalog, Catalog]:
     """Запрос подкаталогов текущего каталога.
 
     :param root: каталог, для которого требуется найти подкаталоги
@@ -51,10 +55,12 @@ def get_catalogs_query(root: Catalog | None) -> QuerySet[Catalog, Catalog]:
     :returns: Запрос, позволяющий получить подкаталоги
     :rtype: QuerySet[Catalog, Catalog]
     """
-    return Catalog.objects.filter(parent=root)
+    query = Catalog.objects.filter(parent=root)
+    visible = visibility.visible_catalog_ids(user)
+    return query if visible is None else query.filter(id__in=visible)
 
 
-def get_books_query(catalog: Catalog) -> QuerySet[Book, Book]:
+def get_books_query(catalog: Catalog, *, user) -> QuerySet[Book, Book]:
     """Запрос книг в каталоге.
 
     :param catalog: каталог, в котором требуется найти книги
@@ -63,7 +69,7 @@ def get_books_query(catalog: Catalog) -> QuerySet[Book, Book]:
     :returns: Запрос, позволяющий получить книги
     :rtype: Queryset[Book, Book]
     """
-    return Book.objects.filter(catalog=catalog)
+    return visibility.restrict_books(Book.objects.filter(catalog=catalog), user)
 
 
 def _catalog_row_to_dict(row) -> dict:
@@ -117,7 +123,8 @@ def paginated_catalog_content(
     cat: Catalog,
     current_page: int,
     pager_max_items: int,
-    user=None,
+    *,
+    user,
     auth_enabled: bool = False,
 ) -> tuple[list, dict]:
     """Предоставляет содержимое каталога в виде одной страницы.
@@ -151,9 +158,9 @@ def paginated_catalog_content(
             )
         )
 
-    catalogs_list = get_catalogs_query(cat).order_by("cat_name")
+    catalogs_list = get_catalogs_query(cat, user=user).order_by("cat_name")
     books_list = (
-        get_books_query(cat).select_related(
+        get_books_query(cat, user=user).select_related(
             "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
         ).order_by("search_title").prefetch_related(*prefetch)
     )

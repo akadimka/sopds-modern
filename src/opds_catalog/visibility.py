@@ -26,15 +26,9 @@ from opds_catalog.models import (
     Book,
     BookOwner,
     Catalog,
-    Counter,
     Genre,
     LibraryShare,
     Series,
-    counter_allauthors,
-    counter_allbooks,
-    counter_allcatalogs,
-    counter_allgenres,
-    counter_allseries,
 )
 
 _GENERATION_KEY = "visibility:generation"
@@ -66,7 +60,12 @@ def accessible_owner_ids(user) -> Optional[set[int]]:
 def visible_books(user, library=None) -> QuerySet:
     """Видимые пользователю книги; `library` — только книги одной
     библиотеки (владелец или его id), если она пользователю доступна."""
-    qs = Book.objects.filter(avail__gt=0)
+    return restrict_books(Book.objects.all(), user, library)
+
+
+def restrict_books(qs: QuerySet, user, library=None) -> QuerySet:
+    """Оставить в запросе книг (любом: поиск, полка, папка) только видимые."""
+    qs = qs.filter(avail__gt=0)
     ids = accessible_owner_ids(user)
     if library is not None:
         lib_id = getattr(library, "pk", library)
@@ -134,6 +133,17 @@ def _cache_key(kind: str, user) -> str:
     return f"visibility:{kind}:{who}:{_generation()}"
 
 
+def _catalogs_with_books(books: QuerySet) -> set[int]:
+    """Папки, в которых (или ниже которых) лежат книги из `books`."""
+    parents = dict(Catalog.objects.values_list("id", "parent_id"))
+    ids: set[int] = set()
+    for cat_id in set(books.values_list("catalog_id", flat=True)):
+        while cat_id is not None and cat_id not in ids:
+            ids.add(cat_id)
+            cat_id = parents.get(cat_id)
+    return ids
+
+
 def visible_catalog_ids(user) -> Optional[set[int]]:
     """Папки каталога, в которых (или ниже которых) есть видимые книги;
     None — все (суперпользователь)."""
@@ -142,31 +152,28 @@ def visible_catalog_ids(user) -> Optional[set[int]]:
     key = _cache_key("catalogs", user)
     ids = cache.get(key)
     if ids is None:
-        parents = dict(Catalog.objects.values_list("id", "parent_id"))
-        ids = set()
-        for cat_id in set(visible_books(user).values_list("catalog_id", flat=True)):
-            while cat_id is not None and cat_id not in ids:
-                ids.add(cat_id)
-                cat_id = parents.get(cat_id)
+        ids = _catalogs_with_books(visible_books(user))
         cache.set(key, ids, CACHE_SECONDS)
     return ids
 
 
 def user_counters(user) -> dict[str, int]:
-    """Счётчики главной страницы и OPDS: для суперпользователя — общие
-    (`Counter`, считает сканер), для остальных — по видимым книгам."""
-    if _is_super(user):
-        get = Counter.objects.get_counter
-        return {"books": get(counter_allbooks), "catalogs": get(counter_allcatalogs),
-                "authors": get(counter_allauthors), "genres": get(counter_allgenres),
-                "series": get(counter_allseries)}
+    """Счётчики главной страницы и OPDS — по видимым книгам; у
+    суперпользователя тоже (все существующие книги), а не общий `Counter`
+    сканера: тот считает и логически удалённые книги, и пустые папки, и
+    числа в шапке расходились бы со списками."""
     key = _cache_key("counters", user)
     counters = cache.get(key)
     if counters is None:
-        counters = {"books": visible_books(user).count(),
-                    "catalogs": len(visible_catalog_ids(user)),
-                    "authors": visible_authors(user).count(),
-                    "genres": visible_genres(user).count(),
-                    "series": visible_series(user).count()}
+        books = visible_books(user)
+
+        def with_books(model, relation):
+            return model.objects.filter(Exists(books.filter(**{relation: OuterRef("pk")}))).count()
+
+        counters = {"books": books.count(),
+                    "catalogs": len(_catalogs_with_books(books)),
+                    "authors": with_books(Author, "authors"),
+                    "genres": with_books(Genre, "genres"),
+                    "series": with_books(Series, "series")}
         cache.set(key, counters, CACHE_SECONDS)
     return counters

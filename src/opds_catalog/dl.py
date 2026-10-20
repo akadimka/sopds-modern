@@ -26,7 +26,7 @@ from PIL import Image
 from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
-from opds_catalog import opdsdb, settings
+from opds_catalog import opdsdb, settings, visibility
 from opds_catalog.converters import CONVERT_TIMEOUT_SECONDS
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
@@ -46,7 +46,7 @@ def Download(request, book_id, zip_flag):
     logger.debug(f"Download {book_id}")
     logger.debug(f"Zip flag: {zip_flag}")
     logger.info(f"Reading book {book_id} metadata from database")
-    book = Book.objects.get(id=book_id)
+    book = visibility.get_visible_book_or_404(request.user, book_id)
 
     logger.info("Processing user bookshelf ")
     if config.SOPDS_AUTH:
@@ -122,7 +122,7 @@ def Cover(
        HttpResponseRedirect: ссылка на стандартную обложку, если обложка не бла найдена в книге
     """
     logger.info(f"Reading book cover for book_id {book_id}")
-    book = Book.objects.get(id=book_id)
+    book = visibility.get_visible_book_or_404(request.user, book_id)
     logger.info("Book meta loaded")
     logger.debug(f"Book title = {book.title}")
     response = HttpResponse()
@@ -176,7 +176,7 @@ def ViewHtml(request, book_id):
     """Отдать книгу как HTML для чтения в браузере (только fb2)."""
     from django.urls import reverse
 
-    book = Book.objects.get(id=book_id)
+    book = visibility.get_visible_book_or_404(request.user, book_id)
 
     if book.format.lower() != "fb2":
         raise Http404
@@ -222,10 +222,7 @@ def SaveProgress(request, book_id):
     """
     if not request.user.is_authenticated:
         return JsonResponse({"ok": False, "error": "auth required"}, status=401)
-    try:
-        book = Book.objects.get(id=book_id)
-    except Book.DoesNotExist:
-        raise Http404
+    book = visibility.get_visible_book_or_404(request.user, book_id)
     try:
         data = json.loads(request.body)
     except (ValueError, TypeError):
@@ -387,7 +384,7 @@ def convert_book(book: Book, convert_type: str) -> tuple:
 def ConvertFB2(request, book_id, convert_type):
     """Выдача файла книги после конвертации в EPUB, MOBI или AZW3."""
     from urllib.parse import quote
-    book = Book.objects.get(id=book_id)
+    book = visibility.get_visible_book_or_404(request.user, book_id)
 
     if book.format != "fb2":
         raise Http404

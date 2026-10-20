@@ -13,23 +13,23 @@ from opds_catalog.services.authors_services import (
 
 
 @pytest.mark.django_db
-def test_find_authors_by_template(multiple_authors):
+def test_find_authors_by_template(multiple_authors, admin_user):
     """Тест поиска авторов по шаблону."""
     # Используем авторов из фикстуры multiple_authors
-    result = find_authors_by_template("АБ", 2, 1)
+    result = find_authors_by_template("АБ", 2, 1, user=admin_user)
     # Ожидаем одну группу для "АБ" с двумя авторами
     assert len(result) == 1
     assert result[0]["sid"] == "АБ"
     assert result[0]["cnt"] == 2
 
     # Проверка фильтрации по lang_code
-    result_lang2 = find_authors_by_template("БР", 2, 2)
+    result_lang2 = find_authors_by_template("БР", 2, 2, user=admin_user)
     assert len(result_lang2) == 1
     assert result_lang2[0]["sid"] == "БР"
     assert result_lang2[0]["cnt"] == 1
 
     # Проверка пустого шаблона
-    result_empty = find_authors_by_template("", 1, None)
+    result_empty = find_authors_by_template("", 1, None, user=admin_user)
     # Все авторы начинаются с пустой строки? В реальности это зависит от реализации
     # Здесь просто проверяем, что запрос выполняется без ошибок
     assert result_empty is not None
@@ -46,10 +46,9 @@ def test_find_authors_by_template(multiple_authors):
     ],
 )
 def test_search_authors_parametrized(
-    multiple_authors, search_type, search_term, expected_count
-):
+    multiple_authors, search_type, search_term, expected_count, admin_user):
     """Параметризованный тест поиска авторов."""
-    authors = search_authors(search_type, search_term)
+    authors = search_authors(search_type, search_term, user=admin_user)
     assert authors.count() == expected_count
 
 
@@ -75,7 +74,7 @@ def test_search_authors_invalid_type():
 
 
 @pytest.mark.django_db
-def test_search_authors_with_counts(parametrized_author_with_books):
+def test_search_authors_with_counts(parametrized_author_with_books, admin_user):
     """Тест поиска авторов с подсчетом количества книг."""
     author = parametrized_author_with_books
     # Получаем фактическое количество книг через связь bauthor
@@ -83,8 +82,7 @@ def test_search_authors_with_counts(parametrized_author_with_books):
 
     # Выполняем поиск по точному совпадению
     authors_with_counts = search_authors_with_counts(
-        SearchType.BY_EXACT_MATCH, author.search_full_name
-    )
+        SearchType.BY_EXACT_MATCH, author.search_full_name, user=admin_user)
     result = authors_with_counts.first()
 
     # Проверяем, что аннотированное количество книг совпадает с фактическим
@@ -94,17 +92,17 @@ def test_search_authors_with_counts(parametrized_author_with_books):
 
 
 @pytest.mark.django_db
-def test_get_author_name_existing(parametrized_author):
+def test_get_author_name_existing(parametrized_author, admin_user):
     """Тест получения имени существующего автора."""
     author = parametrized_author
-    result = get_author_name(author.id)
+    result = get_author_name(author.id, user=admin_user)
     assert result == author.full_name
 
 
 @pytest.mark.django_db
-def test_get_author_name_non_existing():
+def test_get_author_name_non_existing(admin_user):
     """Тест получения имени несуществующего автора."""
-    result = get_author_name(999999)
+    result = get_author_name(999999, user=admin_user)
     assert result == "Author not found"
 
 
@@ -112,15 +110,15 @@ def test_get_author_name_non_existing():
 class TestAuthorServicesIntegration:
     """Интеграционные тесты для сервисов авторов."""
 
-    def test_find_and_search_combination(self, multiple_authors):
+    def test_find_and_search_combination(self, multiple_authors, admin_user):
         """Комбинированный тест find_authors_by_template и search_authors."""
         # Получаем шаблон "АБ"
-        template_result = find_authors_by_template("АБ", 2, 1)
+        template_result = find_authors_by_template("АБ", 2, 1, user=admin_user)
         assert len(template_result) == 1
 
         # Используем sid из результата для поиска авторов
         sid = template_result[0]["sid"]
-        authors = search_authors(SearchType.BY_START_WITH, sid)
+        authors = search_authors(SearchType.BY_START_WITH, sid, user=admin_user)
         # Два автора начинаются с "АБ"
         assert authors.count() == 2
 
@@ -128,16 +126,15 @@ class TestAuthorServicesIntegration:
         for author in authors:
             assert author.search_full_name.startswith(sid)
 
-    def test_search_with_counts_and_get_name(self, parametrized_author_with_books):
+    def test_search_with_counts_and_get_name(self, parametrized_author_with_books, admin_user):
         """Тест цепочки search_authors_with_counts и get_author_name."""
         author = parametrized_author_with_books
         authors_with_counts = search_authors_with_counts(
-            SearchType.BY_EXACT_MATCH, author.search_full_name
-        )
+            SearchType.BY_EXACT_MATCH, author.search_full_name, user=admin_user)
         found_author = authors_with_counts.first()
 
         # Получаем имя через get_author_name
-        name = get_author_name(found_author.id)
+        name = get_author_name(found_author.id, user=admin_user)
         assert name == author.full_name
         # Проверяем количество книг
         actual_count = bauthor.objects.filter(author=author).count()

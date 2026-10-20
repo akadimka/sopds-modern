@@ -22,6 +22,7 @@ from .fixture_django import (
     create_regular_book,
     django_user,
     load_db_data,
+    publish,
     unexisted_book,
 )
 from .fixture_models import (

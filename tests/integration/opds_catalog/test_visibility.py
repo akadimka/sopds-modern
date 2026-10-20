@@ -139,6 +139,10 @@ def test_user_counters_and_invalidation(lib, tmp_path, override_config):
     assert BookOwner.objects.filter(book=books["C"], user=users["boris"]).exists()
 
 
-def test_admin_counters_are_global(lib):
+def test_admin_counters_count_existing_books(lib):
+    """Администратор: все существующие книги (A0 — логически удалена, не в счёт),
+    папки и сущности — только с книгами, как и в списках."""
     users, _ = lib
-    assert set(visibility.user_counters(users["admin"])) == {"books", "catalogs", "authors", "genres", "series"}
+    Author.objects.create(full_name="Без книг", search_full_name="БЕЗ КНИГ")
+    assert visibility.user_counters(users["admin"]) == {
+        "books": 6, "catalogs": 7, "authors": 5, "genres": 1, "series": 6}

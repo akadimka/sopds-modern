@@ -8,6 +8,26 @@ from opds_catalog import opdsdb
 from opds_catalog.models import Book
 
 
+def publish_books(*books):
+    """Книги — у владельца с открытой всем библиотекой: как рабочая
+    библиотека после перехода на владение (docs/multiuser-design.md) —
+    пользователи (и аноним при выключенной авторизации) видят их все."""
+    from django.contrib.auth.models import User
+
+    from opds_catalog.models import BookOwner
+    from sopds_web_backend.models import UserProfile
+    owner, _ = User.objects.get_or_create(username="library_owner")
+    UserProfile.objects.update_or_create(user=owner, defaults={"library_public": True})
+    BookOwner.objects.bulk_create([BookOwner(book=b, user=owner) for b in books], ignore_conflicts=True)
+    return owner
+
+
+@pytest.fixture
+def publish():
+    """`publish_books` как фикстура — для тестов, создающих книги сами."""
+    return publish_books
+
+
 @pytest.fixture
 def request_factory() -> RequestFactory:
     """RequestFactory.
@@ -67,6 +87,7 @@ def load_db_data(django_db_setup, django_db_blocker):
     """
     with django_db_blocker.unblock():
         call_command("loaddata", "testdb.json")
+        publish_books(*Book.objects.all())
 
 
 @pytest.fixture
@@ -91,8 +112,10 @@ def create_regular_book(simple_fb2, catalog):
         format="fb2",
         search_title="1",
         catalog=catalog,
+        avail=2,
     )
     book.save()
+    publish_books(book)
     yield book
     book.delete()
 

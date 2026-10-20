@@ -2,15 +2,16 @@
 
 from typing import Any
 
-from django.db.models import Count, IntegerField, QuerySet, Value
+from django.db.models import Count, Exists, IntegerField, OuterRef, QuerySet, Value
 from django.db.models.functions import Substr
 from django.utils.translation import gettext as _
 
+from opds_catalog import visibility
 from opds_catalog.models import Series
 from opds_catalog.utils import to_int
 
 
-def get_series(chars: str, length: int, lang_code: int | None = None) -> QuerySet:
+def get_series(chars: str, length: int, lang_code: int | None = None, *, user) -> QuerySet:
     """Запрос перечня серий, начинающихся с определённого набора символов.
 
     :param chars: Набор символов, с которого должна начинаться серия.
@@ -19,7 +20,7 @@ def get_series(chars: str, length: int, lang_code: int | None = None) -> QuerySe
     :returns: Запрос для поиска серий по шаблону.
     """
     series = (
-        Series.objects.filter(search_ser__startswith=chars)
+        visibility.visible_series(user, Series.objects.filter(search_ser__startswith=chars))
         .annotate(
             l=Value(length, output_field=IntegerField()),
             sid=Substr("search_ser", 1, length),
@@ -34,7 +35,7 @@ def get_series(chars: str, length: int, lang_code: int | None = None) -> QuerySe
     return series
 
 
-def search_series(searchtype: str, searchterms: str, author_id: int | None = None):
+def search_series(searchtype: str, searchterms: str, author_id: int | None = None, *, user):
     """Поиск по сериям."""
     if searchtype == "m":
         series = Series.objects.filter(search_ser__contains=searchterms.upper())
@@ -43,16 +44,20 @@ def search_series(searchtype: str, searchterms: str, author_id: int | None = Non
     elif searchtype == "e":
         series = Series.objects.filter(search_ser=searchterms.upper())
     elif searchtype == "a":
-        series = Series.objects.filter(book__authors=author_id)
+        # Серии, где у автора есть ВИДИМАЯ книга (не просто любая видимая
+        # книга серии — иначе видно, что у автора есть чужая книга в серии).
+        series = Series.objects.filter(Exists(visibility.visible_books(user).filter(
+            series=OuterRef("pk"), authors=author_id)))
 
-    return series.annotate(count_book=Count("book")).distinct().order_by("search_ser")
+    return (visibility.visible_series(user, series)
+            .annotate(count_book=visibility.visible_book_count(user)).distinct().order_by("search_ser"))
 
 
-def get_series_name(id: Any) -> str:
+def get_series_name(id: Any, *, user) -> str:
     """Возвращает наименование серии."""
     ser_id = to_int(id)
     try:
-        ser_name = Series.objects.get(id=ser_id).ser
+        ser_name = visibility.visible_series(user).get(id=ser_id).ser
     except Series.DoesNotExist:
         ser_name = _("Series not found")
     return ser_name

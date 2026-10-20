@@ -11,42 +11,42 @@ pytestmark = pytest.mark.django_db
 class TestBookServices:
     """Тесты методов book_services."""
 
-    def test_search_book_by_exact_title(self, book_with_relations):
+    def test_search_book_by_exact_title(self, book_with_relations, admin_user):
         """Поиск по точному названию."""
-        results = book_services.search_book("b", "Книга", None, None)
+        results = book_services.search_book("b", "Книга", None, admin_user)
         assert results.count() == 1
         assert results[0].title == "Книга"
 
-    def test_search_book_by_begin_title(self, book_with_relations):
+    def test_search_book_by_begin_title(self, book_with_relations, admin_user):
         """Поиск по началу названия."""
-        results = book_services.search_book("m", "Кни", None, None)
+        results = book_services.search_book("m", "Кни", None, admin_user)
         assert results.count() == 1
 
-    def test_search_book_by_author(self, book_with_relations):
+    def test_search_book_by_author(self, book_with_relations, admin_user):
         """Поиск книг автора."""
         author = book_with_relations.authors.first()
-        results = book_services.search_book("a", author.id, None, None)
+        results = book_services.search_book("a", author.id, None, admin_user)
         assert results.count() == 1
 
-    def test_search_book_by_series(self, book_with_relations):
+    def test_search_book_by_series(self, book_with_relations, admin_user):
         """Поиск книг по серии."""
         series_obj = book_with_relations.series.first()
-        results = book_services.search_book("s", series_obj.id, None, None)
+        results = book_services.search_book("s", series_obj.id, None, admin_user)
         assert results.count() == 1
 
-    def test_search_book_by_author_and_series(self, book_with_relations):
+    def test_search_book_by_author_and_series(self, book_with_relations, admin_user):
         """Поиск книг по автору+серии (баг №86: find_by_author_and_series
         фильтровала по несуществующим полям author_id/series_id вместо
         M2M-полей authors/series — всегда падала с FieldError)."""
         author = book_with_relations.authors.first()
         series_obj = book_with_relations.series.first()
-        results = book_services.search_book("as", author.id, series_obj.id, None)
+        results = book_services.search_book("as", author.id, series_obj.id, admin_user)
         assert results.count() == 1
         assert results[0].id == book_with_relations.id
 
-    def test_search_book_without_results(self):
+    def test_search_book_without_results(self, admin_user):
         """Поиск несуществующей книги."""
-        results = book_services.search_book("b", "Nonexist", None, None)
+        results = book_services.search_book("b", "Nonexist", None, admin_user)
         assert results.count() == 0
 
     def test_book_description(self, book_with_relations):
@@ -77,12 +77,12 @@ class TestBookServices:
         assert paginator["number"] == 1
         assert paginator["has_next"] is False
 
-    def test_find_books_by_template_no_books(self):
+    def test_find_books_by_template_no_books(self, admin_user):
         """Шаблон книг при пустой БД."""
-        results = book_services.find_books_by_template("", 1, 0)
+        results = book_services.find_books_by_template("", 1, 0, user=admin_user)
         assert len(results) == 0
 
-    def test_find_books_by_template_with_lang_code(self, catalog):
+    def test_find_books_by_template_with_lang_code(self, catalog, admin_user):
         """Шаблон книг с фильтром по языку."""
         book = Book.objects.create(
             filename="test.fb2",
@@ -93,31 +93,32 @@ class TestBookServices:
             search_title="TEST",
             lang_code=1,
             catalog=catalog,
+            avail=2,
         )
-        results = book_services.find_books_by_template("T", 1, lang_code=1)
+        results = book_services.find_books_by_template("T", 1, lang_code=1, user=admin_user)
         assert len(results) > 0
 
-    def test_search_book_by_genre(self, book_with_relations):
+    def test_search_book_by_genre(self, book_with_relations, admin_user):
         """Поиск книг по жанру."""
         genre = book_with_relations.genres.first()
-        results = book_services.search_book("g", str(genre.id), None, None)
+        results = book_services.search_book("g", str(genre.id), None, admin_user)
         assert results.count() == 1
 
-    def test_search_book_by_exact_title(self, book_with_relations):
+    def test_search_book_by_exact_title(self, book_with_relations, admin_user):
         """Поиск по точному названию (type='e')."""
         book_with_relations.search_title = "КНИГА"
         book_with_relations.save()
-        results = book_services.search_book("e", "КНИГА", None, None)
+        results = book_services.search_book("e", "КНИГА", None, admin_user)
         assert results.count() == 1
 
-    def test_search_book_unsupported_type(self):
+    def test_search_book_unsupported_type(self, admin_user):
         """Поиск с неподдерживаемым типом."""
         import pytest
 
         with pytest.raises(ValueError, match="is not supported"):
-            book_services.search_book("x", "test", None, None)
+            book_services.search_book("x", "test", None, admin_user)
 
-    def test_find_book_doubles(self, book_with_relations, catalog):
+    def test_find_book_doubles(self, book_with_relations, catalog, admin_user):
         """Поиск дубликатов книги."""
         # Создаём книгу-дубликат
         book2 = Book.objects.create(
@@ -128,26 +129,27 @@ class TestBookServices:
             title="Книга",
             search_title="КНИГА",
             catalog=catalog,
+            avail=2,
         )
         author = book_with_relations.authors.first()
         from opds_catalog.models import bauthor
 
         bauthor.objects.create(book=book2, author=author)
         results = book_services.search_book(
-            "d", str(book_with_relations.id), None, None
+            "d", str(book_with_relations.id), None, admin_user
         )
         assert results.count() == 1
 
-    def test_author_books_count(self, book_with_relations):
+    def test_author_books_count(self, book_with_relations, admin_user):
         """Подсчёт книг автора."""
         author = book_with_relations.authors.first()
-        count = book_services.author_books_count(author)
+        count = book_services.author_books_count(author, user=admin_user)
         assert count == 1
 
-    def test_author_books_count_by_int(self, book_with_relations):
+    def test_author_books_count_by_int(self, book_with_relations, admin_user):
         """Подсчёт книг автора по ID."""
         author = book_with_relations.authors.first()
-        count = book_services.author_books_count(author.id)
+        count = book_services.author_books_count(author.id, user=admin_user)
         assert count == 1
 
     def test_book_description_with_ser_no(self, book_with_relations):

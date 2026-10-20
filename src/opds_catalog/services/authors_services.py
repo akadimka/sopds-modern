@@ -13,6 +13,7 @@ from django.db.models import (
 )
 from django.utils.translation import gettext_lazy as _
 
+from opds_catalog import visibility
 from opds_catalog.models import Author
 from opds_catalog.services import SearchType
 
@@ -24,7 +25,7 @@ class AuthorTemplateResult(TypedDict):
 
 
 def find_authors_by_template(
-    chars: str, length: int, lang_code: int | None
+    chars: str, length: int, lang_code: int | None, *, user
 ) -> QuerySet:
     """Поиск авторов по шаблону.
 
@@ -40,7 +41,7 @@ def find_authors_by_template(
     :rtype: QuerySet
     """
     query = (
-        Author.objects.filter(search_full_name__startswith=chars)
+        visibility.visible_authors(user, Author.objects.filter(search_full_name__startswith=chars))
         .annotate(
             template_length=Value(length, output_field=IntegerField()),
             sid=Func(
@@ -61,7 +62,7 @@ def find_authors_by_template(
     return query
 
 
-def search_authors(searchtype: SearchType, searchterms: str) -> QuerySet[Author]:
+def search_authors(searchtype: SearchType, searchterms: str, *, user) -> QuerySet[Author]:
     """Поиск авторов.
 
     :param searchtype: Тип поиска (один из значений SearchType).
@@ -90,11 +91,11 @@ def search_authors(searchtype: SearchType, searchterms: str) -> QuerySet[Author]
         )
     else:
         raise ValueError(f"Unsupported search type: {searchtype}")
-    return authors
+    return visibility.visible_authors(user, authors)
 
 
 def search_authors_with_counts(
-    searchtype: SearchType, searchterms: str
+    searchtype: SearchType, searchterms: str, *, user
 ) -> QuerySet[Author]:
     """Поиск авторов с подсчетом количества книг.
 
@@ -122,11 +123,12 @@ def search_authors_with_counts(
     else:
         raise ValueError(f"Unsupported search type: {searchtype}")
 
-    queryset = queryset.annotate(book_count=Count("book")).order_by("search_full_name")
+    queryset = visibility.visible_authors(user, queryset).annotate(
+        book_count=visibility.visible_book_count(user)).order_by("search_full_name")
     return queryset
 
 
-def get_author_name(id: int) -> str:
+def get_author_name(id: int, *, user) -> str:
     """Возвращает полное имя автора по его ID.
 
     :param author_id: Идентификатор автора.
@@ -138,7 +140,7 @@ def get_author_name(id: int) -> str:
     :raises: Не вызывает исключения, возвращает строку в случае отсутствия автора.
     """
     try:
-        author = Author.objects.get(id=id)
+        author = visibility.visible_authors(user).get(id=id)
         return author.full_name
     except Author.DoesNotExist:
         return _("Author not found")

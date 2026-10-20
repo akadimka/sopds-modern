@@ -18,14 +18,13 @@ from django.utils.feedgenerator import Atom1Feed, Enclosure, rfc3339_date
 from django.utils.translation import gettext as _
 
 from book_tools.format.mimetype import Mimetype
-from opds_catalog import settings
+from opds_catalog import settings, visibility
 from opds_catalog.services import (
     SearchType,
     authors_services,
     book_services,
     bookshelf_services,
     catalog_services,
-    counter_services,
     genre_services,
     series_services,
 )
@@ -232,6 +231,19 @@ class opdsFeed(Atom1Feed):
             handler.characters("\n")
 
 
+def _template_object(request, lang_code, chars) -> dict:
+    """obj фидов «по первым буквам» (книги, авторы, серии)."""
+    chars = chars or ""
+    # FIXME: вычисление len(chars+1) должно быть в сервисе.
+    return {"length": len(chars) + 1, "chars": chars.upper(), "lang_code": int(lang_code),
+            "user": request.user, "path": request.path}
+
+
+def _with_lang(obj, rows) -> list[dict]:
+    """Язык навигации — в каждом элементе (для ссылок item_link)."""
+    return [dict(row, lang_code=obj["lang_code"]) for row in rows]
+
+
 class SOPDSBaseFeed(Feed):
     """Расширение стандартного класса фидов Django для создания OPDS фидов.
 
@@ -249,12 +261,14 @@ class SOPDSBaseFeed(Feed):
     def __call__(self, request: HttpRequest, *args, **kwargs):
         """Переопределение метода для возможности работы с авторизацией.
 
-        Сохраняет поступивший запрос в отдельном поле класса
+        Объект фида создаётся один раз (urls.py) и общий для всех запросов и
+        потоков сервера: ничего, что относится к запросу (пользователь, язык,
+        путь), не хранится в `self` — только в `obj` из `get_object()` и в
+        самих элементах фида (docs/multiuser-plan.md шаг 1.6).
 
         :param request: поступивший запрос
         :type: request: HttpRequest
         """
-        self.request = request
         return super().__call__(request, *args, **kwargs)
 
     def feed_extra_kwargs(self, obj):
@@ -421,8 +435,13 @@ class MainFeed(SOPDSBaseFeed):
         """Ссылка на корневой фид."""
         return reverse("opds_catalog:main")
 
-    def items(self):
-        """Элементы фида."""
+    def get_object(self, request):
+        return request.user
+
+    def items(self, obj):
+        """Элементы фида — счётчики по видимым пользователю книгам."""
+        user = obj
+        counters = visibility.user_counters(user)
         mainitems = [
             {
                 "id": 1,
@@ -430,8 +449,8 @@ class MainFeed(SOPDSBaseFeed):
                 "link": "opds_catalog:catalogs",
                 "descr": _("Catalogs: %(catalogs)s, books: %(books)s."),
                 "counters": {
-                    "catalogs": counter_services.get_catalogs_count(),
-                    "books": counter_services.get_books_count(),
+                    "catalogs": counters["catalogs"],
+                    "books": counters["books"],
                 },
             },
             {
@@ -443,7 +462,7 @@ class MainFeed(SOPDSBaseFeed):
                     else "opds_catalog:nolang_authors"
                 ),
                 "descr": _("Authors: %(authors)s."),
-                "counters": {"authors": counter_services.get_authors_count()},
+                "counters": {"authors": counters["authors"]},
             },
             {
                 "id": 3,
@@ -454,17 +473,17 @@ class MainFeed(SOPDSBaseFeed):
                     else "opds_catalog:nolang_books"
                 ),
                 "descr": _("Books: %(books)s."),
-                "counters": {"books": counter_services.get_books_count()},
+                "counters": {"books": counters["books"]},
             },
             {
                 "id": 4,
                 "title": _("By genres"),
                 "link": "opds_catalog:genres",
                 "descr": _("Genres: %(genres)s."),
-                "counters": {"genres": counter_services.get_genres_count()},
+                "counters": {"genres": counters["genres"]},
             },
         ]
-        series_count = counter_services.get_series_count()
+        series_count = counters["series"]
 
         if series_count > 0:
             mainitems.append(
@@ -477,26 +496,26 @@ class MainFeed(SOPDSBaseFeed):
                         else "opds_catalog:nolang_series"
                     ),
                     "descr": _("Series: %(series)s."),
-                    "counters": {"series": counter_services.get_series_count()},
+                    "counters": {"series": series_count},
                 },
             )
         # TODO: Сюда мы можем попасть либо если выключена авторизация либо если
         # авторизация включена и пользователь авторизован.
-        if config.SOPDS_AUTH and self.request.user.is_authenticated:
+        if config.SOPDS_AUTH and user.is_authenticated:
             mainitems.append(
                 {  # ty: ignore
                     "id": 6,
                     "title": _("%(username)s Book shelf")
                     % (
-                        {"username": self.request.user.username}
+                        {"username": user.username}
                     ),  # ty: ignore[unresolved-attribute]
                     "link": "opds_catalog:bookshelf",
                     "descr": _("%(username)s books readed: %(bookshelf)s."),
                     "counters": {
                         "bookshelf": bookshelf_services.get_bookshelf_books_count(
-                            user=self.request.user  # ty: ignore [invalid-argument-type]
+                            user=user  # ty: ignore [invalid-argument-type]
                         ),
-                        "username": self.request.user.username,  # ty: ignore [unresolved-attribute]
+                        "username": user.username,  # ty: ignore [unresolved-attribute]
                     },
                 },
             )
@@ -544,12 +563,12 @@ class CatalogsFeed(SOPDSBaseFeed):
         page_num = to_int(page, default=1)
 
         root_cat = (
-            catalog_services.get_by_id(cat_id)
+            catalog_services.get_by_id(cat_id, user=request.user)
             if cat_id is not None
             else catalog_services.get_root()
         )
         items, pager_data = catalog_services.paginated_catalog_content(
-            root_cat, page_num, config.SOPDS_MAXITEMS
+            root_cat, page_num, config.SOPDS_MAXITEMS, user=request.user
         )
 
         return items, root_cat, pager_data
@@ -884,7 +903,7 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
             page = int(page)
         page_num = page if page > 0 else 1
 
-        authors = authors_services.search_authors_with_counts(searchtype, searchterms)
+        authors = authors_services.search_authors_with_counts(searchtype, searchterms, user=request.user)
 
         paginator = Paginator(authors, config.SOPDS_MAXITEMS)
         try:
@@ -972,15 +991,15 @@ class SearchSeriesFeed(SOPDSBaseFeed):
 
     def get_object(self, request, searchtype, searchterms, page=1):
         """Получение элементов фида."""
-        self.author_id = None
+        author_id = None
         if not isinstance(page, int):
             page = int(page)
         page_num = page if page > 0 else 1
 
         if searchtype == SearchType.BY_AUTHOR:
-            self.author_id = to_int(searchterms)
+            author_id = to_int(searchterms)
 
-        series = series_services.search_series(searchtype, searchterms, self.author_id)
+        series = series_services.search_series(searchtype, searchterms, author_id, user=request.user)
 
         paginator = Paginator(series, config.SOPDS_MAXITEMS)
         try:
@@ -993,6 +1012,7 @@ class SearchSeriesFeed(SOPDSBaseFeed):
                 "ser": row.ser,
                 "lang_code": row.lang_code,
                 "book_count": row.count_book,
+                "author_id": author_id,
             }
             for row in page.object_list
         ]
@@ -1053,10 +1073,10 @@ class SearchSeriesFeed(SOPDSBaseFeed):
 
     def item_link(self, item):
         """Ссылка на серию."""
-        if self.author_id:
+        if item["author_id"]:
             kwargs = {
                 "searchtype": "as",
-                "searchterms": self.author_id,
+                "searchterms": item["author_id"],
                 "searchterms0": item["id"],
             }
         else:
@@ -1068,15 +1088,18 @@ class SearchSeriesFeed(SOPDSBaseFeed):
 class LangFeed(SOPDSBaseFeed):
     """Навигационный фид для поиска книг по языку."""
 
+    def get_object(self, request):
+        return request.path
+
     def link(self, obj):
         """Ссылка на фид."""
-        return self.request.path
+        return obj
 
     def title(self, obj):
         """Заголовок фида."""
         return f"{settings.TITLE} | {_('Select language')}"
 
-    def items(self):
+    def items(self, obj):
         """Перечень языков."""
         # TODO: переделать, используя словарь lang_codes
         langitems = [
@@ -1086,11 +1109,11 @@ class LangFeed(SOPDSBaseFeed):
             {"id": 9, "title": _("Other symbols")},
             {"id": 0, "title": _("Show all")},
         ]
-        return langitems
+        return [dict(item, path=obj) for item in langitems]
 
     def item_link(self, item):
         """Ссылка на дальнейшую навигацию."""
-        return self.request.path + str(item["id"]) + "/"
+        return item["path"] + str(item["id"]) + "/"
 
     def item_description(self, item):
         """Описание элемента."""
@@ -1106,7 +1129,7 @@ class BooksFeed(SOPDSBaseFeed):
 
     def link(self, obj):
         """Ссылка на фид."""
-        return self.request.path
+        return obj["path"]
 
     def title(self, obj):
         """Заголовок фида."""
@@ -1116,15 +1139,12 @@ class BooksFeed(SOPDSBaseFeed):
         self, request, lang_code=0, chars=None
     ):  # ty: ignore [invalid-method-override]
         """Формирование шаблона названия книги."""
-        self.lang_code = int(lang_code)
-        if chars is None:
-            chars = ""
-        return (len(chars) + 1, chars.upper())
+        return _template_object(request, lang_code, chars)
 
     def items(self, obj):
         """Получение содержимого фида."""
-        length, chars = obj
-        return book_services.find_books_by_template(chars, length, self.lang_code)
+        return _with_lang(obj, book_services.find_books_by_template(
+            obj["chars"], obj["length"], obj["lang_code"], user=obj["user"]))
 
     def item_title(self, item):
         """Шаблон названия книги."""
@@ -1140,7 +1160,7 @@ class BooksFeed(SOPDSBaseFeed):
         if item["cnt"] >= config.SOPDS_SPLITITEMS and not title_full:
             return reverse(
                 "opds_catalog:chars_books",
-                kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
+                kwargs={"lang_code": item["lang_code"], "chars": item["sid"]},
             )
         else:
             return reverse(
@@ -1159,7 +1179,7 @@ class AuthorsFeed(SOPDSBaseFeed):
 
     def link(self, obj):
         """Ссылка на фид."""
-        return self.request.path
+        return obj["path"]
 
     def title(self, obj):
         """Заголовок фида."""
@@ -1169,16 +1189,12 @@ class AuthorsFeed(SOPDSBaseFeed):
         self, request, lang_code=0, chars=None
     ):  # ty: ignore [invalid-method-override]
         """Формирование шаблона для поиска авторов."""
-        self.lang_code = int(lang_code)
-        if chars is None:
-            chars = ""
-        # FIXME: вычисление len(chars+1) должно быть в сервисе.
-        return (len(chars) + 1, chars.upper())
+        return _template_object(request, lang_code, chars)
 
     def items(self, obj):
         """Запрос авторов, подпадающих под заданный шаблон."""
-        length, chars = obj
-        return authors_services.find_authors_by_template(chars, length, self.lang_code)
+        return _with_lang(obj, authors_services.find_authors_by_template(
+            obj["chars"], obj["length"], obj["lang_code"], user=obj["user"]))
 
     def item_title(self, item):
         """Начало фамилий авторов."""
@@ -1207,7 +1223,7 @@ class AuthorsFeed(SOPDSBaseFeed):
         if (item["cnt"] >= config.SOPDS_SPLITITEMS) and not last_name_full:
             return reverse(
                 "opds_catalog:chars_authors",
-                kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
+                kwargs={"lang_code": item["lang_code"], "chars": item["sid"]},
             )
         else:
             return reverse(
@@ -1228,7 +1244,7 @@ class SeriesFeed(SOPDSBaseFeed):
 
     def link(self, obj):
         """Ссылка на фид."""
-        return self.request.path
+        return obj["path"]
 
     def title(self, obj):
         """Заголовок фида серий."""
@@ -1238,15 +1254,12 @@ class SeriesFeed(SOPDSBaseFeed):
         self, request, lang_code=0, chars=None
     ):  # ty: ignore[invalid-method-override]
         """Получение основного объекта фида."""
-        self.lang_code = int(lang_code)
-        if chars is None:
-            chars = ""
-        return (len(chars) + 1, chars.upper())
+        return _template_object(request, lang_code, chars)
 
     def items(self, obj):
         """Список серий, отображаемых в фиде."""
-        length, chars = obj
-        return series_services.get_series(chars, length, self.lang_code)
+        return _with_lang(obj, series_services.get_series(
+            obj["chars"], obj["length"], obj["lang_code"], user=obj["user"]))
 
     def item_title(self, item):
         """Идентификатор серии."""
@@ -1275,7 +1288,7 @@ class SeriesFeed(SOPDSBaseFeed):
         if item["cnt"] >= config.SOPDS_SPLITITEMS and not series_full:
             return reverse(
                 "opds_catalog:chars_series",
-                kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
+                kwargs={"lang_code": item["lang_code"], "chars": item["sid"]},
             )
         else:
             return reverse(
@@ -1297,24 +1310,20 @@ class GenresFeed(SOPDSBaseFeed):
 
     def link(self, obj):
         """Ссылка на фид."""
-        return self.request.path
+        return obj["path"]
 
     def title(self, obj):
         """Заголовок фида."""
         return "%s | %s" % (
             settings.TITLE,
-            _("Select genres (%s)") % (_("section") if obj == 0 else _("subsection")),
+            _("Select genres (%s)") % (_("section") if obj["section"] == 0 else _("subsection")),
         )
 
     def get_object(
         self, request, section: int = 0
     ):  # ty:ignore [invalid-method-override]
         """Получение данных фида."""
-        if not isinstance(section, int):
-            self.section_id = int(section)
-        else:
-            self.section_id = section
-        return self.section_id
+        return {"section": int(section), "user": request.user, "path": request.path}
 
     def items(self, obj):
         """Предоставляет перечень жанров или поджанров для поиска книг.
@@ -1330,16 +1339,16 @@ class GenresFeed(SOPDSBaseFeed):
         основных жанров книг. В противном случае возвращается перечень поджанров
         выбранного жанра.
         """
-        section_id = obj
+        section_id = obj["section"]
         if section_id == 0:
-            dataset = genre_services.get_genres()
+            dataset = genre_services.get_genres(user=obj["user"])
         else:
-            dataset = genre_services.get_genre_details(section_id)
-        return dataset
+            dataset = genre_services.get_genre_details(section_id, user=obj["user"])
+        return [dict(row, level=section_id) for row in dataset]
 
     def item_title(self, item):
         """Название жанра или поджанра."""
-        return "%s" % (item["section"] if self.section_id == 0 else item["subsection"])
+        return "%s" % (item["section"] if item["level"] == 0 else item["subsection"])
 
     def item_description(self, item):
         """количество книг для жанра."""
@@ -1350,7 +1359,7 @@ class GenresFeed(SOPDSBaseFeed):
 
         Эта ссылка ведет на навигационный каталог поиска книг по жанру.
         """
-        if self.section_id == 0:
+        if item["level"] == 0:
             return reverse(
                 "opds_catalog:genres", kwargs={"section": item["section_id"]}
             )

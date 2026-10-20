@@ -12,6 +12,7 @@ from django.db.models.functions import Substr
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
+from opds_catalog import visibility
 from opds_catalog.models import Author, Book, bookshelf
 from opds_catalog.services import SearchType
 from opds_catalog.sopds_config import sopds_cfg as config
@@ -46,10 +47,12 @@ def find_by_author_and_series(
 
 
 def find_book_doubles(
-    _: bool, book_id: str, __: str | None = None, ___=None
+    _: bool, book_id: str, __: str | None = None, user=None
 ) -> QuerySet[Book]:
-    """Поиск дубликатов книги."""
-    mbook = Book.objects.only("title").get(id=to_int(book_id))
+    """Поиск дубликатов книги (сама книга должна быть видна пользователю)."""
+    mbook = visibility.visible_books(user).only("title").filter(id=to_int(book_id)).first()
+    if mbook is None:
+        return Book.objects.none()
     return (
         Book.objects.filter(title__iexact=mbook.title, authors__in=mbook.authors.all())
         .exclude(id=to_int(book_id))
@@ -127,13 +130,14 @@ SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
 
 
 def search_book(
-    type: str, term: str, second_term: str | None = None, user=None
+    type: str, term: str, second_term: str | None, user
 ) -> QuerySet[Book, Book]:
-    """Формирование запроса на выборку книг."""
+    """Формирование запроса на выборку книг — только видимых пользователю
+    (docs/multiuser-design.md); `user` обязателен, None — аноним."""
     search_function = SEARCH_BOOK_REGISTRY.get(type)
     if search_function is None:
         raise ValueError(f"Search type '{type}' is not supported")
-    return search_function(config.SOPDS_AUTH, term, second_term, user)
+    return visibility.restrict_books(search_function(config.SOPDS_AUTH, term, second_term, user), user)
 
 
 def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
@@ -381,7 +385,7 @@ def book_description(item) -> str:
 
 
 def find_books_by_template(
-    chars: str, length: int, lang_code: int | None = None
+    chars: str, length: int, lang_code: int | None = None, *, user
 ) -> QuerySet:
     """Поиск книг по шаблону.
 
@@ -391,7 +395,7 @@ def find_books_by_template(
     :returns: Запрос для поиска книг по шаблону.
     """
     books = (
-        Book.objects.filter(search_title__startswith=chars)
+        visibility.restrict_books(Book.objects.filter(search_title__startswith=chars), user)
         .annotate(
             l=Value(length, output_field=IntegerField()),
             sid=Substr("search_title", 1, length),
@@ -406,6 +410,6 @@ def find_books_by_template(
     return books
 
 
-def author_books_count(author: Author | int) -> int:
-    """Подсчет числа книг для автора."""
-    return Book.objects.filter(authors=author).count()
+def author_books_count(author: Author | int, *, user) -> int:
+    """Подсчет числа видимых пользователю книг автора."""
+    return visibility.visible_books(user).filter(authors=author).count()

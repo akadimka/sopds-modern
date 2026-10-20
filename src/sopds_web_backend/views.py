@@ -180,13 +180,13 @@ def SearchBooksView(request):
             args["searchobject"] = "title"
 
         elif args["searchtype"] == "a":
-            aname = authors_services.get_author_name(id=args["searchterms"])
+            aname = authors_services.get_author_name(id=args["searchterms"], user=request.user)
             args["breadcrumbs"] = [_books_root, {"label": _("Search by author"), "url": ""}, {"label": aname, "url": ""}]
             args["searchobject"] = "author"
 
         # Поиск книг по серии
         elif args["searchtype"] == "s":
-            ser = series_services.get_series_name(args["searchterms"])
+            ser = series_services.get_series_name(args["searchterms"], user=request.user)
             args["breadcrumbs"] = [_books_root, {"label": _("Search by series"), "url": ""}, {"label": ser, "url": ""}]
             args["searchobject"] = "series"
 
@@ -284,7 +284,7 @@ def SearchSeriesView(request):
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
-        series = series_services.search_series(searchtype, searchterms)
+        series = series_services.search_series(searchtype, searchterms, user=request.user)
 
         # Создаем результирующее множество
         paginator = Paginator(series, config.SOPDS_MAXITEMS)
@@ -347,7 +347,7 @@ def SearchAuthorsView(request):
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
-        authors = authors_services.search_authors_with_counts(searchtype, searchterms)
+        authors = authors_services.search_authors_with_counts(searchtype, searchterms, user=request.user)
         paginator = Paginator(authors, config.SOPDS_MAXITEMS)
         try:
             page = paginator.page(page_num)
@@ -465,7 +465,7 @@ def BooksView(request):
 
     length = len(chars) + 1
 
-    items = book_services.find_books_by_template(chars, length, lang_code)
+    items = book_services.find_books_by_template(chars, length, lang_code, user=request.user)
 
     args["items"] = items
     args["current"] = "book"
@@ -500,7 +500,7 @@ def AuthorsView(request):
 
     length = len(chars) + 1
 
-    items = authors_services.find_authors_by_template(chars, length, lang_code)
+    items = authors_services.find_authors_by_template(chars, length, lang_code, user=request.user)
 
     args["items"] = items
     args["current"] = "author"
@@ -531,7 +531,7 @@ def SeriesView(request):
 
     length = len(chars) + 1
 
-    items = series_services.get_series(chars, length, lang_code)
+    items = series_services.get_series(chars, length, lang_code, user=request.user)
 
     args["items"] = items
     args["current"] = "series"
@@ -561,11 +561,11 @@ def GenresView(request):
 
     genre_url = reverse("web:genre")
     if section_id == 0:
-        items = genre_services.get_genres()
+        items = genre_services.get_genres(user=request.user)
         args["breadcrumbs"] = [{"label": _("Genres"), "url": ""}]
     else:
         section = genre_services.get_genre_section(section_id)
-        items = list(genre_services.get_genre_details(section_id))
+        items = list(genre_services.get_genre_details(section_id, user=request.user))
         # If the section has only one generic subsection (subsection == section name),
         # skip the redundant intermediate page and go straight to the books list.
         if len(items) == 1 and items[0]["subsection"].lower() == section.lower():
