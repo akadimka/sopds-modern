@@ -53,6 +53,23 @@ compilemessages` — `msgfmt` может отсутствовать в сист�
 обязано иметь рядом кнопку «Обзор»/«📁» (htmx-запрос к
 `/fb2parser/browse/?path=...`).
 
+**Видимость книг (многопользовательская библиотека).** Пользователь видит
+только свои книги, открытые ему и открытые всем; администратор (роль Admin
+— `is_staff` — или суперпользователь) — всё (`docs/multiuser-design.md`).
+- Любая выдача книг, авторов, серий, жанров, папок, счётчиков (OPDS, сайт,
+  Telegram) — через `opds_catalog/visibility.py` (`visible_books`,
+  `restrict_books`, `visible_authors/series/genres`, `visible_book_count`,
+  `get_visible_book_or_404`), сервисы каталога — с обязательным `user`.
+  Чужая книга по id — 404, как несуществующая.
+- Новый адрес в `opds`/`web` — тест изоляции в `tests/integration/access/`
+  и строка в `test_url_coverage.py` (иначе он падает).
+- Объекты OPDS-фидов общие для всех запросов и потоков: ничего, что
+  относится к запросу, не хранить в `self` — только в `obj` и элементах.
+- Любая операция, которая кладёт файл в библиотеку, двигает, сливает или
+  удаляет его, — сообщает об этом через `fb2parser_core/ownership_hooks.py`
+  (`assign`/`transfer`/`merge`/`release`); владение меняется только через
+  `opds_catalog/ownership.py`. Расхождения — `manage.py library_owners_check`.
+
 ## Обновление проекта («обнови проект»)
 
 1. `git fetch origin && git log HEAD..origin/master --oneline`
