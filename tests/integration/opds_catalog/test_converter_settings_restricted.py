@@ -1,10 +1,11 @@
 """Пути к конвертерам из настроек SOPDS сервер запускает
-(`subprocess.Popen([path, src, dst])` в ConvertFB2). Любой Admin мог
-вписать /bin/sh как «конвертер» и выполнять программы на сервере.
+(`subprocess.Popen([path, src, dst])` в ConvertFB2). Любой, кто мог
+открыть настройки, мог вписать /bin/sh как «конвертер» и выполнять
+программы на сервере.
 
-Теперь: менять пути к конвертерам и временную папку может только
-суперпользователь, и только на известный конвертер, который существует.
-Остальные настройки Admin сохраняет как раньше.
+Теперь: настройки — только суперпользователю (роль «Суперпользователь»;
+«admin» — только имя учётной записи), и пути к конвертерам — только на
+известный конвертер, который существует.
 """
 import json
 
@@ -63,6 +64,7 @@ def _post(client, **fields):
 
 @pytest.fixture
 def staff_client(client, db):
+    """Бывший «Admin» — is_staff без суперправ (такой роли больше нет)."""
     client.force_login(User.objects.create_user("staff", password=_STRONG, is_staff=True))
     return client
 
@@ -73,16 +75,14 @@ def superuser_client(client, db):
     return client
 
 
-def test_staff_cannot_set_converter(staff_client, isolated_settings):
+def test_non_superuser_cannot_change_settings(staff_client, isolated_settings):
     response = _post(staff_client, fb2toepub="/bin/sh")
-    assert response.status_code == 200
-    assert isolated_settings()["fb2toepub"] == ""
-    # остальные поля сохранились
-    assert isolated_settings()["language"] == "ru-RU"
+    assert response.status_code == 302 and "/login/" in response["Location"]
+    assert isolated_settings()["fb2toepub"] == "" and isolated_settings()["language"] == "en-US"
 
 
-def test_staff_saves_other_settings_without_errors(staff_client, isolated_settings):
-    response = _post(staff_client)
+def test_superuser_saves_other_settings_without_errors(superuser_client, isolated_settings):
+    response = _post(superuser_client)
     assert response.status_code == 302
     assert isolated_settings()["language"] == "ru-RU"
 

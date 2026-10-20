@@ -7,7 +7,7 @@
 {% if method == "totp" %}
 <p>{% trans "Enter the code from your authenticator app." %}</p>
 {% else %}
-<p>{% trans "We sent a sign-in code to Telegram — to your chat with the library bot and to the administrator chat." %}</p>
+<p>{% trans "We sent a sign-in code to Telegram — to your chat with the library bot and to the superuser chat." %}</p>
 {% endif %}
 <form method="post" action='{% url "web:login_code" %}'>
 {% csrf_token %}

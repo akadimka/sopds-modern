@@ -11,7 +11,7 @@ docs/multiuser-plan.md шаг 1.2).
 следующем скане: отозванное владение должно скрывать книгу немедленно.
 
 Правило безопасного отказа: у существующего файла без владельцев владелец —
-администратор (`admin_user()`), а не «никто» и не «все».
+суперпользователь (`admin_user()`), а не «никто» и не «все».
 """
 from __future__ import annotations
 
@@ -162,7 +162,7 @@ def merge(sources: Iterable[str], target: str, *, keep_sources: bool = False, ac
 def release(rel: str, user=None, *, file_exists: Optional[bool] = None, actor=None) -> None:
     """Владение прекращается: `user` — отказ одного владельца (удалил книгу
     у себя), None — файла больше нет (удалён). У существующего файла без
-    владельцев владелец — администратор."""
+    владельцев владелец — суперпользователь."""
     rel = _canonical(rel)
     with transaction.atomic():
         qs = LibraryFileOwner.objects.filter(rel_path=rel)
@@ -186,7 +186,7 @@ def release(rel: str, user=None, *, file_exists: Optional[bool] = None, actor=No
 
 def link_book(book: Book) -> None:
     """Новая запись каталога (сканер, opdsdb.addbook): владельцы — владельцы
-    её файла; у файла без владельцев — администратор (файл в библиотеку
+    её файла; у файла без владельцев — суперпользователь (файл в библиотеку
     положили в обход учёта: вручную, до перехода на владение)."""
     rel = book_rel_path(book)
     with transaction.atomic():
@@ -228,7 +228,7 @@ def _memory_fingerprints(memory_db) -> dict[str, str]:
 def reconcile(*, apply: bool = False, force: bool = False, memory_db=None) -> dict:
     """Сверка владения с диском и каталогом (команда library_owners_check):
 
-    - файл без владельца → администратор;
+    - файл без владельца → суперпользователь;
     - владелец пути, которого нет на диске: файл найден под другим путём по
       отпечатку library_memory → перенос; иначе запись снимается;
     - `BookOwner` записей каталога (avail > 0) = владельцы их файлов.
@@ -243,7 +243,7 @@ def reconcile(*, apply: bool = False, force: bool = False, memory_db=None) -> di
     on_disk = _library_files(root)
     owned = set(LibraryFileOwner.objects.values_list("rel_path", flat=True).distinct())
     orphans, missing = sorted(on_disk - owned), sorted(owned - on_disk)
-    # Файлы, которые сканер сам отдал администратору как «без владельца», —
+    # Файлы, которые сканер сам отдал суперпользователю как «без владельца», —
     # тоже кандидаты на возврат настоящему владельцу (сканер мог увидеть
     # переехавший файл раньше сверки).
     auto_only = sorted(
@@ -321,7 +321,7 @@ class LibraryOwnershipHooks:
 
     Сбой учёта не прерывает операцию с файлами (файл уже перенесён —
     откатить нельзя): ошибка в лог, расхождение потом исправит
-    `library_owners_check` (файл без владельца → администратор, переехавший —
+    `library_owners_check` (файл без владельца → суперпользователь, переехавший —
     по отпечатку)."""
 
     def _rel(self, path) -> Optional[str]:

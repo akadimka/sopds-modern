@@ -133,7 +133,7 @@ def test_menus_count_only_visible(client, lib, name, params, count_key):
 
 def test_rating_progress_admin_only(client, lib):
     """Прогресс загрузки рейтингов называет книгу, по которой идёт загрузка, —
-    из любой библиотеки: только администратору."""
+    из любой библиотеки: только суперпользователю."""
     from django.core.cache import cache
 
     from opds_catalog.ratings_progress import _key

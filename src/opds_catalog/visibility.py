@@ -1,7 +1,7 @@
 """Какие книги видит пользователь (docs/multiuser-design.md, «Правило
 видимости»; docs/multiuser-plan.md шаг 1.5).
 
-- администратор (роль Admin — is_staff, или суперпользователь) — все книги (avail > 0);
+- суперпользователь (роль сайта «Суперпользователь») — все книги (avail > 0);
 - пользователь — книги, у которых среди владельцев есть он сам, тот, кто
   открыл ему свою библиотеку (`LibraryShare`), или владелец с открытой
   всем библиотекой (`UserProfile.library_public`);
@@ -36,18 +36,18 @@ CACHE_SECONDS = 300
 
 
 def is_library_admin(user) -> bool:
-    """Видит всю библиотеку: роль Admin сайта (is_staff — она же управляет
-    пользователями и fb2parser) и суперпользователь; «администратор = Супер»
+    """Видит всю библиотеку: роль «Суперпользователь» (is_superuser) — она же
+    управляет пользователями и fb2parser; «суперпользователь = Супер»
     (docs/multiuser-design.md)."""
     return bool(user is not None and getattr(user, "is_authenticated", False)
-                and user.is_active and (user.is_staff or user.is_superuser))
+                and user.is_active and user.is_superuser)
 
 
 _is_super = is_library_admin
 
 
 def accessible_owner_ids(user) -> Optional[set[int]]:
-    """Владельцы, чьи книги видит пользователь; None — все (администратор)."""
+    """Владельцы, чьи книги видит пользователь; None — все (суперпользователь)."""
     if _is_super(user):
         return None
     from sopds_web_backend.models import (
@@ -152,7 +152,7 @@ def _catalogs_with_books(books: QuerySet) -> set[int]:
 
 def visible_catalog_ids(user) -> Optional[set[int]]:
     """Папки каталога, в которых (или ниже которых) есть видимые книги;
-    None — все (администратор)."""
+    None — все (суперпользователь)."""
     if _is_super(user):
         return None
     key = _cache_key("catalogs", user)

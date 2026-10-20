@@ -1,8 +1,8 @@
-"""Код входа для администраторов через Telegram (sopds_web_backend/login_codes.py).
+"""Код входа для суперпользователей через Telegram (sopds_web_backend/login_codes.py).
 
-После пароля администратор (is_staff) вводит код, который бот присылает
+После пароля суперпользователь вводит код, который бот присылает
 по двум каналам: в личный чат с ботом (привязанный Telegram) и в чат
-администратора из настроек. Не доставлен никуда — вход не выполняется.
+суперпользователя из настроек. Не доставлен никуда — вход не выполняется.
 Обычные пользователи входят как раньше; вход в /admin/ — только через
 общую форму (у стандартной формы Django второго шага нет).
 """
@@ -42,7 +42,7 @@ def tg(monkeypatch):
 
 
 def _admin(name="boss", tg_id=4242):
-    user = User.objects.create_user(name, password=_STRONG, is_staff=True)
+    user = User.objects.create_user(name, password=_STRONG, is_staff=True, is_superuser=True)
     if tg_id:
         TelegramLink.objects.create(user=user, telegram_id=tg_id)
     return user

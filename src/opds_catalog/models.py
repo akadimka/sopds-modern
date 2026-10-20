@@ -220,7 +220,7 @@ class LibraryFileOwner(models.Model):
     SOURCE_UPLOAD = "upload"
     SOURCE_ADMIN = "admin"
     # Файл без владельца (положен в обход учёта) автоматически отдан
-    # администратору сканером или сверкой — сверка может вернуть его настоящему
+    # суперпользователю сканером или сверкой — сверка может вернуть его настоящему
     # владельцу, найдя переехавший файл по отпечатку текста.
     SOURCE_AUTO = "auto"
     SOURCES = [(SOURCE_MIGRATION, "migration"), (SOURCE_UPLOAD, "upload"), (SOURCE_ADMIN, "admin"),
@@ -259,7 +259,7 @@ class BookOwner(models.Model):
 class LibraryOwnershipLog(models.Model):
     """Журнал изменений владения (opds_catalog/ownership.py): кто, что и
     когда получил, потерял, куда переехал файл — для разбора расхождений и
-    для журнала администратора (этап 4 docs/multiuser-plan.md)."""
+    для журнала суперпользователя (этап 4 docs/multiuser-plan.md)."""
 
     ASSIGN = "assign"
     TRANSFER = "transfer"

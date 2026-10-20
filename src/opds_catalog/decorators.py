@@ -73,7 +73,7 @@ def sopds_auth_validate(view_function):
         if user and user.is_active:
             # Сессия нужна, чтобы не проверять пароль на каждый запрос читалки
             # (обложки, страницы фида), но действует только для /opds/ —
-            # иначе вход через читалку обходил бы код входа администратора
+            # иначе вход через читалку обходил бы код входа суперпользователя
             # на сайте (OpdsOnlySessionMiddleware).
             auth.login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             request.session[opds_passwords.SESSION_KEY] = mark

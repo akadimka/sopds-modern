@@ -7,7 +7,7 @@ class UserProfile(models.Model):
     display_name = models.CharField(max_length=150, blank=True, default="")
     bio = models.TextField(blank=True, default="")
     # Библиотека пользователя открыта всем пользователям (docs/multiuser-design.md);
-    # у администратора после миграции — True (все видят то же, что раньше).
+    # у суперпользователя после миграции — True (все видят то же, что раньше).
     library_public = models.BooleanField(default=False)
     # Личные лимиты: NULL — значение по умолчанию из настроек, 0 — без ограничений.
     quota_library_mb = models.PositiveIntegerField(null=True, blank=True)

@@ -183,7 +183,7 @@
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">Telegram</div>
   {% if request.user.is_staff and telegram_enabled %}
-  <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For administrators without an authenticator app: the sign-in code is sent to this Telegram." %}</p>
+  <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For superusers without an authenticator app: the sign-in code is sent to this Telegram." %}</p>
   {% endif %}
   {% if not telegram_enabled %}
   <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "The library's Telegram bot is not set up yet." %}</p>

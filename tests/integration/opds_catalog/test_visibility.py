@@ -1,5 +1,5 @@
 """Правило видимости книг (opds_catalog/visibility.py, docs/multiuser-plan.md
-шаг 1.5): своя / открытая мне / открытая всем / чужая; администратор видит
+шаг 1.5): своя / открытая мне / открытая всем / чужая; суперпользователь видит
 всё, аноним — только открытые всем; авторы, серии, жанры, папки и счётчики —
 только по видимым книгам; книга по id вне видимости — 404."""
 import pytest
@@ -140,7 +140,7 @@ def test_user_counters_and_invalidation(lib, tmp_path, override_config):
 
 
 def test_admin_counters_count_existing_books(lib):
-    """Администратор: все существующие книги (A0 — логически удалена, не в счёт),
+    """Суперпользователь: все существующие книги (A0 — логически удалена, не в счёт),
     папки и сущности — только с книгами, как и в списках."""
     users, _ = lib
     Author.objects.create(full_name="Без книг", search_full_name="БЕЗ КНИГ")
@@ -148,10 +148,11 @@ def test_admin_counters_count_existing_books(lib):
         "books": 6, "catalogs": 7, "authors": 5, "genres": 1, "series": 6}
 
 
-def test_admin_role_sees_everything(lib):
-    """Роль Admin сайта (is_staff без суперпользователя) — та же, что «Супер»:
-    видит всю библиотеку (docs/multiuser-design.md)."""
+def test_only_superuser_role_sees_everything(lib):
+    """Всё видит роль «Суперпользователь» (is_superuser); is_staff без
+    суперправ (бывший «Admin», такой роли больше нет) — как обычный
+    пользователь (docs/multiuser-design.md)."""
     users, _ = lib
     staff = User.objects.create_user("staff", is_staff=True)
-    assert _titles(visibility.visible_books(staff)) == _titles(visibility.visible_books(users["admin"]))
-    assert visibility.is_library_admin(staff) and not visibility.is_library_admin(users["anna"])
+    assert visibility.is_library_admin(users["admin"]) and not visibility.is_library_admin(staff)
+    assert _titles(visibility.visible_books(staff)) == ["P"]

@@ -4,7 +4,7 @@ docs/watch-folder-autosync-design.md).
 Long polling (getUpdates) — серверу не нужны HTTPS и входящие подключения.
 - Нажатие кнопки жанра под сообщением о спорной порции → decide_all:
   жанр всей порции + синхронизация. Принимаются нажатия только от chat id
-  администратора из настроек.
+  суперпользователя из настроек.
 - /start или /id от кого угодно → ответ с его chat id (помогает настройке).
 - Все увиденные чаты запоминаются — страница настроек показывает их, пока
   бот работает (getUpdates тогда занят им).
@@ -106,12 +106,12 @@ class AdminBot:
         if chat.get("type") == "private" and text.split(" ")[0] in ("/start", "/id"):
             client.send_message(str(chat["id"]),
                                 f"Ваш chat id: <code>{chat['id']}</code>\n"
-                                "Его указывают в настройках SOPDS как «Chat id администратора».")
+                                "Его указывают в настройках SOPDS как «Chat id суперпользователя».")
 
     def on_callback(self, service, client, cq: dict) -> None:
         cfg = service.cfg
         if str((cq.get("from") or {}).get("id")) != str(cfg["telegram_admin_chat"]):
-            client.answer_callback(cq["id"], "Решения принимает только администратор.")
+            client.answer_callback(cq["id"], "Решения принимает только суперпользователь.")
             return
         data = cq.get("data") or ""
         action = service.journal.get_action(data[2:]) if data.startswith("d:") else None

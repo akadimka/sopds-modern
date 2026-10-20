@@ -28,7 +28,7 @@ urlpatterns = [
     path("web/", include("sopds_web_backend.urls", namespace="web")),
     path("fb2parser/", include("fb2parser_web.urls", namespace="fb2parser")),
     # Вход в админку — через общую форму сайта: у неё второй шаг (код из
-    # Telegram для администраторов), у стандартной формы Django его нет.
+    # Telegram для суперпользователей), у стандартной формы Django его нет.
     path("admin/login/", RedirectView.as_view(url=reverse_lazy("web:login"), query_string=True)),
     path("admin/", admin.site.urls),
     path("sw.js", web_views.service_worker, name="service_worker"),

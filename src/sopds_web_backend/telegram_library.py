@@ -94,7 +94,7 @@ class LibraryHandler:
         if link is None:
             client.send_message(chat_id, (
                 "Этот Telegram уже привязан к другому аккаунту библиотеки — отвяжите его там "
-                "или обратитесь к администратору." if error == ERR_TAKEN else
+                "или обратитесь к суперпользователю." if error == ERR_TAKEN else
                 "Код не подошёл или устарел — получите новый в профиле на сайте библиотеки."))
             return
         lines = [f"✅ Готово: Telegram привязан к аккаунту «{_e(link.user.username)}»."]

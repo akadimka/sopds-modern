@@ -9,7 +9,7 @@ from opds_catalog.sopds_config import sopds_cfg as config
 class OpdsOnlySessionMiddleware(MiddlewareMixin):
     """Сессия, созданная входом читалки (HTTP Basic в /opds/), действует
     только для /opds/: на сайте и в /fb2parser/ её владелец — аноним. Иначе
-    пароль из настроек читалки (а у администратора — без кода из Telegram)
+    пароль из настроек читалки (а у суперпользователя — без кода из Telegram)
     давал бы полный вход на сайт. Сессия по паролю для читалок гаснет, если
     этот пароль сменили или отозвали."""
 

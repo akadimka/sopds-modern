@@ -9,7 +9,6 @@ from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import (
     HttpResponse,
-    HttpResponseForbidden,
     HttpResponseNotAllowed,
     JsonResponse,
 )
@@ -124,9 +123,10 @@ def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None
 
 
 def sopds_admin(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url="web:login"):
-    """Требует is_staff=True (роль Admin)."""
+    """Требует роль «Суперпользователь» (is_superuser; «admin» — только имя
+    учётной записи, не роль)."""
     actual_decorator = user_passes_test(
-        lambda u: u.is_authenticated and u.is_staff,
+        lambda u: u.is_authenticated and u.is_superuser,
         login_url=reverse_lazy(url),
         redirect_field_name=redirect_field_name,
     )
@@ -679,8 +679,8 @@ def _render_sopds_scan_status(request):
 
 
 # Пути, которые сервер запускает (конвертеры) или куда пишет их вывод.
-# Меняет только суперпользователь: иначе любой Admin (или XSS от его имени)
-# указал бы /bin/sh как «конвертер» и выполнял команды на сервере.
+# Меняет только суперпользователь: иначе любой вошедший (или XSS от его
+# имени) указал бы /bin/sh как «конвертер» и выполнял команды на сервере.
 _EXEC_FIELDS = ('fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir')
 
 _AUTOSYNC_MODES = ('off', 'dry_run', 'auto')
@@ -746,7 +746,7 @@ def _apply_autosync_settings(sm, post):
     elif post.get('autosync_telegram_token_clear'):
         values['telegram_token'] = ''
     for key, label in (('telegram_channel', _('Channel for new books')),
-                       ('telegram_admin_chat', _('Administrator chat id'))):
+                       ('telegram_admin_chat', _('Superuser chat id'))):
         value = post.get(f'autosync_{key}', '').strip()
         if value and not _TELEGRAM_CHAT_RE.match(value):
             errors.append(_('%(field)s: expected @name or a numeric id.') % {'field': label})
@@ -767,7 +767,7 @@ _TELEGRAM_CHAT_RE = re.compile(r'^(-?\d+|@[A-Za-z]\w{3,})$')
 
 def _apply_login_security(sm, post, user):
     """«Безопасность входа» (только суперпользователь): второй фактор для
-    администраторов и пароли для читалок. Включить второй фактор можно,
+    суперпользователей и пароли для читалок. Включить второй фактор можно,
     только если он есть у самого включающего (подключено приложение-
     аутентификатор или есть куда доставить Telegram-код) — иначе он закрыл
     бы вход себе."""
@@ -779,7 +779,7 @@ def _apply_login_security(sm, post, user):
     want = post.get('admin_login_code') == 'on'
     if want and not values.get('admin_login_code') and device_for(user) is None and not channels(user, values):
         errors.append(_('To turn on the second factor, connect an authenticator app in your profile, or set the '
-                        'bot token and link your Telegram (or set the administrator chat id) — otherwise you '
+                        'bot token and link your Telegram (or set the superuser chat id) — otherwise you '
                         'could not sign in.'))
         want = False
     values['admin_login_code'] = want
@@ -857,7 +857,7 @@ def telegram_test(request):
     text = str(_('✅ SOPDS: test message. Autosync notifications will arrive here.'))
     lines = []
     for key, label in (('telegram_channel', _('Channel for new books')),
-                       ('telegram_admin_chat', _('Administrator chat id'))):
+                       ('telegram_admin_chat', _('Superuser chat id'))):
         if not cfg[key]:
             lines.append(f'{escape(str(label))}: {escape(str(_("not set")))}')
             continue
@@ -1029,7 +1029,7 @@ def hello(request):
         "allgenres":  counters["genres"],
     }
     # Служебная статистика загрузки рейтингов («обработано N из M») — о всей
-    # библиотеке, только администратору.
+    # библиотеке, только суперпользователю.
     show_rating_stats = visibility.is_library_admin(request.user)
 
     # Виджет "сейчас читаю" / статистика чтения — только записи, где реально
@@ -1204,7 +1204,7 @@ def hello(request):
 def ratings_progress(request, source):
     """GET — живой прогресс fetch_samlib_ratings/fetch_authortoday_ratings
     (эти команды — отдельные долгоживущие процессы, не через JobState;
-    см. opds_catalog.ratings_progress). Только администратору: в ответе —
+    см. opds_catalog.ratings_progress). Только суперпользователю: в ответе —
     название книги, по которой сейчас идёт загрузка, из любой библиотеки
     (docs/multiuser-design.md)."""
     if source not in ("samlib", "authortoday", "fantlab", "litmarket"):
@@ -1306,7 +1306,7 @@ def LoginView(request):
                 return redirect(reverse("web:login_code"))
             logger.warning("Login refused: login code for '%s' could not be delivered", username)
             args["system_message"] = {
-                "text": _("Could not send the sign-in code to Telegram, so administrators cannot sign in right "
+                "text": _("Could not send the sign-in code to Telegram, so superusers cannot sign in right "
                           "now. Check the bot settings; on the server the code can be turned off with "
                           "“manage.py admin_login_code off”."),
                 "type": "alert",
@@ -1353,7 +1353,7 @@ def _full_login(request, user):
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @require_http_methods(["GET", "POST"])
 def LoginCodeView(request):
-    """Второй шаг входа администратора: код, присланный в Telegram."""
+    """Второй шаг входа суперпользователя: код, присланный в Telegram."""
     from . import login_codes
     args = {"breadcrumbs": [_("Login")]}
     if login_codes.pending(request) is None:
@@ -1531,13 +1531,17 @@ def _profile_telegram_context(user):
     return ctx
 
 
-# ── Управление пользователями (только Admin) ──────────────────────────────────
+# ── Управление пользователями (только суперпользователь) ─────────────────────
+#
+# Роли две: «Пользователь» и «Суперпользователь» (is_superuser + is_staff —
+# второй флаг нужен fb2parser и /admin/). «admin» — только имя учётной записи.
 
-def _can_manage_user(actor, target):
-    """Admin (is_staff) управляет обычными пользователями и другими Admin,
-    но не суперпользователем — иначе любой Admin сбросил бы ему пароль
-    и получил полный доступ к /admin/."""
-    return actor.is_superuser or not target.is_superuser
+ROLE_USER = "user"
+ROLE_SUPERUSER = "superuser"
+
+
+def _set_role(user, role):
+    user.is_superuser = user.is_staff = (role == ROLE_SUPERUSER)
 
 
 def _password_error(password, user):
@@ -1582,7 +1586,7 @@ def user_create(request):
     if error:
         return _users_list_error(request, error)
     user = DjangoUser.objects.create_user(username=username, password=password)
-    user.is_staff = (role == "admin")
+    _set_role(user, role)
     user.save()
     return redirect(reverse("web:users_list"))
 
@@ -1592,16 +1596,18 @@ def user_create(request):
 def user_edit(request, user_id):
     from django.contrib.auth.models import User as DjangoUser
     user = get_object_or_404(DjangoUser, pk=user_id)
-    if not _can_manage_user(request.user, user):
-        return HttpResponseForbidden()
-    role = request.POST.get("role", "user")
+    role = request.POST.get("role", ROLE_USER)
+    if user.pk == request.user.pk and role != ROLE_SUPERUSER:
+        # Снять роль с себя — остаться без доступа к управлению (а то и без
+        # единственного суперпользователя).
+        return _users_list_error(request, _("You cannot remove the superuser role from yourself."))
     password = request.POST.get("password", "").strip()
     if password:
         error = _password_error(password, user)
         if error:
             return _users_list_error(request, error)
         user.set_password(password)
-    user.is_staff = (role == "admin")
+    _set_role(user, role)
     user.save()
     return redirect(reverse("web:users_list"))
 
@@ -1615,8 +1621,6 @@ def user_telegram_unlink(request, user_id):
     from .models import TelegramLink
     from .telegram_users import unlink
     user = get_object_or_404(DjangoUser, pk=user_id)
-    if not _can_manage_user(request.user, user):
-        return HttpResponseForbidden()
     link = TelegramLink.objects.filter(user=user).first()
     if link is not None and link.linked:
         unlink(link)
@@ -1628,8 +1632,6 @@ def user_telegram_unlink(request, user_id):
 def user_delete(request, user_id):
     from django.contrib.auth.models import User as DjangoUser
     user = get_object_or_404(DjangoUser, pk=user_id)
-    if not _can_manage_user(request.user, user):
-        return HttpResponseForbidden()
     if user.pk != request.user.pk:
         user.delete()
     return redirect(reverse("web:users_list"))

@@ -406,7 +406,7 @@
 
     <div class="s-field">
         <div class="s-hint" style="line-height:1.5;">
-            {% trans "New books go to a channel as one digest after each scheduled scan; the administrator gets a private message when something needs a decision or the run failed." %}<br>
+            {% trans "New books go to a channel as one digest after each scheduled scan; the superuser gets a private message when something needs a decision or the run failed." %}<br>
             {% trans "1. In Telegram, create a bot with @BotFather (/newbot) and paste its token here." %}<br>
             {% trans "2. Create a channel and add the bot to it as an administrator with the rights to post messages, add subscribers and remove subscribers." %}<br>
             {% trans "3. Open your bot and press Start; post anything to the channel; then press “Find chat id”." %}<br>
@@ -434,7 +434,7 @@
     </div>
 
     <div class="s-field">
-        <label>{% trans "Administrator chat id" %}</label>
+        <label>{% trans "Superuser chat id" %}</label>
         <input type="text" name="autosync_telegram_admin_chat" value="{{ autosync.telegram_admin_chat }}"
                placeholder="123456789"{% if not can_edit_exec_fields %} readonly{% endif %}>
     </div>
@@ -473,9 +473,9 @@
     <div class="s-field">
         <label class="s-check">
             <input type="checkbox" name="admin_login_code" {% if autosync.admin_login_code %}checked{% endif %}{% if not can_edit_exec_fields %} disabled{% endif %}>
-            <span>{% trans "Second factor required for administrators" %}</span>
+            <span>{% trans "Second factor required for superusers" %}</span>
         </label>
-        <div class="s-hint">{% trans "After the password, administrators enter a code: from their authenticator app (connected in the profile), otherwise a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the administrator chat above. If the code cannot be delivered, administrators without an app cannot sign in. On the server: “manage.py admin_login_code off” turns this off, “manage.py totp_reset <username>” removes a lost app." %}</div>
+        <div class="s-hint">{% trans "After the password, superusers enter a code: from their authenticator app (connected in the profile), otherwise a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the superuser chat above. If the code cannot be delivered, superusers without an app cannot sign in. On the server: “manage.py admin_login_code off” turns this off, “manage.py totp_reset <username>” removes a lost app." %}</div>
     </div>
 
     <div class="s-field">

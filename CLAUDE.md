@@ -54,8 +54,8 @@ compilemessages` — `msgfmt` может отсутствовать в сист�
 `/fb2parser/browse/?path=...`).
 
 **Видимость книг (многопользовательская библиотека).** Пользователь видит
-только свои книги, открытые ему и открытые всем; администратор (роль Admin
-— `is_staff` — или суперпользователь) — всё (`docs/multiuser-design.md`).
+только свои книги, открытые ему и открытые всем; суперпользователь — всё
+(`docs/multiuser-design.md`).
 - Любая выдача книг, авторов, серий, жанров, папок, счётчиков (OPDS, сайт,
   Telegram) — через `opds_catalog/visibility.py` (`visible_books`,
   `restrict_books`, `visible_authors/series/genres`, `visible_book_count`,
@@ -69,6 +69,15 @@ compilemessages` — `msgfmt` может отсутствовать в сист�
   удаляет его, — сообщает об этом через `fb2parser_core/ownership_hooks.py`
   (`assign`/`transfer`/`merge`/`release`); владение меняется только через
   `opds_catalog/ownership.py`. Расхождения — `manage.py library_owners_check`.
+
+**Роли.** Ролей две: «Пользователь» и «Суперпользователь» (`is_superuser`
++ `is_staff` — второй флаг нужен fb2parser и `/admin/`; ставятся вместе).
+«admin» — только имя учётной записи, не роль: в интерфейсе, текстах и
+переводах роль называется «суперпользователь» (не «Admin»,
+не «администратор»). Проверки прав — по `is_superuser` (`sopds_admin`,
+`visibility.is_library_admin`, код входа). Исключения в текстах: права в
+Telegram («добавьте бота администратором канала») и человек,
+обслуживающий сервер.
 
 ## Обновление проекта («обнови проект»)
 

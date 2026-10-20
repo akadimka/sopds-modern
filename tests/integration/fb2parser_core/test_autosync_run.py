@@ -402,7 +402,7 @@ def test_button_press_from_stranger_or_stale_key_does_nothing(tmp_path, monkeypa
     bot.on_callback(svc, tg, {"id": "2", "from": {"id": 42}, "data": "d:0000000000", "message": {}})
 
     assert book.exists() and not tg.edits
-    assert "только администратор" in tg.answers[0] and "устарела" in tg.answers[1]
+    assert "только суперпользователь" in tg.answers[0] and "устарела" in tg.answers[1]
 
 
 def test_poll_answers_start_with_chat_id_and_remembers_chats(tmp_path, monkeypatch):

@@ -31,10 +31,10 @@
       <tr>
         <td><strong>{{ u.username }}</strong></td>
         <td>
-          {% if u.is_staff or u.is_superuser %}
-            <span style="color:var(--sp-accent); font-weight:600;">Admin</span>
+          {% if u.is_superuser %}
+            <span style="color:var(--sp-accent); font-weight:600;">{% trans "Superuser" %}</span>
           {% else %}
-            <span style="color:var(--text-muted);">User</span>
+            <span style="color:var(--text-muted);">{% trans "User" %}</span>
           {% endif %}
         </td>
         <td>{% if u.is_active %}✓{% else %}✗{% endif %}</td>
@@ -49,15 +49,12 @@
           {% else %}—{% endif %}
         </td>
         <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-          {% if u.is_superuser and not request.user.is_superuser %}
-          <span style="color:var(--text-muted); font-size:0.82rem;">{% trans "Superuser: only another superuser can change it" %}</span>
-          {% else %}
           <!-- Редактировать роль/пароль -->
           <form method="post" action="{% url 'web:user_edit' u.pk %}" style="display:inline;">
             {% csrf_token %}
             <select name="role" style="width:auto; display:inline; margin:0; padding:0.2rem 0.4rem; font-size:0.82rem;">
-              <option value="user" {% if not u.is_staff %}selected{% endif %}>User</option>
-              <option value="admin" {% if u.is_staff %}selected{% endif %}>Admin</option>
+              <option value="user" {% if not u.is_superuser %}selected{% endif %}>{% trans "User" %}</option>
+              <option value="superuser" {% if u.is_superuser %}selected{% endif %}>{% trans "Superuser" %}</option>
             </select>
             <input type="password" name="password" placeholder="{% trans "New password" %}"
                    style="width:130px; display:inline; margin:0; padding:0.2rem 0.4rem; font-size:0.82rem;">
@@ -75,7 +72,6 @@
               {% trans "Delete" %}
             </button>
           </form>
-          {% endif %}
           {% endif %}
         </td>
       </tr>
@@ -103,10 +99,10 @@
       <div style="display:flex; align-items:center; gap:1rem;">
         <label style="margin:0; font-size:0.82rem; color:var(--text-muted);">{% trans "Role" %}:</label>
         <label style="margin:0; display:flex; align-items:center; gap:0.4rem; font-size:0.9rem; cursor:pointer;">
-          <input type="radio" name="role" value="user" checked style="margin:0; vertical-align:middle;"> User
+          <input type="radio" name="role" value="user" checked style="margin:0; vertical-align:middle;"> {% trans "User" %}
         </label>
         <label style="margin:0; display:flex; align-items:center; gap:0.4rem; font-size:0.9rem; cursor:pointer;">
-          <input type="radio" name="role" value="admin" style="margin:0; vertical-align:middle;"> Admin
+          <input type="radio" name="role" value="superuser" style="margin:0; vertical-align:middle;"> {% trans "Superuser" %}
         </label>
         <button type="submit" class="button" style="margin:0;">{% trans "Create" %}</button>
       </div>

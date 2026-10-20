@@ -112,7 +112,7 @@ class SettingsManager:
         "telegram_admin_chat": "",
         "telegram_proxy": "",
         "public_url": "",
-        # код входа для администраторов через Telegram (sopds_web_backend/login_codes.py)
+        # код входа для суперпользователей через Telegram (sopds_web_backend/login_codes.py)
         "admin_login_code": False,
     }
 
