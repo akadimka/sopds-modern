@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'sopds-v22';
+const CACHE_VERSION = 'sopds-v23';  // поднимать при каждом изменении статики: она отдаётся из кэша (Cache First)
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE   = CACHE_VERSION + '-pages';
 const OFFLINE_URL  = '/web/offline/';

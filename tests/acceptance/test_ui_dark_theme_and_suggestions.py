@@ -73,3 +73,23 @@ def test_author_suggestions_match_anywhere(superuser_client, catalog, publish):
         bauthor.objects.create(book=book, author=Author.objects.create(full_name=name, search_full_name=name.upper()))
     html = superuser_client.post(reverse("web:suggest"), {"searchterms": "толст", "type": "author"}).content.decode()
     assert re.findall(r'class="sopds-suggestion-item">([^<]+)</a>', html) == ["Толстой Лев", "Алексей Толстой"]
+
+
+@pytest.mark.django_db
+def test_search_results_keep_signed_in_header(superuser_client):
+    """После Enter в поиске шапка показывала «Login»: SearchBooksView клал в
+    контекст `user` = имя пользователя (строку), и оно перекрывало
+    request.user — шаблон считал, что пользователь не вошёл."""
+    response = superuser_client.get(reverse("web:searchbooks"), {"searchtype": "m", "searchterms": "игро"})
+    html = response.content.decode("utf-8")
+    assert response.context["user"].is_authenticated
+    assert reverse("web:logout") in html and ">Login<" not in html
+
+
+@pytest.mark.django_db
+def test_search_form_does_not_put_csrf_token_into_url(superuser_client):
+    """GET-форма поиска с {% csrf_token %} отправляла токен в адрес страницы
+    (история браузера, логи); токен для htmx — на странице, вне форм."""
+    html = superuser_client.get(reverse("web:main")).content.decode("utf-8")
+    form = html[html.index('id="searchform"'):html.index("</form>", html.index('id="searchform"'))]
+    assert "csrfmiddlewaretoken" not in form and 'name="csrfmiddlewaretoken"' in html

@@ -20,6 +20,9 @@
 </head>
 
 <body>
+{# CSRF-токен для htmx-запросов (htmx-config.js) — вне форм: в GET-форме поиска
+   он попадал в адрес страницы, историю браузера и логи. #}
+{% csrf_token %}
 <div class="grid-container fluid">
     <div class="grid-x">
         {% include "sopds_top.html" %}

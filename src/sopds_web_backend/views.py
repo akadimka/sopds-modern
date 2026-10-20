@@ -143,7 +143,9 @@ def _extract_input_parameters(request) -> dict[str, str]:
     args["searchterms"] = request.GET.get("searchterms", "")
     args["searchterms0"] = request.GET.get("searchterms0")
     args["page_num"] = request.GET.get("page")
-    args["user"] = request.user.username
+    # Не "user": это перекрыло бы request.user в шаблонах (context processor
+    # auth) — шапка решала бы, что пользователь не вошёл, и показывала «Login».
+    args["username"] = request.user.username
     return args
 
 
@@ -158,7 +160,7 @@ def SearchBooksView(request):
     if request.GET:
         args.update(_extract_input_parameters(request))
 
-        # Пользователь, а не args["user"] (это имя для крошек): по нему
+        # Пользователь, а не args["username"] (это имя для крошек): по нему
         # фильтруется видимость книг.
         books = book_services.search_book(
             args["searchtype"], args["searchterms"], args["searchterms0"], request.user
@@ -224,7 +226,7 @@ def SearchBooksView(request):
                 args["breadcrumbs"] = [
                     _books_root,
                     {"label": _("Bookshelf"), "url": ""},
-                    {"label": args["user"], "url": ""},
+                    {"label": args["username"], "url": ""},
                 ]
             else:
                 books = Book.objects.filter(id=0)
