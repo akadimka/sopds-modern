@@ -20,7 +20,7 @@
 
     <div class="top-bar-right">
         <ul class="menu">
-            {% if user.is_authenticated %}{% if user.is_staff or user.is_superuser %}
+            {% if user.is_authenticated %}{% if user.is_superuser %}
                 <li>
                     <a href="#"
                        hx-post="{% url 'web:scan_start' %}"
@@ -29,6 +29,9 @@
                 </li>
                 <li><a href="{% url "fb2parser:dashboard" %}">FB2Parser</a></li>
                 <li><a href="{% url "web:settings" %}">{% trans "Settings" %}</a></li>
+            {% else %}
+                {# Обычному пользователю «Настройки» — его личные: пароль, вход, пароль для читалок #}
+                <li><a href="{% url "web:profile" %}">{% trans "Settings" %}</a></li>
             {% endif %}{% endif %}
             {% if user.is_authenticated %}
                 <li>

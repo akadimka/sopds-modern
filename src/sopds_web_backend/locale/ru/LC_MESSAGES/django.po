@@ -1437,6 +1437,9 @@ msgstr "Нельзя снять роль суперпользователя с �
 msgid "All results (%(count)s) →"
 msgstr "Все результаты (%(count)s) →"
 
+msgid "My settings (password, sign-in)"
+msgstr "Мои настройки (пароль, вход)"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

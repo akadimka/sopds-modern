@@ -4,7 +4,8 @@
 {% block ext-body %}
 <div class="cell small-12 sopds-settings">
 
-<h2 style="font-size:1.2rem; margin-bottom:1rem; color:var(--sp-accent);">⚙ {% trans "SOPDS Settings" %}</h2>
+<h2 style="font-size:1.2rem; margin-bottom:0.4rem; color:var(--sp-accent);">⚙ {% trans "SOPDS Settings" %}</h2>
+<p style="margin-bottom:1rem;"><a href="{% url 'web:profile' %}">{% trans "My settings (password, sign-in)" %}</a></p>
 
 {% if saved %}
 <div class="s-msg ok">✓ {% trans "Settings saved." %}</div>
