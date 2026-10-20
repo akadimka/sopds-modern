@@ -2132,6 +2132,8 @@ def _delete_paths_confined(paths, folder):
     Returns:
         (deleted_count, errors) — как и раньше возвращали все три view.
     """
+    from fb2parser_core import ownership_hooks
+
     deleted, errors = 0, []
     deleted_dirs = set()
     for p in paths:
@@ -2142,6 +2144,7 @@ def _delete_paths_confined(paths, folder):
             if os.path.isfile(p):
                 parent = os.path.dirname(p)
                 os.remove(p)
+                ownership_hooks.release(p, file_exists=False)
                 deleted += 1
                 deleted_dirs.add(parent)
         except Exception as e:
@@ -3119,7 +3122,10 @@ def sync_reconciliation_resolve(request):
                 return JsonResponse({"error": _("A file with this name already exists in the target folder: %(path)s") % {"path": target_file}}, status=409)
 
             import shutil
+
+            from fb2parser_core import ownership_hooks
             shutil.move(abs_incoming, str(target_file))
+            ownership_hooks.assign(target_file)
             result_msg = "✓ " + _("Moved as a new entry: %(path)s") % {"path": f"{genre}/{author}" + (f"/{series}" if series else "")}
 
     except Exception as e:

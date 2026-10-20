@@ -25,6 +25,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 
+from . import ownership_hooks
 from .evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
 from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
 from .keyword_match import contains_any_keyword
@@ -759,6 +760,22 @@ class FB2CompilerService:
         Returns:
             Список CompilationGroup, отсортированный по (author, series).
         """
+        # Книги разных наборов владельцев не сливаются в один сборник
+        # (docs/multiuser-design.md): иначе книга одного пользователя оказалась
+        # бы внутри сборника другого. Каждый набор владельцев — отдельная
+        # «библиотека» для поиска групп; пока владелец у всех один — часть одна.
+        parts: Dict[Tuple[int, ...], List] = {}
+        for rec in records:
+            parts.setdefault(ownership_hooks.owner_set_key(work_dir / rec.file_path), []).append(rec)
+        groups: List[CompilationGroup] = []
+        for part in (parts.values() if len(parts) > 1 else [records]):
+            groups.extend(self._find_groups_in(part, work_dir, on_group))
+        groups.sort(key=lambda g: (g.author.lower(), g.series.lower()))
+        self._log(f"Найдено групп для компиляции: {len(groups)}")
+        return groups
+
+    def _find_groups_in(self, records: List, work_dir: Path, on_group=None) -> List[CompilationGroup]:
+        """find_groups для книг одного набора владельцев."""
         # Группировка по (author_lower, series_lower)
         # Нормализуем ё→е в ключах, чтобы "Тёмные звёзды" и "Темные звезды" попали в одну группу.
         # Для подсерий ("Серия N\Подсерия") ключ группировки — корневое название без номера,
@@ -822,10 +839,7 @@ class FB2CompilerService:
         self._merge_series_buckets(ctx)
         self._emit_groups_from_buckets(work_dir, on_group, ctx)
         self._suppress_covered_groups(ctx)
-        groups = ctx.groups
-        groups.sort(key=lambda g: (g.author.lower(), g.series.lower()))
-        self._log(f"Найдено групп для компиляции: {len(groups)}")
-        return groups
+        return ctx.groups
 
 
     def _build_series_buckets(self, records, ctx) -> None:
@@ -5147,6 +5161,10 @@ class FB2CompilerService:
         # + переименовать файл-компиляцию по нашей схеме именования (если нужно).
         if getattr(group, 'cleanup_only', False):
             if group.duplicate_paths:
+                # Владельцы удаляемых дублей — владельцы оставленного сборника
+                # (то же содержимое), иначе книга пропала бы у них.
+                if group.kept_paths:
+                    ownership_hooks.merge(group.duplicate_paths, group.kept_paths[0])
                 self._delete_sources(group.duplicate_paths)
                 self._log(f"   ♻ Удалено {len(group.duplicate_paths)} устаревших файлов")
 
@@ -5173,6 +5191,7 @@ class FB2CompilerService:
                     if old_path != new_path:
                         try:
                             old_path.rename(new_path)
+                            ownership_hooks.transfer(old_path, new_path)
                             group.kept_paths[0] = new_path
                             renamed_path = new_path
                             self._log(f"   ✎ Переименован: {old_path.name} → {new_name}")
@@ -5389,6 +5408,13 @@ class FB2CompilerService:
                 output_path.write_text(output_xml, encoding='utf-8')
 
             self._log(f"  ✓ Создан файл: {output_path.name}")
+
+            # Владельцы сборника — владельцы исходников и дублей (их содержимое
+            # в сборнике); исходники, которые остаются, сохраняют своих.
+            # Исключённые вручную файлы в сборник не входят.
+            ownership_hooks.merge(group.duplicate_paths or [], output_path)
+            ownership_hooks.merge([b.abs_path for b in group.books if b.abs_path.resolve() not in _excluded_set],
+                                  output_path, keep_sources=not delete_sources)
 
             # --- Удаляем дубликаты (всегда, безусловно) ---
             if group.duplicate_paths:
@@ -5921,6 +5947,7 @@ class FB2CompilerService:
             try:
                 if path.exists():
                     path.unlink()
+                    ownership_hooks.release(path, file_exists=False)
                     self._log(f"  🗑 Удалён исходник: {path.name}")
                 # Удалить папку, если пуста
                 parent = path.parent

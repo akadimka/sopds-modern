@@ -13,3 +13,10 @@ class OpdsCatalogConfig(AppConfig):
                 connection.cursor().execute("PRAGMA synchronous=NORMAL;")
 
         connection_created.connect(_set_wal)
+
+        # Учёт владельцев файлов библиотеки для операций fb2parser
+        # (fb2parser_core не зависит от Django — подключаем его отсюда).
+        from fb2parser_core import ownership_hooks
+
+        from .ownership import LibraryOwnershipHooks
+        ownership_hooks.register(LibraryOwnershipHooks())

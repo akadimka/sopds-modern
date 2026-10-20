@@ -24,6 +24,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from . import ownership_hooks
 from .fb2_utils import has_fb2_files as _has_fb2_util
 from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
 from .logger import Logger
@@ -1595,17 +1596,24 @@ class SynchronizationService:
                     target_file if target_file.exists()
                     else (target_file_zip if target_file_zip.exists() else None)
                 )
+                replaced = False
                 if existing_target is not None:
                     replaced = self._resolve_target_collision(source_file, existing_target)
                     self.stats['duplicates_found'] += 1
                     if not replaced:
                         continue
-                
+
                 # Move file
                 if source_file.exists():
                     self._log(f"  → Перемещение: {source_file.name}")
                     shutil.move(str(source_file), str(target_file))
                     self._log("  ✓ Успешно перемещён")
+                    # Владельцы: заменённая полнее версия той же книги остаётся
+                    # у прежних владельцев (сжатый старый файл — переезд на
+                    # несжатое имя), плюс владелец пришедшего файла.
+                    if replaced and existing_target != target_file:
+                        ownership_hooks.transfer(existing_target, target_file)
+                    ownership_hooks.assign(target_file)
                     self.stats['files_moved'] += 1
                     author_dir = str(self.library_path / genre / author)
                     if author_dir not in self.stats['touched_author_dirs']:
@@ -1802,6 +1810,7 @@ class SynchronizationService:
                     try:
                         dst.parent.mkdir(parents=True, exist_ok=True)
                         shutil.move(str(src), str(dst))
+                        ownership_hooks.transfer(src, dst)
                         if name.lower().endswith(('.fb2', '.fb2.zip')):
                             self._patch_fb2_tags(dst, new, "", None)
                         if conn is not None:

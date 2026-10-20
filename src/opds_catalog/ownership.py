@@ -15,6 +15,7 @@ docs/multiuser-plan.md шаг 1.2).
 """
 from __future__ import annotations
 
+import logging
 import os
 import posixpath
 import unicodedata
@@ -27,6 +28,8 @@ from django.db.models import Q
 
 from opds_catalog.models import Book, BookOwner, LibraryFileOwner, LibraryOwnershipLog
 from opds_catalog.sopds_config import sopds_cfg as config
+
+_logger = logging.getLogger(__name__)
 
 CAT_NORMAL = 0
 
@@ -136,17 +139,19 @@ def transfer(old_rel: str, new_rel: str, *, actor=None) -> None:
         _link_books(new_rel, [o.user_id for o in moved])
 
 
-def merge(sources: Iterable[str], target: str, *, actor=None) -> None:
+def merge(sources: Iterable[str], target: str, *, keep_sources: bool = False, actor=None) -> None:
     """Несколько файлов слились в один (сборник): владельцы сборника —
-    объединение владельцев исходников; записи исходников удаляются
-    (сами файлы удаляет вызывающий)."""
+    объединение владельцев исходников; записи исходников удаляются (сами
+    файлы удаляет вызывающий), `keep_sources` — исходники остаются на месте
+    со своими владельцами."""
     target = _canonical(target)
     sources = [s for s in (_canonical(s) for s in sources) if s != target]
     with transaction.atomic():
         user_ids = set(LibraryFileOwner.objects.filter(rel_path__in=sources).values_list("user_id", flat=True))
         for uid in sorted(user_ids):
             _add_owner(target, uid, source=LibraryFileOwner.SOURCE_ADMIN, actor=actor)
-        LibraryFileOwner.objects.filter(rel_path__in=sources).delete()
+        if not keep_sources:
+            LibraryFileOwner.objects.filter(rel_path__in=sources).delete()
         for s in sources:
             _log(LibraryOwnershipLog.MERGE, s, target=target, actor=actor)
         _link_books(target, owners(target))
@@ -306,3 +311,59 @@ def reconcile(*, apply: bool = False, force: bool = False, memory_db=None) -> di
             BookOwner.objects.filter(book_id=bid, user_id=uid).delete()
     report.update(book_links_added=len(add), book_links_removed=len(remove), applied=True)
     return report
+
+
+class LibraryOwnershipHooks:
+    """Учёт для операций fb2parser (fb2parser_core.ownership_hooks):
+    абсолютные пути → `rel_path`; пути вне библиотеки пропускаются.
+
+    Сбой учёта не прерывает операцию с файлами (файл уже перенесён —
+    откатить нельзя): ошибка в лог, расхождение потом исправит
+    `library_owners_check` (файл без владельца → администратор, переехавший —
+    по отпечатку)."""
+
+    def _rel(self, path) -> Optional[str]:
+        try:
+            return rel_path(path)
+        except ValueError:
+            return None
+
+    def _safe(self, what, fn, *args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception:  # noqa: BLE001 — см. докстринг класса
+            _logger.exception("ownership: %s failed for %s", what, args)
+            return None
+
+    def assign(self, path) -> None:
+        rel = self._rel(path)
+        if rel is None:
+            return
+        admin = self._safe("admin_user", admin_user)
+        if admin is not None:
+            self._safe("assign", assign, rel, admin, source=LibraryFileOwner.SOURCE_ADMIN)
+
+    def transfer(self, old, new) -> None:
+        old_rel, new_rel = self._rel(old), self._rel(new)
+        if old_rel is not None and new_rel is not None:
+            self._safe("transfer", transfer, old_rel, new_rel)
+        elif old_rel is not None:      # файл ушёл из библиотеки
+            self._safe("release", release, old_rel, file_exists=False)
+        elif new_rel is not None:      # файл пришёл в библиотеку
+            self.assign(new)
+
+    def merge(self, sources, target, keep_sources=False) -> None:
+        target_rel = self._rel(target)
+        if target_rel is None:
+            return
+        rels = [r for r in (self._rel(s) for s in sources) if r is not None]
+        self._safe("merge", merge, rels, target_rel, keep_sources=keep_sources)
+
+    def release(self, path, file_exists=None) -> None:
+        rel = self._rel(path)
+        if rel is not None:
+            self._safe("release", release, rel, file_exists=file_exists)
+
+    def owner_set_key(self, path) -> tuple[int, ...]:
+        rel = self._rel(path)
+        return (self._safe("owner_set_key", owner_set_key, rel) or ()) if rel is not None else ()
