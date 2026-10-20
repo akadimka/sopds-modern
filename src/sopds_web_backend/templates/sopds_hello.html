@@ -194,7 +194,7 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
-            <div id="ratings-live-samlib" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>
+            {% if user.is_staff or user.is_superuser %}<div id="ratings-live-samlib" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>{% endif %}
             {% if samlib_stats %}
             <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
                 <span>📚 {{ samlib_stats.processed }}/{{ samlib_stats.total }}</span>
@@ -232,7 +232,7 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
-            <div id="ratings-live-authortoday" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>
+            {% if user.is_staff or user.is_superuser %}<div id="ratings-live-authortoday" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>{% endif %}
             {% if authortoday_stats %}
             <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
                 <span>📚 {{ authortoday_stats.processed }}/{{ authortoday_stats.total }}</span>
@@ -270,7 +270,7 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
-            <div id="ratings-live-fantlab" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>
+            {% if user.is_staff or user.is_superuser %}<div id="ratings-live-fantlab" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>{% endif %}
             {% if fantlab_stats %}
             <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
                 <span>📚 {{ fantlab_stats.processed }}/{{ fantlab_stats.total }}</span>
@@ -308,7 +308,7 @@ function openBookCard(bookId) {
                 </table>
                 {% endif %}
             </div>
-            <div id="ratings-live-litmarket" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>
+            {% if user.is_staff or user.is_superuser %}<div id="ratings-live-litmarket" class="ratings-live" style="padding:0.35rem 0.7rem; border-top:1px solid var(--border); font-size:0.75rem; display:none;"></div>{% endif %}
             {% if litmarket_stats %}
             <div style="padding:0.4rem 0.7rem; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:0.4rem 0.8rem;">
                 <span>📚 {{ litmarket_stats.processed }}/{{ litmarket_stats.total }}</span>

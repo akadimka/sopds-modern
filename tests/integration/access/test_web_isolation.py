@@ -99,3 +99,51 @@ def test_main_page_and_every_page_context(client, lib):
     assert response.context["stats"]["allbooks"] == 1
     assert response.context["random_book"].title == "Дневник Анны"
     assert [g.cnt for g in response.context["chart_genres"]] == [1]
+
+
+@pytest.mark.parametrize("name, params", [
+    ("searchauthors", {"searchtype": "b", "searchterms": "АВТОР"}),
+    ("searchseries", {"searchtype": "b", "searchterms": "СЕРИЯ"}),
+])
+def test_author_and_series_search(client, lib, name, params):
+    users, _, _ = lib
+    _, anna = _page(client, users["anna"], name, **params)
+    _, admin = _page(client, users["admin"], name, **params)
+    assert "Бориса" not in anna and "Анны" in anna and "Бориса" in admin
+
+
+def _context_items(client, user, name, **params):
+    client.force_login(user)
+    response = client.get(reverse(f"web:{name}"), params)
+    assert response.status_code == 200
+    return list(response.context["items"])
+
+
+@pytest.mark.parametrize("name, params, count_key", [
+    ("book", {"lang": 1}, "cnt"),
+    ("author", {"lang": 1}, "cnt"),
+    ("series", {"lang": 1}, "cnt"),
+    ("genre", {}, "num_book"),
+])
+def test_menus_count_only_visible(client, lib, name, params, count_key):
+    users, _, _ = lib
+    total = lambda u: sum(i[count_key] for i in _context_items(client, users[u], name, **params))  # noqa: E731
+    assert (total("anna"), total("admin")) == (1, 2)
+
+
+def test_rating_progress_admin_only(client, lib):
+    """Прогресс загрузки рейтингов называет книгу, по которой идёт загрузка, —
+    из любой библиотеки: только администратору."""
+    from django.core.cache import cache
+
+    from opds_catalog.ratings_progress import _key
+    users, _, _ = lib
+    cache.set(_key("samlib"), {"status": "running", "book_title": "Секрет Бориса"})
+    url = reverse("web:ratings_progress", args=("samlib",))
+    client.force_login(users["anna"])
+    response = client.get(url)
+    assert response.status_code != 200 and "Секрет Бориса" not in response.content.decode("utf-8")
+    client.force_login(users["admin"])
+    assert client.get(url).json()["book_title"] == "Секрет Бориса"
+    _, main = _page(client, users["anna"], "main")
+    assert 'id="ratings-live-' not in main

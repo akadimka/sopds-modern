@@ -19,8 +19,8 @@ from opds_catalog.models import (
 @pytest.fixture
 def lib(override_config, test_rootlib, simple_fb2):
     with override_config(SOPDS_AUTH=True, SOPDS_ROOT_LIB=test_rootlib, SOPDS_DOUBLES_HIDE=False):
-        users = {n: User.objects.create_user(n, password="x") for n in ("anna", "boris")}
-        users["admin"] = User.objects.create_user("admin", password="x", is_superuser=True)
+        users = {n: User.objects.create_user(n) for n in ("anna", "boris")}   # без пароля — вход через force_login, хеширование медленное
+        users["admin"] = User.objects.create_user("admin", is_superuser=True, is_staff=True)
         root = Catalog.objects.create(cat_name=".", path=".")
         boris_cat = Catalog.objects.create(cat_name="Тайник Бориса", path="Тайник Бориса", parent=root)
         genre = Genre.objects.create(genre="sf", section="Фантастика", subsection="Космос")

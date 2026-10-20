@@ -1030,7 +1030,7 @@ def hello(request):
     }
     # Служебная статистика загрузки рейтингов («обработано N из M») — о всей
     # библиотеке, только администратору.
-    show_rating_stats = request.user.is_superuser
+    show_rating_stats = visibility.is_library_admin(request.user)
 
     # Виджет "сейчас читаю" / статистика чтения — только записи, где реально
     # открывали ридер (progress_percent > 0), а не просто скачали файл
@@ -1200,11 +1200,13 @@ def hello(request):
     return render(request, "sopds_hello.html", args)
 
 
-@sopds_login(url="web:login")
+@sopds_admin(url="web:login")
 def ratings_progress(request, source):
     """GET — живой прогресс fetch_samlib_ratings/fetch_authortoday_ratings
     (эти команды — отдельные долгоживущие процессы, не через JobState;
-    см. opds_catalog.ratings_progress)."""
+    см. opds_catalog.ratings_progress). Только администратору: в ответе —
+    название книги, по которой сейчас идёт загрузка, из любой библиотеки
+    (docs/multiuser-design.md)."""
     if source not in ("samlib", "authortoday", "fantlab", "litmarket"):
         return JsonResponse({"error": "unknown source"}, status=404)
     from opds_catalog.ratings_progress import get_progress

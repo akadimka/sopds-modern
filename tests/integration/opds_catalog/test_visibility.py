@@ -146,3 +146,12 @@ def test_admin_counters_count_existing_books(lib):
     Author.objects.create(full_name="Без книг", search_full_name="БЕЗ КНИГ")
     assert visibility.user_counters(users["admin"]) == {
         "books": 6, "catalogs": 7, "authors": 5, "genres": 1, "series": 6}
+
+
+def test_admin_role_sees_everything(lib):
+    """Роль Admin сайта (is_staff без суперпользователя) — та же, что «Супер»:
+    видит всю библиотеку (docs/multiuser-design.md)."""
+    users, _ = lib
+    staff = User.objects.create_user("staff", is_staff=True)
+    assert _titles(visibility.visible_books(staff)) == _titles(visibility.visible_books(users["admin"]))
+    assert visibility.is_library_admin(staff) and not visibility.is_library_admin(users["anna"])

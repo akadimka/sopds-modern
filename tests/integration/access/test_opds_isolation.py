@@ -115,3 +115,31 @@ def test_feed_object_keeps_no_request_state(client, lib):
                 reverse("opds:genres"), reverse("opds:searchseries", kwargs={"searchtype": "b", "searchterms": "С"})):
         feed = resolve(url).func
         assert not {"request", "lang_code", "section_id", "author_id"} & set(vars(feed)), url
+
+
+@pytest.mark.parametrize("name, kwargs, anna_has, anna_lacks", [
+    ("nolang_books", {}, "<title>Д</title>", "<title>С</title>"),
+    ("chars_books", {"lang_code": 1, "chars": "С"}, None, "Found: 1 books"),
+    ("chars_authors", {"lang_code": 1, "chars": "А"}, "Found: 1 authors", "Found: 2 authors"),
+    ("nolang_series", {}, "Found: 1 series", "Found: 2 series"),
+    ("chars_series", {"lang_code": 1, "chars": "С"}, "Found: 1 series", "Found: 2 series"),
+    ("nolang_authors", {}, "Found: 1 authors", "Found: 2 authors"),
+])
+def test_other_letter_menus(client, lib, name, kwargs, anna_has, anna_lacks):
+    users, _, _ = lib
+    anna = _feed(client, users["anna"], name, **kwargs)
+    if anna_has:
+        assert anna_has in anna
+    assert anna_lacks not in anna
+
+
+def test_catalog_page_and_bookshelf(client, lib):
+    from opds_catalog.models import LibraryShare, bookshelf
+    users, books, boris_cat = lib
+    feed = _feed(client, users["anna"], "cat_page", cat_id=boris_cat.pk, page=1)
+    assert "Тайник Бориса" not in feed and "Секрет Бориса" not in feed
+    share = LibraryShare.objects.create(owner=users["boris"], grantee=users["anna"])
+    bookshelf.objects.create(user=users["anna"], book=books["boris"])
+    assert "Секрет Бориса" in _feed(client, users["anna"], "bookshelf")
+    share.delete()
+    assert "Секрет Бориса" not in _feed(client, users["anna"], "bookshelf")
