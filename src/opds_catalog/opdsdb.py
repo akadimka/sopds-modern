@@ -240,6 +240,24 @@ def books_del_phisical():
     return row_count
 
 
+def path_under_q(rel_path: str) -> Q:
+    """Путь книги лежит ВНУТРИ папки rel_path (начинается с «rel_path/»),
+    с учётом регистра.
+
+    Баг №165: `path__startswith` — это LIKE, а LIKE в SQLite не различает
+    регистр латиницы: пересборка «Фантастика/Allig_eri» захватывала книги
+    соседней папки «Фантастика/Allig_Eri», не находила их на диске в своей
+    папке и с физическим удалением стирала (вместе с рейтингами). В SQLite —
+    сравнение диапазоном (двоичное, по индексу): все строки, начинающиеся с
+    «rel_path/», лежат в [«rel_path/», «rel_path0») — '0' следует за '/'.
+    В других СУБД (PostgreSQL) LIKE регистр учитывает.
+    """
+    prefix = rel_path + os.sep
+    if connection.vendor == "sqlite":
+        return Q(path__gte=prefix, path__lt=rel_path + chr(ord(os.sep) + 1))
+    return Q(path__startswith=prefix)
+
+
 def _path_scope_q(rel_path: str) -> Q:
     """Книга находится в папке rel_path или любой её подпапке.
 
@@ -247,7 +265,7 @@ def _path_scope_q(rel_path: str) -> Q:
     точечная пересборка одной папки (см. sopds_watch) должна ловить и её
     прямые файлы, и файлы во вложенных подсериях.
     """
-    return Q(path=rel_path) | Q(path__startswith=rel_path + os.sep)
+    return Q(path=rel_path) | path_under_q(rel_path)
 
 
 def avail_check_prepare_scoped(rel_path: str) -> int:

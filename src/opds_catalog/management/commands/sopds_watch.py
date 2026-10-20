@@ -74,7 +74,8 @@ def _vanished_children(d: str, root: str, present: set) -> list:
 
     rel = os.path.relpath(d, root)
     prefix = "" if rel == "." else rel + os.sep
-    books = Book.objects.filter(path__startswith=prefix) if prefix else Book.objects.all()
+    # с учётом регистра (баг №165): «Allig_Eri» и «Allig_eri» — разные папки
+    books = Book.objects.filter(opdsdb.path_under_q(rel)) if prefix else Book.objects.all()
     names = set()
     for path in books.values_list("path", flat=True).iterator():
         rest = path[len(prefix):]
