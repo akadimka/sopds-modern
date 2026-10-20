@@ -351,6 +351,9 @@ table th { color: var(--text) !important; border: none !important; border-width:
 }
 .fb2-topbar-links a:hover,
 .fb2-topbar-links span[hx-post]:hover { color: #fff; background: rgba(255,255,255,0.1); }
+/* «(Logout)», а не «( Logout )» */
+.fb2-topbar-links a.fb2-logout { padding: 0.3rem 0; }
+.fb2-topbar-links a.fb2-logout:hover { background: none; }
 
 /* Language badge */
 .fp-lang-switcher {
@@ -595,11 +598,11 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sopds-top-bar .sp-logout-form { display: inline; margin: 0; }
 .sopds-top-bar .sp-logout-form button {
     background: none; border: 0; margin: 0; font: inherit; cursor: pointer;
-    color: #6ee7b7; font-size: 0.85rem; padding: 0.3rem 0.6rem;
-    border-radius: var(--radius-sm);
-    transition: color var(--transition), background var(--transition);
+    /* без отступов по бокам: «(Logout)», а не «( Logout )» */
+    color: #6ee7b7; font-size: 0.85rem; padding: 0.3rem 0;
+    transition: color var(--transition);
 }
-.sopds-top-bar .sp-logout-form button:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.sopds-top-bar .sp-logout-form button:hover { color: #fff; }
 
 /* --- Logo / Search bar ------------------------------------ */
 .sopds-logo-row {

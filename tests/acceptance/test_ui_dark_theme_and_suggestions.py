@@ -93,3 +93,19 @@ def test_search_form_does_not_put_csrf_token_into_url(superuser_client):
     html = superuser_client.get(reverse("web:main")).content.decode("utf-8")
     form = html[html.index('id="searchform"'):html.index("</form>", html.index('id="searchform"'))]
     assert "csrfmiddlewaretoken" not in form and 'name="csrfmiddlewaretoken"' in html
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("url", ["/web/", "/web/search/books/?searchtype=m&searchterms=x", "/fb2parser/", "/admin/"])
+def test_no_template_syntax_leaks_into_pages(superuser_client, url):
+    """Многострочный {# … #} Django не считает комментарием — хвост «… #}»
+    выводился вверху каждой страницы сайта."""
+    html = superuser_client.get(url, follow=True).content.decode("utf-8")
+    assert "#}" not in html and "{%" not in html and "{#" not in html
+
+
+def test_logout_has_no_side_padding():
+    """«(Logout)», а не «( Logout )» — без отступов по бокам у ссылки/кнопки."""
+    css = THEME_CSS.read_text(encoding="utf-8")
+    assert re.search(r"\.sp-logout-form button \{[^}]*padding: 0\.3rem 0;", css)
+    assert re.search(r"\.fb2-topbar-links a\.fb2-logout \{ padding: 0\.3rem 0; \}", css)
