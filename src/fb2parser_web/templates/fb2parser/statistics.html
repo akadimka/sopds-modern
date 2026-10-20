@@ -52,7 +52,7 @@
                     <tbody>
                     {% for g in top_genres %}
                     <tr>
-                        <td>{{ g.subsection }}</td>
+                        <td>{{ g.name }}</td>
                         <td style="text-align:right; color:#7f8c8d;">{{ g.cnt }}</td>
                     </tr>
                     {% endfor %}
@@ -74,7 +74,7 @@
                     <tr>
                         <td>{{ b.title|truncatechars:50 }}</td>
                         <td>{{ b.format }}</td>
-                        <td style="color:#7f8c8d;">{{ b.genres.all.0.subsection }}</td>
+                        <td style="color:#7f8c8d;">{{ b.genres.all.0.name }}</td>
                     </tr>
                     {% endfor %}
                     </tbody>

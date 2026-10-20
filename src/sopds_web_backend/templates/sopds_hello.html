@@ -339,7 +339,7 @@ function openBookCard(bookId) {
                     <tr>
                         <td style="padding:0.25rem 0.5rem;">
                             <span class="sopds-genre-dot" data-idx="{{ forloop.counter0 }}"></span>
-                            {{ g.subsection }}
+                            {{ g.name }}
                         </td>
                         <td style="text-align:right; color:var(--text-muted); padding:0.25rem 0.5rem;">{{ g.cnt }}</td>
                     </tr>
@@ -373,7 +373,7 @@ function openBookCard(bookId) {
                         title="{% trans 'Open book card' %}">
                         <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:50 }}</td>
                         <td style="padding:0.3rem 0.5rem; white-space:nowrap;">{{ b.format }}</td>
-                        <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.subsection }}</td>
+                        <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.name }}</td>
                         {% if samlib_rating_enabled %}
                         <td style="padding:0.3rem 0.5rem; text-align:right; color:#f59e0b; white-space:nowrap;">
                             {% if b.samlib_rating and not b.samlib_rating.fetch_error and b.samlib_rating.rating %}★ {{ b.samlib_rating.rating|floatformat:1 }}{% endif %}
@@ -407,7 +407,7 @@ function openBookCard(bookId) {
 
 <script>
 (function(){
-    var data = [{% for g in chart_genres %}{ label: "{{ g.subsection|escapejs }}", cnt: {{ g.cnt }} }{% if not forloop.last %},{% endif %}{% endfor %}];
+    var data = [{% for g in chart_genres %}{ label: "{{ g.name|escapejs }}", cnt: {{ g.cnt }} }{% if not forloop.last %},{% endif %}{% endfor %}];
     var COLORS = [
         '#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6',
         '#ec4899','#14b8a6','#f97316','#8b5cf6','#84cc16',

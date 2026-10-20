@@ -13,7 +13,7 @@
     </a>
     {% else %}
     <a class="sopdsitem-link" href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">
-        <span class="sopdsitem-key">{{ g.subsection }}</span>
+        <span class="sopdsitem-key">{{ g.name }}</span>
         <span class="sopdsitem-count">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
     </a>
     {% endif %}

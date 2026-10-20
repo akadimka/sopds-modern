@@ -55,7 +55,7 @@ function openBookCard(bookId) {
         {% for a in b.authors.all %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %} ·
         {% endif %}
         {{ b.format|upper }}
-        {% if b.genres.all %} · {{ b.genres.all.0.subsection }}{% endif %}
+        {% if b.genres.all %} · {{ b.genres.all.0.name }}{% endif %}
     </span>
     {% if isbookshelf %}
     <a href="#"

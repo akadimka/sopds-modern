@@ -2,6 +2,7 @@ import logging
 import re
 import threading
 from random import randint
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import urlencode
 
@@ -1033,6 +1034,33 @@ def offline_page(request):
     return render(request, 'sopds_offline.html')
 
 
+def _genres_by_name(genres, visible) -> list:
+    """Жанры для диаграммы на главной: одно название — один кусок (баг №166).
+
+    Жанр книги библиотеки берётся из папки верхнего уровня
+    (opdsdb.addgenre_from_folder: «Фантастика», подраздел пустой), жанр из тега
+    FB2 по genres.xml — «фантастика» с разделом и подразделом. Легенда
+    показывала только подраздел — у половины жанров пусто, одно и то же
+    название — двумя кусками. Название — подраздел, иначе раздел, иначе код;
+    записи с одним названием (без учёта регистра) — вместе, книги считаются
+    без повторов.
+    """
+    groups: dict = {}
+    for g in genres:
+        name = (g.subsection or g.section or g.genre or "").strip()
+        groups.setdefault(name.lower().replace("ё", "е"), []).append((name, g))
+    result = []
+    for items in groups.values():
+        items.sort(key=lambda it: -it[1].cnt)
+        if len(items) == 1:
+            cnt = items[0][1].cnt
+        else:
+            cnt = visible.filter(genres__in=[g for _, g in items]).distinct().count()
+        result.append(SimpleNamespace(name=items[0][0], cnt=cnt))
+    result.sort(key=lambda g: -g.cnt)
+    return result
+
+
 @sopds_login(url="web:login")
 def hello(request):
     from datetime import timedelta
@@ -1095,8 +1123,9 @@ def hello(request):
         "books_finished_month": books_finished_month,
         "streak_days": streak,
     }
-    all_genres = list(Genre.objects.annotate(cnt=visibility.visible_book_count(request.user))
-                      .filter(cnt__gt=0).order_by("-cnt"))
+    all_genres = _genres_by_name(
+        Genre.objects.annotate(cnt=visibility.visible_book_count(request.user)).filter(cnt__gt=0),
+        visible)
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
     args["recent_books"] = visible.select_related(

@@ -29,7 +29,7 @@
       {% if b.genres.all %}
       <div class="sopds-card-row">
         <span class="sopds-card-label">{% trans "Genres" %}</span>
-        <span>{% for g in b.genres.all %}<a href="{% url 'web:searchbooks' %}?searchtype=g&searchterms={{ g.id }}">{{ g.subsection }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+        <span>{% for g in b.genres.all %}<a href="{% url 'web:searchbooks' %}?searchtype=g&searchterms={{ g.id }}">{{ g.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
       </div>
       {% endif %}
 

@@ -132,6 +132,14 @@ class Genre(models.Model):
     section = models.CharField(max_length=SIZE_GENRE_SECTION, db_index=True)
     subsection = models.CharField(max_length=SIZE_GENRE_SUBSECTION, db_index=True)
 
+    @property
+    def name(self) -> str:
+        """Название для показа: подраздел, иначе раздел, иначе код (баг №166).
+        Жанр из папки библиотеки (opdsdb.addgenre_from_folder) — «Фантастика»
+        с пустым подразделом: шаблоны, показывавшие только подраздел,
+        выводили пустоту."""
+        return self.subsection or self.section or self.genre
+
 
 class bgenre(models.Model):
     """Промежуточная таблица связи Book <-> Genre (M2M)."""
