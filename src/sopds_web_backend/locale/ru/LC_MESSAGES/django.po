@@ -436,6 +436,9 @@ msgstr "Пауза перед следующей книгой — следующ
 msgid "Site is throttling requests — next attempt at"
 msgstr "Сайт ограничивает запросы — следующая попытка в"
 
+msgid "Site is unavailable — next attempt at"
+msgstr "Сайт недоступен — следующая попытка в"
+
 msgid "All books processed — next cycle at"
 msgstr "Все книги обработаны — следующий цикл в"
 

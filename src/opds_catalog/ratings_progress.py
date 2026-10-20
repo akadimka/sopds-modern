@@ -24,7 +24,7 @@ def _key(source: str) -> str:
 def set_progress(source: str, **fields) -> None:
     """Обновить прогресс для source ("samlib" | "authortoday").
 
-    fields могут включать: status ("processing"|"sleeping"|"throttled"|"idle"),
+    fields могут включать: status ("processing"|"sleeping"|"site_down"|"idle"|"disabled"|"stopped"),
     book_id, book_title, last_result ("found"|"not_found"|"error"),
     resume_at (datetime — когда ожидается следующее действие).
     """

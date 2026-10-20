@@ -142,6 +142,90 @@ def save_retrying_while_db_busy(source: str, save, log) -> bool:
             waited += DB_BUSY_RETRY_SECONDS
 
 
+ERROR_RETRY_HOURS = 24
+OUTAGE_STREAK = 10
+SLEEP_OUTAGE = 30 * 60
+
+
+def next_book_to_fetch(rating_rel: str, stale_days: int):
+    """Следующая книга для фетчера: без результата → с ошибкой старше
+    ERROR_RETRY_HOURS → с результатом старше stale_days.
+
+    Ошибку раньше повторяли только вместе с устаревшими (через 7/14 дней) —
+    книги, получившие ошибку во время сбоя сайта, ждали две недели
+    (баг №167: litmarket.ru отвечал 500, 3 271 книга помечена ошибкой).
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from opds_catalog.models import Book
+
+    now = timezone.now()
+    return (
+        Book.objects.exclude(**{f"{rating_rel}__isnull": False}).first()
+        or Book.objects.filter(**{
+            f"{rating_rel}__fetch_error": True,
+            f"{rating_rel}__fetched_at__lt": now - timedelta(hours=ERROR_RETRY_HOURS),
+        }).first()
+        or Book.objects.filter(**{
+            f"{rating_rel}__fetched_at__lt": now - timedelta(days=stale_days),
+        }).first()
+    )
+
+
+def site_is_down(root_url: str, user_agent: str, timeout: float = 20) -> bool:
+    """Главная страница сайта отвечает 5xx/429 или не отвечает вовсе."""
+    import urllib.error
+    import urllib.request
+
+    req = urllib.request.Request(root_url, headers={"User-Agent": user_agent})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status >= 500
+    except urllib.error.HTTPError as exc:
+        return exc.code >= 500 or exc.code == 429
+    except Exception:
+        return True
+
+
+class OutageDetector:
+    """Отличает сбой сайта от ошибки на конкретной книге (баг №167).
+
+    Ошибка — сбой, если главная страница сайта тоже не отвечает, или если
+    ошибок подряд набралось OUTAGE_STREAK (главная жива, но поиск лежит).
+    При сбое фетчер не записывает ошибку книге, а делает долгую паузу
+    и повторяет ту же книгу.
+    """
+
+    def __init__(self, root_url: str, user_agent: str, streak: int = OUTAGE_STREAK):
+        self.root_url = root_url
+        self.user_agent = user_agent
+        self.streak = streak
+        self.errors_in_row = 0
+
+    def is_outage(self, error: bool) -> bool:
+        if not error:
+            self.errors_in_row = 0
+            return False
+        self.errors_in_row += 1
+        return self.errors_in_row >= self.streak or site_is_down(self.root_url, self.user_agent)
+
+
+def pause_for_outage(source: str, book, log) -> None:
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from opds_catalog.ratings_progress import set_progress
+
+    resume_at = timezone.now() + timedelta(seconds=SLEEP_OUTAGE)
+    set_progress(source, status="site_down", book_id=book.id,
+                 book_title=book.title, resume_at=resume_at)
+    log(f"  Сайт недоступен — пауза {SLEEP_OUTAGE // 60} мин, книга будет повторена.")
+    sleep_or_stop(source, SLEEP_OUTAGE)
+
+
 def is_running(source: str) -> bool:
     with _lock:
         t = _threads.get(source)

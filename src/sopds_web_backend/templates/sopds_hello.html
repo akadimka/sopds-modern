@@ -462,6 +462,7 @@ function openBookCard(bookId) {
     var MSG_PROCESSING = "{% trans 'Processing:' %}";
     var MSG_SLEEPING    = "{% trans 'Pausing before the next book — next attempt at' %}";
     var MSG_THROTTLED   = "{% trans 'Site is throttling requests — next attempt at' %}";
+    var MSG_SITE_DOWN   = "{% trans 'Site is unavailable — next attempt at' %}";
     var MSG_IDLE        = "{% trans 'All books processed — next cycle at' %}";
     var MSG_FOUND       = "{% trans 'found' %}";
     var MSG_NOT_FOUND   = "{% trans 'not found' %}";
@@ -504,6 +505,8 @@ function openBookCard(bookId) {
                     html = MSG_SLEEPING + ' ' + _fmtTime(data.resume_at) + lastBit;
                 } else if (data.status === 'throttled') {
                     html = '🛑 ' + MSG_THROTTLED + ' ' + _fmtTime(data.resume_at) + lastBit;
+                } else if (data.status === 'site_down') {
+                    html = '🔌 ' + MSG_SITE_DOWN + ' ' + _fmtTime(data.resume_at);
                 } else if (data.status === 'idle') {
                     html = '💤 ' + MSG_IDLE + ' ' + _fmtTime(data.resume_at);
                 } else {

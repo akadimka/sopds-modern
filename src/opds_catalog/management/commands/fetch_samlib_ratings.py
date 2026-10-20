@@ -49,7 +49,7 @@ class Command(BaseCommand):
     _STALE_DAYS = 7
     _SLEEP_MIN = 15
     _SLEEP_MAX = 30
-    _SLEEP_THROTTLE = 600  # 10 минут при 429/503
+    _ROOT_URL = "http://samlib.ru/"  # проверка «сайт лежит?» (баг №167)
     _SLEEP_IDLE = 86400    # 24 часа когда всё обработано
 
     def handle(self, *args, **options):
@@ -58,6 +58,7 @@ class Command(BaseCommand):
 
         from opds_catalog.ratings_fetchers import (
             clear_stop,
+            pause_for_outage,
             sleep_or_stop,
             stop_requested,
         )
@@ -99,14 +100,8 @@ class Command(BaseCommand):
             self.stdout.write(f"Обрабатываю: [{book.id}] {book.title}")
             status, result = self._process_book(book, method)
 
-            if status in (429, 503):
-                resume_at = timezone.now() + timedelta(seconds=self._SLEEP_THROTTLE)
-                set_progress("samlib", status="throttled", book_id=book.id,
-                            book_title=book.title, last_result=result, resume_at=resume_at)
-                self.stdout.write(
-                    f"HTTP {status} — пауза {self._SLEEP_THROTTLE // 60} мин."
-                )
-                sleep_or_stop(_SRC, self._SLEEP_THROTTLE)
+            if status == "outage":
+                pause_for_outage(_SRC, book, self.stdout.write)
             else:
                 delay = random.uniform(self._SLEEP_MIN, self._SLEEP_MAX)
                 resume_at = timezone.now() + timedelta(seconds=delay)
@@ -118,15 +113,8 @@ class Command(BaseCommand):
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _next_book(self):
-        from opds_catalog.models import Book
-        stale_cutoff = timezone.now() - timedelta(days=self._STALE_DAYS)
-        without = Book.objects.exclude(samlib_rating__isnull=False).first()
-        if without:
-            return without
-        stale = Book.objects.filter(
-            samlib_rating__fetched_at__lt=stale_cutoff
-        ).first()
-        return stale
+        from opds_catalog.ratings_fetchers import next_book_to_fetch
+        return next_book_to_fetch("samlib_rating", self._STALE_DAYS)
 
     def _is_compilation(self, book):
         return bool(_COMPILATION_RE.search(book.title))
@@ -155,6 +143,9 @@ class Command(BaseCommand):
             self.stdout.write("  Рейтинг не найден")
             result = "not_found"
 
+        if self._outage().is_outage(result == "error"):
+            return "outage", result   # ошибку книге не пишем: сайт лежит
+
         from opds_catalog.ratings_fetchers import save_retrying_while_db_busy
         save_retrying_while_db_busy(
             "samlib",
@@ -162,10 +153,13 @@ class Command(BaseCommand):
             self.stdout.write,
         )
 
-        # Detect throttle HTTP status
-        if error and url:
-            return None, result
         return 200, result
+
+    def _outage(self):
+        from opds_catalog.ratings_fetchers import OutageDetector
+        if not hasattr(self, "_outage_detector"):
+            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA)
+        return self._outage_detector
 
     def _fetch_by_series(self, book):
         """Метод 'series': ищем по странице автора, находим серию, усредняем."""
