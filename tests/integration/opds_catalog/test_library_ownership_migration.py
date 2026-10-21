@@ -20,6 +20,10 @@ def _migrate(targets):
     return executor.loader.project_state(targets).apps
 
 
+def _migrate_to_latest():
+    _migrate(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
 @pytest.fixture
 def old_apps():
     apps = _migrate(BEFORE)
@@ -49,6 +53,7 @@ def test_existing_library_goes_to_admin_and_is_public(old_apps):
     gone = book("Фантастика\\Старое", "Удалено.fb2", avail=0)
 
     _migrate(AFTER)
+    _migrate_to_latest()   # проверки — текущими моделями (их поля — из следующих миграций)
 
     admin = User.objects.get(pk=admin.pk)
     assert set(LibraryFileOwner.objects.values_list("rel_path", flat=True)) == {
@@ -69,6 +74,7 @@ def test_existing_library_goes_to_admin_and_is_public(old_apps):
 def test_without_active_admin_nothing_is_seeded(old_apps):
     old_apps.get_model("auth", "User").objects.create(username="reader")
     _migrate(AFTER)
+    _migrate_to_latest()   # проверки — текущими моделями (их поля — из следующих миграций)
     assert not LibraryFileOwner.objects.exists() and not BookOwner.objects.exists()
     assert UserProfile.objects.filter(library_public=True).count() == 0
 

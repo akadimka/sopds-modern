@@ -12,6 +12,9 @@ class UserProfile(models.Model):
     # Личные лимиты: NULL — значение по умолчанию из настроек, 0 — без ограничений.
     quota_library_mb = models.PositiveIntegerField(null=True, blank=True)
     quota_books = models.PositiveIntegerField(null=True, blank=True)
+    # Лимит устройств (браузеров): NULL — по умолчанию из настроек, 0 — без
+    # ограничений (docs/devices-design.md).
+    max_devices = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         verbose_name = "User Profile"
@@ -105,3 +108,29 @@ class TotpDevice(models.Model):
 
     def __str__(self):
         return f"TotpDevice({self.user.username}, {'on' if self.confirmed else 'pending'})"
+
+
+class UserDevice(models.Model):
+    """Устройство (браузер), с которого пользователь вошёл на сайт
+    (docs/devices-design.md). Распознаётся по метке в cookie `sopds_device`;
+    в базе — только SHA-256 метки. Одна метка (один браузер) может
+    принадлежать нескольким учётным записям — устройство — пара
+    (пользователь, метка)."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="devices")
+    token_hash = models.CharField(max_length=64, db_index=True)
+    name = models.CharField(max_length=100, blank=True, default="")
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    label = models.CharField(max_length=100, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now_add=True)
+    last_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "token_hash"], name="unique_user_device"),
+        ]
+        ordering = ["-last_seen"]
+
+    def __str__(self):
+        return f"Device({self.user_id}, {self.name or self.label})"

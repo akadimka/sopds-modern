@@ -1318,6 +1318,10 @@ def LoginView(request):
     args = {}
     args["breadcrumbs"] = [_("Login")]
     args.update(csrf(request))
+    from . import devices
+    notice = request.session.pop(devices.NOTICE_KEY, None)
+    if notice:
+        args["system_message"] = {"text": notice, "type": "alert"}
     try:
         username = request.POST["username"]
         password = request.POST["password"]
@@ -1337,6 +1341,11 @@ def LoginView(request):
 
     user = authenticate(request, username=username, password=password)
     if user is not None and user.is_active:
+        if not devices.can_sign_in(request, user):
+            # До второго шага: код не отправляется впустую (docs/devices-design.md).
+            logger.warning("Login refused: device limit reached for '%s'", username)
+            args["system_message"] = {"text": devices.limit_message(user), "type": "alert"}
+            return handler403(request, args)
         from . import login_codes
         method = login_codes.method_for(user)
         if method is not None:
@@ -1351,7 +1360,9 @@ def LoginView(request):
                 "type": "alert",
             }
             return handler403(request, args)
-        _full_login(request, user)
+        if not _full_login(request, user):
+            args["system_message"] = {"text": devices.limit_message(user), "type": "alert"}
+            return handler403(request, args)
         return redirect(next_url)
     # Неактивный аккаунт не отличаем от неверного логина/пароля: иначе
     # сообщение «This account is not active» подтверждало бы, что логин и
@@ -1380,13 +1391,19 @@ def handler403(request, args):
     return response
 
 
-def _full_login(request, user):
+def _full_login(request, user) -> bool:
     """Полный вход на сайт. Метку «только OPDS» (сессия читалки,
     OpdsOnlySessionMiddleware) снимаем — login() того же пользователя
-    сохраняет данные сессии."""
+    сохраняет данные сессии. Устройство (браузер) регистрируется; лимит
+    устройств исчерпан (успели занять, пока вводили код) — выход, False."""
+    from . import devices
     from .opds_passwords import SESSION_KEY as OPDS_ONLY
     login(request, user)
     request.session.pop(OPDS_ONLY, None)
+    if devices.register(request, user) is None:
+        logout(request)
+        return False
+    return True
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
@@ -1400,7 +1417,10 @@ def LoginCodeView(request):
     if request.method == "POST":
         user, error, next_url = login_codes.verify(request, request.POST.get("code", ""))
         if user is not None:
-            _full_login(request, user)
+            if not _full_login(request, user):
+                from . import devices
+                args["system_message"] = {"text": devices.limit_message(user), "type": "alert"}
+                return handler403(request, args)
             return redirect(next_url or reverse("web:main"))
         if error != login_codes.ERR_WRONG:
             args["system_message"] = {

@@ -1443,6 +1443,18 @@ msgstr "Все результаты (%(count)s) →"
 msgid "My settings (password, sign-in)"
 msgstr "Мои настройки (пароль, вход)"
 
+msgid ""
+"The limit of connected devices has been reached (%(limit)s). Remove a device"
+" you no longer use in Settings on one of your devices, or contact a "
+"superuser."
+msgstr ""
+"Достигнут лимит подключённых устройств (%(limit)s). Удалите ненужное "
+"устройство в «Настройках» на одном из своих устройств или обратитесь к "
+"суперпользователю."
+
+msgid "This device was removed from your devices. Sign in again."
+msgstr "Это устройство удалено из ваших устройств. Войдите снова."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

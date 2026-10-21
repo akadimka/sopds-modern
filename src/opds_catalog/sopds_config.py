@@ -49,6 +49,9 @@ _DEFAULTS: dict = {
     'authortoday_rating': False,
     'fantlab_rating': False,
     'litmarket_rating': False,
+    # Устройств (браузеров) на пользователя по умолчанию; 0 — без ограничений
+    # (docs/devices-design.md).
+    'devices_per_user': 0,
 }
 
 # Маппинг SOPDS_KEY -> json_key
@@ -86,6 +89,7 @@ _KEY_MAP: dict[str, str] = {
     'SOPDS_AUTHORTODAY_RATING': 'authortoday_rating',
     'SOPDS_FANTLAB_RATING': 'fantlab_rating',
     'SOPDS_LITMARKET_RATING': 'litmarket_rating',
+    'SOPDS_DEVICES_PER_USER': 'devices_per_user',
 }
 
 
