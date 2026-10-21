@@ -23,12 +23,13 @@
         <th>{% trans "Role" %}</th>
         <th>{% trans "Active" %}</th>
         <th>Telegram</th>
+        <th>{% trans "Devices" %}</th>
         <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
     <tbody>
       {% for u in users %}
-      <tr>
+      <tr id="user-{{ u.pk }}">
         <td><strong>{{ u.username }}</strong></td>
         <td>
           {% if u.is_superuser %}
@@ -48,6 +49,23 @@
           </form>
           {% else %}—{% endif %}
         </td>
+        <td>
+          {% if u.device_list %}
+          <details>
+            <summary style="cursor:pointer;">{{ u.device_list|length }} / {% if u.device_limit %}{{ u.device_limit }}{% else %}∞{% endif %}</summary>
+            {% for d in u.device_list %}
+            <div style="display:flex; gap:0.4rem; align-items:center; font-size:0.8rem; margin-top:0.3rem;">
+              <span title="{{ d.user_agent }}">{{ d.name|default:d.label|default:"?" }}{% if d.name and d.label %} ({{ d.label }}){% endif %} · {{ d.last_seen|date:"d.m.Y H:i" }}{% if d.last_ip %} · {{ d.last_ip }}{% endif %}</span>
+              <form method="post" action="{% url 'web:user_device_delete' u.pk d.pk %}" style="display:inline; margin:0;"
+                    onsubmit="return confirm('{% trans "Remove this device? It will be signed out." %}');">
+                {% csrf_token %}
+                <button type="submit" class="button tiny alert" style="margin:0;" title="{% trans "Delete" %}">✕</button>
+              </form>
+            </div>
+            {% endfor %}
+          </details>
+          {% else %}0 / {% if u.device_limit %}{{ u.device_limit }}{% else %}∞{% endif %}{% endif %}
+        </td>
         <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
           <!-- Редактировать роль/пароль -->
           <form method="post" action="{% url 'web:user_edit' u.pk %}" style="display:inline;">
@@ -58,6 +76,12 @@
             </select>
             <input type="password" name="password" placeholder="{% trans "New password" %}"
                    style="width:130px; display:inline; margin:0; padding:0.2rem 0.4rem; font-size:0.82rem;">
+            {% if not u.is_superuser %}
+            <input type="number" name="max_devices" min="0" value="{{ u.personal_device_limit|default_if_none:'' }}"
+                   placeholder="{% blocktrans with n=default_device_limit|default:'∞' %}default {{ n }}{% endblocktrans %}"
+                   title="{% trans "Device limit: empty — default from settings, 0 — no limit" %}"
+                   style="width:110px; display:inline; margin:0; padding:0.2rem 0.4rem; font-size:0.82rem;">
+            {% endif %}
             <button type="submit" class="button small" style="margin:0; padding:0.3rem 0.7rem;">
               {% trans "Save" %}
             </button>
@@ -76,7 +100,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
+      <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

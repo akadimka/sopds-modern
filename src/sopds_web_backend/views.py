@@ -949,7 +949,8 @@ def sopds_settings(request):
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
         'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating',
     ]
-    _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min', 'watch_debounce_seconds']
+    _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min',
+                   'watch_debounce_seconds', 'devices_per_user']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
 
     errors = []
@@ -962,6 +963,7 @@ def sopds_settings(request):
                 sopds[f] = int(request.POST.get(f, 0))
             except ValueError:
                 pass
+        sopds['devices_per_user'] = max(0, sopds.get('devices_per_user') or 0)
         for f in _STR_FIELDS:
             value = request.POST.get(f, '').strip()
             if f in _EXEC_FIELDS and value != (sopds.get(f) or ''):
@@ -1645,18 +1647,31 @@ def _password_error(password, user):
     return None
 
 
-def _users_list_error(request, error):
+def _users_context():
+    """Пользователи для страницы управления: с устройствами и действующим
+    лимитом (docs/devices-design.md)."""
     from django.contrib.auth.models import User as DjangoUser
-    users = DjangoUser.objects.all().order_by("username")
-    return render(request, "sopds_users.html", {"users": users, "error": error}, status=422)
+
+    from . import devices
+    users = list(DjangoUser.objects.all().order_by("username").select_related("profile")
+                 .prefetch_related("devices"))
+    for u in users:
+        u.device_list = sorted(u.devices.all(), key=lambda d: d.last_seen, reverse=True)
+        u.device_limit = devices.device_limit(u)
+        profile = getattr(u, "profile", None)
+        u.personal_device_limit = profile.max_devices if profile is not None else None
+    from opds_catalog.sopds_config import sopds_cfg as config
+    return {"users": users, "default_device_limit": int(config.SOPDS_DEVICES_PER_USER or 0)}
+
+
+def _users_list_error(request, error):
+    return render(request, "sopds_users.html", {**_users_context(), "error": error}, status=422)
 
 
 @sopds_admin(url="web:login")
 @require_http_methods(["GET"])
 def users_list(request):
-    from django.contrib.auth.models import User as DjangoUser
-    users = DjangoUser.objects.all().order_by("username")
-    return render(request, "sopds_users.html", {"users": users})
+    return render(request, "sopds_users.html", _users_context())
 
 
 @sopds_admin(url="web:login")
@@ -1697,9 +1712,25 @@ def user_edit(request, user_id):
         if error:
             return _users_list_error(request, error)
         user.set_password(password)
+    if "max_devices" in request.POST:
+        raw = request.POST.get("max_devices", "").strip()
+        if raw and not raw.isdigit():
+            return _users_list_error(request, _("Device limit must be a whole number (0 — no limit)."))
+        from .models import UserProfile
+        UserProfile.objects.update_or_create(user=user, defaults={"max_devices": int(raw) if raw else None})
     _set_role(user, role)
     user.save()
     return redirect(reverse("web:users_list"))
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def user_device_delete(request, user_id, device_id):
+    """Суперпользователь удаляет устройство пользователя — освободить место
+    (потерян телефон, а войти, чтобы удалить самому, нельзя: лимит)."""
+    from .models import UserDevice
+    UserDevice.objects.filter(pk=device_id, user_id=user_id).delete()
+    return redirect(reverse("web:users_list") + f"#user-{user_id}")
 
 
 @sopds_admin(url="web:login")

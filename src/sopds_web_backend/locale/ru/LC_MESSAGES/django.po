@@ -1495,6 +1495,35 @@ msgstr "Удалить это устройство? На нём произойд
 msgid "No devices yet."
 msgstr "Устройств пока нет."
 
+msgid "Devices"
+msgstr "Устройства"
+
+msgid "default %(n)s"
+msgstr "по умолч. %(n)s"
+
+msgid "Device limit: empty — default from settings, 0 — no limit"
+msgstr ""
+"Лимит устройств: пусто — по умолчанию из настроек, 0 — без ограничений"
+
+msgid "Device limit must be a whole number (0 — no limit)."
+msgstr "Лимит устройств — целое число (0 — без ограничений)."
+
+msgid "Users"
+msgstr "Пользователи"
+
+msgid "Devices per user by default"
+msgstr "Устройств на пользователя по умолчанию"
+
+msgid ""
+"How many browsers one account may sign in from; 0 — no limit. A personal "
+"limit is set on the Users page; superusers are not limited. Reader apps "
+"(OPDS) and Telegram are not counted."
+msgstr ""
+"Со скольких браузеров можно входить под одной учётной записью; 0 — без "
+"ограничений. Личный лимит задаётся на странице пользователей; на "
+"суперпользователей лимит не действует. Читалки (OPDS) и Telegram не "
+"считаются."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

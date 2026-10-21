@@ -469,6 +469,14 @@
     </div>
     {% endif %}
 
+    <div class="s-section-title">{% trans "Users" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "Devices per user by default" %}</label>
+        <input type="number" name="devices_per_user" value="{{ sopds.devices_per_user|default:0 }}" min="0" max="100" style="max-width:100px;">
+        <div class="s-hint">{% trans "How many browsers one account may sign in from; 0 — no limit. A personal limit is set on the Users page; superusers are not limited. Reader apps (OPDS) and Telegram are not counted." %}</div>
+    </div>
+
     <div class="s-section-title">{% trans "Sign-in security" %}</div>
 
     <div class="s-field">

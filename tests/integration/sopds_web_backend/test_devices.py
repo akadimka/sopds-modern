@@ -212,3 +212,64 @@ def test_cannot_touch_someone_elses_device():
     _profile(intruder_client, action="device_delete", device_id=device.pk)
     device.refresh_from_db()
     assert device.name == "" and _signed_in(owner_client)
+
+
+# ── Этап 3: суперпользователь — лимиты и устройства пользователей ──────────
+
+def test_users_page_shows_devices_and_superuser_removes_one():
+    user = _user(limit=2)
+    phone = Client(HTTP_USER_AGENT="Mozilla/5.0 (Android 14) Chrome/120.0")
+    _login(phone, user)
+    root = Client()
+    root.force_login(User.objects.create_superuser("root", password=PASSWORD))
+    page = root.get(reverse("web:users_list")).content.decode("utf-8")
+    assert "1 / 2" in page and "Chrome, Android" in page
+    device = UserDevice.objects.get(user=user)
+    root.post(reverse("web:user_device_delete", args=(user.pk, device.pk)))
+    assert not UserDevice.objects.filter(pk=device.pk).exists()
+    assert not _signed_in(phone)                           # потерянный телефон — выход
+
+
+def test_superuser_sets_personal_limit():
+    user = _user()
+    root = Client()
+    root.force_login(User.objects.create_superuser("root", password=PASSWORD))
+    url = reverse("web:user_edit", args=(user.pk,))
+    for raw, expected in (("3", 3), ("", None), ("0", 0)):
+        root.post(url, {"role": "user", "max_devices": raw})
+        assert UserProfile.objects.get(user=user).max_devices == expected
+    assert root.post(url, {"role": "user", "max_devices": "abc"}).status_code == 422
+    assert UserProfile.objects.get(user=user).max_devices == 0
+
+
+def test_regular_user_cannot_remove_others_devices():
+    owner, other = _user("owner"), _user("other")
+    owner_client, other_client = Client(), Client()
+    _login(owner_client, owner)
+    _login(other_client, other)
+    device = UserDevice.objects.get(user=owner)
+    other_client.post(reverse("web:user_device_delete", args=(owner.pk, device.pk)))
+    assert UserDevice.objects.filter(pk=device.pk).exists() and _signed_in(owner_client)
+
+
+def test_default_device_limit_saved_in_site_settings(tmp_path, monkeypatch):
+    import json
+
+    import fb2parser_core.settings_manager as sm_module
+    import opds_catalog.ratings_fetchers as fetchers
+
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"sopds": {"language": "en-US"}}), encoding="utf-8")
+    real = sm_module.SettingsManager
+    monkeypatch.setattr(sm_module, "SettingsManager", lambda _path: real(str(config)))
+    monkeypatch.setattr(fetchers, "wake_or_start", lambda name: None)
+    monkeypatch.setattr(fetchers, "stop_fetcher", lambda name: None)
+    root = Client()
+    root.force_login(User.objects.create_superuser("root", password=PASSWORD))
+    page = root.get(reverse("web:settings")).content.decode("utf-8")
+    assert 'name="devices_per_user"' in page
+    data = {"language": "en-US", "maxitems": "20", "fb2toepub": "", "temp_dir": ""}
+    root.post(reverse("web:settings"), {**data, "devices_per_user": "3"})
+    assert json.loads(config.read_text(encoding="utf-8"))["sopds"]["devices_per_user"] == 3
+    root.post(reverse("web:settings"), {**data, "devices_per_user": "-5"})
+    assert json.loads(config.read_text(encoding="utf-8"))["sopds"]["devices_per_user"] == 0
