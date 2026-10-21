@@ -119,3 +119,20 @@ def test_header_items_share_one_line_height():
     assert re.search(r"\.sopds-top-bar \.menu > li \{ display: flex; align-items: center;", css)
     assert re.search(r"\.sopds-top-bar \.menu li a \{[^}]*line-height: 1;", css)
     assert re.search(r"\.sopds-top-bar \.sp-logout-form button \{[^}]*line-height: 1;", css)
+
+
+@pytest.mark.django_db
+def test_user_actions_are_one_aligned_row(superuser_client, django_user_model):
+    """Страница пользователей: «Сохранить» и «Удалить» стояли не на уровне
+    полей — ячейка «Действия» сама была flex (`<td style="display:flex">`),
+    формы строчные, у списка, полей и кнопок своя высота. Теперь ячейка —
+    обычная, внутри — ряд `.sp-user-actions` по центру, у элементов одна высота."""
+    django_user_model.objects.create_user("reader", password="Kx7#vQ2!mLp9")
+    html = superuser_client.get(reverse("web:users_list")).content.decode("utf-8")
+    assert 'td style="display:flex' not in html
+    assert html.count('class="sp-user-actions"') == 2
+    assert re.search(r"\.sp-user-actions, \.sp-user-actions form \{[^}]*align-items: center;", html)
+    assert re.search(r"\.sp-user-actions select, \.sp-user-actions input, \.sp-user-actions \.button \{[^}]*height: 2rem;",
+                     html)
+    actions = html.split('class="sp-user-actions"', 1)[1].split("</td>", 1)[0]
+    assert "padding:" not in actions and "margin:" not in actions   # своих отступов у элементов нет
