@@ -74,6 +74,9 @@ SOPDS_TRUSTED_PROXIES = env.list("SOPDS_TRUSTED_PROXIES", default=[])
 AXES_CLIENT_IP_CALLABLE = "sopds.client_ip.client_ip"
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
+    "sopds_web_backend.usernames.CaseInsensitiveModelBackend",   # имя без учёта регистра
+    # Только для сессий, открытых до появления бэкенда выше (путь бэкенда
+    # хранится в сессии): паролей он не проверяет — бэкенд выше прерывает цепочку.
     "django.contrib.auth.backends.ModelBackend",
 ]
 

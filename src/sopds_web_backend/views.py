@@ -1661,7 +1661,10 @@ def _users_context():
         profile = getattr(u, "profile", None)
         u.personal_device_limit = profile.max_devices if profile is not None else None
     from opds_catalog.sopds_config import sopds_cfg as config
-    return {"users": users, "default_device_limit": int(config.SOPDS_DEVICES_PER_USER or 0)}
+
+    from .usernames import case_conflicts
+    return {"users": users, "default_device_limit": int(config.SOPDS_DEVICES_PER_USER or 0),
+            "case_conflicts": case_conflicts()}
 
 
 def _users_list_error(request, error):
@@ -1678,13 +1681,15 @@ def users_list(request):
 @require_http_methods(["POST"])
 def user_create(request):
     from django.contrib.auth.models import User as DjangoUser
+
+    from .usernames import username_taken
     username = request.POST.get("username", "").strip()
     password = request.POST.get("password", "").strip()
     role = request.POST.get("role", "user")
     error = None
     if not username or not password:
         error = _("Username and password are required.")
-    elif DjangoUser.objects.filter(username=username).exists():
+    elif username_taken(username):                       # «Anna» при существующей «anna» — тоже занято
         error = _("User with this username already exists.")
     else:
         error = _password_error(password, DjangoUser(username=username))

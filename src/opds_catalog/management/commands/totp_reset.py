@@ -5,10 +5,10 @@
 есть куда доставить; нет — `manage.py admin_login_code off`). Новое
 приложение подключается в профиле заново, с новым секретом.
 """
-from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
 from sopds_web_backend import totp
+from sopds_web_backend.usernames import find_user
 
 
 class Command(BaseCommand):
@@ -18,7 +18,7 @@ class Command(BaseCommand):
         parser.add_argument("username")
 
     def handle(self, *args, **options):
-        user = get_user_model().objects.filter(username=options["username"]).first()
+        user = find_user(options["username"])
         if user is None:
             raise CommandError(f"user not found: {options['username']}")
         had = totp.device_for(user) is not None

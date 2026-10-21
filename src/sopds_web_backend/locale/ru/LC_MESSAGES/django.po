@@ -1524,6 +1524,15 @@ msgstr ""
 "суперпользователей лимит не действует. Читалки (OPDS) и Telegram не "
 "считаются."
 
+msgid ""
+"Usernames that differ only in letter case — these users can sign in only "
+"with the exact spelling. Delete or rename one of each pair (renaming — in "
+"/admin/):"
+msgstr ""
+"Имена, различающиеся только регистром букв, — эти пользователи могут войти "
+"только точным написанием. Удалите или переименуйте одного из каждой пары "
+"(переименование — в /admin/):"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

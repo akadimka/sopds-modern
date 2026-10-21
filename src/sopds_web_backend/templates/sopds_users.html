@@ -9,6 +9,13 @@
   <div class="callout alert" style="margin-bottom:1rem;">{{ error }}</div>
   {% endif %}
 
+  {% if case_conflicts %}
+  <div class="callout warning" style="margin-bottom:1rem;">
+    {% trans "Usernames that differ only in letter case — these users can sign in only with the exact spelling. Delete or rename one of each pair (renaming — in /admin/):" %}
+    {% for names in case_conflicts %}<strong>{{ names|join:" / " }}</strong>{% if not forloop.last %}; {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
   {% if messages %}
   {% for msg in messages %}
   <div class="callout success" style="margin-bottom:1rem;">{{ msg }}</div>

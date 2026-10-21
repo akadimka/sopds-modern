@@ -60,8 +60,9 @@ def authenticate(username: str, password: str) -> Optional[OpdsPassword]:
     """Запись пароля для читалок, если логин и пароль подходят (аккаунт активен)."""
     if len(_normalize(password)) != GROUPS * GROUP_LEN:
         return None
-    record = (OpdsPassword.objects.select_related("user")
-              .filter(user__username=username, user__is_active=True).first())
+    from .usernames import find_user
+    user = find_user(username, is_active=True)              # имя — без учёта регистра
+    record = OpdsPassword.objects.select_related("user").filter(user=user).first() if user else None
     if record is None or not hmac.compare_digest(record.token_hash, _hash(password)):
         return None
     now = timezone.now()
