@@ -10,6 +10,12 @@ docs/quality-roadmap.md, баг №175.
 - «2. Трудно быть мобом (соавт. Ольховская-Инга).fb2» — соавтор назван в
   имени файла и есть в метаданных, но голосование по серии молчало.
 """
+import shutil
+import tempfile
+from pathlib import Path
+
+import pytest
+
 from fb2parser_core.fb2_compiler import FB2CompilerService
 from fb2parser_core.regen_csv import RegenCSVService
 from fb2parser_web.fb2parser_bridge import _config_path
@@ -38,7 +44,19 @@ def _write(root, branch, rel, seq, sn, authors=_A):
     path.write_text(_FB2.format(authors=authors, title=path.stem, seq=seq, sn=sn, text=text), encoding="utf-8")
 
 
-def test_publisher_branch_and_filename_coauthor(tmp_path):
+@pytest.fixture
+def short_root():
+    """Короткий корень вместо tmp_path: путь pytest
+    (…/pytest-of-<user>/pytest-N/<имя теста>0/) плюс настоящие длинные имена
+    папок этой ветки давали ровно 260 символов — больше предела Windows
+    без LongPathsEnabled (FileNotFoundError при записи файла)."""
+    root = Path(tempfile.mkdtemp(prefix="pbc"))
+    yield root
+    shutil.rmtree(root, ignore_errors=True)
+
+
+def test_publisher_branch_and_filename_coauthor(short_root):
+    tmp_path = short_root
     neo, pub = "Hеофициальная серия книг (разные издательства)", "Книги, выпущенные издательством"
     for n, name in ((1, "Алебардист"), (2, "Головоломка"), (3, "Синергия")):
         _write(tmp_path, neo, f"Миры Бессмертных/0{n} - {name}.fb2", "Миры Бессмертных", n)
