@@ -24,7 +24,11 @@ from opds_catalog.models import (
     LitmarketRating,
     SamlibRating,
 )
-from opds_catalog.ratings_fetchers import OutageDetector, next_book_to_fetch, site_is_down
+from opds_catalog.ratings_fetchers import (
+    OutageDetector,
+    next_book_to_fetch,
+    site_is_down,
+)
 
 # модуль, метод получения, ответ «ошибка», модель, связь Book → рейтинг, срок устаревания
 _FETCHERS = [
