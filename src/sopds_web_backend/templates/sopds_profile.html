@@ -78,6 +78,48 @@
   </form>
 </div>
 
+<!-- ── Мои устройства (лимит устройств, docs/devices-design.md) ── -->
+<div class="s-section" style="margin-bottom:1.5rem;" id="devices">
+  <div class="s-section-title">{% trans "My devices" %}</div>
+  <p style="font-size:0.9rem; margin-bottom:0.4rem;">
+    {% if device_limit %}{% blocktrans with count=devices|length limit=device_limit %}Devices: {{ count }} of {{ limit }}{% endblocktrans %}{% else %}{% blocktrans with count=devices|length %}Devices: {{ count }} (no limit){% endblocktrans %}{% endif %}
+  </p>
+  <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:0.8rem;">
+    {% trans "Browsers you signed in from. Reader apps (OPDS) and Telegram are not counted. Remove a device you no longer use to free a place for a new one." %}
+  </p>
+  {% for d in devices %}
+  <div class="sp-device" style="border:1px solid var(--border); border-radius:var(--radius-md); padding:0.6rem 0.8rem; margin-bottom:0.6rem;">
+    <div style="display:flex; justify-content:space-between; gap:0.6rem; flex-wrap:wrap; align-items:baseline;">
+      <strong>{{ d.label|default:_("Unknown browser") }}</strong>
+      {% if d.pk == current_device_id %}<span class="label success" style="font-size:0.75rem;">{% trans "This device" %}</span>{% endif %}
+    </div>
+    <div style="color:var(--text-muted); font-size:0.8rem; margin:0.25rem 0 0.5rem;">
+      {% trans "First sign-in" %}: {{ d.created_at|date:"d.m.Y H:i" }} ·
+      {% trans "Last activity" %}: {{ d.last_seen|date:"d.m.Y H:i" }}{% if d.last_ip %} · IP {{ d.last_ip }}{% endif %}
+    </div>
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+      <form method="post" action="{% url 'web:profile' %}#devices" style="margin:0; display:flex; gap:0.4rem; flex:1 1 240px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="device_name">
+        <input type="hidden" name="device_id" value="{{ d.pk }}">
+        <input type="text" name="name" value="{{ d.name }}" maxlength="100" style="margin:0;"
+               placeholder="{% trans "Description, e.g. phone or work computer" %}" aria-label="{% trans "Description" %}">
+        <button type="submit" class="button small" style="margin:0;">{% trans "Save" %}</button>
+      </form>
+      <form method="post" action="{% url 'web:profile' %}#devices" style="margin:0;"
+            onsubmit="return confirm('{% trans "Remove this device? It will be signed out." %}');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="device_delete">
+        <input type="hidden" name="device_id" value="{{ d.pk }}">
+        <button type="submit" class="button small alert" style="margin:0;">{% trans "Delete" %}</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "No devices yet." %}</p>
+  {% endfor %}
+</div>
+
 <!-- ── Приложение-аутентификатор (второй фактор входа) ──────── -->
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">{% trans "Authenticator app" %}</div>
@@ -182,7 +224,7 @@
 <!-- ── Telegram (бот и канал библиотеки) ─────────────────────── -->
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">Telegram</div>
-  {% if request.user.is_staff and telegram_enabled %}
+  {% if request.user.is_superuser and telegram_enabled %}
   <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For superusers without an authenticator app: the sign-in code is sent to this Telegram." %}</p>
   {% endif %}
   {% if not telegram_enabled %}

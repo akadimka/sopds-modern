@@ -1485,6 +1485,26 @@ def user_profile(request):
                     update_session_auth_hash(request, user)
                     success = "password"
 
+        elif action == "device_name":
+            from .models import UserDevice
+            UserDevice.objects.filter(pk=request.POST.get("device_id") or 0, user=user).update(
+                name=request.POST.get("name", "").strip()[:100])
+            success = "devices"
+
+        elif action == "device_delete":
+            from . import devices
+            from .models import UserDevice
+            device = UserDevice.objects.filter(pk=request.POST.get("device_id") or 0, user=user).first()
+            if device is not None:
+                current = devices.current_device(request, user)
+                deleted_pk = device.pk          # delete() обнуляет pk объекта
+                device.delete()
+                if current is not None and current.pk == deleted_pk:
+                    # Удалили это устройство — выход здесь же (docs/devices-design.md).
+                    devices.sign_out(request, devices.removed_message())
+                    return redirect(reverse("web:login"))
+            success = "devices"
+
         elif action == "tg_code":
             from .telegram_users import new_link_code
             new_link_code(user)
@@ -1554,7 +1574,18 @@ def user_profile(request):
         "opds_new_password": opds_new_password,
         "opds_url": request.build_absolute_uri(reverse("opds:main")),
         **_profile_totp_context(user),
+        **_profile_devices_context(request, user),
     })
+
+
+def _profile_devices_context(request, user):
+    """Раздел «Мои устройства» профиля (docs/devices-design.md)."""
+    from . import devices
+    from .models import UserDevice
+    current = devices.current_device(request, user)
+    return {"devices": list(UserDevice.objects.filter(user=user).order_by("-last_seen")),
+            "current_device_id": current.pk if current is not None else None,
+            "device_limit": devices.device_limit(user)}
 
 
 def _profile_totp_context(user):

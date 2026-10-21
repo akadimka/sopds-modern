@@ -143,3 +143,72 @@ def test_parallel_requests_of_unbound_session_make_one_device():
     parallel.cookies["sessionid"] = first.cookies["sessionid"].value
     assert _signed_in(first) and _signed_in(parallel)          # второй — тоже без метки устройства
     assert UserDevice.objects.filter(user=user).count() == 1
+
+
+# ── Этап 2: «Мои устройства» в настройках пользователя ──────────────────────
+
+def _profile(client, **data):
+    return client.post(reverse("web:profile"), data) if data else client.get(reverse("web:profile"))
+
+
+def test_profile_lists_devices_with_current_and_count():
+    user = _user(limit=2)
+    other, mine = Client(HTTP_USER_AGENT="Mozilla/5.0 (Android 14) Chrome/120.0"), Client()
+    _login(other, user)
+    _login(mine, user)
+    html = _profile(mine).content.decode("utf-8")
+    assert "My devices" in html and "Devices: 2 of 2" in html
+    assert html.count("This device") == 1 and "Chrome, Android" in html
+
+
+def test_name_device():
+    user = _user()
+    client = Client()
+    _login(client, user)
+    device = UserDevice.objects.get(user=user)
+    _profile(client, action="device_name", device_id=device.pk, name="  Рабочий компьютер  ")
+    device.refresh_from_db()
+    assert device.name == "Рабочий компьютер"
+    assert "Рабочий компьютер" in _profile(client).content.decode("utf-8")
+
+
+def test_delete_other_device_frees_place_for_new_browser():
+    user = _user(limit=1)
+    lost, mine = Client(), Client()
+    _login(lost, user)                                    # потерянный телефон
+    assert _login(mine, user).status_code == 403          # лимит
+    admin = User.objects.create_superuser("root", password=PASSWORD)
+    root = Client()
+    _login(root, admin)                                   # суперпользователь — без лимита
+    UserProfile.objects.filter(user=user).update(max_devices=2)
+    _login(mine, user)
+    lost_device = UserDevice.objects.filter(user=user).order_by("created_at").first()
+    _profile(mine, action="device_delete", device_id=lost_device.pk)
+    assert not UserDevice.objects.filter(pk=lost_device.pk).exists() and _signed_in(mine)
+    assert not _signed_in(lost)                           # удалённое — выход
+    UserProfile.objects.filter(user=user).update(max_devices=1)
+    assert _login(Client(), user).status_code == 403      # место занято текущим
+    _profile(mine, action="device_delete", device_id=UserDevice.objects.get(user=user).pk)
+    assert _login(Client(), user).status_code == 302      # освободилось
+
+
+def test_delete_current_device_signs_out():
+    user = _user()
+    client = Client()
+    _login(client, user)
+    response = _profile(client, action="device_delete", device_id=UserDevice.objects.get(user=user).pk)
+    assert response.status_code == 302 and reverse("web:login") in response["Location"]
+    assert not _signed_in(client)
+    assert "This device was removed" in client.get(reverse("web:login")).content.decode("utf-8")
+
+
+def test_cannot_touch_someone_elses_device():
+    owner, intruder = _user("owner"), _user("intruder")
+    owner_client, intruder_client = Client(), Client()
+    _login(owner_client, owner)
+    _login(intruder_client, intruder)
+    device = UserDevice.objects.get(user=owner)
+    _profile(intruder_client, action="device_name", device_id=device.pk, name="взлом")
+    _profile(intruder_client, action="device_delete", device_id=device.pk)
+    device.refresh_from_db()
+    assert device.name == "" and _signed_in(owner_client)

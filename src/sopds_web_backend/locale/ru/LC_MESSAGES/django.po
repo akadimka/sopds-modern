@@ -1455,6 +1455,46 @@ msgstr ""
 msgid "This device was removed from your devices. Sign in again."
 msgstr "Это устройство удалено из ваших устройств. Войдите снова."
 
+msgid "My devices"
+msgstr "Мои устройства"
+
+msgid "Devices: %(count)s of %(limit)s"
+msgstr "Устройств: %(count)s из %(limit)s"
+
+msgid "Devices: %(count)s (no limit)"
+msgstr "Устройств: %(count)s (без ограничений)"
+
+msgid ""
+"Browsers you signed in from. Reader apps (OPDS) and Telegram are not "
+"counted. Remove a device you no longer use to free a place for a new one."
+msgstr ""
+"Браузеры, с которых вы входили. Читалки (OPDS) и Telegram не считаются. "
+"Удалите ненужное устройство, чтобы освободить место для нового."
+
+msgid "Unknown browser"
+msgstr "Неизвестный браузер"
+
+msgid "This device"
+msgstr "Это устройство"
+
+msgid "First sign-in"
+msgstr "Первый вход"
+
+msgid "Last activity"
+msgstr "Последняя активность"
+
+msgid "Description, e.g. phone or work computer"
+msgstr "Например: телефон, ноутбук"
+
+msgid "Description"
+msgstr "Описание"
+
+msgid "Remove this device? It will be signed out."
+msgstr "Удалить это устройство? На нём произойдёт выход."
+
+msgid "No devices yet."
+msgstr "Устройств пока нет."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
