@@ -32,7 +32,7 @@
     <div class="s-field">
         <label>{% trans "Items per page" %}</label>
         <input type="number" name="maxitems" value="{{ sopds.maxitems }}" min="5" max="500" style="max-width:100px;">
-        <div class="s-hint">{{ comments.maxitems }}</div>
+        <div class="s-hint">{% trans "How many books, authors or series one page of a list shows, on the site and in reader apps; the rest is on the next pages. Default: 10." %}</div>
     </div>
 
     <div class="s-field">
@@ -40,13 +40,13 @@
             <input type="checkbox" name="alphabet_menu" {% if sopds.alphabet_menu %}checked{% endif %}>
             <span>{% trans "Alphabet submenu" %}</span>
         </label>
-        <div class="s-hint">{{ comments.alphabet_menu }}</div>
+        <div class="s-hint">{% trans "In “Books”, “Authors” and “Series”, first choose the alphabet (Cyrillic, Latin, digits, other) and then a letter, instead of one long list. Default: on." %}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "Split threshold" %}</label>
         <input type="number" name="splititems" value="{{ sopds.splititems }}" min="10" max="10000" style="max-width:100px;">
-        <div class="s-hint">{{ comments.splititems }}</div>
+        <div class="s-hint">{% trans "If a letter has more items than this, its menu splits further by the next letter (“A” → “Ab”, “Ac”…); fewer items are listed at once. Default: 100." %}</div>
     </div>
 
     <div class="s-field">
@@ -54,7 +54,7 @@
             <input type="checkbox" name="doubles_hide" {% if sopds.doubles_hide %}checked{% endif %}>
             <span>{% trans "Hide duplicates" %}</span>
         </label>
-        <div class="s-hint">{{ comments.doubles_hide }}</div>
+        <div class="s-hint">{% trans "The same book (same title and authors) in several files is shown as one entry with a link to the other copies. Default: on." %}</div>
     </div>
 
     <div class="s-field">
@@ -62,13 +62,13 @@
             <input type="checkbox" name="title_as_filename" {% if sopds.title_as_filename %}checked{% endif %}>
             <span>{% trans "Use book title as download filename" %}</span>
         </label>
-        <div class="s-hint">{{ comments.title_as_filename }}</div>
+        <div class="s-hint">{% trans "Downloaded files are named by the title from the FB2 metadata instead of the file name in the library. Usually better off: library file names are already “Author - Title”, metadata titles have no author and differ from publisher to publisher. Default: off." %}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "Interface language" %}</label>
         <input type="text" name="language" value="{{ sopds.language }}" style="max-width:120px;">
-        <div class="s-hint">{{ comments.language }}</div>
+        <div class="s-hint">{% trans "Interface language for visitors who have not chosen one with the EN/RU switch: en-US or ru-RU. Default: en-US." %}</div>
     </div>
 
     <div class="s-section-title">{% trans "Conversion" %}</div>
@@ -79,25 +79,25 @@
     <div class="s-field">
         <label>{% trans "fb2→epub converter path" %}</label>
         <input type="text" name="fb2toepub" value="{{ sopds.fb2toepub }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/usr/bin/fb2toepub">
-        <div class="s-hint">{{ comments.fb2toepub }}</div>
+        <div class="s-hint">{% trans "Program that converts FB2 to EPUB when a book is downloaded in EPUB. Empty — the EPUB download is not offered." %}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "fb2→azw3 converter path (Kindle)" %}</label>
         <input type="text" name="fb2toazw3" value="{{ sopds.fb2toazw3 }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/usr/bin/ebook-convert">
-        <div class="s-hint">{{ comments.fb2toazw3 }}</div>
+        <div class="s-hint">{% trans "Program that converts FB2 to AZW3 (Kindle) on download. Empty — the AZW3 download is not offered." %}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "fb2→mobi converter path" %}</label>
         <input type="text" name="fb2tomobi" value="{{ sopds.fb2tomobi }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/usr/bin/ebook-convert">
-        <div class="s-hint">{{ comments.fb2tomobi }}</div>
+        <div class="s-hint">{% trans "Program that converts FB2 to MOBI on download. Empty — the MOBI download is not offered." %}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "Temp directory" %}</label>
         <input type="text" name="temp_dir" value="{{ sopds.temp_dir }}"{% if not can_edit_exec_fields %} readonly{% endif %} placeholder="/tmp">
-        <div class="s-hint">{{ comments.temp_dir }}</div>
+        <div class="s-hint">{% trans "Folder for conversions: each one works in its own subfolder that is removed afterwards. Without it books are not converted." %}</div>
     </div>
 
     <div class="s-section-title">{% trans "Services" %}</div>
@@ -212,7 +212,7 @@
     <div class="s-field">
         <label>{% trans "Book extensions" %}</label>
         <input type="text" name="book_extensions" value="{{ sopds.book_extensions }}" placeholder=".fb2 .epub .mobi .pdf .djvu">
-        <div class="s-hint">{{ comments.book_extensions }}</div>
+        <div class="s-hint">{% trans "Which files the scanner adds to the catalog, separated by spaces. Default: .pdf .djvu .fb2 .epub .mobi" %}</div>
     </div>
 
     <div class="s-field">
@@ -220,7 +220,7 @@
             <input type="checkbox" name="zipscan" {% if sopds.zipscan %}checked{% endif %}>
             <span>{% trans "Scan inside ZIP archives" %}</span>
         </label>
-        <div class="s-hint">{{ comments.zipscan }}</div>
+        <div class="s-hint">{% trans "The scanner also adds books packed in ZIP archives (including .fb2.zip). Default: on." %}</div>
     </div>
 
     <div class="s-field">
@@ -228,7 +228,7 @@
             <input type="checkbox" name="fb2sax" {% if sopds.fb2sax %}checked{% endif %}>
             <span>{% trans "Use SAX parser for FB2" %}</span>
         </label>
-        <div class="s-hint">{{ comments.fb2sax }}</div>
+        <div class="s-hint">{% trans "Read FB2 (covers) with the streaming SAX parser instead of lxml: less memory and more tolerant of broken files, a little slower. Default: off." %}</div>
     </div>
 
     <div class="s-section-title">{% trans "Deletion" %}</div>
@@ -238,7 +238,7 @@
             <input type="checkbox" name="delete_logical" {% if sopds.delete_logical %}checked{% endif %}>
             <span>{% trans "Logical deletion (mark, don't remove from DB)" %}</span>
         </label>
-        <div class="s-hint">{{ comments.delete_logical }}</div>
+        <div class="s-hint">{% trans "Books that a full scan did not find are hidden, not deleted from the catalog: if the disk or network folder was just unavailable, ratings and bookshelves stay. Off — their records are deleted (not when most of the library is missing at once). Default: on." %}</div>
     </div>
 
     <div class="s-section-title">{% trans "INPX support" %}</div>
@@ -248,7 +248,7 @@
             <input type="checkbox" name="inpx_enable" {% if sopds.inpx_enable %}checked{% endif %}>
             <span>{% trans "Enable INPX indexes" %}</span>
         </label>
-        <div class="s-hint">{{ comments.inpx_enable }}</div>
+        <div class="s-hint">{% trans "For collections with an .inpx index (archives of large online libraries) the scanner takes the book list from the index instead of opening every file — much faster. Default: off." %}</div>
     </div>
 
     <div class="s-field">
@@ -256,7 +256,7 @@
             <input type="checkbox" name="inpx_skip_unchanged" {% if sopds.inpx_skip_unchanged %}checked{% endif %}>
             <span>{% trans "Skip unchanged INPX archives" %}</span>
         </label>
-        <div class="s-hint">{{ comments.inpx_skip_unchanged }}</div>
+        <div class="s-hint">{% trans "Indexes (.inpx/.inp) whose size has not changed since the last scan are not read again. Default: on." %}</div>
     </div>
 
     <div class="s-field">
@@ -264,7 +264,7 @@
             <input type="checkbox" name="inpx_test_zip" {% if sopds.inpx_test_zip %}checked{% endif %}>
             <span>{% trans "Test ZIP integrity inside INPX" %}</span>
         </label>
-        <div class="s-hint">{{ comments.inpx_test_zip }}</div>
+        <div class="s-hint">{% trans "Skip books from the index whose ZIP archive is missing on disk. Default: off." %}</div>
     </div>
 
     <div class="s-field">
@@ -272,7 +272,7 @@
             <input type="checkbox" name="inpx_test_files" {% if sopds.inpx_test_files %}checked{% endif %}>
             <span>{% trans "Test file integrity inside INPX" %}</span>
         </label>
-        <div class="s-hint">{{ comments.inpx_test_files }}</div>
+        <div class="s-hint">{% trans "Also check that every book from the index is really inside its archive — reliable but slow on large collections. Default: off." %}</div>
     </div>
 
     <div class="s-section-title">{% trans "Logs" %}</div>
@@ -280,13 +280,13 @@
     <div class="s-field">
         <label>{% trans "Scanner PID file" %}</label>
         <input type="text" name="scanner_pid" value="{{ sopds.scanner_pid }}">
-        <div class="s-hint">{{ comments.scanner_pid }}</div>
+        <div class="s-hint">{% trans "File with the process id of the running scanner (relative to the project folder) — so that a second scanner does not start. Default: sopds_scanner.pid" %}</div>
     </div>
 
     <div class="s-field">
         <label>{% trans "Scanner log file" %}</label>
         <input type="text" name="scanner_log" value="{{ sopds.scanner_log }}">
-        <div class="s-hint">{{ comments.scanner_log }}</div>
+        <div class="s-hint">{% trans "Scanner log file. Default: sopds_scanner.log" %}</div>
     </div>
 
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
@@ -338,7 +338,7 @@
             <input type="checkbox" name="scan_start_directly" {% if sopds.scan_start_directly %}checked{% endif %}>
             <span>{% trans "Start scan immediately on server startup" %}</span>
         </label>
-        <div class="s-hint">{{ comments.scan_start_directly }}</div>
+        <div class="s-hint">{% trans "The scanner service runs one full scan right after it starts and then turns this option off by itself. Default: off." %}</div>
     </div>
 
     <div class="s-section-title">{% trans "Real-time library watcher" %}</div>

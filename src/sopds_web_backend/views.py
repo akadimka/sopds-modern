@@ -1025,8 +1025,8 @@ def sopds_settings(request):
         if not errors:
             return redirect(reverse('web:settings') + '?saved=1')
 
-    sopds = sm.settings.get('sopds', {})
-    comments = sopds.get('_comments', {})
+    from opds_catalog.sopds_config import effective
+    sopds = effective(sm.settings.get('sopds', {}))     # действующие значения, с умолчаниями
     autosync = sm.get_autosync_settings()
     args = {
         'breadcrumbs': [_('Settings')],
@@ -1034,7 +1034,6 @@ def sopds_settings(request):
         'errors': errors,
         'can_edit_exec_fields': request.user.is_superuser,
         'sopds': sopds,
-        'comments': comments,
         'autosync': {k: v for k, v in autosync.items() if k != 'telegram_token'},
         'telegram_token_tail': autosync['telegram_token'][-4:],
     }

@@ -148,6 +148,19 @@ def _is_unset(json_key: str, val) -> bool:
     return json_key in _POSITIVE_KEYS and not val
 
 
+def effective(raw: dict) -> dict:
+    """Действующие настройки раздела `sopds`: значение из config.json, а
+    если не задано (`_is_unset`) — умолчание, как их видит `SopdsConfig`.
+    Страница настроек показывает именно их: иначе незаданный в файле
+    флажок (на сервере config.json бывает почти пустым) выглядел выключенным
+    при включённом умолчании, и сохранение формы молча его выключало."""
+    result = dict(raw)
+    for key, default in _DEFAULTS.items():
+        if _is_unset(key, raw.get(key)):
+            result[key] = default
+    return result
+
+
 class SopdsConfig:
     """Прокси для настроек SOPDS из config.json.
 
