@@ -132,7 +132,6 @@ nano src/.env
 DJANGO_SETTINGS_MODULE=sopds.settings.base
 DEBUG=False
 SECRET_KEY_FILE=/opt/sopds-modern/secret_key.txt
-SOPDS_VERSION=0.7
 SOPDS_SERVER_LOG_LEVEL=WARNING
 SOPDS_DB_ENGINE=sqlite
 SOPDS_DB_NAME=sopds.db

@@ -23,7 +23,10 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 
 # Project version
-VERSION = env("SOPDS_VERSION")
+# Версия — из pyproject.toml (sopds/version.py), в виде X.YY.ZZZ.
+from sopds.version import display_version  # noqa: E402
+
+VERSION = display_version()
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[".localhost", "127.0.0.1"])
 

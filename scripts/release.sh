@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-version=$(<./version.txt)
+version=$(python scripts/version.py current)
 echo "Создание релиза $version"
 
 echo "Подготовка"
@@ -12,7 +12,6 @@ cp -r ./src/* build/release
 cp LICENSE build/release
 cp pyproject.toml build/release
 cp base.env build/release
-cp version.txt build/release
 cp scripts/start_server.sh build/release
 
 echo "Очистка"
