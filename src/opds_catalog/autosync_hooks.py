@@ -59,7 +59,6 @@ def notify_autosync(autosync: Optional[Tuple[Any, Any]], logger: Optional[loggin
 
 
 CATALOG_MARK_KEY = "catalog_announced_book_id"
-CATALOG_DIGEST_MAX_BOOKS = 300   # больше — сводка только по жанрам
 
 
 def announce_catalog_additions(service, result, logger: Optional[logging.Logger] = None) -> Dict[str, str]:
@@ -104,10 +103,14 @@ def announce_catalog_additions(service, result, logger: Optional[logging.Logger]
             "library_path": os.path.join(b.path or "", b.filename or ""),
         })
     if rows:
-        from fb2parser_core.telegram_notify import TelegramError, build_digest, client_for, explain_error
+        from fb2parser_core.telegram_notify import (
+            TelegramError,
+            build_new_books_message,
+            client_for,
+            explain_error,
+        )
 
-        text = (build_digest(rows, catalog_link(service)) if len(rows) <= CATALOG_DIGEST_MAX_BOOKS
-                else _genre_counts_digest(rows))
+        text = build_new_books_message(rows, catalog_link(service))
         try:
             client_for(cfg).send_message(cfg["telegram_channel"], text)
         except TelegramError as e:
@@ -115,16 +118,6 @@ def announce_catalog_additions(service, result, logger: Optional[logging.Logger]
             return {"catalog": explain_error(e)}   # точку не двигаем — повторим в следующий раз
     journal.set_state(CATALOG_MARK_KEY, str(top))
     return {"catalog": "ok"} if rows else {}
-
-
-def _genre_counts_digest(rows) -> str:
-    import html
-    from collections import Counter as _Counter
-
-    counts = _Counter(r["genre"] for r in rows)
-    lines = [f"📚 <b>Новые книги в библиотеке: {len(rows)}</b>", ""]
-    lines += [f"• {html.escape(g)}: {n}" for g, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
-    return "\n".join(lines)
 
 
 def summary(autosync: Optional[Tuple[Any, Any]]) -> Optional[Dict[str, Any]]:

@@ -12,8 +12,10 @@ from fb2parser_core.telegram_notify import (
     ERR_TOKEN,
     TelegramClient,
     TelegramError,
+    DIGEST_DETAIL_MAX,
     build_admin_report,
     build_digest,
+    build_new_books_message,
     error_kind,
     split_message,
 )
@@ -159,3 +161,18 @@ def test_normalize_api_url_requires_https(value):
     from fb2parser_core.telegram_notify import normalize_api_url
     with pytest.raises(ValueError):
         normalize_api_url(value)
+
+
+def test_new_books_message_detailed_only_up_to_ten_books():
+    """Решение пользователя (2026-10-22): подробный список новинок — при 10
+    книгах и меньше, больше — только сводная статистика по жанрам."""
+    def rows(n):
+        return [{"genre": "Фантастика" if i % 3 else "Детектив", "author": f"Автор {i}", "series": "",
+                 "title": f"Книга {i}", "library_path": ""} for i in range(n)]
+
+    assert DIGEST_DETAIL_MAX == 10
+    detailed = build_new_books_message(rows(10))
+    assert "Новые книги в библиотеке: 10" in detailed and "Автор 9" in detailed
+    counts = build_new_books_message(rows(11))
+    assert "Новые книги в библиотеке: 11" in counts and "Автор" not in counts
+    assert counts.splitlines()[2:] == ["• Фантастика: 7", "• Детектив: 4"]

@@ -608,7 +608,7 @@ def notify(service: "AutosyncService", result: RunResult,
     from .telegram_notify import (
         TelegramError,
         build_admin_report,
-        build_digest,
+        build_new_books_message,
         client_for,
         explain_error,
     )
@@ -627,7 +627,7 @@ def notify(service: "AutosyncService", result: RunResult,
             rows = [r for r in rows if include(r)]
         try:
             if rows:
-                client.send_message(cfg["telegram_channel"], build_digest(rows, link))
+                client.send_message(cfg["telegram_channel"], build_new_books_message(rows, link))
                 sent["channel"] = "ok"
             journal.mark_announced(run_ids)
         except TelegramError as e:

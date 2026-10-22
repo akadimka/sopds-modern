@@ -26,6 +26,18 @@ from django.utils import translation
 from fb2parser_web.views import server_restart
 
 
+class _SyncThread:
+    """Перезапуск идёт в фоновом потоке (иначе процесс, отправляющий ответ,
+    был бы убит собственной командой раньше, чем ответ уйдёт браузеру) —
+    подменяем threading.Thread, чтобы выполнить target синхронно."""
+
+    def __init__(self, target=None, daemon=None, **kw):
+        self._target = target
+
+    def start(self):
+        self._target()
+
+
 class TestServerRestartHonestAboutGunicorn:
     def test_under_gunicorn_triggers_real_systemctl_restart(self, admin_user):
         rf = RequestFactory()
@@ -34,17 +46,6 @@ class TestServerRestartHonestAboutGunicorn:
             SERVER_SOFTWARE="gunicorn/23.0.0",
         )
         request.user = admin_user
-
-        # Перезапуск идёт в фоновом потоке (иначе процесс, отправляющий
-        # ответ, был бы убит собственной командой раньше, чем ответ уйдёт
-        # браузеру) — подменяем threading.Thread, чтобы выполнить target
-        # СИНХРОННО прямо здесь, а не гоняться за настоящим потоком.
-        class _SyncThread:
-            def __init__(self, target=None, daemon=None, **kw):
-                self._target = target
-
-            def start(self):
-                self._target()
 
         with patch("subprocess.run") as mock_run, \
              patch("time.sleep"), \
@@ -68,9 +69,16 @@ class TestServerRestartHonestAboutGunicorn:
             SERVER_SOFTWARE="WSGIServer/0.2 CPython/3.13.14",
         )
         request.user = admin_user
-        with translation.override("ru"):
-            response = server_restart(request)
+        # Не касаться настоящего src/manage.py: запущенный рядом dev-сервер
+        # (runserver с автоперезагрузкой) перезапустился бы посреди работы —
+        # так прогон тестов оборвал синхронизацию пользователя (2026-10-22).
+        with patch("pathlib.Path.touch") as touch, \
+             patch("time.sleep"), \
+             patch("threading.Thread", _SyncThread):
+            with translation.override("ru"):
+                response = server_restart(request)
         content = response.content.decode("utf-8")
 
         assert "location.reload()" in content
         assert "Перезагрузка" in content
+        touch.assert_called_once()

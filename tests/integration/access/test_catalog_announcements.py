@@ -96,7 +96,7 @@ def test_telegram_failure_keeps_mark(setup, monkeypatch):
 
 def test_many_books_genre_counts(setup, monkeypatch):
     _users, _books, client = setup
-    monkeypatch.setattr(hooks, "CATALOG_DIGEST_MAX_BOOKS", 0)
+    monkeypatch.setattr(telegram_notify, "DIGEST_DETAIL_MAX", 0)
     journal = FakeJournal({hooks.CATALOG_MARK_KEY: "0"})
     hooks.announce_catalog_additions(_service(journal), OFF)
     assert "Новые книги в библиотеке: 1" in client.sent[0][1] and "• .: 1" in client.sent[0][1]

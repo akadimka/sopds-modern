@@ -270,6 +270,28 @@ def build_digest(rows: List[Dict[str, Any]], link: Optional[Callable[[Dict[str, 
     return "\n".join(lines)
 
 
+# Подробный список новинок — только при небольшом числе книг; больше — одна
+# строка на жанр (решение пользователя: подробно — не более 10 книг).
+DIGEST_DETAIL_MAX = 10
+
+
+def build_genre_counts(rows: List[Dict[str, Any]]) -> str:
+    """Сводная статистика новинок: всего и по жанрам (больше книг — выше)."""
+    counts: Dict[str, int] = defaultdict(int)
+    for r in rows:
+        counts[r.get("genre") or "—"] += 1
+    lines = [f"📚 <b>Новые книги в библиотеке: {len(rows)}</b>", ""]
+    lines += [f"• {_e(g)}: {n}" for g, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+    return "\n".join(lines)
+
+
+def build_new_books_message(rows: List[Dict[str, Any]],
+                            link: Optional[Callable[[Dict[str, Any]], Optional[str]]] = None) -> str:
+    """Сообщение о новинках для канала: подробный список (build_digest) при
+    DIGEST_DETAIL_MAX книгах и меньше, иначе сводная статистика по жанрам."""
+    return build_digest(rows, link) if len(rows) <= DIGEST_DETAIL_MAX else build_genre_counts(rows)
+
+
 def build_admin_report(summary: Dict[str, Any], pending: List[Dict[str, Any]], inbox_url: str = "") -> str:
     """Итог запуска для админа.
 
