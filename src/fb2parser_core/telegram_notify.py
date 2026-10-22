@@ -22,6 +22,19 @@ _log = logging.getLogger(__name__)
 # Адрес Bot API. Где api.telegram.org недоступен (Россия), его заменяет
 # свой ретранслятор — настройка `telegram_api_url` (deploy/cloudflare-telegram-worker.js).
 DEFAULT_API_URL = "https://api.telegram.org"
+
+
+def _user_agent() -> str:
+    """Своя подпись клиента: стандартную «Python-urllib/…» Cloudflare (через
+    него работает ретранслятор) отклоняет ошибкой 1010 ещё до Worker."""
+    try:
+        from sopds.version import display_version
+        return f"sopds-modern/{display_version()}"
+    except Exception:  # пакет sopds недоступен (fb2parser_core отдельно)
+        return "sopds-modern"
+
+
+USER_AGENT = _user_agent()
 MAX_MESSAGE = 4000  # лимит Telegram — 4096 символов; запас на разметку
 MAX_UPLOAD = 50 * 1024 * 1024  # лимит Bot API на отправку файла ботом
 UPLOAD_TIMEOUT = 300.0
@@ -77,7 +90,7 @@ class TelegramClient:
         req = urllib.request.Request(
             f"{self.api_url}/bot{self.token}/{method}",
             data=body,
-            headers={"Content-Type": content_type},
+            headers={"Content-Type": content_type, "User-Agent": USER_AGENT},
         )
         try:
             with self._open(req, timeout=_timeout or self.timeout) as resp:

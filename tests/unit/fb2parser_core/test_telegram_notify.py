@@ -127,8 +127,16 @@ def test_requests_go_to_the_configured_api_url():
         urls.append(req.full_url)
         return io.BytesIO(b'{"ok": true, "result": {}}')
 
+    agents = []
+
+    def opener(req, timeout=None, _inner=opener):
+        agents.append(req.get_header("User-agent"))
+        return _inner(req, timeout)
+
     TelegramClient("123:ABC", opener=opener).call("getMe")
     TelegramClient("123:ABC", opener=opener, api_url="https://tg.example.workers.dev/").call("getMe")
+    # не «Python-urllib/…» — такую подпись Cloudflare отклоняет (ошибка 1010) ещё до Worker
+    assert all(a and a.startswith("sopds-modern") for a in agents)
     assert urls == ["https://api.telegram.org/bot123:ABC/getMe", "https://tg.example.workers.dev/bot123:ABC/getMe"]
     client = client_for({"telegram_token": "123:ABC", "telegram_proxy": "", "telegram_api_url": "https://relay.example"})
     assert client.api_url == "https://relay.example"
