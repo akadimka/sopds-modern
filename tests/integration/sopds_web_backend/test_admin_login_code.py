@@ -155,9 +155,8 @@ def config(tmp_path, monkeypatch, settings):
 
 
 def _save_settings(client, **fields):
-    data = {"language": "en-US", "maxitems": "20", "fb2toepub": "", "temp_dir": "", "autosync_mode": "off"}
-    data.update(fields)
-    return client.post(reverse("web:settings"), data)
+    """«Безопасность входа» — на странице пользователей (web:users_settings)."""
+    return client.post(reverse("web:users_settings"), {"devices_per_user": "0", **fields})
 
 
 @pytest.mark.django_db
@@ -165,7 +164,7 @@ def test_cannot_enable_without_a_channel_for_yourself(client, config):
     root = User.objects.create_superuser("root", password=_STRONG)
     client.force_login(root)
     resp = _save_settings(client, admin_login_code="on")
-    assert resp.status_code == 200 and "link your Telegram" in resp.content.decode()
+    assert resp.status_code == 422 and "link your Telegram" in resp.content.decode()
     assert not config()["autosync"].get("admin_login_code")
 
     TelegramLink.objects.create(user=root, telegram_id=99)

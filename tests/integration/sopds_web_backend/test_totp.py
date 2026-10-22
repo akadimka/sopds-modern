@@ -158,8 +158,7 @@ def test_app_is_enough_to_enable_the_second_factor(client, env, tmp_path, monkey
     root = User.objects.create_superuser("root", password=_STRONG)
     _connect(client, root)
     client.force_login(root)
-    resp = client.post(reverse("web:settings"), {"language": "en-US", "maxitems": "20", "fb2toepub": "",
-                                                 "temp_dir": "", "autosync_mode": "off", "admin_login_code": "on"})
+    resp = client.post(reverse("web:users_settings"), {"devices_per_user": "0", "admin_login_code": "on"})
     assert resp.status_code == 302
     assert json.loads(path.read_text(encoding="utf-8"))["autosync"]["admin_login_code"] is True
 

@@ -986,6 +986,9 @@ sudo -u www-data DJANGO_SETTINGS_MODULE=sopds.settings.base ../.venv/bin/python 
 
 ### Telegram с сервера в России
 
+> Полная пошаговая инструкция по Telegram — заполнение всех полей, ретранслятор,
+> обход блокировки адресов Cloudflare, ошибки — в `docs/telegram-setup.md`.
+
 Из России `api.telegram.org` заблокирован: «Отправить тестовое сообщение»
 отвечает «Сервер не может достучаться до Telegram» (`Network is
 unreachable` — когда на сервере нет IPv6, иначе таймаут). Проверка:

@@ -82,3 +82,60 @@ def test_every_parameter_has_a_description(page):
     html = client.get(reverse("web:settings")).content.decode("utf-8")
     assert '<div class="s-hint"></div>' not in html
     assert "If a letter has more items than this" in html and "Default: 100." in html
+
+
+def _active(html):
+    """(активная кнопка вкладки, активная панель)."""
+    button = re.search(r'class="s-tab-btn active" onclick="sTab\(\'(\w+)\'\)"', html)
+    pane = re.search(r'id="s-pane-(\w+)" class="s-tab-panel active"', html)
+    return button and button.group(1), pane and pane.group(1)
+
+
+def test_telegram_has_its_own_tab(page):
+    client, _config = page
+    html = client.get(reverse("web:settings")).content.decode("utf-8")
+    assert ">Telegram</button>" in html
+    telegram = html.split('id="s-pane-telegram"', 1)[1]
+    schedule = html.split('id="s-pane-schedule"', 1)[1].split('id="s-pane-telegram"', 1)[0]
+    assert 'name="autosync_telegram_token"' in telegram and 'name="autosync_telegram_api_url"' in telegram
+    assert "autosync_telegram" not in schedule                  # из «Расписания» убран целиком
+
+
+@pytest.mark.parametrize("tab", ["general", "scanner", "schedule", "telegram"])
+def test_saving_stays_on_the_same_tab(page, tab):
+    client, _config = page
+    form = _form(client.get(reverse("web:settings")).content.decode("utf-8"))
+    response = client.post(reverse("web:settings"), {**form, "tab": tab})
+    assert response.status_code == 302 and response["Location"].endswith(f"?saved=1&tab={tab}")
+    html = client.get(response["Location"]).content.decode("utf-8")
+    assert _active(html) == (tab, tab) and f'name="tab" id="s-active-tab" value="{tab}"' in html
+
+
+def test_unknown_or_missing_tab_opens_general(page):
+    client, _config = page
+    for url in (reverse("web:settings"), reverse("web:settings") + "?tab=<script>"):
+        assert _active(client.get(url).content.decode("utf-8")) == ("general", "general")
+
+
+def test_users_and_sign_in_security_live_on_the_users_page(page):
+    client, config = page
+    settings_html = client.get(reverse("web:settings")).content.decode("utf-8")
+    for name in ("devices_per_user", "admin_login_code", "opds_app_passwords_only"):
+        assert f'name="{name}"' not in settings_html
+    users_html = client.get(reverse("web:users_list")).content.decode("utf-8")
+    assert all(f'name="{n}"' in users_html for n in ("devices_per_user", "admin_login_code", "opds_app_passwords_only"))
+    response = client.post(reverse("web:users_settings"), {"devices_per_user": "3", "opds_app_passwords_only": "on"})
+    assert response.status_code == 302 and response["Location"].endswith("?saved=1#user-settings")
+    sopds = json.loads(config.read_text(encoding="utf-8"))["sopds"]
+    assert sopds["devices_per_user"] == 3 and sopds["opds_app_passwords_only"] is True
+    assert "Settings saved." in client.get(response["Location"]).content.decode("utf-8")
+
+
+def test_saving_main_settings_keeps_users_and_security_settings(page):
+    """Общая форма настроек их больше не присылает — и не должна сбрасывать."""
+    client, config = page
+    client.post(reverse("web:users_settings"), {"devices_per_user": "3", "opds_app_passwords_only": "on"})
+    form = _form(client.get(reverse("web:settings")).content.decode("utf-8"))
+    client.post(reverse("web:settings"), form)
+    sopds = json.loads(config.read_text(encoding="utf-8"))["sopds"]
+    assert sopds["devices_per_user"] == 3 and sopds["opds_app_passwords_only"] is True

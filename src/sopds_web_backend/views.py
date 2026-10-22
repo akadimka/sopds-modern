@@ -954,16 +954,21 @@ def _exec_field_error(user, field, value):
     return None
 
 
+_SETTINGS_TABS = {
+    'general': _lazy('General'),
+    'scanner': _lazy('Scanner'),
+    'schedule': _lazy('Schedule'),
+    'telegram': 'Telegram',
+}
+
+
 @sopds_admin(url="web:login")
 @require_http_methods(["GET", "POST"])
 def sopds_settings(request):
     import os
 
     from fb2parser_core.settings_manager import SettingsManager
-    _config_path = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json")
-    )
-    sm = SettingsManager(_config_path)
+    sm = SettingsManager(_site_config_path())
 
     _BOOL_FIELDS = [
         'alphabet_menu', 'doubles_hide', 'title_as_filename',
@@ -971,9 +976,15 @@ def sopds_settings(request):
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
         'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating',
     ]
+    # devices_per_user и «Безопасность входа» — на странице пользователей (users_settings).
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min',
-                   'watch_debounce_seconds', 'devices_per_user']
+                   'watch_debounce_seconds']
     _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
+
+    # Вкладка: после сохранения (и при ошибке) страница открывается на той,
+    # где сохраняли, а не на «Общих».
+    tab = (request.POST if request.method == 'POST' else request.GET).get('tab', '')
+    active_tab = tab if tab in _SETTINGS_TABS else 'general'
 
     errors = []
     if request.method == 'POST':
@@ -985,7 +996,6 @@ def sopds_settings(request):
                 sopds[f] = int(request.POST.get(f, 0))
             except ValueError:
                 pass
-        sopds['devices_per_user'] = max(0, sopds.get('devices_per_user') or 0)
         for f in _STR_FIELDS:
             value = request.POST.get(f, '').strip()
             if f in _EXEC_FIELDS and value != (sopds.get(f) or ''):
@@ -996,7 +1006,6 @@ def sopds_settings(request):
             sopds[f] = value
         if request.user.is_superuser:
             errors.extend(_apply_autosync_settings(sm, request.POST))
-            errors.extend(_apply_login_security(sm, request.POST, request.user))
         sm.save()
 
         # Сохранение настроек с включённой галочкой гарантирует, что фоновый сбор
@@ -1028,7 +1037,7 @@ def sopds_settings(request):
             stop_fetcher('litmarket')
 
         if not errors:
-            return redirect(reverse('web:settings') + '?saved=1')
+            return redirect(reverse('web:settings') + f'?saved=1&tab={active_tab}')
 
     from opds_catalog.sopds_config import effective
     sopds = effective(sm.settings.get('sopds', {}))     # действующие значения, с умолчаниями
@@ -1039,6 +1048,8 @@ def sopds_settings(request):
         'errors': errors,
         'can_edit_exec_fields': request.user.is_superuser,
         'sopds': sopds,
+        'active_tab': active_tab,
+        'settings_tabs': [(key, label) for key, label in _SETTINGS_TABS.items()],
         'autosync': {k: v for k, v in autosync.items() if k != 'telegram_token'},
         'telegram_token_tail': autosync['telegram_token'][-4:],
     }
@@ -1727,11 +1738,15 @@ def _users_context():
         u.device_limit = devices.device_limit(u)
         profile = getattr(u, "profile", None)
         u.personal_device_limit = profile.max_devices if profile is not None else None
+    from fb2parser_core.settings_manager import SettingsManager
     from opds_catalog.sopds_config import sopds_cfg as config
 
     from .usernames import case_conflicts
+    autosync = SettingsManager(_site_config_path()).get_autosync_settings()
     return {"users": users, "default_device_limit": int(config.SOPDS_DEVICES_PER_USER or 0),
-            "case_conflicts": case_conflicts()}
+            "case_conflicts": case_conflicts(),
+            "opds_app_passwords_only": bool(config.SOPDS_OPDS_APP_PASSWORDS_ONLY),
+            "admin_login_code": bool(autosync.get("admin_login_code"))}
 
 
 def _users_list_error(request, error):
@@ -1741,7 +1756,35 @@ def _users_list_error(request, error):
 @sopds_admin(url="web:login")
 @require_http_methods(["GET"])
 def users_list(request):
-    return render(request, "sopds_users.html", _users_context())
+    return render(request, "sopds_users.html", {**_users_context(), "saved": request.GET.get("saved") == "1"})
+
+
+def _site_config_path():
+    import os
+    return os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json"))
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def users_settings(request):
+    """Настройки на странице пользователей: устройств на пользователя по
+    умолчанию и «Безопасность входа» (второй фактор для суперпользователей,
+    пароли для читалок). Отдельно от общей формы настроек: та их не
+    присылает и иначе сбрасывала бы при каждом сохранении."""
+    from fb2parser_core.settings_manager import SettingsManager
+    sm = SettingsManager(_site_config_path())
+    errors = []
+    raw = request.POST.get('devices_per_user', '').strip()
+    try:
+        sm.settings.setdefault('sopds', {})['devices_per_user'] = max(0, int(raw or 0))
+    except ValueError:
+        errors.append(_("Device limit must be a whole number (0 — no limit)."))
+    sm.settings['autosync'] = sm.get_autosync_settings()
+    errors.extend(_apply_login_security(sm, request.POST, request.user))
+    sm.save()
+    if errors:
+        return _users_list_error(request, " ".join(str(e) for e in errors))
+    return redirect(reverse("web:users_list") + "?saved=1#user-settings")
 
 
 @sopds_admin(url="web:login")

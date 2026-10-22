@@ -15,17 +15,19 @@
 {% endfor %}
 
 <div class="s-tabs">
-    <button class="s-tab-btn active" onclick="sTab('general')">{% trans "General" %}</button>
-    <button class="s-tab-btn" onclick="sTab('scanner')">{% trans "Scanner" %}</button>
-    <button class="s-tab-btn" onclick="sTab('schedule')">{% trans "Schedule" %}</button>
+    {% for tab, label in settings_tabs %}
+    <button type="button" class="s-tab-btn{% if tab == active_tab %} active{% endif %}" onclick="sTab('{{ tab }}')">{{ label }}</button>
+    {% endfor %}
     <a href="{% url 'web:users_list' %}" class="s-tab-btn" style="text-decoration:none;">{% trans "Users" %}</a>
 </div>
 
 <form method="post">
 {% csrf_token %}
+{# вкладка, на которой сохраняют: после сохранения страница откроется на ней #}
+<input type="hidden" name="tab" id="s-active-tab" value="{{ active_tab }}">
 
 <!-- ═══════════ Вкладка: Общие ═══════════ -->
-<div id="s-pane-general" class="s-tab-panel active">
+<div id="s-pane-general" class="s-tab-panel{% if active_tab == 'general' %} active{% endif %}">
 
     <div class="s-section-title">{% trans "Interface" %}</div>
 
@@ -192,7 +194,7 @@
 </div>
 
 <!-- ═══════════ Вкладка: Сканер ═══════════ -->
-<div id="s-pane-scanner" class="s-tab-panel">
+<div id="s-pane-scanner" class="s-tab-panel{% if active_tab == 'scanner' %} active{% endif %}">
 
     <div class="s-section-title">{% trans "Library" %}</div>
 
@@ -293,7 +295,7 @@
 </div>
 
 <!-- ═══════════ Вкладка: Расписание ═══════════ -->
-<div id="s-pane-schedule" class="s-tab-panel">
+<div id="s-pane-schedule" class="s-tab-panel{% if active_tab == 'schedule' %} active{% endif %}">
 
     <div class="s-section-title">{% trans "Scheduled scan" %}</div>
 
@@ -403,6 +405,12 @@
         <div class="s-hint">{% trans "A batch whose files changed more recently than this (or that still has unfinished downloads) waits for the next run." %}</div>
     </div>
 
+    <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
+</div>
+
+<!-- ═══════════ Вкладка: Telegram ═══════════ -->
+<div id="s-pane-telegram" class="s-tab-panel{% if active_tab == 'telegram' %} active{% endif %}">
+
     <div class="s-section-title">{% trans "Telegram notifications" %}</div>
 
     <div class="s-field">
@@ -451,7 +459,7 @@
         <label>{% trans "Bot API address (optional)" %}</label>
         <input type="text" name="autosync_telegram_api_url" value="{{ autosync.telegram_api_url }}"
                placeholder="https://api.telegram.org"{% if not can_edit_exec_fields %} readonly{% endif %}>
-        <div class="s-hint">{% trans "Only if the server cannot reach api.telegram.org (it is blocked in Russia): the address of your own relay, e.g. a Cloudflare Worker — see DEPLOY.md, “Telegram from a server in Russia”. Empty — api.telegram.org." %}</div>
+        <div class="s-hint">{% trans "Only if the server cannot reach api.telegram.org (it is blocked in Russia): the address of your own relay, e.g. a Cloudflare Worker — see docs/telegram-setup.md. Empty — api.telegram.org." %}</div>
     </div>
 
     <div class="s-field">
@@ -476,31 +484,7 @@
     </div>
     {% endif %}
 
-    <div class="s-section-title">{% trans "Users" %}</div>
-
-    <div class="s-field">
-        <label>{% trans "Devices per user by default" %}</label>
-        <input type="number" name="devices_per_user" value="{{ sopds.devices_per_user|default:0 }}" min="0" max="100" style="max-width:100px;">
-        <div class="s-hint">{% trans "How many browsers one account may sign in from; 0 — no limit. A personal limit is set on the Users page; superusers are not limited. Reader apps (OPDS) and Telegram are not counted." %}</div>
-    </div>
-
-    <div class="s-section-title">{% trans "Sign-in security" %}</div>
-
-    <div class="s-field">
-        <label class="s-check">
-            <input type="checkbox" name="admin_login_code" {% if autosync.admin_login_code %}checked{% endif %}{% if not can_edit_exec_fields %} disabled{% endif %}>
-            <span>{% trans "Second factor required for superusers" %}</span>
-        </label>
-        <div class="s-hint">{% trans "After the password, superusers enter a code: from their authenticator app (connected in the profile), otherwise a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the superuser chat above. If the code cannot be delivered, superusers without an app cannot sign in. On the server: “manage.py admin_login_code off” turns this off, “manage.py totp_reset <username>” removes a lost app." %}</div>
-    </div>
-
-    <div class="s-field">
-        <label class="s-check">
-            <input type="checkbox" name="opds_app_passwords_only" {% if sopds.opds_app_passwords_only %}checked{% endif %}{% if not can_edit_exec_fields %} disabled{% endif %}>
-            <span>{% trans "Readers (OPDS) sign in only with reader passwords" %}</span>
-        </label>
-        <div class="s-hint">{% trans "Reader apps store the password and send it with every request. A reader password (created in the profile) works only for the OPDS catalog, not for the site. With this option the site password is no longer accepted in reader apps." %}</div>
-    </div>
+    <div class="s-hint" style="margin-bottom:1rem;">{% trans "Step-by-step guide: docs/telegram-setup.md." %}</div>
 
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
 </div>
@@ -546,6 +530,12 @@ window.sTab = function(name) {
     document.querySelectorAll('.s-tab-panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelector('.s-tab-btn[onclick="sTab(\''+name+'\')"]').classList.add('active');
     document.getElementById('s-pane-'+name).classList.add('active');
+    // сохранение и перезагрузка — на этой же вкладке
+    document.getElementById('s-active-tab').value = name;
+    var url = new URL(window.location.href);
+    url.searchParams.set('tab', name);
+    url.searchParams.delete('saved');
+    history.replaceState(null, '', url);
 };
 
 /* Folder browser for path fields */

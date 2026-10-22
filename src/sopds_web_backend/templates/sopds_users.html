@@ -119,6 +119,41 @@
     </tbody>
   </table>
 
+  <!-- Настройки пользователей: устройства по умолчанию, безопасность входа -->
+  <div id="user-settings" class="sopds-settings" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.2rem; margin-bottom:1.5rem; max-width:760px;">
+    {% if saved %}<div class="s-msg ok">✓ {% trans "Settings saved." %}</div>{% endif %}
+    <form method="post" action="{% url 'web:users_settings' %}">
+    {% csrf_token %}
+    <div class="s-section-title">{% trans "Users" %}</div>
+
+    <div class="s-field">
+        <label>{% trans "Devices per user by default" %}</label>
+        <input type="number" name="devices_per_user" value="{{ default_device_limit }}" min="0" max="100" style="max-width:100px;">
+        <div class="s-hint">{% trans "How many browsers one account may sign in from; 0 — no limit. A personal limit is set in the table above; superusers are not limited. Reader apps (OPDS) and Telegram are not counted." %}</div>
+    </div>
+
+    <div class="s-section-title">{% trans "Sign-in security" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="admin_login_code" {% if admin_login_code %}checked{% endif %}>
+            <span>{% trans "Second factor required for superusers" %}</span>
+        </label>
+        <div class="s-hint">{% trans "After the password, superusers enter a code: from their authenticator app (connected in the profile), otherwise a code that the bot sends to their own chat with the bot (Telegram linked in the profile) and to the superuser chat (Settings → Telegram). If the code cannot be delivered, superusers without an app cannot sign in. On the server: “manage.py admin_login_code off” turns this off, “manage.py totp_reset <username>” removes a lost app." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="opds_app_passwords_only" {% if opds_app_passwords_only %}checked{% endif %}>
+            <span>{% trans "Readers (OPDS) sign in only with reader passwords" %}</span>
+        </label>
+        <div class="s-hint">{% trans "Reader apps store the password and send it with every request. A reader password (created in the profile) works only for the OPDS catalog, not for the site. With this option the site password is no longer accepted in reader apps." %}</div>
+    </div>
+
+    <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
+    </form>
+  </div>
+
   <!-- Создание нового пользователя -->
   <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.2rem; max-width:480px;">
     <h6 style="color:var(--text); margin-bottom:0.8rem;">{% trans "Create new user" %}</h6>
