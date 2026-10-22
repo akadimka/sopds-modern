@@ -10,6 +10,8 @@ src/.env
 src/sopds.db
 src/sopds.db-shm
 src/sopds.db-wal
+# Резервные копии базы на сервере перед обновлением (/opt/sopds-modern/backups/)
+/backups/
 src/metadata_cache.db*
 # кеш метаданных pass1 создаётся в текущем каталоге запуска
 metadata_cache.db*
