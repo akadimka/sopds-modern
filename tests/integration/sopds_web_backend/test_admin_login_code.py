@@ -26,7 +26,7 @@ def tg(monkeypatch):
     sent, failing = [], set()
 
     class FakeClient:
-        def __init__(self, token, proxy="", timeout=20.0):
+        def __init__(self, token, proxy="", timeout=20.0, api_url=""):
             pass
 
         def send_message(self, chat_id, text, reply_markup=None):

@@ -123,12 +123,12 @@ def channels(user, cfg=None) -> List[str]:
 
 def _deliver(user, code: str, ip: str) -> int:
     """Отправить код по всем каналам. Сколько каналов приняли сообщение."""
-    from fb2parser_core.telegram_notify import TelegramClient, TelegramError
+    from fb2parser_core.telegram_notify import TelegramError, client_for
     cfg = _settings()
     targets = channels(user, cfg)
     if not targets:
         return 0
-    client = TelegramClient(cfg["telegram_token"], cfg["telegram_proxy"], timeout=SEND_TIMEOUT)
+    client = client_for(cfg, timeout=SEND_TIMEOUT)
     text = (f"🔐 Код входа в библиотеку для «{html.escape(user.username)}»: <b>{code}</b>\n"
             f"Действует {CODE_TTL_SECONDS // 60} минут. IP: {html.escape(ip or '?')}\n"
             "Если это не вы — смените пароль: кто-то его знает.")

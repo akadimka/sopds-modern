@@ -448,6 +448,13 @@
     </div>
 
     <div class="s-field">
+        <label>{% trans "Bot API address (optional)" %}</label>
+        <input type="text" name="autosync_telegram_api_url" value="{{ autosync.telegram_api_url }}"
+               placeholder="https://api.telegram.org"{% if not can_edit_exec_fields %} readonly{% endif %}>
+        <div class="s-hint">{% trans "Only if the server cannot reach api.telegram.org (it is blocked in Russia): the address of your own relay, e.g. a Cloudflare Worker — see DEPLOY.md, “Telegram from a server in Russia”. Empty — api.telegram.org." %}</div>
+    </div>
+
+    <div class="s-field">
         <label>{% trans "Site address for links" %}</label>
         <input type="text" name="autosync_public_url" value="{{ autosync.public_url }}"
                placeholder="https://books.example.org"{% if not can_edit_exec_fields %} readonly{% endif %}>
@@ -458,11 +465,11 @@
     <div class="s-field">
         <div class="s-row" style="gap:0.5rem;">
             <button type="button" class="button secondary tiny" style="margin:0;"
-                    hx-post="{% url 'web:telegram_chats' %}" hx-include="#autosync-telegram-token, [name='autosync_telegram_proxy']"
+                    hx-post="{% url 'web:telegram_chats' %}" hx-include="#autosync-telegram-token, [name='autosync_telegram_proxy'], [name='autosync_telegram_api_url']"
                     hx-target="#telegram-result">{% trans "Find chat id" %}</button>
             <button type="button" class="button secondary tiny" style="margin:0;"
                     hx-post="{% url 'web:telegram_test' %}"
-                    hx-include="#autosync-telegram-token, [name='autosync_telegram_channel'], [name='autosync_telegram_admin_chat'], [name='autosync_telegram_proxy']"
+                    hx-include="#autosync-telegram-token, [name='autosync_telegram_channel'], [name='autosync_telegram_admin_chat'], [name='autosync_telegram_proxy'], [name='autosync_telegram_api_url']"
                     hx-target="#telegram-result">{% trans "Send a test message" %}</button>
         </div>
         <div id="telegram-result" style="margin-top:0.5rem;"></div>

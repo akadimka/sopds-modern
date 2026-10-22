@@ -111,6 +111,8 @@ class SettingsManager:
         "telegram_channel": "",
         "telegram_admin_chat": "",
         "telegram_proxy": "",
+        # свой адрес Bot API (ретранслятор), если api.telegram.org недоступен; '' — стандартный
+        "telegram_api_url": "",
         "public_url": "",
         # код входа для суперпользователей через Telegram (sopds_web_backend/login_codes.py)
         "admin_login_code": False,

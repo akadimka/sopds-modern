@@ -126,11 +126,27 @@ def test_telegram_bad_values_rejected(client, env):
     assert saved["telegram_admin_chat"] == "" and saved["public_url"] == ""
 
 
+@pytest.mark.django_db
+def test_bot_api_address_saved_shown_and_checked(client, env):
+    """Свой адрес Bot API (ретранслятор) — где api.telegram.org заблокирован."""
+    c = _login(client, True)
+    _post(c, **_tg(env, autosync_telegram_api_url="https://tg.example.workers.dev/bot1:X/getMe"))
+    assert env["autosync"]()["telegram_api_url"] == "https://tg.example.workers.dev"
+    assert 'value="https://tg.example.workers.dev"' in c.get(reverse("web:settings")).content.decode("utf-8")
+    response = _post(c, **_tg(env, autosync_telegram_api_url="http://tg.example.workers.dev"))
+    assert response.status_code == 200 and "must start with https://" in response.content.decode("utf-8")
+    assert env["autosync"]()["telegram_api_url"] == "https://tg.example.workers.dev"   # неверный — не сохранён
+    _post(c, **_tg(env, autosync_telegram_api_url=""))
+    assert env["autosync"]()["telegram_api_url"] == ""                                  # пусто — api.telegram.org
+
+
 class _FakeClient:
     sent = []
+    api_urls = []
 
-    def __init__(self, token, proxy=""):
+    def __init__(self, token, proxy="", timeout=20.0, api_url=""):
         self.token = token
+        _FakeClient.api_urls.append(api_url)
 
     def send_message(self, chat, text):
         _FakeClient.sent.append((self.token, chat))
@@ -155,6 +171,11 @@ def test_telegram_buttons_superuser_only(client, env, monkeypatch):
     assert _FakeClient.sent == [("9:T", "@library_news"), ("9:T", "123456789")]
     chats = su.post(reverse("web:telegram_chats"), {"autosync_telegram_token": "9:T"}).content.decode("utf-8")
     assert "<code>42</code>" in chats and "Дмитрий" in chats
+    # адрес ретранслятора из формы (ещё не сохранённый) — в клиент
+    _FakeClient.api_urls = []
+    su.post(reverse("web:telegram_chats"), {"autosync_telegram_token": "9:T",
+                                            "autosync_telegram_api_url": "https://tg.example.workers.dev"})
+    assert _FakeClient.api_urls == ["https://tg.example.workers.dev"]
 
 
 _BOTFATHER = ("Done! Congratulations on your new bot. You will find it at t.me/my_news_bot. "

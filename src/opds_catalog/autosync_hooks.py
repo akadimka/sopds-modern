@@ -120,8 +120,8 @@ def _bot_username(service) -> str:
     if cached:
         return cached
     try:
-        from fb2parser_core.telegram_notify import TelegramClient
-        me = TelegramClient(cfg["telegram_token"], cfg.get("telegram_proxy", "")).call("getMe") or {}
+        from fb2parser_core.telegram_notify import client_for
+        me = client_for(cfg).call("getMe") or {}
         username = me.get("username", "")
     except Exception:
         _log.warning("telegram: имя бота для ссылок не получено", exc_info=True)

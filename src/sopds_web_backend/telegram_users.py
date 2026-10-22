@@ -42,12 +42,12 @@ def autosync_service():
 
 def telegram(service=None) -> Tuple[Optional[Any], Any]:
     """(клиент Bot API или None без токена, сервис автосинхронизации)."""
-    from fb2parser_core.telegram_notify import TelegramClient
+    from fb2parser_core.telegram_notify import client_for
     service = service or autosync_service()
     cfg = service.cfg
     if not cfg["telegram_token"]:
         return None, service
-    return TelegramClient(cfg["telegram_token"], cfg["telegram_proxy"]), service
+    return client_for(cfg), service
 
 
 # ---------- коды и привязка ----------

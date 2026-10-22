@@ -793,6 +793,11 @@ def _apply_autosync_settings(sm, post):
             continue
         values[key] = value
     values['telegram_proxy'] = post.get('autosync_telegram_proxy', '').strip()
+    from fb2parser_core.telegram_notify import normalize_api_url
+    try:
+        values['telegram_api_url'] = normalize_api_url(post.get('autosync_telegram_api_url', ''))
+    except ValueError:
+        errors.append(_('The Bot API address must start with https://.'))
     url = post.get('autosync_public_url', '').strip().rstrip('/')
     if url and not url.startswith(('http://', 'https://')):
         errors.append(_('The site address must start with http:// or https://.'))
@@ -834,7 +839,7 @@ def _telegram_form_settings(request):
     cfg = SettingsManager(os.path.normpath(os.path.join(
         os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json"))).get_autosync_settings()
     from fb2parser_core.telegram_notify import extract_token
-    for key in ('telegram_token', 'telegram_channel', 'telegram_admin_chat', 'telegram_proxy'):
+    for key in ('telegram_token', 'telegram_channel', 'telegram_admin_chat', 'telegram_proxy', 'telegram_api_url'):
         value = request.POST.get(f'autosync_{key}', '').strip()
         if value:
             cfg[key] = (extract_token(value) or value) if key == 'telegram_token' else value
@@ -846,7 +851,7 @@ _TELEGRAM_HINTS = {
     'start': _lazy('The bot cannot write first — open the bot in Telegram and press Start.'),
     'chat': _lazy('Chat not found — check the id; for a private chat press Start in the bot first.'),
     'rights': _lazy('The bot cannot post to the channel — add it as an administrator allowed to post messages.'),
-    'network': _lazy('The server cannot reach api.telegram.org — check the network or set a proxy.'),
+    'network': _lazy('The server cannot reach Telegram — check the network, or set a proxy or your own Bot API address (relay) below.'),
 }
 
 
@@ -860,14 +865,14 @@ def _telegram_error_html(err):
 @require_http_methods(["POST"])
 def telegram_chats(request):
     """«Найти chat id»: кто писал боту и где он видел сообщения (getUpdates)."""
-    from fb2parser_core.telegram_notify import TelegramClient, TelegramError
+    from fb2parser_core.telegram_notify import TelegramError, client_for
     if not request.user.is_superuser:
         return HttpResponse(status=403)
     from fb2parser_core.telegram_notify import ERR_CONFLICT, error_kind
     cfg = _telegram_form_settings(request)
     note = ''
     try:
-        chats = TelegramClient(cfg['telegram_token'], cfg['telegram_proxy']).chats()
+        chats = client_for(cfg).chats()
     except TelegramError as err:
         if error_kind(err) != ERR_CONFLICT:
             return HttpResponse(_telegram_error_html(err))
@@ -889,11 +894,11 @@ def telegram_chats(request):
 @require_http_methods(["POST"])
 def telegram_test(request):
     """«Отправить тестовое сообщение» — в канал и админу."""
-    from fb2parser_core.telegram_notify import TelegramClient, TelegramError
+    from fb2parser_core.telegram_notify import TelegramError, client_for
     if not request.user.is_superuser:
         return HttpResponse(status=403)
     cfg = _telegram_form_settings(request)
-    client = TelegramClient(cfg['telegram_token'], cfg['telegram_proxy'])
+    client = client_for(cfg)
     text = str(_('✅ SOPDS: test message. Autosync notifications will arrive here.'))
     lines = []
     for key, label in (('telegram_channel', _('Channel for new books')),

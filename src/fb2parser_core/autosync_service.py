@@ -606,17 +606,17 @@ def notify(service: "AutosyncService", result: RunResult,
     библиотек, docs/multiuser-design.md); остальные отмечаются объявленными
     без показа."""
     from .telegram_notify import (
-        TelegramClient,
         TelegramError,
         build_admin_report,
         build_digest,
+        client_for,
         explain_error,
     )
 
     cfg = service.cfg
     if not cfg["telegram_token"] or result.status in (RUN_OFF, RUN_BUSY):
         return {}
-    client = client or TelegramClient(cfg["telegram_token"], cfg["telegram_proxy"])
+    client = client or client_for(cfg)
     sent: Dict[str, str] = {}
     journal = service.journal
 

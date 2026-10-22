@@ -984,6 +984,43 @@ cd /opt/sopds-modern/src
 sudo -u www-data DJANGO_SETTINGS_MODULE=sopds.settings.base ../.venv/bin/python manage.py autosync --dry-run
 ```
 
+### Telegram с сервера в России
+
+Из России `api.telegram.org` заблокирован: «Отправить тестовое сообщение»
+отвечает «Сервер не может достучаться до Telegram» (`Network is
+unreachable` — когда на сервере нет IPv6, иначе таймаут). Проверка:
+
+```bash
+curl -4 -sS -o /dev/null -m 15 -w "%{http_code}\n" https://api.telegram.org/   # 000 — заблокирован
+```
+
+Простой HTTP/SOCKS-прокси за границей не поможет: имя `api.telegram.org`
+в нём видно, и фильтрация блокирует его так же. Нужен ретранслятор, до
+которого доступ есть, — бесплатный **Cloudflare Worker** (JavaScript,
+`deploy/cloudflare-telegram-worker.js`). Бот работает через long polling,
+поэтому хватает исходящих запросов.
+
+1. Аккаунт на <https://dash.cloudflare.com> (бесплатный тариф: 100 000
+   запросов в сутки — с большим запасом).
+2. **Workers & Pages → Create → Create Worker** (шаблон «Hello World»),
+   имя, например, `tg-relay` → **Deploy** → **Edit code**: заменить код
+   содержимым `deploy/cloudflare-telegram-worker.js` → **Deploy**.
+3. **Settings → Variables and Secrets → Add**: `ALLOWED_BOT_ID` = номер
+   бота (часть токена до двоеточия, например `7770001`) → **Deploy**.
+   Тогда ретранслятор пропускает только вашего бота.
+4. Адрес Worker — вида `https://tg-relay.<аккаунт>.workers.dev`. Проверка с
+   сервера (`<токен>` — токен бота):
+   ```bash
+   curl -sS https://tg-relay.<аккаунт>.workers.dev/bot<токен>/getMe   # {"ok":true,...}
+   ```
+5. SOPDS → **Настройки → Расписание → Telegram**: **«Адрес Bot API»** —
+   адрес Worker → **Сохранить** → «Отправить тестовое сообщение».
+   Перезапустить бота: `systemctl restart sopds-telegram`.
+
+Токен бота проходит через ваш Worker (он его не хранит и не пишет в
+журналы). Если `*.workers.dev` из России станет недоступен — привязать к
+Worker свой домен (Settings → Domains & Routes) и указать его.
+
 ---
 
 ## 19b. (Рекомендуется) Второй фактор входа и пароли для читалок

@@ -18,7 +18,7 @@ import time
 from concurrent.futures import Executor, ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
-from .telegram_notify import TelegramClient, TelegramError, chats_from_updates
+from .telegram_notify import TelegramError, chats_from_updates, client_for
 
 _log = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class AdminBot:
         self.service_factory = service_factory
         self.extra_handler = extra_handler
         self.client_factory = client_factory or (
-            lambda cfg: TelegramClient(cfg["telegram_token"], cfg["telegram_proxy"]))
+            lambda cfg: client_for(cfg))
         # решения выполняются по одному, не задерживая опрос
         self.executor = executor or ThreadPoolExecutor(max_workers=1)
         self.sleep = sleep

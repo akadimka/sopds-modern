@@ -1776,6 +1776,28 @@ msgstr ""
 msgid "Library path (SOPDS root)"
 msgstr "Путь к библиотеке (корень SOPDS)"
 
+msgid "Bot API address (optional)"
+msgstr "Адрес Bot API (необязательно)"
+
+msgid ""
+"Only if the server cannot reach api.telegram.org (it is blocked in Russia): "
+"the address of your own relay, e.g. a Cloudflare Worker — see DEPLOY.md, "
+"“Telegram from a server in Russia”. Empty — api.telegram.org."
+msgstr ""
+"Только если сервер не может достучаться до api.telegram.org (он заблокирован"
+" в России): адрес своего ретранслятора, например Cloudflare Worker, — см. "
+"DEPLOY.md, «Telegram с сервера в России». Пусто — api.telegram.org."
+
+msgid "The Bot API address must start with https://."
+msgstr "Адрес Bot API должен начинаться с https://."
+
+msgid ""
+"The server cannot reach Telegram — check the network, or set a proxy or your"
+" own Bot API address (relay) below."
+msgstr ""
+"Сервер не может достучаться до Telegram — проверьте сеть или укажите ниже "
+"прокси либо свой адрес Bot API (ретранслятор)."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

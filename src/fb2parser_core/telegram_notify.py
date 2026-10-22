@@ -19,7 +19,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 _log = logging.getLogger(__name__)
 
-API_URL = "https://api.telegram.org/bot{token}/{method}"
+# Адрес Bot API. Где api.telegram.org недоступен (Россия), его заменяет
+# свой ретранслятор — настройка `telegram_api_url` (deploy/cloudflare-telegram-worker.js).
+DEFAULT_API_URL = "https://api.telegram.org"
 MAX_MESSAGE = 4000  # лимит Telegram — 4096 символов; запас на разметку
 MAX_UPLOAD = 50 * 1024 * 1024  # лимит Bot API на отправку файла ботом
 UPLOAD_TIMEOUT = 300.0
@@ -42,11 +44,24 @@ class TelegramError(Exception):
         self.code = code
 
 
+def normalize_api_url(value: str) -> str:
+    """Адрес Bot API из настройки: '' — стандартный; иначе https-адрес без
+    хвоста «/» и без вставленного по ошибке «/bot…». ValueError — не https."""
+    url = (value or "").strip().rstrip("/")
+    if not url:
+        return ""
+    url = re.sub(r"/bot[^/]*(/.*)?$", "", url)
+    if not url.startswith("https://") or len(url) <= len("https://"):
+        raise ValueError(url)
+    return url
+
+
 class TelegramClient:
     def __init__(self, token: str, proxy: str = "", timeout: float = 20.0,
-                 opener: Optional[Callable[..., Any]] = None):
+                 opener: Optional[Callable[..., Any]] = None, api_url: str = ""):
         self.token = extract_token(token) or token.strip()
         self.timeout = timeout
+        self.api_url = (api_url or "").rstrip("/") or DEFAULT_API_URL
         if opener is not None:
             self._open = opener
         else:
@@ -60,7 +75,7 @@ class TelegramClient:
         if not self.token:
             raise TelegramError("token is empty")
         req = urllib.request.Request(
-            API_URL.format(token=self.token, method=method),
+            f"{self.api_url}/bot{self.token}/{method}",
             data=body,
             headers={"Content-Type": content_type},
         )
@@ -291,3 +306,9 @@ def build_batch_prompt(batch, options: List[str]) -> str:
     else:
         lines += ["", "Подсказки нет — выберите жанр во «Входящих»."]
     return "\n".join(lines)
+
+
+def client_for(cfg: Dict[str, Any], timeout: float = 20.0) -> "TelegramClient":
+    """Клиент по разделу настроек `autosync`: токен, прокси, адрес Bot API."""
+    return TelegramClient(cfg.get("telegram_token", ""), cfg.get("telegram_proxy", ""), timeout=timeout,
+                          api_url=cfg.get("telegram_api_url", ""))

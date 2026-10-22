@@ -115,3 +115,39 @@ def test_extract_token_from_botfather_message():
     msg = "Use this token to access the HTTP API:\n7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw\nKeep it secure"
     assert extract_token(msg) == "7712345678:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"
     assert extract_token("admin") == ""
+
+
+# ── Свой адрес Bot API (ретранслятор, где api.telegram.org заблокирован) ──
+
+def test_requests_go_to_the_configured_api_url():
+    from fb2parser_core.telegram_notify import client_for
+    urls = []
+
+    def opener(req, timeout=None):
+        urls.append(req.full_url)
+        return io.BytesIO(b'{"ok": true, "result": {}}')
+
+    TelegramClient("123:ABC", opener=opener).call("getMe")
+    TelegramClient("123:ABC", opener=opener, api_url="https://tg.example.workers.dev/").call("getMe")
+    assert urls == ["https://api.telegram.org/bot123:ABC/getMe", "https://tg.example.workers.dev/bot123:ABC/getMe"]
+    client = client_for({"telegram_token": "123:ABC", "telegram_proxy": "", "telegram_api_url": "https://relay.example"})
+    assert client.api_url == "https://relay.example"
+    assert client_for({"telegram_token": "123:ABC"}).api_url == "https://api.telegram.org"   # старые настройки
+
+
+@pytest.mark.parametrize("value, expected", [
+    ("", ""),
+    ("  https://tg.example.workers.dev/  ", "https://tg.example.workers.dev"),
+    ("https://tg.example.workers.dev/bot123:ABC/getMe", "https://tg.example.workers.dev"),   # вставили адрес целиком
+    ("https://relay.example/telegram", "https://relay.example/telegram"),
+])
+def test_normalize_api_url(value, expected):
+    from fb2parser_core.telegram_notify import normalize_api_url
+    assert normalize_api_url(value) == expected
+
+
+@pytest.mark.parametrize("value", ["http://tg.example.workers.dev", "tg.example.workers.dev", "https://"])
+def test_normalize_api_url_requires_https(value):
+    from fb2parser_core.telegram_notify import normalize_api_url
+    with pytest.raises(ValueError):
+        normalize_api_url(value)
