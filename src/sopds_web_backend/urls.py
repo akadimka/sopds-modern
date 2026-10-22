@@ -35,6 +35,7 @@ urlpatterns = [
     re_path(r"^settings/users/(?P<user_id>\d+)/devices/(?P<device_id>\d+)/delete/$", views.user_device_delete,
             name="user_device_delete"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
+    re_path(r"^online/$", views.online_now, name="online"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/progress/$", views.ratings_progress, name="ratings_progress"),
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/restart/$", views.ratings_restart_cycle, name="ratings_restart"),

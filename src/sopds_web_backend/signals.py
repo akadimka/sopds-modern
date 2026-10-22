@@ -2,6 +2,7 @@
 удалили или заблокировали аккаунт — бот удаляет человека из канала
 (sopds_web_backend/telegram_users.py)."""
 from django.contrib.auth.models import User
+from django.contrib.auth.signals import user_logged_out
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
@@ -32,3 +33,11 @@ def _create_profile(sender, instance, created, raw=False, **kwargs):
     библиотеки (открыта всем, личные квоты — docs/multiuser-design.md)."""
     if created and not raw:
         UserProfile.objects.get_or_create(user=instance)
+
+
+@receiver(user_logged_out)
+def leave_online_list(sender, request, user, **kwargs):
+    """Вышел с сайта — из «Сейчас на сайте» сразу, не через 5 минут (читалка — свой канал)."""
+    if user is not None:
+        from . import online
+        online.forget(user.pk, "web")

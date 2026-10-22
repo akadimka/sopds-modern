@@ -1,0 +1,16 @@
+{% load i18n %}{# «Сейчас на сайте» — шапка (sopds_top.html) и обновление раз в минуту (web:online) #}
+<span id="sp-online" class="sp-online" tabindex="0"
+      hx-get="{% url 'web:online' %}" hx-trigger="every 60s [!this.matches(':hover, :focus-within')]" hx-swap="outerHTML">
+  {% trans "Online now:" %} <strong>({{ online_users|length }})</strong>
+  <span class="sp-online-list" role="tooltip">
+    {% for u in online_users %}
+    <span class="sp-online-row">
+      <strong>{{ u.username }}</strong>
+      · {% for ch in u.channels %}{% if ch == "opds" %}{% trans "reader" %}{% else %}{% trans "site" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+      · {% if u.minutes_ago %}{% blocktrans with n=u.minutes_ago %}{{ n }} min ago{% endblocktrans %}{% else %}{% trans "just now" %}{% endif %}
+    </span>
+    {% empty %}
+    <span class="sp-online-row">{% trans "Nobody" %}</span>
+    {% endfor %}
+  </span>
+</span>

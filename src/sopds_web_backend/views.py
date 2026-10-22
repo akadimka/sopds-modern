@@ -1037,6 +1037,14 @@ def offline_page(request):
     return render(request, 'sopds_offline.html')
 
 
+@sopds_login(url="web:login")
+@require_http_methods(["GET"])
+def online_now(request):
+    """«Сейчас на сайте» для шапки — обновляется раз в минуту (htmx)."""
+    from . import online
+    return render(request, "sopds_online.html", {"online_users": online.online_users()})
+
+
 def _genres_by_folder(visible) -> list:
     """Жанры для блока «Жанры» на главной — ТОЛЬКО названия папок верхнего
     уровня библиотеки (баг №166, решение пользователя): жанр книги — первая

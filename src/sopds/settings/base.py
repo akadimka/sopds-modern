@@ -59,6 +59,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     # Устройства учётной записи и их лимит (docs/devices-design.md).
     "sopds_web_backend.devices.DeviceMiddleware",
+    # «Сейчас на сайте» в шапке (sopds_web_backend/online.py).
+    "sopds_web_backend.online.OnlineMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 

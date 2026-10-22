@@ -3,6 +3,7 @@ from random import randint
 from opds_catalog import settings, visibility
 from opds_catalog.models import Book, Counter, bookshelf, lang_menu
 from opds_catalog.sopds_config import sopds_cfg as config
+from sopds_web_backend import online
 
 
 def sopds_processor(request):
@@ -66,9 +67,13 @@ def sopds_processor(request):
                  allgenres=counters["genres"], allseries=counters["series"])
     args["stats"] = stats
 
-    scan_times = {d["name"]: d["update_time"] for d in stats_data}
-    args["last_manual_scan"] = scan_times.get("manual_scan")
-    args["last_auto_scan"] = scan_times.get("auto_scan")
+    # Время сканов — только суперпользователю; «Сейчас на сайте» — всем.
+    if request.user.is_superuser:
+        scan_times = {d["name"]: d["update_time"] for d in stats_data}
+        args["last_manual_scan"] = scan_times.get("manual_scan")
+        args["last_auto_scan"] = scan_times.get("auto_scan")
+    if request.user.is_authenticated:
+        args["online_users"] = online.online_users()
 
     # Поиск случайной книги
     books_count = stats.get("allbooks", 0)

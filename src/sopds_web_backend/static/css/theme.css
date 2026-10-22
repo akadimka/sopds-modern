@@ -1394,3 +1394,15 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .bg-card      { background: var(--bg-card) !important; }
 .rounded      { border-radius: var(--radius-md) !important; }
 .shadow-sm    { box-shadow: var(--shadow-sm) !important; }
+
+/* «Сейчас на сайте» в шапке: список — при наведении, на телефоне — по нажатию (фокус) */
+.sp-online { position: relative; cursor: default; outline: none; }
+.sp-online > strong { color: var(--text); }
+.sp-online-list {
+  display: none; position: absolute; right: 0; top: 100%; z-index: 50; margin-top: 0.3rem;
+  min-width: 14rem; max-width: 80vw; padding: 0.5rem 0.7rem; text-align: left; white-space: nowrap;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
+}
+.sp-online:hover .sp-online-list, .sp-online:focus-within .sp-online-list, .sp-online:focus .sp-online-list { display: block; }
+.sp-online-row { display: block; line-height: 1.6; color: var(--text-muted); }
+.sp-online-row strong { color: var(--text); }

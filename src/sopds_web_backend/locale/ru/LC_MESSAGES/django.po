@@ -1533,6 +1533,24 @@ msgstr ""
 "только точным написанием. Удалите или переименуйте одного из каждой пары "
 "(переименование — в /admin/):"
 
+msgid "Online now:"
+msgstr "Сейчас на сайте:"
+
+msgid "reader"
+msgstr "читалка"
+
+msgid "site"
+msgstr "сайт"
+
+msgid "%(n)s min ago"
+msgstr "%(n)s мин назад"
+
+msgid "just now"
+msgstr "только что"
+
+msgid "Nobody"
+msgstr "Никого"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
