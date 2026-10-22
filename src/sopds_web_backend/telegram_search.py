@@ -19,7 +19,7 @@ from operator import and_, or_
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.core.cache import cache
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q, Subquery
 
 from opds_catalog import visibility
 from opds_catalog.models import Author, Book, Series, bseries
@@ -78,10 +78,17 @@ def search(text: str, user) -> List[Tuple[str, int, str]]:
                .annotate(n=_n_visible(user)).filter(n__gt=0)
                .order_by("-n", "search_full_name")[:MAX_ITEMS])
     items += [("a", a.id, f"👤 {_cut(a.full_name, 50)} ({a.n})") for a in authors]
+    visible = visibility.visible_books(user)
+    # Автор серии — только по видимым книгам: чужая закрытая книга той же
+    # серии не должна подставить в подпись имя своего автора.
     series = (Series.objects.filter(reduce(and_, [_has("search_ser", w) for w in ws]))
-              .annotate(n=_n_visible(user)).filter(n__gt=0)
+              .annotate(n=_n_visible(user, visible)).filter(n__gt=0)
+              .annotate(first_author=Subquery(
+                  Author.objects.filter(book__series=OuterRef("pk"), book__in=visible)
+                  .order_by("search_full_name").values("full_name")[:1]),
+                  n_authors=Count("book__authors", filter=Q(book__in=visible), distinct=True))
               .order_by("-n", "search_ser")[:MAX_ITEMS])
-    items += [("s", s.id, f"📚 {_cut(s.ser, 50)} ({s.n})") for s in series]
+    items += [("s", s.id, f"📚 {_cut(_series_title(s), LABEL_MAX)} ({s.n})") for s in series]
     # Каждое слово — в названии или у автора, и хотя бы одно — в названии:
     # «Лукьяненко Дозор» найдёт «Ночной Дозор», а «Лукьяненко» — автора, а не все его книги.
     per_word = [_has("search_title", w) | _has("search_filename", w) | _has("authors__search_full_name", w)
@@ -91,6 +98,17 @@ def search(text: str, user) -> List[Tuple[str, int, str]]:
              .distinct().prefetch_related("authors").order_by("search_title", "-docdate")[:MAX_ITEMS])
     items += [("b", b.id, f"📖 {_cut(b.display_title, LABEL_MAX)}") for b in books]   # «Автор - Название»
     return items
+
+
+def _series_title(series) -> str:
+    """«Автор - Серия», как книги «Автор - Название» на сайте; несколько
+    авторов (межавторский цикл) — «Первый и др. - Серия»."""
+    author = getattr(series, "first_author", "") or ""
+    if not author:
+        return series.ser
+    if getattr(series, "n_authors", 1) > 1:
+        author += " и др."
+    return f"{author} - {series.ser}"
 
 
 def _short_authors(book: Book) -> str:

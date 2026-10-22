@@ -72,9 +72,30 @@ def test_words_any_order_and_title_required(library):
 
 def test_series_and_author_counts_skip_deleted_books(library):
     labels = [label for _k, _i, label in ts.search("дозор", None)]
-    assert any(label.startswith("📚 Дозоры (2)") for label in labels)
+    assert "📚 Лукьяненко Сергей - Дозоры (2)" in labels   # «Автор - Серия», как книги на сайте
     labels = [label for _k, _i, label in ts.search("лукьяненко", None)]
     assert labels == ["👤 Лукьяненко Сергей (3)"]
+
+
+def test_series_label_author_from_visible_books_only(library):
+    """Межавторский цикл — «Первый и др. - Серия»; автор чужой закрытой книги
+    той же серии в подпись не попадает."""
+    cat = Catalog.objects.first()
+    shared = Series.objects.create(ser="Сталкер", search_ser="СТАЛКЕР")
+    for name, title in (("Быстров Борис", "Зона"), ("Абрамов Антон", "Чернобыль")):
+        _book(cat, title, [_author(name)], shared, 1)
+    labels = [label for _k, _i, label in ts.search("сталкер", None)]
+    assert labels == ["📚 Абрамов Антон и др. - Сталкер (2)"]
+
+    hidden = Series.objects.create(ser="Тайна", search_ser="ТАЙНА")
+    _book(cat, "Открытая", [_author("Явный Ян")], hidden, 1)
+    secret = Book.objects.create(filename="s.fb2", path=".", filesize=1, format="fb2", cat_type=0,
+                                 docdate="2020", lang="ru", title="Закрытая", search_title="ЗАКРЫТАЯ",
+                                 annotation="", avail=2, catalog=cat)   # не опубликована — не видна
+    bauthor.objects.create(book=secret, author=_author("Аааа Скрытый"))
+    bseries.objects.create(book=secret, ser=hidden, ser_no=2)
+    labels = [label for _k, _i, label in ts.search("тайна", None)]
+    assert labels == ["📚 Явный Ян - Тайна (1)"]
 
 
 def test_results_paging_and_back_navigation(library, settings):
