@@ -50,6 +50,7 @@ def sopds_processor(request):
                     "readtime": row.readtime,
                     "book_id": row.book_id,
                     "title": book.title,
+                    "display_title": book.display_title,
                     "authors": book.authors.values(),
                 }
                 result.append(p)

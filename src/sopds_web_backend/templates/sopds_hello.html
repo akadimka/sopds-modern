@@ -103,7 +103,7 @@ function openBookCard(bookId) {
                  style="flex-shrink:0; border-radius:var(--radius-sm);">
             <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:0.3rem;">
                 <p style="font-size:0.88rem; font-weight:600; margin:0; color:var(--text);">
-                    {{ reading_stats.current.book.title }}
+                    {{ reading_stats.current.book.display_title }}
                 </p>
                 {% if reading_stats.current.series_name %}
                 <div style="font-size:0.78rem; color:var(--text-muted);">
@@ -143,7 +143,7 @@ function openBookCard(bookId) {
                  style="flex-shrink:0; border-radius:var(--radius-sm);">
             <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:0.4rem;">
                 <p style="font-size:0.88rem; font-weight:600; margin:0; color:var(--text);">
-                    {{ random_book.title }}
+                    {{ random_book.display_title }}
                     {% if samlib_rating_enabled and random_book.samlib_rating and not random_book.samlib_rating.fetch_error and random_book.samlib_rating.rating %} <span title="{% trans 'Rating SL' %}" style="color:#f59e0b; font-size:0.8rem; font-weight:normal; white-space:nowrap;">★ {{ random_book.samlib_rating.rating|floatformat:1 }}</span>{% endif %}
                     {% if authortoday_rating_enabled and random_book.authortoday_rating and not random_book.authortoday_rating.fetch_error and random_book.authortoday_rating.likes %} <span title="{% trans 'Rating A.T' %}" style="color:#3b82f6; font-size:0.8rem; font-weight:normal; white-space:nowrap;">👍 {{ random_book.authortoday_rating.likes }}</span>{% endif %}
                     {% if fantlab_rating_enabled and random_book.fantlab_rating and not random_book.fantlab_rating.fetch_error and random_book.fantlab_rating.rating %} <span title="{% trans 'Rating FL' %}" style="color:#10b981; font-size:0.8rem; font-weight:normal; white-space:nowrap;">★ {{ random_book.fantlab_rating.rating|floatformat:1 }}</span>{% endif %}
@@ -184,7 +184,7 @@ function openBookCard(bookId) {
                     <tbody>
                     {% for b in popular_books %}
                     <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
-                        <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:40 }}</td>
+                        <td style="padding:0.3rem 0.5rem;">{{ b.display_title|truncatechars:60 }}</td>
                         <td style="text-align:right; padding:0.3rem 0.5rem; white-space:nowrap; color:#f59e0b;">
                             ★ {{ b.samlib_rating.rating|floatformat:1 }}
                         </td>
@@ -222,7 +222,7 @@ function openBookCard(bookId) {
                     <tbody>
                     {% for b in popular_books_at %}
                     <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
-                        <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:40 }}</td>
+                        <td style="padding:0.3rem 0.5rem;">{{ b.display_title|truncatechars:60 }}</td>
                         <td style="text-align:right; padding:0.3rem 0.5rem; white-space:nowrap; color:#3b82f6;">
                             👍 {{ b.authortoday_rating.likes }}
                         </td>
@@ -260,7 +260,7 @@ function openBookCard(bookId) {
                     <tbody>
                     {% for b in popular_books_fl %}
                     <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
-                        <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:40 }}</td>
+                        <td style="padding:0.3rem 0.5rem;">{{ b.display_title|truncatechars:60 }}</td>
                         <td style="text-align:right; padding:0.3rem 0.5rem; white-space:nowrap; color:#10b981;">
                             ★ {{ b.fantlab_rating.rating|floatformat:1 }}
                         </td>
@@ -298,7 +298,7 @@ function openBookCard(bookId) {
                     <tbody>
                     {% for b in popular_books_lm %}
                     <tr class="sopds-recent-row" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
-                        <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:40 }}</td>
+                        <td style="padding:0.3rem 0.5rem;">{{ b.display_title|truncatechars:60 }}</td>
                         <td style="text-align:right; padding:0.3rem 0.5rem; white-space:nowrap; color:#8b5cf6;">
                             👍 {{ b.litmarket_rating.likes }}
                         </td>
@@ -371,7 +371,7 @@ function openBookCard(bookId) {
                         onclick="openBookCard({{ b.id }})"
                         style="cursor:pointer;"
                         title="{% trans 'Open book card' %}">
-                        <td style="padding:0.3rem 0.5rem;">{{ b.title|truncatechars:50 }}</td>
+                        <td style="padding:0.3rem 0.5rem;">{{ b.display_title|truncatechars:70 }}</td>
                         <td style="padding:0.3rem 0.5rem; white-space:nowrap;">{{ b.format }}</td>
                         <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.name }}</td>
                         {% if samlib_rating_enabled %}

@@ -105,6 +105,7 @@ def _book_row_to_dict(row, auth_enabled: bool) -> dict:
         "docdate": row.docdate,
         "format": row.format,
         "title": row.title,
+        "display_title": row.display_title,
         "filesize": row.filesize // 1000,
         "authors": authors_list,
         "genres": genres_list,

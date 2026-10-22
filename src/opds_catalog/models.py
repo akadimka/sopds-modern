@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -49,6 +51,24 @@ lang_menu = {
 }
 
 
+# Расширения, которые срезаются с имени файла для показа (`book_display_name`).
+_BOOK_EXTENSIONS = {".fb2", ".epub", ".mobi", ".azw3", ".pdf", ".djvu", ".txt", ".rtf", ".doc", ".docx", ".zip"}
+
+
+def book_display_name(filename: str, title: str = "") -> str:
+    """Как книга показывается на сайте и в боте: имя файла без расширения —
+    «Автор - Серия N. Название», «Автор - Название (Трилогия)» (такое имя
+    файлу даёт синхронизация fb2parser), а не название из метаданных FB2 —
+    у каждого издателя оно своё. Имени нет — название."""
+    name = os.path.basename(filename or "")
+    while True:
+        stem, ext = os.path.splitext(name)
+        if not stem or ext.lower() not in _BOOK_EXTENSIONS:
+            break
+        name = stem
+    return name or title
+
+
 class Book(models.Model):
     """Модель книги.
 
@@ -69,6 +89,10 @@ class Book(models.Model):
     search_title = models.CharField(
         max_length=SIZE_BOOK_TITLE, default=None, db_index=True
     )
+    # Имя для показа (book_display_name) в верхнем регистре — для поиска по
+    # нему: в SQLite сравнение без учёта регистра работает только для
+    # латиницы, как и у search_title. Заполняется в save().
+    search_filename = models.CharField(max_length=SIZE_BOOK_FILENAME, default="")
     annotation = models.CharField(max_length=SIZE_BOOK_ANNOTATION)
     lang_code = models.IntegerField(null=False, default=9, db_index=True)
     avail = models.IntegerField(null=False, default=0, db_index=True)
@@ -78,6 +102,17 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def display_title(self) -> str:
+        return book_display_name(self.filename, self.title)
+
+    def save(self, *args, **kwargs):
+        self.search_filename = book_display_name(self.filename).upper()[:SIZE_BOOK_FILENAME]
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and "filename" in update_fields:
+            kwargs["update_fields"] = {*update_fields, "search_filename"}
+        super().save(*args, **kwargs)
 
 
 class Catalog(models.Model):

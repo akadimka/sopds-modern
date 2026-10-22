@@ -6,11 +6,11 @@
     <div class="sopds-card-cover">
       <img src="{% url 'opds_catalog:cover' b.id %}"
            onerror="this.src='{% static 'images/sopds-modern-nocover.png' %}'"
-           alt="{{ b.title }}">
+           alt="{{ b.display_title }}">
     </div>
 
     <div class="sopds-card-meta">
-      <div class="sopds-card-title">{{ b.title }}</div>
+      <div class="sopds-card-title">{{ b.display_title }}</div>
 
       {% if b.authors.all %}
       <div class="sopds-card-row">

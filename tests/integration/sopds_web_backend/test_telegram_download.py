@@ -32,7 +32,7 @@ def converters(monkeypatch, tmp_path):
 @pytest.fixture
 def book():
     cat = Catalog.objects.create(parent=None, cat_name=".", path=".", cat_type=0)
-    b = Book.objects.create(filename="night.fb2", path=".", filesize=1234, format="fb2", cat_type=0,
+    b = Book.objects.create(filename="Лукьяненко Сергей - Ночной Дозор.fb2", path=".", filesize=1234, format="fb2", cat_type=0,
                             docdate="2020", lang="ru", title="Ночной Дозор", search_title="НОЧНОЙ ДОЗОР",
                             annotation="", avail=2, catalog=cat)
     bauthor.objects.create(book=b, author=Author.objects.create(full_name="Лукьяненко Сергей",
@@ -71,13 +71,13 @@ class _FakePopen:
 
 
 def test_convert_book_returns_file_and_cleans_temp(book, converters, monkeypatch, tmp_path):
-    (tmp_path / "night.fb2").write_bytes(b"<FictionBook/>")
+    (tmp_path / "Лукьяненко Сергей - Ночной Дозор.fb2").write_bytes(b"<FictionBook/>")
     monkeypatch.setattr(dl, "get_fs_book_path", lambda b: str(tmp_path))
     monkeypatch.setattr(dl.subprocess, "Popen", _FakePopen)
 
     name, data = dl.convert_book(book, "epub")
-    assert (name, data) == ("night.epub", b"EPUB-DATA")
-    assert not (tmp_path / "night.epub").exists()
+    assert (name, data) == ("Лукьяненко Сергей - Ночной Дозор.epub", b"EPUB-DATA")
+    assert not (tmp_path / "Лукьяненко Сергей - Ночной Дозор.epub").exists()
 
     _FakePopen.produce = False
     try:
@@ -155,7 +155,8 @@ def test_fb2_upload_then_cached_by_file_id(book, converters, reader, monkeypatch
     client, handler = FakeClient(), LibraryHandler(executor=_Sync())
 
     _press(handler, client, f"f:{book.id}:fb2")
-    assert client.docs[0][:3] == (777, "night.fb2", b"FB2") and "Ночной Дозор" in client.docs[0][3]
+    # подпись — «Автор - Название» (имя файла), отдельной строкой — авторы
+    assert client.docs[0][:3] == (777, "night.fb2", b"FB2") and "<b>Лукьяненко Сергей - Ночной Дозор</b>" in client.docs[0][3]
     assert TelegramFile.objects.get(book=book, fmt="fb2").file_id == "FID1"
     assert bookshelf.objects.filter(user=reader, book=book).exists()
 
@@ -203,8 +204,8 @@ def test_stranger_cannot_download(book, converters):
 
 def test_original_file_reads_like_download(book, converters, monkeypatch):
     monkeypatch.setattr(dl, "getFileData", lambda b: io.BytesIO(b"DATA"))
-    assert dl.original_file(book) == ("night.fb2", b"DATA")
+    assert dl.original_file(book) == ("Лукьяненко Сергей - Ночной Дозор.fb2", b"DATA")
     monkeypatch.setattr(dl, "getFileData", lambda b: None)
     with pytest.raises(dl.ConversionFailed):
         dl.original_file(book)
-    assert os.path.basename(dl.converted_filename(book, "mobi")) == "night.mobi"
+    assert os.path.basename(dl.converted_filename(book, "mobi")) == "Лукьяненко Сергей - Ночной Дозор.mobi"

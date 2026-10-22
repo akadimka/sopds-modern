@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from functools import reduce
+from operator import and_
 from typing import Callable, TypeVar
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, Paginator
-from django.db.models import Count, IntegerField, Prefetch, QuerySet, Value
+from django.db.models import Count, IntegerField, Prefetch, Q, QuerySet, Value
 from django.db.models.functions import Substr
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
@@ -60,13 +62,21 @@ def find_book_doubles(
     )
 
 
+def title_or_filename_match(term: str) -> Q:
+    """Каждое слово запроса — в названии или в имени файла («Автор -
+    Название»): «Стругацкие Пикник» находит «Стругацкие Аркадий и Борис -
+    Пикник на обочине». Сравнение — по полям в верхнем регистре (SQLite)."""
+    words = term.upper().split()
+    if not words:
+        return Q(pk__in=[])
+    return reduce(and_, [Q(search_title__contains=w) | Q(search_filename__contains=w) for w in words])
+
+
 def find_books_by_substring(
     _: bool, term: str, __: str | None = None, ___=None
 ) -> QuerySet[Book]:
-    """Поиск книг по подстроке."""
-    return Book.objects.filter(search_title__contains=term.upper()).order_by(
-        *DEFAULT_ORDER_BY
-    )
+    """Поиск книг по словам — в названии или в имени файла."""
+    return Book.objects.filter(title_or_filename_match(term)).order_by(*DEFAULT_ORDER_BY)
 
 
 def find_books_by_start_letters(
@@ -172,6 +182,7 @@ def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
         "docdate": row.docdate,
         "format": row.format,
         "title": row.title,
+        "display_title": row.display_title,
         "filesize": row.filesize,
         "authors": authors_list,
         "genres": genres_list,

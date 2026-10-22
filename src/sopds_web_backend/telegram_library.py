@@ -189,7 +189,7 @@ class LibraryHandler:
                 return
             bookshelf.objects.get_or_create(user=user, book=book)  # как скачивание на сайте
             authors = ", ".join(a.full_name for a in book.authors.all())
-            caption = f"📖 <b>{_e(book.title)}</b>" + (f"\n👤 {_e(authors)}" if authors else "")
+            caption = f"📖 <b>{_e(book.display_title)}</b>" + (f"\n👤 {_e(authors)}" if authors else "")
             cached = TelegramFile.objects.filter(book=book, fmt=fmt, filesize=book.filesize).first()
             if cached is not None:
                 try:

@@ -84,11 +84,12 @@ def search(text: str, user) -> List[Tuple[str, int, str]]:
     items += [("s", s.id, f"📚 {_cut(s.ser, 50)} ({s.n})") for s in series]
     # Каждое слово — в названии или у автора, и хотя бы одно — в названии:
     # «Лукьяненко Дозор» найдёт «Ночной Дозор», а «Лукьяненко» — автора, а не все его книги.
-    per_word = [_has("search_title", w) | _has("authors__search_full_name", w) for w in ws]
-    in_title = reduce(or_, [_has("search_title", w) for w in ws])
+    per_word = [_has("search_title", w) | _has("search_filename", w) | _has("authors__search_full_name", w)
+                for w in ws]
+    in_title = reduce(or_, [_has("search_title", w) | _has("search_filename", w) for w in ws])
     books = (visibility.restrict_books(Book.objects.filter(reduce(and_, per_word)).filter(in_title), user)
              .distinct().prefetch_related("authors").order_by("search_title", "-docdate")[:MAX_ITEMS])
-    items += [("b", b.id, f"📖 {_cut(b.title + ' — ' + _short_authors(b), LABEL_MAX)}") for b in books]
+    items += [("b", b.id, f"📖 {_cut(b.display_title, LABEL_MAX)}") for b in books]   # «Автор - Название»
     return items
 
 
@@ -136,7 +137,7 @@ def results_screen(qid: str, page: int, user) -> Optional[Screen]:
 
 def _book_label(book: Book, ser_no: Optional[int] = None) -> str:
     prefix = f"{ser_no}. " if ser_no else ""
-    return f"📖 {_cut(prefix + book.title)}"
+    return f"📖 {_cut(prefix + book.display_title)}"
 
 
 def author_screen(author_id: int, page: int, qid: str, user) -> Optional[Screen]:
@@ -180,7 +181,7 @@ def book_screen(book_id: int, qid: str, user, extra_rows: Optional[List[List[Dic
         return None
     authors = list(visibility.visible_authors(user, book.authors.all()))
     ser = bseries.objects.filter(book=book).select_related("ser").first()
-    lines = [f"📖 <b>{_e(book.title)}</b>"]
+    lines = [f"📖 <b>{_e(book.display_title)}</b>"]
     if authors:
         lines.append("👤 " + _e(", ".join(a.full_name for a in authors)))
     if ser:

@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Case, Count, IntegerField, When
+from django.db.models import Case, Count, IntegerField, Q, When
 from django.http import (
     HttpResponse,
     HttpResponseNotAllowed,
@@ -621,7 +621,24 @@ def SearchSuggestView(request):
     # первыми. Внизу — «Все результаты (N)» на полный список.
     up = q.upper()
     if search_type == "title":
-        field, qs, all_url = "search_title", visibility.visible_books(request.user), "web:searchbooks"
+        # Книги — по словам в названии или в имени файла (как поиск по Enter);
+        # начинающиеся с введённого («Автор - …» или название) — первыми.
+        from opds_catalog.services.book_services import title_or_filename_match
+        qs = visibility.visible_books(request.user).filter(title_or_filename_match(q))
+        total = qs.count()
+        ordered = qs.annotate(_prefix=Case(When(Q(search_filename__startswith=up) | Q(search_title__startswith=up),
+                                                then=0), default=1, output_field=IntegerField())
+                              ).order_by("_prefix", "search_filename")
+        items, seen = [], set()
+        for book in ordered[:SUGGEST_LIMIT * 3]:   # одно имя бывает у нескольких файлов
+            if book.display_title not in seen:
+                seen.add(book.display_title)
+                items.append(book)
+            if len(items) == SUGGEST_LIMIT:
+                break
+        return render(request, "sopds_search_suggestions.html",
+                      {"items": items, "search_type": search_type, "total": total, "q": q,
+                       "all_url": f"{reverse('web:searchbooks')}?{urlencode({'searchtype': 'm', 'searchterms': q})}"})
     elif search_type == "author":
         field, qs, all_url = ("search_full_name", visibility.visible_authors(request.user, Author.objects.all()),
                               "web:searchauthors")
@@ -634,8 +651,8 @@ def SearchSuggestView(request):
     ordered = qs.annotate(_prefix=Case(When(**{f"{field}__startswith": up}, then=0), default=1,
                                        output_field=IntegerField())).order_by("_prefix", field)
     items, seen = [], set()
-    for obj in ordered[:SUGGEST_LIMIT * 3]:   # у книг одно название бывает у нескольких файлов
-        label = getattr(obj, "title", None) or getattr(obj, "full_name", None) or obj.ser
+    for obj in ordered[:SUGGEST_LIMIT * 3]:
+        label = getattr(obj, "full_name", None) or obj.ser
         if label not in seen:
             seen.add(label)
             items.append(obj)

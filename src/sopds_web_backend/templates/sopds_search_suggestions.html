@@ -1,8 +1,8 @@
 {% load i18n %}
 {% for item in items %}
     {% if search_type == "title" %}
-    <a href="{% url "web:searchbooks" %}?searchtype=m&searchterms={{ item.title|urlencode }}"
-       class="sopds-suggestion-item">{{ item.title }}</a>
+    <a href="{% url "web:searchbooks" %}?searchtype=m&searchterms={{ item.display_title|urlencode }}"
+       class="sopds-suggestion-item">{{ item.display_title }}</a>
     {% elif search_type == "author" %}
     <a href="{% url "web:searchauthors" %}?searchtype=e&searchterms={{ item.full_name|urlencode }}"
        class="sopds-suggestion-item">{{ item.full_name }}</a>
