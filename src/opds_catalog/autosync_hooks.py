@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict, Optional, Tuple
 
 _log = logging.getLogger(__name__)
@@ -47,10 +48,83 @@ def notify_autosync(autosync: Optional[Tuple[Any, Any]], logger: Optional[loggin
         sent = notify(service, result, link=catalog_link(service), include=public_book_filter())
     except Exception:
         log.exception("Autosync notification failed")
-        return {}
+        sent = {}
+    try:
+        sent.update(announce_catalog_additions(service, result, log))
+    except Exception:
+        log.exception("Catalog additions announcement failed")
     if sent:
         log.info("Autosync notifications: %s", sent)
     return sent
+
+
+CATALOG_MARK_KEY = "catalog_announced_book_id"
+CATALOG_DIGEST_MAX_BOOKS = 300   # больше — сводка только по жанрам
+
+
+def announce_catalog_additions(service, result, logger: Optional[logging.Logger] = None) -> Dict[str, str]:
+    """Новинки каталога в канал, когда автосинхронизация выключена (баг №179).
+
+    На сервере-2 книги приходят ночным зеркалированием библиотеки, а не
+    через автосинхронизацию — её журнал пуст, и канал молчал. Объявляем
+    книги, появившиеся в каталоге после прошлого объявления (по id), только
+    из открытых всем библиотек. Первый запуск лишь запоминает точку отсчёта —
+    иначе в канал ушла бы вся библиотека. Где автосинхронизация включена,
+    новинки объявляет она (без дублей)."""
+    log = logger or _log
+    cfg = service.cfg
+    if result.status != "off" or not cfg.get("telegram_token") or not cfg.get("telegram_channel"):
+        return {}
+    import os
+
+    from django.db.models import Max
+
+    from opds_catalog import visibility
+    from opds_catalog.models import Book
+
+    journal = service.journal
+    top = Book.objects.aggregate(m=Max("id"))["m"] or 0
+    mark = journal.get_state(CATALOG_MARK_KEY)
+    if mark is None:
+        journal.set_state(CATALOG_MARK_KEY, str(top))
+        log.info("Catalog announcements: starting point set at book id %s", top)
+        return {}
+    if top <= int(mark):
+        return {}
+    books = (visibility.visible_books(None).exclude(avail=0)
+             .filter(id__gt=int(mark), id__lte=top)
+             .prefetch_related("authors", "series").order_by("id"))
+    rows = []
+    for b in books:
+        rows.append({
+            "genre": re.split(r"[\\/]", b.path or "")[0] or "—",   # папка верхнего уровня (№166)
+            "author": ", ".join(a.full_name for a in b.authors.all()) or "—",
+            "series": next((s.ser for s in b.series.all()), ""),
+            "title": b.title or "",
+            "library_path": os.path.join(b.path or "", b.filename or ""),
+        })
+    if rows:
+        from fb2parser_core.telegram_notify import TelegramError, build_digest, client_for, explain_error
+
+        text = (build_digest(rows, catalog_link(service)) if len(rows) <= CATALOG_DIGEST_MAX_BOOKS
+                else _genre_counts_digest(rows))
+        try:
+            client_for(cfg).send_message(cfg["telegram_channel"], text)
+        except TelegramError as e:
+            log.warning("Catalog announcements: not sent: %s", e.description)
+            return {"catalog": explain_error(e)}   # точку не двигаем — повторим в следующий раз
+    journal.set_state(CATALOG_MARK_KEY, str(top))
+    return {"catalog": "ok"} if rows else {}
+
+
+def _genre_counts_digest(rows) -> str:
+    import html
+    from collections import Counter as _Counter
+
+    counts = _Counter(r["genre"] for r in rows)
+    lines = [f"📚 <b>Новые книги в библиотеке: {len(rows)}</b>", ""]
+    lines += [f"• {html.escape(g)}: {n}" for g, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+    return "\n".join(lines)
 
 
 def summary(autosync: Optional[Tuple[Any, Any]]) -> Optional[Dict[str, Any]]:
