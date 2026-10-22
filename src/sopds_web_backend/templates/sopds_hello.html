@@ -359,10 +359,6 @@ function openBookCard(bookId) {
                             <th style="padding:0.3rem 0.5rem;">{% trans "Title" %}</th>
                             <th style="padding:0.3rem 0.5rem;">{% trans "Format" %}</th>
                             <th style="padding:0.3rem 0.5rem;">{% trans "Genre" %}</th>
-                            {% if samlib_rating_enabled %}<th style="padding:0.3rem 0.5rem; text-align:right;" title="{% trans 'Rating SL' %}">SL</th>{% endif %}
-                            {% if authortoday_rating_enabled %}<th style="padding:0.3rem 0.5rem; text-align:right;" title="{% trans 'Rating A.T' %}">A.T</th>{% endif %}
-                            {% if fantlab_rating_enabled %}<th style="padding:0.3rem 0.5rem; text-align:right;" title="{% trans 'Rating FL' %}">FL</th>{% endif %}
-                            {% if litmarket_rating_enabled %}<th style="padding:0.3rem 0.5rem; text-align:right;" title="{% trans 'Rating LM' %}">LM</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -374,26 +370,6 @@ function openBookCard(bookId) {
                         <td style="padding:0.3rem 0.5rem;">{{ b.display_title|truncatechars:70 }}</td>
                         <td style="padding:0.3rem 0.5rem; white-space:nowrap;">{{ b.format }}</td>
                         <td style="padding:0.3rem 0.5rem; color:var(--text-muted);">{{ b.genres.all.0.name }}</td>
-                        {% if samlib_rating_enabled %}
-                        <td style="padding:0.3rem 0.5rem; text-align:right; color:#f59e0b; white-space:nowrap;">
-                            {% if b.samlib_rating and not b.samlib_rating.fetch_error and b.samlib_rating.rating %}★ {{ b.samlib_rating.rating|floatformat:1 }}{% endif %}
-                        </td>
-                        {% endif %}
-                        {% if authortoday_rating_enabled %}
-                        <td style="padding:0.3rem 0.5rem; text-align:right; color:#3b82f6; white-space:nowrap;">
-                            {% if b.authortoday_rating and not b.authortoday_rating.fetch_error and b.authortoday_rating.likes %}👍 {{ b.authortoday_rating.likes }}{% endif %}
-                        </td>
-                        {% endif %}
-                        {% if fantlab_rating_enabled %}
-                        <td style="padding:0.3rem 0.5rem; text-align:right; color:#10b981; white-space:nowrap;">
-                            {% if b.fantlab_rating and not b.fantlab_rating.fetch_error and b.fantlab_rating.rating %}★ {{ b.fantlab_rating.rating|floatformat:1 }}{% endif %}
-                        </td>
-                        {% endif %}
-                        {% if litmarket_rating_enabled %}
-                        <td style="padding:0.3rem 0.5rem; text-align:right; color:#8b5cf6; white-space:nowrap;">
-                            {% if b.litmarket_rating and not b.litmarket_rating.fetch_error and b.litmarket_rating.likes %}👍 {{ b.litmarket_rating.likes }}{% endif %}
-                        </td>
-                        {% endif %}
                     </tr>
                     {% endfor %}
                     </tbody>

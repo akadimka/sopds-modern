@@ -136,3 +136,19 @@ def test_user_actions_are_one_aligned_row(superuser_client, django_user_model):
                      html)
     actions = html.split('class="sp-user-actions"', 1)[1].split("</td>", 1)[0]
     assert "padding:" not in actions and "margin:" not in actions   # своих отступов у элементов нет
+
+
+@pytest.mark.django_db
+def test_recently_added_has_no_rating_columns(superuser_client, override_config):
+    """«Недавно добавленные» — без столбцов рейтингов: у только что
+    добавленных книг их ещё нет, столбцы стояли пустыми."""
+    from opds_catalog.models import Book, Catalog, SamlibRating
+    cat = Catalog.objects.create(cat_name=".", path=".")
+    book = Book.objects.create(filename="Автор - Новинка.fb2", path=".", catalog=cat, avail=2, format="fb2",
+                               docdate="", lang="ru", title="Новинка", search_title="НОВИНКА", annotation="")
+    SamlibRating.objects.create(book=book, rating=8.5)
+    with override_config(SOPDS_SAMLIB_RATING=True):
+        html = superuser_client.get(reverse("web:main")).content.decode("utf-8")
+    recent = html.split("Recently added", 1)[1].split("</table>", 1)[0]
+    assert "Автор - Новинка" in recent
+    assert "SL</th>" not in recent and "★" not in recent

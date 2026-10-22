@@ -1144,9 +1144,8 @@ def hello(request):
     all_genres = _genres_by_folder(visible)
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
-    args["recent_books"] = visible.select_related(
-        "samlib_rating", "authortoday_rating", "fantlab_rating", "litmarket_rating"
-    ).order_by("-id").prefetch_related("genres")[:10]
+    # Без рейтингов: у только что добавленных книг их ещё нет.
+    args["recent_books"] = visible.order_by("-id").prefetch_related("genres")[:10]
     # Баг №104: order_by("?") компилируется в ORDER BY RANDOM() на SQLite —
     # полная сортировка ВСЕЙ таблицы книг на каждый заход на главную
     # страницу сайта. Тот же offset-based приём, что уже используется
