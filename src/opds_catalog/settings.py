@@ -19,7 +19,7 @@ TITLE = getattr(settings, "SOPDS_TITLE", "SimpleOPDS MODERN")
 SUBTITLE = getattr(
     settings,
     "SOPDS_SUBTITLE",
-    f"SimpleOPDS Catalog new generation by www.sopds-modern.ru. Version {VERSION}",
+    f"SOPDS-MODERN — Simple OPDS Catalog. Version {VERSION}",
 )
 ICON = getattr(settings, "SOPDS_ICON", "/static/images/favicon.ico")
 THUMB_SIZE = 300

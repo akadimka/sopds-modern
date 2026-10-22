@@ -1,7 +1,7 @@
 [project]
 name = "sopds-modern"
 version = "2.27.1"
-description = "New generation of Simple OPDS catalog"
+description = "SOPDS-MODERN: Simple OPDS catalog and FB2 library organizer"
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [

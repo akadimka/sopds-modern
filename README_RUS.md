@@ -1,4 +1,4 @@
-#### SimpleOPDS Catalog NG (new generation) - Простой OPDS Каталог НП (новое поколение)
+#### SOPDS-MODERN — Simple OPDS Catalog — Простой OPDS-каталог
 #### Based on SimpleOPDS Catalog by Dmitry V.Shelepnev
 #### Author: Valery A. Ilychev
 #### Версия 1.0.0RC1
