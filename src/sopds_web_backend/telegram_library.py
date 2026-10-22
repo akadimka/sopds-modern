@@ -29,8 +29,32 @@ INTRO = ("Это бот библиотеки SOPDS — он ищет и прис
          "Чтобы пользоваться им, привяжите свой аккаунт: на сайте библиотеки откройте профиль, "
          "в разделе «Telegram» нажмите «Получить код» и отправьте код сюда "
          "(или просто откройте ссылку оттуда).")
-HELP = "Напишите название книги, автора или серии — я поищу в библиотеке."
-NAV_PREFIXES = ("q", "a", "s", "b")  # экраны поиска — telegram_search.screen_for
+SEARCH_PROMPT = "Напишите название книги, автора или серии — я поищу в библиотеке."
+
+# Меню кнопками внизу чата (вместо команд, которые надо помнить) — для
+# привязанных читателей; те же действия — в меню команд Telegram (≡).
+BTN_SEARCH, BTN_NEW, BTN_SHELF, BTN_HELP = "🔍 Поиск", "🆕 Новинки", "📚 Моя полка", "❓ Помощь"
+MAIN_MENU = {
+    "keyboard": [[{"text": BTN_SEARCH}, {"text": BTN_NEW}], [{"text": BTN_SHELF}, {"text": BTN_HELP}]],
+    "resize_keyboard": True,
+    "is_persistent": True,
+    "input_field_placeholder": "Название книги, автор или серия",
+}
+NO_MENU = {"remove_keyboard": True}
+COMMANDS = [
+    {"command": "start", "description": "Главное меню"},
+    {"command": "search", "description": "Поиск книги"},
+    {"command": "new", "description": "Новинки библиотеки"},
+    {"command": "shelf", "description": "Моя полка — скачанные книги"},
+    {"command": "help", "description": "Помощь"},
+]
+HELP = ("Кнопки внизу:\n"
+        f"{BTN_SEARCH} — найти книгу: просто напишите название, автора или серию;\n"
+        f"{BTN_NEW} — последние добавленные книги;\n"
+        f"{BTN_SHELF} — книги, которые вы скачивали;\n"
+        f"{BTN_HELP} — эта подсказка.\n\n"
+        "В карточке книги — кнопки скачивания в нужном формате, переход к автору и серии.")
+NAV_PREFIXES = ("q", "a", "s", "b", "n", "h")  # экраны — telegram_search.screen_for
 # переход из сводки канала: t.me/<бот>?start=s<id серии> / b<id книги>
 DEEP_LINK_RE = re.compile(r"^[sb]\d+$")
 
@@ -43,10 +67,22 @@ class LibraryHandler:
     def __init__(self, executor: Optional[Executor] = None):
         # подготовка файла (конвертация — до минут) не задерживает опрос бота
         self.executor = executor or ThreadPoolExecutor(max_workers=2)
+        self.commands_set = False
+
+    def set_commands(self, client) -> None:
+        """Меню команд Telegram (кнопка ≡ у поля ввода) — один раз за запуск бота."""
+        if self.commands_set:
+            return
+        try:
+            client.call("setMyCommands", commands=COMMANDS)
+            self.commands_set = True
+        except Exception as e:  # без меню команд бот работает — кнопки внизу остаются
+            _log.warning("telegram: меню команд не установлено: %s", e)
 
     def __call__(self, service, client, update: Dict[str, Any]) -> bool:
         from django.db import close_old_connections
         close_old_connections()  # процесс бота живёт долго — соединение с БД могло устареть
+        self.set_commands(client)
         if "chat_join_request" in update:
             handle_join_request(client, service, update["chat_join_request"])
             return True
@@ -78,16 +114,39 @@ class LibraryHandler:
             if reader is not None and DEEP_LINK_RE.match(payload):
                 self.open_deep_link(client, chat_id, payload, reader)
                 return
-            client.send_message(chat_id, HELP if reader else INTRO)
+            if reader is None:
+                client.send_message(chat_id, INTRO, reply_markup=NO_MENU)
+            else:
+                client.send_message(chat_id, "📖 Библиотека SOPDS\n\n" + HELP, reply_markup=MAIN_MENU)
             return
         user = linked_user(tg_user["id"])
         if user is None:
             if looks_like_code(text):
                 self.link(service, client, chat_id, tg_user, text)
             else:
-                client.send_message(chat_id, INTRO)
+                client.send_message(chat_id, INTRO, reply_markup=NO_MENU)
+            return
+        if self.on_menu(client, chat_id, user, text):
             return
         self.on_query(service, client, chat_id, user, text)
+
+    def on_menu(self, client, chat_id, user, text: str) -> bool:
+        """Кнопка меню или команда; False — это поисковый запрос."""
+        from .telegram_search import new_books_screen, shelf_screen
+        command = text.split(" ")[0].split("@")[0].lower() if text.startswith("/") else ""
+        if text == BTN_SEARCH or command == "/search":
+            client.send_message(chat_id, SEARCH_PROMPT, reply_markup=MAIN_MENU)
+        elif text == BTN_NEW or command == "/new":
+            screen = new_books_screen(0, user)
+            client.send_message(chat_id, screen[0], reply_markup=screen[1])
+        elif text == BTN_SHELF or command == "/shelf":
+            screen = shelf_screen(0, user)
+            client.send_message(chat_id, screen[0], reply_markup=screen[1])
+        elif text == BTN_HELP or command:   # /help и любая незнакомая команда
+            client.send_message(chat_id, HELP, reply_markup=MAIN_MENU)
+        else:
+            return False
+        return True
 
     def link(self, service, client, chat_id, tg_user: Dict[str, Any], code: str) -> None:
         link, error = link_by_code(code, tg_user)
@@ -106,7 +165,7 @@ class LibraryHandler:
         if join:
             lines.append(f'Канал с новинками: {_e(join)} — подайте заявку, бот одобрит её сам.')
         lines += ["", HELP]
-        client.send_message(chat_id, "\n".join(lines))
+        client.send_message(chat_id, "\n".join(lines), reply_markup=MAIN_MENU)
 
     def on_query(self, service, client, chat_id, user, text: str) -> None:
         from .telegram_search import results_screen, store_query
@@ -122,7 +181,8 @@ class LibraryHandler:
         screen = (series_screen(object_id, 0, "", user) if payload[0] == "s"
                   else book_screen(object_id, "", user))
         if screen is None:
-            client.send_message(chat_id, "Не нашлось — возможно, книга уже убрана из библиотеки. " + HELP)
+            client.send_message(chat_id, "Не нашлось — возможно, книга уже убрана из библиотеки. " + SEARCH_PROMPT,
+                                reply_markup=MAIN_MENU)
             return
         client.send_message(chat_id, screen[0], reply_markup=screen[1])
 

@@ -112,7 +112,14 @@ def _nav(prefix: str, page: int, total: int, suffix: str = "") -> List[Dict[str,
     return row
 
 
+# Карточка, открытая из списка меню, помнит его в поле запроса: «~n<стр>» —
+# новинки, «~h<стр>» — полка; кнопка возврата ведёт на ту же страницу.
+LIST_BACK = {"n": "◀ К новинкам", "h": "◀ К моей полке"}
+
+
 def _back(qid: str) -> List[List[Dict[str, str]]]:
+    if qid[:1] == "~" and qid[1:2] in LIST_BACK and qid[2:].isdigit():
+        return [[{"text": LIST_BACK[qid[1]], "callback_data": f"{qid[1]}:{qid[2:]}"}]]
     return [[{"text": "🔍 К результатам", "callback_data": f"q:{qid}:0"}]] if load_query(qid) else []
 
 
@@ -204,10 +211,43 @@ def book_screen(book_id: int, qid: str, user, extra_rows: Optional[List[List[Dic
     return "\n".join(lines), {"inline_keyboard": rows + _back(qid)}
 
 
+NEW_MAX = 100   # «Новинки» — последние добавленные в каталог книги
+
+
+def _book_list(title: str, books: List[Book], page: int, prefix: str, empty: str) -> Screen:
+    if not books:
+        return empty, {"inline_keyboard": []}
+    rows = [[{"text": _book_label(b), "callback_data": f"b:{b.id}:~{prefix}{page}"}]
+            for b in books[page * PAGE:(page + 1) * PAGE]]
+    nav = _nav(prefix, page, len(books))
+    return title, {"inline_keyboard": rows + ([nav] if nav else [])}
+
+
+def new_books_screen(page: int, user) -> Screen:
+    """Кнопка меню «Новинки»: последние добавленные книги, видимые пользователю."""
+    books = list(visibility.visible_books(user).order_by("-id")[:NEW_MAX])
+    return _book_list(f"🆕 <b>Новинки</b> — последние {len(books)} книг в библиотеке", books, page, "n",
+                      "В библиотеке пока нет книг.")
+
+
+def shelf_screen(page: int, user) -> Screen:
+    """Кнопка меню «Моя полка»: книги, скачанные пользователем (в боте или на сайте)."""
+    from opds_catalog.models import bookshelf
+    links = (bookshelf.objects.filter(user=user, book__in=visibility.visible_books(user))
+             .select_related("book").order_by("-readtime"))
+    books = [link.book for link in links[:MAX_ITEMS]]
+    return _book_list(f"📚 <b>Моя полка</b> — книг: {len(books)}", books, page, "h",
+                      "На полке пока пусто — сюда попадают книги, которые вы скачали в боте или на сайте.")
+
+
 def screen_for(data: str, user) -> Optional[Screen]:
     """Экран по callback_data; None — устарел, не найден или не виден пользователю."""
     parts = data.split(":")
     try:
+        if parts[0] == "n":
+            return new_books_screen(int(parts[1]), user)
+        if parts[0] == "h":
+            return shelf_screen(int(parts[1]), user)
         if parts[0] == "q":
             return results_screen(parts[1], int(parts[2]), user)
         if parts[0] == "a":
