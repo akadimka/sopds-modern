@@ -1,7 +1,8 @@
-"""«Сейчас на сайте» в шапке (sopds_web_backend/online.py): видят все
-вошедшие, считаются люди за последние 5 минут — через сайт и читалки (OPDS),
-не Telegram; опрос самой шапки активностью не считается. Время сканов в
-той же строке — только суперпользователю."""
+"""«Сейчас на сайте» в шапке (sopds_web_backend/online.py): число видят все
+вошедшие, имена — только суперпользователь (они помогают подбирать пароли);
+считаются люди за последние 5 минут — через сайт и читалки (OPDS), не
+Telegram; опрос самой шапки активностью не считается. Время сканов в той же
+строке — только суперпользователю."""
 import base64
 import re
 
@@ -42,10 +43,11 @@ def test_everyone_sees_who_is_online_scans_only_superuser():
     _page(_client(root))
     html = _page(_client(anna))
     assert "Online now:" in html and _count(html) == 2
-    assert "<strong>root</strong>" in html and "<strong>anna</strong>" in html
+    assert "<strong>root</strong>" not in html and "sp-online-list" not in html   # имена — не ей
     assert "Last manual scan" not in html and "Last automatic scan" not in html
     html = _page(_client(root))
     assert "Last manual scan" in html and "Last automatic scan" in html and _count(html) == 2
+    assert "<strong>root</strong>" in html and "<strong>anna</strong>" in html
 
 
 def test_people_not_devices():
@@ -62,7 +64,8 @@ def test_reader_counts_with_mark(override_config):
     assert [u["channels"] for u in online.online_users()] == [["opds"]]
     _page(_client(anna))
     assert [u["channels"] for u in online.online_users()] == [["web", "opds"]]
-    assert "site, reader" in _client(anna).get(reverse("web:online")).content.decode("utf-8")
+    root = _client(User.objects.create_superuser("root", password=PASSWORD))
+    assert "site, reader" in root.get(reverse("web:online")).content.decode("utf-8")
 
 
 def test_header_poll_is_not_activity():

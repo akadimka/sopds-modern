@@ -1358,6 +1358,10 @@ def LoginView(request):
             return handler403(request, args)
         from . import login_codes
         method = login_codes.method_for(user)
+        if method is not None and login_codes.account_locked(user):
+            logger.warning("Login refused: too many wrong second-factor codes for '%s'", username)
+            args["system_message"] = {"text": login_codes.locked_message(), "type": "alert"}
+            return handler403(request, args)
         if method is not None:
             # Второй шаг: код из приложения-аутентификатора или Telegram (login_codes.py).
             if login_codes.start(request, user, method, user.backend, next_url):
@@ -1433,9 +1437,10 @@ def LoginCodeView(request):
                 return handler403(request, args)
             return redirect(next_url or reverse("web:main"))
         if error != login_codes.ERR_WRONG:
+            texts = {login_codes.ERR_TOO_MANY: _("Too many wrong codes — sign in again."),
+                     login_codes.ERR_LOCKED: login_codes.locked_message()}
             args["system_message"] = {
-                "text": _("Too many wrong codes — sign in again.") if error == login_codes.ERR_TOO_MANY
-                else _("The code has expired — sign in again."),
+                "text": texts.get(error, _("The code has expired — sign in again.")),
                 "type": "alert",
             }
             return handler403(request, args)
@@ -1452,6 +1457,8 @@ def user_profile(request):
     from django.contrib.auth import update_session_auth_hash
 
     from sopds_web_backend.models import OpdsPassword, UserProfile
+
+    from . import login_codes
 
     user = request.user
     # Не "_": это gettext модуля — затенённый флагом created, он падал
@@ -1493,6 +1500,7 @@ def user_profile(request):
                     user.set_password(new_pw)
                     user.save()
                     update_session_auth_hash(request, user)
+                    _after_password_change(request, user)
                     success = "password"
 
         elif action == "device_name":
@@ -1515,6 +1523,11 @@ def user_profile(request):
                     return redirect(reverse("web:login"))
             success = "devices"
 
+        elif action in _PASSWORD_CONFIRMED_ACTIONS and not user.check_password(request.POST.get("confirm_password", "")):
+            # Долговременный доступ (пароль для читалок, Telegram, 2ФА) — только
+            # с паролем: украденной сессии мало, чтобы закрепиться в аккаунте.
+            errors[_PASSWORD_CONFIRMED_ACTIONS[action]] = _("Password is incorrect.")
+
         elif action == "tg_code":
             from .telegram_users import new_link_code
             new_link_code(user)
@@ -1528,11 +1541,16 @@ def user_profile(request):
                 errors["totp"] = _("An authenticator app is already connected — turn it off first.")
             success = "totp"
 
+        elif action in ("totp_confirm", "totp_disable") and login_codes.account_locked(user):
+            errors["totp"] = login_codes.locked_message()
+
         elif action == "totp_confirm":
             from . import totp
             if totp.confirm(user, request.POST.get("code", "")):
+                login_codes.clear_failures(user)
                 success = "totp_on"
             else:
+                login_codes.note_failure(user)
                 errors["totp"] = _("Wrong code — check that the time on the phone is correct and try again.")
 
         elif action == "totp_cancel":
@@ -1543,9 +1561,11 @@ def user_profile(request):
         elif action == "totp_disable":
             from . import totp
             if totp.verify(user, request.POST.get("code", "")):
+                login_codes.clear_failures(user)
                 totp.disable(user)
                 success = "totp_off"
             else:
+                login_codes.note_failure(user)
                 errors["totp"] = _("Wrong code.")
 
         elif action == "opds_new":
@@ -1585,7 +1605,26 @@ def user_profile(request):
         "opds_url": request.build_absolute_uri(reverse("opds:main")),
         **_profile_totp_context(user),
         **_profile_devices_context(request, user),
+        "second_factor": login_codes.method_for(user) is not None,
     })
+
+
+# Действия профиля, которые дают долговременный доступ к аккаунту, — с
+# подтверждением паролем (действие → раздел для текста ошибки).
+_PASSWORD_CONFIRMED_ACTIONS = {"opds_new": "opds", "tg_code": "telegram", "tg_unlink": "telegram",
+                               "totp_start": "totp"}
+
+
+def _after_password_change(request, user):
+    """Смена пароля закрывает и другие пути входа: пароль для читалок и
+    устройства, кроме текущего браузера (сессии браузеров завершает сам
+    Django — в них хеш пароля). Telegram остаётся: привязку видно в профиле."""
+    from . import devices
+    from .models import UserDevice
+    from .opds_passwords import revoke
+    revoke(user)
+    keep = devices.current_device(request, user) if request.user.pk == user.pk else None
+    UserDevice.objects.filter(user=user).exclude(pk=keep.pk if keep is not None else None).delete()
 
 
 def _profile_devices_context(request, user):
@@ -1725,6 +1764,11 @@ def user_edit(request, user_id):
         if error:
             return _users_list_error(request, error)
         user.set_password(password)
+        user.save()
+        if user.pk == request.user.pk:
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, user)
+        _after_password_change(request, user)
     if "max_devices" in request.POST:
         raw = request.POST.get("max_devices", "").strip()
         if raw and not raw.isdigit():

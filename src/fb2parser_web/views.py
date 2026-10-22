@@ -5,7 +5,7 @@ import threading
 import time
 import unicodedata as _ud
 
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils.html import escape
@@ -36,6 +36,11 @@ scan_job = JobState("fb2parser:scan", {
     "stage": "",      # "autosync" | "scan" — см. opds_catalog/autosync_hooks.py
     "autosync": None,  # итог автосинхронизации перед полным сканом
 })
+
+
+# fb2parser — инструмент суперпользователя (роль — is_superuser, как на сайте;
+# одного is_staff мало: он работает с файлами сервера и всей библиотекой).
+superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser, login_url="/web/login/")
 
 
 class _ErrorCapture(logging.Handler):
@@ -168,7 +173,7 @@ def _render_job(template, state, **extra):
     return HttpResponse(render_to_string(template, {"state": state, "pct": _job_pct(state), **extra}))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def dashboard(request):
     root = request.session.get('dashboard_root') or config.SOPDS_ROOT_LIB or ""
     state = genre_scan_job.get()
@@ -179,7 +184,7 @@ def dashboard(request):
     ))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def dashboard_set_root(request):
     from django.http import JsonResponse
@@ -194,7 +199,7 @@ def dashboard_set_root(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def statistics(request):
     from django.db.models import Count
     stats = {
@@ -219,14 +224,14 @@ def statistics(request):
     ))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def scan(request):
     root = config.SOPDS_ROOT_LIB or ""
     state = scan_job.get()
     return render(request, "fb2parser/scan.html", _ctx("scan", _("Scan into Catalog"), root=root, state=state))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def scan_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
@@ -256,7 +261,7 @@ def scan_start(request):
     return _render_status(scan_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def scan_status(request):
     return _render_status(scan_job.get())
 
@@ -497,7 +502,7 @@ def _resolve_scan_folders(request):
     return folder_paths, total, None
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def genre_scan_results(request):
     """Вид «По наборам жанров» на главной: жанровые наборы / ошибки / файлы.
 
@@ -549,7 +554,7 @@ def genre_scan_results(request):
     })
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def genre_scan_files(request):
     """Файлы для выбранного набора жанров (панель Детали)."""
     combo = request.GET.get("combo", "")
@@ -561,7 +566,7 @@ def genre_scan_files(request):
     return HttpResponse(html)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def genre_scan_assign(request):
     """Присвоить целевой жанр файлам одного или нескольких найденных наборов
     (combo → genre). POST JSON: {mappings: {combo: genre, ...}}.
@@ -736,7 +741,7 @@ def _run_compress_thread(library_path):
         compress_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compress(request):
     from fb2parser_core.settings_manager import SettingsManager
 
@@ -747,7 +752,7 @@ def compress(request):
     ))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compress_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
@@ -826,14 +831,14 @@ def _reap_dead_compress_job():
         compress_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def compress_stop(request):
     compress_stop_flag.set()
     return _render_compress_status(compress_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compress_status(request):
     _reap_dead_compress_job()
     return _render_compress_status(compress_job.get())
@@ -845,7 +850,7 @@ def _render_compress_status(state):
 
 # ── Браузер папок ────────────────────────────────────────────────────────────
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def browse_folders(request):
     """Возвращает HTML-список подпапок (и опционально файлов) для picker."""
     path = request.GET.get("path", "").strip()
@@ -907,7 +912,7 @@ def browse_folders(request):
 
 # ── Дерево папок (главная страница) ──────────────────────────────────────────
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def folder_tree(request):
     """Возвращает один уровень дерева папок (ленивая загрузка)."""
     import hashlib
@@ -951,7 +956,7 @@ def folder_tree(request):
     return HttpResponse(html)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def server_restart(request):
     """Touch manage.py to trigger Django dev server autoreload; under
@@ -1005,7 +1010,7 @@ def server_restart(request):
     )
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def folder_count(request):
     """Рекурсивный подсчёт FB2 в папке — вызывается асинхронно после рендера узла.
 
@@ -1030,7 +1035,7 @@ def folder_count(request):
     )
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def genre_names(request):
     """Список всех имён жанров для picker-а (HTML-частичка).
 
@@ -1146,7 +1151,7 @@ def _run_assign_genre_thread(genre, paths):
         genre_assign_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def assign_genre_multi(request):
     """Запустить фоновое присвоение жанра нескольким папкам сразу.
     POST JSON: {genre, paths:[...]} → {started: true}. Прогресс и итоговые
@@ -1183,13 +1188,13 @@ def assign_genre_multi(request):
     return JsonResponse({"started": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def assign_genre_multi_status(request):
     from django.http import JsonResponse
     return JsonResponse(genre_assign_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def main_scan_start(request):
     """Запускает извлечение жанров (`genre_scan_service.scan_fb2_genres`)
     для папок, отмеченных в дереве на главной. Результаты показывает вид
@@ -1222,14 +1227,14 @@ def main_scan_start(request):
     return _render_main_status(genre_scan_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def main_scan_stop(request):
     genre_scan_stop_flag.set()
     return _render_main_status(genre_scan_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def main_scan_status(request):
     return _render_main_status(genre_scan_job.get())
 
@@ -1238,12 +1243,12 @@ def _render_main_status(state):
     return _render_job("fb2parser/main_scan_statusbar.html", state)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def archive(request):
     return render(request, "fb2parser/archive.html", _ctx("archive", _("Archive")))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def database(request):
     return render(request, "fb2parser/database.html", _ctx("database", _("Database")))
 
@@ -1274,7 +1279,7 @@ def _genre_tree_to_list(nodes, depth=0, parent_name=None):
     return result
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def genres(request):
     from .fb2parser_bridge import get_genres_manager
     error = None
@@ -1318,7 +1323,7 @@ def genres(request):
     ))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_add(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1329,7 +1334,7 @@ def genres_add(request):
     return JsonResponse({"ok": ok})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_rename(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1340,7 +1345,7 @@ def genres_rename(request):
     return JsonResponse({"ok": ok})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_delete(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1350,7 +1355,7 @@ def genres_delete(request):
     return JsonResponse({"ok": ok})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_move(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1364,7 +1369,7 @@ def genres_move(request):
 # ── Менеджер жанров: интерактивная работа со справочником и ассоциациями
 #    (баг №113) ────────────────────────────────────────────────────────────────
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_associate_add(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1377,7 +1382,7 @@ def genres_associate_add(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_associate_remove(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1388,7 +1393,7 @@ def genres_associate_remove(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_pattern_add(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1401,7 +1406,7 @@ def genres_pattern_add(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_pattern_remove(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1412,7 +1417,7 @@ def genres_pattern_remove(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_section_map_set(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1425,7 +1430,7 @@ def genres_section_map_set(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_code_assign_set(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1440,7 +1445,7 @@ def genres_code_assign_set(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_excluded_code_add(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1453,7 +1458,7 @@ def genres_excluded_code_add(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_new_codes_clear(request):
     """Снять отметку «новый» со всех кодов — просмотрены, решено оставить как есть."""
@@ -1462,7 +1467,7 @@ def genres_new_codes_clear(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_excluded_code_remove(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1472,7 +1477,7 @@ def genres_excluded_code_remove(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def genres_clear_assigned(request):
     from .fb2parser_bridge import get_genres_manager
@@ -1492,7 +1497,7 @@ norm_job = JobState("fb2parser:normalize", {
 norm_stop_flag = JobFlag("fb2parser:normalize:stop")
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def normalize_setup(request):
     """Сохраняет выбранные папки в сессии и возвращает URL для редиректа."""
     import json as _json
@@ -1521,7 +1526,7 @@ def normalize_setup(request):
     return JsonResponse({"redirect": reverse("fb2parser:normalize")})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def normalize_clear_filter(request):
     """Явно снять фильтр подпапок (кнопка "✕ Clear filter" на странице нормализации)."""
     if request.method != "POST":
@@ -1532,7 +1537,7 @@ def normalize_clear_filter(request):
     return HttpResponse("ok")
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def normalize(request):
     import json as _json
 
@@ -1712,7 +1717,7 @@ def _run_normalize_thread(folder_path, filter_subfolders=None):
         norm_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def normalize_start(request):
     import json as _json
     if request.method != "POST":
@@ -1741,7 +1746,7 @@ def normalize_start(request):
     return _render_norm_status(norm_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def normalize_stop(request):
     """Прервать текущий фоновый проход нормализации (см. norm_stop_flag —
@@ -1751,7 +1756,7 @@ def normalize_stop(request):
     return _render_norm_status(norm_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def normalize_set_root(request):
     """Сохранить путь, введённый в поле "Папка для Input", не дожидаясь запуска нормализации."""
@@ -1764,7 +1769,7 @@ def normalize_set_root(request):
     return JsonResponse({"ok": True})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def normalize_status(request):
     return _render_norm_status(norm_job.get())
 
@@ -1811,7 +1816,7 @@ def _with_umbrella_cycle_numbers(page, all_records):
     return out
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def normalize_table(request):
     """Возвращает HTML-строки таблицы нормализации (постранично)."""
     offset = int(request.GET.get("offset", 0))
@@ -1837,7 +1842,7 @@ def normalize_table(request):
     return HttpResponse(html)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def names_from_csv(request):
     """GET ?csv_path=... → список авторов с неизвестным полом из CSV-файла."""
     import csv as _csv
@@ -1898,7 +1903,7 @@ def names_from_csv(request):
     return HttpResponse(html)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def names_list(request):
     """Возвращает список авторов с неизвестным полом из текущего norm_job.
 
@@ -1956,7 +1961,7 @@ def names_list(request):
     return HttpResponse(html)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def names_save(request):
     """POST {male: [...], female: [...]} — добавляет имена в app_settings.json."""
     if request.method != "POST":
@@ -2002,7 +2007,7 @@ def names_save(request):
                          "male": male_added, "female": female_added})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def names_check_online(request):
     """POST {authors: ["Иванов Иван", ...]} → StreamingHttpResponse с SSE.
     Каждое событие: data: {"author": "...", "gender": "М"|"Ж"|"", "status": "ok"|"unknown"|"error"|"rate_limit"}
@@ -2069,7 +2074,7 @@ def _is_female_author(author_str: str, male_set: set, female_set: set) -> bool:
     return False
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def martyrs_list(request):
     """Возвращает список файлов, у которых все авторы — женщины."""
     import re as _re
@@ -2165,7 +2170,7 @@ def _delete_paths_confined(paths, folder):
     return deleted, errors
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def martyrs_delete(request):
     """POST {paths: [...]} — удаляет файлы и пустые папки вверх до корня."""
     if request.method != "POST":
@@ -2274,7 +2279,7 @@ def _run_broken_files_thread(folder):
         broken_files_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def broken_files_start(request):
     """Запускает фоновое сканирование библиотеки на битые/неполные файлы.
     Прогресс и итоговый список — через broken_files_status."""
@@ -2302,7 +2307,7 @@ def broken_files_start(request):
     return _render_broken_files_status(broken_files_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def broken_files_status(request):
     return _render_broken_files_status(broken_files_job.get())
 
@@ -2314,7 +2319,7 @@ def _render_broken_files_status(state):
     )
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def broken_files_delete(request):
     """POST {paths: [...]} — удаляет файлы и пустые папки вверх до корня."""
     if request.method != "POST":
@@ -2495,7 +2500,7 @@ def _find_duplicates(records, folder_path) -> dict:
     return result
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def duplicates_find(request):
     """GET — ищет дубликаты в записях текущего сеанса нормализации."""
     from pathlib import Path as _Path
@@ -2583,7 +2588,7 @@ def duplicates_find(request):
     })
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def duplicates_delete(request):
     """POST {paths: [...]} — удаляет отмеченные дубликаты и пустые папки."""
     if request.method != "POST":
@@ -2744,7 +2749,7 @@ def _serialize_compiler_group(svc, g):
     return row, detail
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compiler_scan(request):
     """GET — ищет группы для компиляции из записей текущего сеанса нормализации."""
     from pathlib import Path as _Path
@@ -2802,7 +2807,7 @@ def compiler_scan(request):
     })
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compiler_exclude(request):
     """POST {group_idx, path, action} — вручную исключить/вернуть книгу в группе.
 
@@ -2906,7 +2911,7 @@ def _run_compiler_thread(indices, delete_sources):
         compiler_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compiler_run(request):
     """POST {indices:[...], delete_sources:bool} — запускает компиляцию в фоне."""
     if request.method != "POST":
@@ -2939,7 +2944,7 @@ def compiler_run(request):
     return JsonResponse({"ok": True, "total": len(indices)})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def compiler_status(request):
     """GET — текущий статус компиляции (для polling)."""
     s = compiler_job.get()
@@ -3004,7 +3009,7 @@ def _requested_sync_paths(request):
     return paths if isinstance(paths, list) else []
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def sync(request):
     """Окно синхронизации. Папки — те, что отмечены галочками в дереве на
     главной (POST/GET `paths`, JSON); каждая проверяется по правилу допуска
@@ -3031,7 +3036,7 @@ def sync(request):
     })
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def sync_reconciliation_resolve(request):
     """POST — разрешить ОДНУ запись из "Requires manual reconciliation"
     (см. _build_folder_structure() в synchronization.py). JSON:
@@ -3140,7 +3145,7 @@ def sync_reconciliation_resolve(request):
     return JsonResponse({"ok": True, "message": result_msg, "remaining": len(notes)})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def sync_genre_conflict_resolve(request):
     """POST {author, series, genre} — выбрать жанр для серии, тома которой
     получили поровну разные жанры (см. SynchronizationService.
@@ -3420,7 +3425,7 @@ def _run_sync_thread():
         sync_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def sync_start(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
@@ -3518,13 +3523,13 @@ def _reap_dead_sync_job():
         sync_job.finish()
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def sync_status(request):
     _reap_dead_sync_job()
     return _render_sync_status(sync_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def sync_stop(request):
     if request.method != "POST":
         from django.http import HttpResponseNotAllowed
@@ -3537,27 +3542,27 @@ def _render_sync_status(state):
     return _render_job("fb2parser/sync_status.html", state)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def log(request):
     return render(request, "fb2parser/log.html", _ctx("log", _("Log")))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def search(request):
     return render(request, "fb2parser/search.html", _ctx("search", _("Metadata Search")))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def new_books(request):
     return render(request, "fb2parser/new_books.html", _ctx("new_books", _("New Books")))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def series_gaps(request):
     return render(request, "fb2parser/series_gaps.html", _ctx("series_gaps", _("Series with Gaps")))
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def integrity(request):
     return render(request, "fb2parser/integrity.html", _ctx("integrity", _("FB2 Integrity Check")))
 
@@ -3592,7 +3597,7 @@ _SETTINGS_LISTS = {
 }
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def fb2parser_settings(request):
     from fb2parser_core.settings_manager import SettingsManager
 
@@ -3639,7 +3644,7 @@ def fb2parser_settings(request):
     return render(request, "fb2parser/settings.html", ctx)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def settings_list_op(request):
     """POST {key, value, action:'add'|'delete'} → JSON."""
     import json as _json
@@ -3674,7 +3679,7 @@ def settings_list_op(request):
     return JsonResponse({'ok': True, 'list': lst})
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def settings_conv_op(request):
     """POST {from_val, to_val?, action:'add'|'delete'} → JSON."""
     import json as _json
@@ -3758,7 +3763,7 @@ def _inbox_signal_text(signals):
     return "; ".join(parts)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def inbox(request):
     from .fb2parser_bridge import get_autosync_service
     svc = get_autosync_service()
@@ -3806,7 +3811,7 @@ def _render_inbox_status(state):
     return _render_job("fb2parser/inbox_status.html", state)
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def inbox_run(request):
     """«Обработать сейчас»: запуск автосинхронизации вне расписания."""
@@ -3816,7 +3821,7 @@ def inbox_run(request):
     return _render_inbox_status(inbox_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 @require_http_methods(["POST"])
 def inbox_decide(request):
     """Решение по порции: жанр каждой выбранной единицы → синхронизация."""
@@ -3830,6 +3835,6 @@ def inbox_decide(request):
     return _render_inbox_status(inbox_job.get())
 
 
-@staff_member_required(login_url="/web/login/")
+@superuser_required
 def inbox_status(request):
     return _render_inbox_status(inbox_job.get())

@@ -91,7 +91,7 @@ def test_profile_creates_shows_once_and_revokes(client, monkeypatch, settings):
     user = User.objects.create_user("reader", password=_STRONG)
     client.force_login(user)
 
-    page = client.post(reverse("web:profile"), {"action": "opds_new"}).content.decode()
+    page = client.post(reverse("web:profile"), {"action": "opds_new", "confirm_password": _STRONG}).content.decode()
     shown = re.findall(r"<code>([A-Z0-9-]{23})</code>", page)
     assert len(shown) == 1 and opds_passwords.authenticate("reader", shown[0]) is not None
     assert shown[0] not in client.get(reverse("web:profile")).content.decode()  # только один раз

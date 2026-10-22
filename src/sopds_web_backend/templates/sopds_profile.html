@@ -176,9 +176,11 @@
   <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
     {% trans "A second step after the password: a 6-digit code from an app on your phone that changes every 30 seconds. Works without the internet. If you lose the phone, the server administrator turns it off for your account." %}
   </p>
-  <form method="post" action="{% url 'web:profile' %}" style="margin:0;">
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0; display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
     {% csrf_token %}
     <input type="hidden" name="action" value="totp_start">
+      <input type="password" name="confirm_password" required autocomplete="current-password"
+             placeholder="{% trans 'Your password' %}" aria-label="{% trans 'Your password' %}" style="margin:0; max-width:200px;">
     <button type="submit" class="button" style="margin:0;">{% trans "Connect an authenticator app" %}</button>
   </form>
   {% endif %}
@@ -190,6 +192,12 @@
   <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
     {% trans "Reader apps store the password and send it with every request. Give them this separate password instead of your site password: it works only for the OPDS catalog and can be revoked without changing your main password." %}
   </p>
+  {% if second_factor %}
+  <p style="font-size:0.88rem; margin-bottom:0.8rem;">{% trans "Two-step sign-in is on, so reader apps accept only this password, not your site password." %}</p>
+  {% endif %}
+  {% if errors.opds %}
+  <div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">{{ errors.opds }}</div>
+  {% endif %}
   {% if opds_new_password %}
   <div class="callout success" style="padding:0.6rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">
     <div>{% trans "Catalog address:" %} <code>{{ opds_url }}</code></div>
@@ -203,11 +211,13 @@
     {% if opds_record.last_used %}{% blocktrans with used=opds_record.last_used|date:"d.m.Y H:i" %}Last used {{ used }}.{% endblocktrans %}{% else %}{% trans "Not used yet." %}{% endif %}
   </p>
   {% endif %}
-  <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-    <form method="post" action="{% url 'web:profile' %}" style="margin:0;"
+  <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
+    <form method="post" action="{% url 'web:profile' %}" style="margin:0; display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;"
           {% if opds_record or opds_new_password %}onsubmit="return confirm('{% trans "Create a new reader password? The old one stops working." %}');"{% endif %}>
       {% csrf_token %}
       <input type="hidden" name="action" value="opds_new">
+      <input type="password" name="confirm_password" required autocomplete="current-password"
+             placeholder="{% trans 'Your password' %}" aria-label="{% trans 'Your password' %}" style="margin:0; max-width:200px;">
       <button type="submit" class="button" style="margin:0;">{% if opds_record or opds_new_password %}{% trans "Create a new password" %}{% else %}{% trans "Create a reader password" %}{% endif %}</button>
     </form>
     {% if opds_record or opds_new_password %}
@@ -224,6 +234,9 @@
 <!-- ── Telegram (бот и канал библиотеки) ─────────────────────── -->
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">Telegram</div>
+  {% if errors.telegram %}
+  <div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">{{ errors.telegram }}</div>
+  {% endif %}
   {% if request.user.is_superuser and telegram_enabled %}
   <p style="font-size:0.88rem; margin-bottom:0.6rem;">{% trans "For superusers without an authenticator app: the sign-in code is sent to this Telegram." %}</p>
   {% endif %}
@@ -234,10 +247,12 @@
   <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
     {% trans "In the bot you can search for books and download them; new books are announced in the library channel (the bot sent you the link to join it)." %}
   </p>
-  <form method="post" action="{% url 'web:profile' %}" style="margin:0;"
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0; display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;"
         onsubmit="return confirm('{% trans "Unlink Telegram? You will also be removed from the library channel." %}');">
     {% csrf_token %}
     <input type="hidden" name="action" value="tg_unlink">
+      <input type="password" name="confirm_password" required autocomplete="current-password"
+             placeholder="{% trans 'Your password' %}" aria-label="{% trans 'Your password' %}" style="margin:0; max-width:200px;">
     <button type="submit" class="button secondary" style="margin:0;">{% trans "Unlink Telegram" %}</button>
   </form>
   {% else %}
@@ -251,9 +266,11 @@
     <div style="font-size:0.82rem; color:var(--text-muted);">{% trans "The code is valid for 24 hours." %}</div>
   </div>
   {% endif %}
-  <form method="post" action="{% url 'web:profile' %}" style="margin:0;">
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0; display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
     {% csrf_token %}
     <input type="hidden" name="action" value="tg_code">
+      <input type="password" name="confirm_password" required autocomplete="current-password"
+             placeholder="{% trans 'Your password' %}" aria-label="{% trans 'Your password' %}" style="margin:0; max-width:200px;">
     <button type="submit" class="button" style="margin:0;">{% if tg_code %}{% trans "Get a new code" %}{% else %}{% trans "Get a link code" %}{% endif %}</button>
   </form>
   {% endif %}

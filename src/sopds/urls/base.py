@@ -22,6 +22,10 @@ from django.views.generic import RedirectView
 
 from sopds_web_backend import views as web_views
 
+# /admin/ — только суперпользователь (роль — is_superuser, как на сайте и в
+# fb2parser; одного is_staff мало).
+admin.site.has_permission = lambda request: request.user.is_active and request.user.is_superuser
+
 urlpatterns = [
     path("i18n/setlang/", set_language, name="set_language"),
     path("opds/", include("opds_catalog.urls", namespace="opds")),

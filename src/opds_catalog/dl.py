@@ -6,7 +6,9 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 import zipfile
 
 from django.http import (
@@ -18,6 +20,7 @@ from django.http import (
     JsonResponse,
 )
 from django.utils import timezone
+from django.utils.html import escape
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -26,6 +29,7 @@ from PIL import Image
 from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
+from fb2parser_core.path_safety import is_within
 from opds_catalog import opdsdb, settings, visibility
 from opds_catalog.converters import CONVERT_TIMEOUT_SECONDS
 from opds_catalog.decorators import sopds_auth_validate
@@ -80,8 +84,9 @@ def Download(request, book_id, zip_flag):
     if s is None:
         # Книга не может быть прочитана из файловой системы, подробности зафиксированы в логе.
         # TODO: Сделать нормальную обработку и вернуть нормальную страницу
+        # Название — из FB2-файла: без экранирования это XSS.
         return HttpResponseNotFound(
-            f"Book {book.id} with title '{book.title}' was not found in library files"
+            f"Book {book.id} with title '{escape(book.title)}' was not found in library files"
         )
 
     if zip_flag == "1":
@@ -332,27 +337,27 @@ def convert_book(book: Book, convert_type: str) -> tuple:
     # без запасного поиска имени в некорректной кодировке (get_infolist_filename),
     # который есть в read_from_zipped_file — при несовпадении имени это
     # падало необработанным KeyError вместо аккуратного 404.
-    tmp_fb2_path = None
-    if book.cat_type == opdsdb.CAT_NORMAL:
-        file_path = os.path.join(get_fs_book_path(book), os.path.basename(book.filename))
-    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-        file_data = getFileData(book)
-        if file_data is None:
-            raise ConversionFailed("book file not found")
-        # Баг №96: book.filename — сырое имя записи внутри ZIP/INP-архива,
-        # не гарантированно безопасное (см. sopdscan.processzip: имя берётся
-        # прямо из z.namelist()) — os.path.basename() перед вставкой во
-        # временный путь, иначе '../../../x' записал бы файл ЗА пределами
-        # SOPDS_TEMP_DIR.
-        tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, os.path.basename(book.filename))
-        with open(tmp_fb2_path, "wb") as f:
-            f.write(file_data.read())
-        file_path = tmp_fb2_path
-    else:
+    if book.cat_type not in (opdsdb.CAT_NORMAL, opdsdb.CAT_ZIP, opdsdb.CAT_INP):
         raise ConversionUnavailable(f"catalog type {book.cat_type}")
-
-    tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
+    # Своя временная папка на каждую конвертацию и постоянные имена в ней:
+    # одновременные конвертации книг с одним названием не перезаписывают
+    # друг друга (иначе пользователь мог получить чужую книгу), а название
+    # из FB2 и имя записи архива (баг №96) не попадают ни в путь, ни в
+    # командную строку конвертера.
+    work_dir = tempfile.mkdtemp(prefix="sopds-convert-", dir=config.SOPDS_TEMP_DIR)
+    tmp_conv_path = os.path.join(work_dir, f"book.{convert_type}")
     try:
+        if book.cat_type == opdsdb.CAT_NORMAL:
+            file_path = os.path.join(get_fs_book_path(book), os.path.basename(book.filename))
+            if not is_within(file_path, config.SOPDS_ROOT_LIB):
+                raise ConversionFailed("book file outside the library")
+        else:
+            file_data = getFileData(book)
+            if file_data is None:
+                raise ConversionFailed("book file not found")
+            file_path = os.path.join(work_dir, "book.fb2")
+            with open(file_path, "wb") as f:
+                f.write(file_data.read())
         proc = subprocess.Popen(
             [converter_path, file_path, tmp_conv_path],
             stdout=subprocess.PIPE,
@@ -372,12 +377,7 @@ def convert_book(book: Book, convert_type: str) -> tuple:
             return dlfilename, fo.read()
     finally:
         # временные файлы — и при успехе, и при сбое конвертации
-        for path in (tmp_fb2_path, tmp_conv_path):
-            if path:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+        shutil.rmtree(work_dir, ignore_errors=True)
 
 
 @sopds_auth_validate

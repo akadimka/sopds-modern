@@ -40,7 +40,7 @@ def env(tmp_path, monkeypatch, settings, client):
     gm.set_section_mapping("Фантастика", "Фантастика")
     monkeypatch.setattr(bridge, "get_genres_manager", make_gm)
     monkeypatch.setattr(views, "_new_codes_path", lambda: str(tmp_path / "new_codes.json"))
-    client.force_login(User.objects.create_user("staff", password="Kx7#vQ2!mLp9", is_staff=True))
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
     return client, make_gm
 
 

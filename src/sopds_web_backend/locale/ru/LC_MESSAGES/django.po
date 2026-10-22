@@ -1551,6 +1551,23 @@ msgstr "только что"
 msgid "Nobody"
 msgstr "Никого"
 
+msgid "Your password"
+msgstr "Ваш пароль"
+
+msgid ""
+"Two-step sign-in is on, so reader apps accept only this password, not your "
+"site password."
+msgstr ""
+"Включён вход в два шага, поэтому читалки принимают только этот пароль, а не "
+"пароль от сайта."
+
+msgid "Too many wrong codes for this account — try again in an hour."
+msgstr ""
+"Слишком много неверных кодов для этой учётной записи — попробуйте через час."
+
+msgid "Password is incorrect."
+msgstr "Неверный пароль."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

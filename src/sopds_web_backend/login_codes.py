@@ -10,7 +10,11 @@
    Не доставлен ни в один — вход не выполняется (иначе второй шаг ничего
    бы не защищал).
 
-5 неверных кодов — заново пароль. Выход из тупика — на сервере:
+5 неверных кодов — заново пароль. Неверные коды считаются и на весь
+аккаунт: ACCOUNT_MAX_FAILURES за час (при любых повторных входах с верным
+паролем и в профиле — подключение/отключение приложения) — код на час не
+принимается и не отправляется (иначе знающий пароль перебирал бы код,
+входя заново). Выход из тупика — на сервере:
 `manage.py totp_reset <логин>` (потерян телефон с приложением),
 `manage.py admin_login_code off` (не доходит Telegram-код).
 
@@ -42,6 +46,39 @@ METHOD_TELEGRAM = "telegram"
 ERR_EXPIRED = "expired"
 ERR_WRONG = "wrong"
 ERR_TOO_MANY = "too_many"
+ERR_LOCKED = "locked"
+
+ACCOUNT_MAX_FAILURES = 10
+ACCOUNT_LOCK_SECONDS = 60 * 60
+
+
+def _failures_key(user) -> str:
+    return f"sopds-2fa-failures:{user.pk}"
+
+
+def account_locked(user) -> bool:
+    from django.core.cache import cache
+    return (cache.get(_failures_key(user)) or 0) >= ACCOUNT_MAX_FAILURES
+
+
+def note_failure(user) -> None:
+    from django.core.cache import cache
+    key = _failures_key(user)
+    cache.add(key, 0, ACCOUNT_LOCK_SECONDS)
+    try:
+        cache.incr(key)
+    except ValueError:              # ключ успел истечь
+        cache.set(key, 1, ACCOUNT_LOCK_SECONDS)
+
+
+def clear_failures(user) -> None:
+    from django.core.cache import cache
+    cache.delete(_failures_key(user))
+
+
+def locked_message() -> str:
+    from django.utils.translation import gettext as _
+    return _("Too many wrong codes for this account — try again in an hour.")
 
 
 def _settings():
@@ -140,12 +177,19 @@ def verify(request, code: str) -> Tuple[Optional[object], str, str]:
     if user is None:
         request.session.pop(SESSION_KEY, None)
         return None, ERR_EXPIRED, ""
+    if account_locked(user):
+        request.session.pop(SESSION_KEY, None)
+        return None, ERR_LOCKED, ""
     code = "".join(c for c in (code or "") if c.isdigit())
     if state.get("method") == METHOD_TOTP:
         ok = totp.verify(user, code)
     else:
         ok = constant_time_compare(_code_hash(code), state["hash"])
     if not ok:
+        note_failure(user)
+        if account_locked(user):
+            request.session.pop(SESSION_KEY, None)
+            return None, ERR_LOCKED, ""
         state["attempts"] += 1
         if state["attempts"] >= MAX_ATTEMPTS:
             request.session.pop(SESSION_KEY, None)
@@ -153,5 +197,6 @@ def verify(request, code: str) -> Tuple[Optional[object], str, str]:
         request.session[SESSION_KEY] = state
         return None, ERR_WRONG, ""
     request.session.pop(SESSION_KEY, None)
+    clear_failures(user)
     user.backend = state["backend"]
     return user, "", state["next"]

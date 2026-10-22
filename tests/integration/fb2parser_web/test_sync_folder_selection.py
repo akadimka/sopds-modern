@@ -42,7 +42,7 @@ def env(tmp_path, monkeypatch, settings, client):
     started = []
     monkeypatch.setattr(views, "_spawn_sync_process", lambda: started.append(1))
     views.sync_job.reset()
-    client.force_login(User.objects.create_user("staff", password="Kx7#vQ2!mLp9", is_staff=True))
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
 
     scan = tmp_path / "in"
     _book(scan / "Готово" / "1.fb2", "Фантастика")

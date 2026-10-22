@@ -176,7 +176,7 @@ def test_profile_link_code_and_unlink(client, tg, web):
     user = _user()
     client.force_login(user)
 
-    page = client.post(reverse("web:profile"), {"action": "tg_code"}).content.decode("utf-8")
+    page = client.post(reverse("web:profile"), {"action": "tg_code", "confirm_password": _STRONG}).content.decode("utf-8")
     code = TelegramLink.objects.get(user=user).code
     assert code in page and f"https://t.me/lib_bot?start=link_{code}" in page
 
@@ -184,7 +184,7 @@ def test_profile_link_code_and_unlink(client, tg, web):
     page = client.get(reverse("web:profile")).content.decode("utf-8")
     assert "@reader_tg" in page
 
-    client.post(reverse("web:profile"), {"action": "tg_unlink"})
+    client.post(reverse("web:profile"), {"action": "tg_unlink", "confirm_password": _STRONG})
     assert tu.linked_user(777) is None
 
 

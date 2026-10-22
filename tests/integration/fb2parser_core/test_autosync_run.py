@@ -207,7 +207,7 @@ def test_inbox_page_and_decide_view(tmp_path, monkeypatch, client, settings):
     svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
     svc.run()
     monkeypatch.setattr(bridge, "get_autosync_service", lambda: svc)
-    client.force_login(User.objects.create_user("staff", password="Kx7#vQ2!mLp9", is_staff=True))
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
 
     page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
     unit = svc.inbox()[0].units[0]

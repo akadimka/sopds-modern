@@ -10,7 +10,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def client_staff(client):
-    client.force_login(User.objects.create_user("staff", password="Kx7#vQ2!mLp9", is_staff=True))
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
     views.compress_job.finish()
     views.compress_job.reset()
     yield client

@@ -58,7 +58,7 @@ def _now_code(user):
 
 def _connect(client, user):
     client.force_login(user)
-    page = client.post(reverse("web:profile"), {"action": "totp_start"}).content.decode()
+    page = client.post(reverse("web:profile"), {"action": "totp_start", "confirm_password": _STRONG}).content.decode()
     device = TotpDevice.objects.get(user=user)
     assert device.secret in page and "otpauth://totp/SOPDS:" in page and not device.confirmed
     client.post(reverse("web:profile"), {"action": "totp_confirm", "code": _now_code(user)})
@@ -93,7 +93,7 @@ def test_connect_then_sign_in_with_app_code(client, env):
 def test_wrong_confirmation_code_keeps_it_off(client, env):
     user = User.objects.create_user("reader", password=_STRONG)
     client.force_login(user)
-    client.post(reverse("web:profile"), {"action": "totp_start"})
+    client.post(reverse("web:profile"), {"action": "totp_start", "confirm_password": _STRONG})
     page = client.post(reverse("web:profile"), {"action": "totp_confirm", "code": "000000"}).content.decode()
     assert "Wrong code" in page and totp.device_for(user) is None
     client.post(reverse("web:profile"), {"action": "totp_cancel"})
@@ -130,7 +130,7 @@ def test_second_connect_is_refused_while_one_is_on(client, env):
     _connect(client, user)
     client.force_login(user)
     secret = TotpDevice.objects.get(user=user).secret
-    page = client.post(reverse("web:profile"), {"action": "totp_start"}).content.decode()
+    page = client.post(reverse("web:profile"), {"action": "totp_start", "confirm_password": _STRONG}).content.decode()
     assert "already connected" in page and TotpDevice.objects.get(user=user).secret == secret
 
 
@@ -166,15 +166,17 @@ def test_app_is_enough_to_enable_the_second_factor(client, env, tmp_path, monkey
 
 @pytest.mark.django_db
 @pytest.mark.override_config(SOPDS_AUTH=True)
-def test_reader_apps_need_no_code(client, env):
-    """Читалки (OPDS, HTTP Basic) кода не вводят: второй фактор — только для
-    входа на сайт. Сессия читалки и так действует лишь для /opds/."""
+def test_reader_apps_need_reader_password_with_second_factor(client, env):
+    """Читалки (OPDS, HTTP Basic) кода не вводят, поэтому со вторым фактором
+    основной пароль им не годится — иначе один пароль без кода открывал бы
+    всю библиотеку аккаунта; пароль для читалок — годится. Сессия читалки и
+    так действует лишь для /opds/."""
     from sopds_web_backend import opds_passwords
-    admin = User.objects.create_user("boss", password=_STRONG, is_staff=True)
+    admin = User.objects.create_user("boss", password=_STRONG, is_staff=True, is_superuser=True)
     _connect(client, admin)
     env.update(admin_login_code=True)
-    for password in (_STRONG, opds_passwords.generate(admin)):
+    for password, status in ((_STRONG, 401), (opds_passwords.generate(admin), 200)):
         reader = client.__class__()
         token = base64.b64encode(f"boss:{password}".encode()).decode()
-        assert reader.get(reverse("opds:main"), HTTP_AUTHORIZATION=f"Basic {token}").status_code == 200
+        assert reader.get(reverse("opds:main"), HTTP_AUTHORIZATION=f"Basic {token}").status_code == status
         assert reader.get(reverse("fb2parser:dashboard")).status_code == 302  # сайт — нет

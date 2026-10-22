@@ -1,7 +1,8 @@
 {% load i18n %}{# «Сейчас на сайте» — шапка (sopds_top.html) и обновление раз в минуту (web:online) #}
-<span id="sp-online" class="sp-online" tabindex="0"
+<span id="sp-online" class="sp-online"{% if request.user.is_superuser %} tabindex="0"{% endif %}
       hx-get="{% url 'web:online' %}" hx-trigger="every 60s [!this.matches(':hover, :focus-within')]" hx-swap="outerHTML">
   {% trans "Online now:" %} <strong>({{ online_users|length }})</strong>
+  {% if request.user.is_superuser %}{# имена — только суперпользователю: они помогают подбирать пароли #}
   <span class="sp-online-list" role="tooltip">
     {% for u in online_users %}
     <span class="sp-online-row">
@@ -13,4 +14,5 @@
     <span class="sp-online-row">{% trans "Nobody" %}</span>
     {% endfor %}
   </span>
+  {% endif %}
 </span>

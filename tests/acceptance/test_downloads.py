@@ -71,6 +71,21 @@ class TestDownloads:
         response = client.get(reverse("opds:download", args=(4, 0)))
         assert response.status_code == 404
 
+    @pytest.mark.override_config(SOPDS_AUTH=False)
+    def test_missing_file_page_escapes_title(self, client, catalog, publish) -> None:
+        """Название — из FB2-файла: в странице «файл не найден» без
+        экранирования оно выполнялось бы как HTML (XSS)."""
+        book = Book.objects.create(
+            title="<script>alert(1)</script>", search_title="X", format="fb2", filename="no-such-file.fb2",
+            path=".", cat_type=opdsdb.CAT_NORMAL, catalog=catalog, avail=2,
+        )
+        publish(book)
+        response = client.get(reverse("opds:download", args=(book.id, 0)))
+        body = response.content.decode("utf-8")
+        assert response.status_code == 404
+        assert "was not found in library files" in body
+        assert "<script>" not in body and "&lt;script&gt;" in body
+
 
 # ── Обложки и thumbnail ──────────────────────────────────────────────────
 
@@ -319,8 +334,9 @@ class TestConvertFB2:
 
         assert response.status_code == 200
         # Файл, переданный конвертеру, — это распакованное содержимое,
-        # а не .zip и не путь внутрь .zip.
-        assert captured["path"].endswith("262001.fb2")
+        # а не .zip и не путь внутрь .zip (имя — постоянное, в своей
+        # временной папке конвертации).
+        assert captured["path"].endswith(".fb2")
         assert captured["content"] == original_bytes
 
     def test_convert_malicious_zip_entry_name_stays_inside_temp_dir(
@@ -365,4 +381,7 @@ class TestConvertFB2:
                 client.get(reverse("opds:convert", args=(book.id, "epub")))
 
         assert not escape_target.exists()
-        assert os.path.dirname(os.path.normpath(captured["path"])) == os.path.normpath(str(temp_dir))
+        # Временный файл — внутри SOPDS_TEMP_DIR (в своей папке конвертации),
+        # имя записи архива в путь не попадает.
+        assert os.path.commonpath([captured["path"], str(temp_dir)]) == os.path.normpath(str(temp_dir))
+        assert "evil" not in captured["path"]
