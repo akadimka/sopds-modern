@@ -1919,6 +1919,18 @@ msgstr "На суперпользователей лимит не действу
 msgid "Change role"
 msgstr "Смена роли"
 
+msgid ""
+"The page was out of date (you signed in or out in another tab). Please try "
+"again."
+msgstr ""
+"Страница устарела (вход или выход в другой вкладке). Повторите, пожалуйста."
+
+msgid "The page is out of date"
+msgstr "Страница устарела"
+
+msgid "Reload the page"
+msgstr "Обновить страницу"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

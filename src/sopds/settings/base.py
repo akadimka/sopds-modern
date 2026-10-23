@@ -52,7 +52,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    # Как стандартный, но запрос со «старой» cookie её не стирает (sopds/sessions.py).
+    "sopds.sessions.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -174,6 +175,9 @@ CACHES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+
+# Устаревшая форма (CSRF): вход — заново, иначе понятное «обновите страницу».
+CSRF_FAILURE_VIEW = "sopds_web_backend.views.csrf_failure"
 
 AUTH_PASSWORD_VALIDATORS = [
     {

@@ -1082,9 +1082,10 @@ def offline_page(request):
     return render(request, 'sopds_offline.html')
 
 
-@sopds_login(url="web:login")
 @require_http_methods(["GET"])
 def online_now(request):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=204)            # фоновый опрос htmx: страницу входа в шапку не вставлять
     """«Сейчас на сайте» для шапки — обновляется раз в минуту (htmx)."""
     from . import online
     return render(request, "sopds_online.html", {"online_users": online.online_users()})
@@ -1390,7 +1391,7 @@ def LoginView(request):
         url=next_url,
         allowed_hosts=allowed_hosts,
         require_https=False,
-    ):
+    ) or next_url.split("?")[0] == reverse("web:logout"):     # выход — только POST: после входа был бы 405
         next_url = reverse("web:main")
 
     user = authenticate(request, username=username, password=password)
@@ -1438,11 +1439,33 @@ def LoginView(request):
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
-@sopds_login(url="web:login")
 @require_http_methods(["POST"])
 def LogoutView(request):
-    logout(request)
+    # Без @sopds_login: уже вышедшего он отправлял на вход с next=/web/logout/,
+    # а после входа — на GET выхода (405).
+    if request.user.is_authenticated:
+        logout(request)
     return redirect(reverse("web:main"))
+
+
+def csrf_failure(request, reason=""):
+    """Форма устарела (CSRF-токен сменился: вход, выход, другая вкладка).
+    Вход — показать свежую страницу входа с пояснением; остальное —
+    понятная страница «обновите» вместо голого 403."""
+    message = _("The page was out of date (you signed in or out in another tab). Please try again.")
+    if request.resolver_match is None:
+        try:
+            from django.urls import resolve
+            match = resolve(request.path_info)
+        except Exception:
+            match = None
+    else:
+        match = request.resolver_match
+    if match is not None and (match.namespace, match.url_name) == ("web", "login"):
+        args = {"breadcrumbs": [_("Login")], "system_message": {"text": message, "type": "alert"}}
+        args.update(csrf(request))
+        return render(request, "sopds_login.html", args, status=403)
+    return render(request, "sopds_csrf_failure.html", {"message": message}, status=403)
 
 
 def handler403(request, args):

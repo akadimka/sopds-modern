@@ -1,0 +1,10 @@
+{% extends "sopds_main.html" %}
+{% load i18n %}
+{% block ext-body %}
+<div class="cell" style="max-width:560px;">
+  <h4 style="color:var(--text); margin-bottom:0.6rem;">{% trans "The page is out of date" %}</h4>
+  <p style="color:var(--text-muted);">{{ message }}</p>
+  <p><a class="button" href="{{ request.path }}">{% trans "Reload the page" %}</a>
+     <a class="button secondary" href="{% url 'web:main' %}">{% trans "Home" %}</a></p>
+</div>
+{% endblock %}
