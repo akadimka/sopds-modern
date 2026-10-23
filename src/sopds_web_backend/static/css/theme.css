@@ -20,6 +20,7 @@
     --bg-hover:     #e8f0fe;
     --border:       #e2e8f0;
     --border-focus: #94a3b8;
+    --input-border: #94a3b8;   /* рамка полей ввода — заметнее, чем у карточек */
 
     --text:         #1e293b;
     --text-muted:   #64748b;
@@ -95,6 +96,7 @@
     --bg-hover:     #1d3461;
     --border:       #334155;
     --border-focus: #475569;
+    --input-border: #64748b;   /* рамка полей ввода: --border почти сливается с их фоном */
 
     --text:         #e2e8f0;
     --text-muted:   #94a3b8;
@@ -222,10 +224,10 @@ code, pre, .font-mono {
 .progress.warning .progress-meter { background: #f59e0b !important; }
 
 /* ---- Forms / Inputs -------------------------------------- */
-input[type="text"], input[type="search"], input[type="email"],
+input[type="text"], input[type="search"], input[type="email"], input[type="url"],
 input[type="password"], input[type="number"], select, textarea {
     background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: var(--radius-md) !important;
     color: var(--text) !important;
     font-family: var(--font-sans) !important;
@@ -618,7 +620,7 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sopds-logo-row input[type="search"],
 .sopds-logo-row input[type="text"] {
     background: rgba(255,255,255,0.1) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
+    border: 1px solid var(--input-border) !important;
     color: #fff !important;
     border-radius: var(--radius-md) 0 0 var(--radius-md) !important;
 }

@@ -160,3 +160,17 @@ def test_language_switch_returns_to_the_current_address(page):
     html = client.get(reverse("web:settings")).content.decode("utf-8")
     assert "function sopdsSetLanguage" in html and "location.pathname + location.search + location.hash" in html
     assert "sopdsSetLanguage(" in html.split("active-lang", 1)[1]
+
+
+def test_device_limit_has_its_own_column_next_to_devices(page):
+    """Лимит устройств — своя колонка сразу после «Устройств» (раньше — безымянное
+    поле в «Действиях» после пароля); поле — часть формы строки (form=…)."""
+    client, _config = page
+    anna = User.objects.create_user("anna", password="Kx7#vQ2!mLp9")
+    html = client.get(reverse("web:users_list")).content.decode("utf-8")
+    headers = re.findall(r"<th>([^<]+)</th>", html.split('class="sp-users"', 1)[1].split("</thead>", 1)[0])
+    assert headers[headers.index("Devices") + 1] == "Device limit"
+    row = html.split(f'id="user-{anna.pk}"', 1)[1].split("</tr>", 1)[0]
+    cells = re.findall(r"<td>(.*?)</td>", row, re.S)
+    assert 'name="max_devices"' in cells[5] and f'form="user-edit-{anna.pk}"' in cells[5]
+    assert f'id="user-edit-{anna.pk}"' in row and 'name="max_devices"' not in cells[6]   # в «Действиях» его нет

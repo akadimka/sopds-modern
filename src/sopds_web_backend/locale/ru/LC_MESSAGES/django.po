@@ -1910,6 +1910,12 @@ msgstr "Управление пользователями"
 msgid "Create"
 msgstr "Создать"
 
+msgid "Device limit"
+msgstr "Лимит устройств"
+
+msgid "Superusers are not limited"
+msgstr "На суперпользователей лимит не действует"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

@@ -38,6 +38,7 @@
         <th>{% trans "Active" %}</th>
         <th>Telegram</th>
         <th>{% trans "Devices" %}</th>
+        <th>{% trans "Device limit" %}</th>
         <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
@@ -81,9 +82,20 @@
           {% else %}0 / {% if u.device_limit %}{{ u.device_limit }}{% else %}∞{% endif %}{% endif %}
         </td>
         <td>
+          {% if u.is_superuser %}
+          <span title="{% trans "Superusers are not limited" %}">∞</span>
+          {% else %}
+          {# поле формы строки (form=…): сохраняется кнопкой «Сохранить» в «Действиях» #}
+          <input type="number" name="max_devices" form="user-edit-{{ u.pk }}" min="0" value="{{ u.personal_device_limit|default_if_none:'' }}"
+                 placeholder="{% blocktrans with n=default_device_limit|default:'∞' %}default {{ n }}{% endblocktrans %}"
+                 title="{% trans "Device limit: empty — default from settings, 0 — no limit" %}"
+                 style="width:110px; height:2rem; margin:0; padding:0 0.5rem; font-size:0.82rem;">
+          {% endif %}
+        </td>
+        <td>
           <div class="sp-user-actions">
           <!-- Редактировать роль/пароль -->
-          <form method="post" action="{% url 'web:user_edit' u.pk %}">
+          <form method="post" action="{% url 'web:user_edit' u.pk %}" id="user-edit-{{ u.pk }}">
             {% csrf_token %}
             <select name="role">
               <option value="user" {% if not u.is_superuser %}selected{% endif %}>{% trans "User" %}</option>
@@ -93,12 +105,6 @@
                    autocomplete="new-password">
             <button type="button" class="button small secondary" onclick="sopdsFillPassword(this)" data-targets="pw-{{ u.pk }}"
                     title="{% trans "Generate a password" %}">🎲</button>
-            {% if not u.is_superuser %}
-            <input type="number" name="max_devices" min="0" value="{{ u.personal_device_limit|default_if_none:'' }}"
-                   placeholder="{% blocktrans with n=default_device_limit|default:'∞' %}default {{ n }}{% endblocktrans %}"
-                   title="{% trans "Device limit: empty — default from settings, 0 — no limit" %}"
-                   style="width:110px;">
-            {% endif %}
             <button type="submit" class="button small">{% trans "Save" %}</button>
           </form>
           <!-- Удалить (нельзя удалить себя) -->
@@ -113,7 +119,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
+      <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
