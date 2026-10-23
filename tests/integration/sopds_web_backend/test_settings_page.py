@@ -120,10 +120,12 @@ def test_unknown_or_missing_tab_opens_general(page):
 def test_users_and_sign_in_security_live_on_the_users_page(page):
     client, config = page
     settings_html = client.get(reverse("web:settings")).content.decode("utf-8")
+    form = settings_html.split('<form method="post" action="/web/settings/">', 1)[1].split("</form>", 1)[0]
+    users_pane = settings_html.split('id="s-pane-users"', 1)[1]
     for name in ("devices_per_user", "admin_login_code", "opds_app_passwords_only"):
-        assert f'name="{name}"' not in settings_html
+        assert f'name="{name}"' not in form and f'name="{name}"' in users_pane    # свои формы — вкладка «Пользователи»
     users_html = client.get(reverse("web:users_list")).content.decode("utf-8")
-    assert all(f'name="{n}"' in users_html for n in ("devices_per_user", "admin_login_code", "opds_app_passwords_only"))
+    assert _active(users_html) == ("users", "users")
     response = client.post(reverse("web:users_settings"), {"devices_per_user": "3", "opds_app_passwords_only": "on"})
     assert response.status_code == 302 and response["Location"].endswith("?saved=1#user-settings")
     sopds = json.loads(config.read_text(encoding="utf-8"))["sopds"]
@@ -139,3 +141,22 @@ def test_saving_main_settings_keeps_users_and_security_settings(page):
     client.post(reverse("web:settings"), form)
     sopds = json.loads(config.read_text(encoding="utf-8"))["sopds"]
     assert sopds["devices_per_user"] == 3 and sopds["opds_app_passwords_only"] is True
+
+
+def test_users_is_a_regular_tab(page):
+    """«Пользователи» — такая же вкладка, как остальные (не ссылка на отдельную
+    страницу); /web/settings/users/ открывает настройки сразу на ней."""
+    client, _config = page
+    html = client.get(reverse("web:settings")).content.decode("utf-8")
+    assert "onclick=\"sTab('users')\"" in html and 'href="/web/settings/users/"' not in html
+    assert 'id="s-pane-users" class="s-tab-panel"' in html                # скрыта, пока не выбрана
+    assert _active(client.get(reverse("web:users_list") + "?tab=telegram").content.decode("utf-8")) == ("telegram", "telegram")
+    error = client.post(reverse("web:user_create"), {"username": "", "password": ""})
+    assert error.status_code == 422 and _active(error.content.decode("utf-8")) == ("users", "users")
+
+
+def test_language_switch_returns_to_the_current_address(page):
+    client, _config = page
+    html = client.get(reverse("web:settings")).content.decode("utf-8")
+    assert "function sopdsSetLanguage" in html and "location.pathname + location.search + location.hash" in html
+    assert "sopdsSetLanguage(" in html.split("active-lang", 1)[1]

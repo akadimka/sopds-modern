@@ -1,5 +1,5 @@
 {% extends "sopds_main.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block ext-body %}
 <div class="cell small-12 sopds-settings">
@@ -18,10 +18,9 @@
     {% for tab, label in settings_tabs %}
     <button type="button" class="s-tab-btn{% if tab == active_tab %} active{% endif %}" onclick="sTab('{{ tab }}')">{{ label }}</button>
     {% endfor %}
-    <a href="{% url 'web:users_list' %}" class="s-tab-btn" style="text-decoration:none;">{% trans "Users" %}</a>
 </div>
 
-<form method="post">
+<form method="post" action="{% url 'web:settings' %}">
 {% csrf_token %}
 {# вкладка, на которой сохраняют: после сохранения страница откроется на ней #}
 <input type="hidden" name="tab" id="s-active-tab" value="{{ active_tab }}">
@@ -490,8 +489,14 @@
 </div>
 
 </form>
+
+<!-- ═══════════ Вкладка: Пользователи (свои формы — вне формы настроек) ═══════════ -->
+<div id="s-pane-users" class="s-tab-panel{% if active_tab == 'users' %} active{% endif %}">
+{% include "sopds_users_pane.html" %}
+</div>
 </div>
 
+<script src="{% static 'js/password-generator.js' %}"></script>
 <script>
 (function() {
     var cb = document.getElementById('id_samlib_rating');

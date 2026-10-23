@@ -959,6 +959,7 @@ _SETTINGS_TABS = {
     'scanner': _lazy('Scanner'),
     'schedule': _lazy('Schedule'),
     'telegram': 'Telegram',
+    'users': _lazy('Users'),
 }
 
 
@@ -1039,21 +1040,33 @@ def sopds_settings(request):
         if not errors:
             return redirect(reverse('web:settings') + f'?saved=1&tab={active_tab}')
 
+    return render(request, 'sopds_settings.html', _settings_context(request, sm, active_tab, errors))
+
+
+def _settings_context(request, sm, active_tab, errors=(), users_error=None):
+    """Страница настроек со всеми вкладками, включая «Пользователи»."""
     from opds_catalog.sopds_config import effective
     sopds = effective(sm.settings.get('sopds', {}))     # действующие значения, с умолчаниями
     autosync = sm.get_autosync_settings()
-    args = {
+    return {
         'breadcrumbs': [_('Settings')],
         'saved': request.GET.get('saved') == '1',
-        'errors': errors,
+        'errors': list(errors),
+        'users_error': users_error,
         'can_edit_exec_fields': request.user.is_superuser,
         'sopds': sopds,
         'active_tab': active_tab,
         'settings_tabs': [(key, label) for key, label in _SETTINGS_TABS.items()],
         'autosync': {k: v for k, v in autosync.items() if k != 'telegram_token'},
         'telegram_token_tail': autosync['telegram_token'][-4:],
+        **_users_context(),
     }
-    return render(request, 'sopds_settings.html', args)
+
+
+def _settings_page(request, active_tab, users_error=None, status=200):
+    from fb2parser_core.settings_manager import SettingsManager
+    context = _settings_context(request, SettingsManager(_site_config_path()), active_tab, users_error=users_error)
+    return render(request, 'sopds_settings.html', context, status=status)
 
 
 def service_worker(request):
@@ -1795,13 +1808,16 @@ def _users_context():
 
 
 def _users_list_error(request, error):
-    return render(request, "sopds_users.html", {**_users_context(), "error": error}, status=422)
+    return _settings_page(request, "users", users_error=error, status=422)
 
 
 @sopds_admin(url="web:login")
 @require_http_methods(["GET"])
 def users_list(request):
-    return render(request, "sopds_users.html", {**_users_context(), "saved": request.GET.get("saved") == "1"})
+    """Вкладка «Пользователи» страницы настроек (адрес — для ссылок и возврата
+    после действий с пользователями)."""
+    tab = request.GET.get("tab", "")
+    return _settings_page(request, tab if tab in _SETTINGS_TABS else "users")
 
 
 def _site_config_path():

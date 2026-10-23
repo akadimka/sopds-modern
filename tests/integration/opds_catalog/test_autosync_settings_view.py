@@ -203,7 +203,9 @@ def test_text_without_token_is_rejected_and_old_token_kept(client, env):
 def test_token_field_is_not_a_password_field(client, env):
     # иначе менеджер паролей браузера подставляет логин сайта в соседние поля
     page = _login(client, True).get(reverse("web:settings")).content.decode("utf-8")
-    assert 'type="password"' not in page and 'name="autosync_telegram_token"' in page
+    # браузер решает по каждой форме; поля паролей — только в формах вкладки «Пользователи»
+    form = page.split('<form method="post" action="/web/settings/">', 1)[1].split("</form>", 1)[0]
+    assert 'type="password"' not in form and 'name="autosync_telegram_token"' in form
 
 
 @pytest.mark.django_db

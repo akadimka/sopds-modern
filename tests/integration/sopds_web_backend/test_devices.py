@@ -266,9 +266,9 @@ def test_default_device_limit_saved_in_site_settings(tmp_path, monkeypatch):
     monkeypatch.setattr(fetchers, "stop_fetcher", lambda name: None)
     root = Client()
     root.force_login(User.objects.create_superuser("root", password=PASSWORD))
-    page = root.get(reverse("web:users_list")).content.decode("utf-8")      # на странице пользователей
-    assert 'name="devices_per_user"' in page
-    assert 'name="devices_per_user"' not in root.get(reverse("web:settings")).content.decode("utf-8")
+    page = root.get(reverse("web:users_list")).content.decode("utf-8")      # вкладка «Пользователи»
+    users_pane = page.split('id="s-pane-users"', 1)[1]
+    assert 'name="devices_per_user"' in users_pane
     data = {"language": "en-US", "maxitems": "20", "fb2toepub": "", "temp_dir": ""}
     root.post(reverse("web:users_settings"), {"devices_per_user": "3"})
     assert json.loads(config.read_text(encoding="utf-8"))["sopds"]["devices_per_user"] == 3
