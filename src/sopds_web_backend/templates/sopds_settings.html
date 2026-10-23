@@ -67,6 +67,14 @@
     </div>
 
     <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="sticky_header" {% if sopds.sticky_header %}checked{% endif %}>
+            <span>{% trans "Pin the header while scrolling" %}</span>
+        </label>
+        <div class="s-hint">{% trans "The top bar, the “Online now” line and the search stay at the top of the screen while scrolling, so they are always at hand. On small phone screens they take noticeable space. Default: off." %}</div>
+    </div>
+
+    <div class="s-field">
         <label>{% trans "Interface language" %}</label>
         <input type="text" name="language" value="{{ sopds.language }}" style="max-width:120px;">
         <div class="s-hint">{% trans "Interface language for visitors who have not chosen one with the EN/RU switch: en-US or ru-RU. Default: en-US." %}</div>

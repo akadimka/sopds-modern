@@ -24,6 +24,8 @@ _DEFAULTS: dict = {
     'doubles_hide': True,
     'book_extensions': '.pdf .djvu .fb2 .epub .mobi',
     'title_as_filename': False,
+    # Шапка (меню, «Сейчас на сайте», поиск) закреплена вверху при прокрутке
+    'sticky_header': False,
     'fb2toepub': '',
     'fb2tomobi': '',
     'fb2toazw3': '',
@@ -64,6 +66,7 @@ _KEY_MAP: dict[str, str] = {
     'SOPDS_DOUBLES_HIDE': 'doubles_hide',
     'SOPDS_BOOK_EXTENSIONS': 'book_extensions',
     'SOPDS_TITLE_AS_FILENAME': 'title_as_filename',
+    'SOPDS_STICKY_HEADER': 'sticky_header',
     'SOPDS_FB2TOEPUB': 'fb2toepub',
     'SOPDS_FB2TOMOBI': 'fb2tomobi',
     'SOPDS_FB2TOAZW3': 'fb2toazw3',

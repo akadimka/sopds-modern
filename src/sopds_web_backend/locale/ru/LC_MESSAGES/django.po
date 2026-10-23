@@ -1941,6 +1941,21 @@ msgstr ""
 "После каждого скана библиотеки бот присылает вам личный список новых книг — "
 "только тех, что вам видны. Не зависит от канала."
 
+msgid "Pin the header while scrolling"
+msgstr "Закреплять шапку при прокрутке"
+
+msgid ""
+"The top bar, the “Online now” line and the search stay at the top of the "
+"screen while scrolling, so they are always at hand. On small phone screens "
+"they take noticeable space. Default: off."
+msgstr ""
+"Верхнее меню, строка «Сейчас на сайте» и поиск остаются вверху экрана при "
+"прокрутке — всегда под рукой. На маленьких экранах телефонов занимают "
+"заметное место. По умолчанию выключено."
+
+msgid "by aKaDiMkA in 2026 (c)"
+msgstr "by aKaDiMkA in 2026 (c)"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

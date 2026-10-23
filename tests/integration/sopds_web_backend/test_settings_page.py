@@ -189,3 +189,21 @@ def test_role_and_password_have_own_columns(page):
     assert 'name="role"' in cells[6] and f'form="user-edit-{anna.pk}"' in cells[6]
     assert 'name="password"' in cells[7] and f'form="user-edit-{anna.pk}"' in cells[7] and "sopdsFillPassword" in cells[7]
     assert 'name="role"' not in cells[8] and 'name="password"' not in cells[8] and "Delete" in cells[8]
+
+
+def test_sticky_header_switch(page, override_config):
+    """«Закреплять шапку при прокрутке» (Общие → Интерфейс): меню, «Сейчас на
+    сайте» и поиск остаются вверху; по умолчанию выключено."""
+    client, config = page
+    html = client.get(reverse("web:settings")).content.decode("utf-8")
+    interface = html.split('id="s-pane-general"', 1)[1].split("Conversion", 1)[0]
+    assert 'name="sticky_header"' in interface and "stay at the top of the screen" in interface
+    assert not re.search(r'name="sticky_header"\s+checked', html)                       # по умолчанию выкл.
+    form = _form(html)
+    client.post(reverse("web:settings"), {**form, "sticky_header": "on"})
+    assert json.loads(config.read_text(encoding="utf-8"))["sopds"]["sticky_header"] is True
+    for on in (False, True):
+        with override_config(SOPDS_STICKY_HEADER=on):
+            main = client.get(reverse("web:main")).content.decode("utf-8")
+        assert ('class="sp-head sp-head--sticky"' in main) is on and 'id="sp-head"' in main
+        assert ("scrollPaddingTop" in main) is on

@@ -24,6 +24,8 @@
 он попадал в адрес страницы, историю браузера и логи.{% endcomment %}
 {% csrf_token %}
 <div class="grid-container fluid">
+    {# Шапка: меню, «Сейчас на сайте», поиск — закрепляется вверху, если включено в настройках #}
+    <div class="sp-head{% if sticky_header %} sp-head--sticky{% endif %}" id="sp-head">
     <div class="grid-x">
         {% include "sopds_top.html" %}
     </div>
@@ -31,6 +33,18 @@
     <div class="grid-x sopds-logo-row">
          {% include "sopds_logo.html" %}
     </div>
+    </div>
+    {% if sticky_header %}
+    <script>
+    // Переход по якорю — с отступом на высоту закреплённой шапки, иначе цель под ней.
+    (function () {
+        var head = document.getElementById('sp-head');
+        function fit() { document.documentElement.style.scrollPaddingTop = (head.offsetHeight + 8) + 'px'; }
+        fit();
+        window.addEventListener('resize', fit);
+    })();
+    </script>
+    {% endif %}
 
     <div class="grid-x">
          {% include "sopds_breadcrumbs.html" %}

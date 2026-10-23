@@ -972,7 +972,7 @@ def sopds_settings(request):
     sm = SettingsManager(_site_config_path())
 
     _BOOL_FIELDS = [
-        'alphabet_menu', 'doubles_hide', 'title_as_filename',
+        'alphabet_menu', 'doubles_hide', 'title_as_filename', 'sticky_header',
         'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
         'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating',

@@ -1408,3 +1408,15 @@ table th { color: var(--text) !important; border: none !important; border-width:
 .sp-online:hover .sp-online-list, .sp-online:focus-within .sp-online-list, .sp-online:focus .sp-online-list { display: block; }
 .sp-online-row { display: block; line-height: 1.6; color: var(--text-muted); }
 .sp-online-row strong { color: var(--text); }
+
+/* Закреплённая шапка (Настройки → Общие → Интерфейс): меню, «Сейчас на
+   сайте» и поиск остаются вверху при прокрутке; фон — чтобы содержимое не
+   просвечивало под строкой «Сейчас на сайте». */
+.sp-head--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  box-shadow: var(--shadow-md);
+}
+
