@@ -5712,7 +5712,25 @@ class FB2CompilerService:
 
         expected = b_hi - b_lo + 1 if b_hi >= b_lo else 0
 
-        # --- Случай 1: наш формат (один <body> на том) ---
+        # --- Случай 0: наш формат — <body id="vol_N"> на каждый том ---
+        # _build_fb2 кладёт перед томами отдельный <body> с оглавлением, поэтому
+        # тел на одно больше, чем томов, и «Случай 1» не срабатывал: сборник
+        # уходил в «Случай 2» и резался по главам — при дописывании тома в
+        # существующий сборник прежние тома превращались в «Содержание»,
+        # «Глава 1», «Глава 2»… Название тома — без нашего «N. » (сборщик
+        # добавит номер сам, иначе «1. 1. Название»).
+        vol_bodies = [b for b in raw_bodies
+                      if re.match(r'<(?:fb:)?body[^>]*\bid\s*=\s*["\']vol_\d+["\']', b[:200], re.IGNORECASE)]
+        if vol_bodies:
+            if expected and len(vol_bodies) != expected:
+                self._log(f"  ⚠ {book.abs_path.name}: томов в файле {len(vol_bodies)}, "
+                          f"по диапазону {b_lo}-{b_hi} — {expected}; нумеруем с {b_lo}")
+            return [
+                (b_lo + i, re.sub(r'^\d+\.\s+', '', _body_title(bx, i + 1)), bx)
+                for i, bx in enumerate(vol_bodies)
+            ]
+
+        # --- Случай 1: один <body> на том (без оглавления) ---
         if expected > 0 and len(raw_bodies) == expected:
             return [
                 (b_lo + i, _body_title(bx, i + 1), bx)
