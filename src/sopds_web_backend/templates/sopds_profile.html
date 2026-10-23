@@ -67,14 +67,19 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:0.8rem;">
       <label style="margin:0;">
         <span class="s-label">{% trans "New password" %}</span>
-        <input type="password" name="new_password" required style="margin:0;" minlength="6">
+        <input type="password" name="new_password" id="profile-pw-new" required autocomplete="new-password" style="margin:0;">
       </label>
       <label style="margin:0;">
         <span class="s-label">{% trans "Confirm" %}</span>
-        <input type="password" name="confirm_password" required style="margin:0;" minlength="6">
+        <input type="password" name="confirm_password" id="profile-pw-confirm" required autocomplete="new-password" style="margin:0;">
       </label>
     </div>
-    <button type="submit" class="button" style="margin:0;">{% trans "Change password" %}</button>
+    <div class="s-hint" style="margin:-0.4rem 0 0.8rem;">{{ password_rules }}</div>
+    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+      <button type="button" class="button secondary" style="margin:0;" onclick="sopdsFillPassword(this)"
+              data-targets="profile-pw-new profile-pw-confirm">🎲 {% trans "Generate a password" %}</button>
+      <button type="submit" class="button" style="margin:0;">{% trans "Change password" %}</button>
+    </div>
   </form>
 </div>
 
@@ -275,6 +280,8 @@
   </form>
   {% endif %}
 </div>
+
+<script src="{% static 'js/password-generator.js' %}"></script>
 
 <!-- ── Удаление аккаунта ──────────────────────────────────────── -->
 <div class="s-section" style="border-color:#ef4444; margin-bottom:1.5rem;">

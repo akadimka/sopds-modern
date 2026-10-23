@@ -1,5 +1,5 @@
 {% extends "sopds_main.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block ext-body %}
 <div class="cell">
@@ -93,7 +93,10 @@
               <option value="user" {% if not u.is_superuser %}selected{% endif %}>{% trans "User" %}</option>
               <option value="superuser" {% if u.is_superuser %}selected{% endif %}>{% trans "Superuser" %}</option>
             </select>
-            <input type="password" name="password" placeholder="{% trans "New password" %}" style="width:130px;">
+            <input type="password" name="password" id="pw-{{ u.pk }}" placeholder="{% trans "New password" %}" style="width:150px;"
+                   autocomplete="new-password">
+            <button type="button" class="button small secondary" onclick="sopdsFillPassword(this)" data-targets="pw-{{ u.pk }}"
+                    title="{% trans "Generate a password" %}">🎲</button>
             {% if not u.is_superuser %}
             <input type="number" name="max_devices" min="0" value="{{ u.personal_device_limit|default_if_none:'' }}"
                    placeholder="{% blocktrans with n=default_device_limit|default:'∞' %}default {{ n }}{% endblocktrans %}"
@@ -166,8 +169,13 @@
         </label>
         <label style="margin:0;">
           <span style="font-size:0.82rem; color:var(--text-muted);">{% trans "Password" %}</span>
-          <input type="password" name="password" required style="margin:0;">
+          <input type="password" name="password" id="pw-create" required autocomplete="new-password" style="margin:0;">
         </label>
+      </div>
+      <div class="s-hint" style="margin:-0.2rem 0 0.6rem;">
+        {% trans "Password: at least 12 characters for a superuser and 8 for a user, with a lowercase and an uppercase Latin letter, a digit and a special character; letters — Latin only. The user changes it at the first sign-in." %}
+        <button type="button" class="button tiny secondary" style="margin:0 0 0 0.3rem;" onclick="sopdsFillPassword(this)"
+                data-targets="pw-create">🎲 {% trans "Generate a password" %}</button>
       </div>
       <div style="display:flex; align-items:center; gap:1rem;">
         <label style="margin:0; font-size:0.82rem; color:var(--text-muted);">{% trans "Role" %}:</label>
@@ -186,4 +194,5 @@
     <a href="{% url 'web:settings' %}" style="color:var(--sp-accent);">← {% trans "Back to Settings" %}</a>
   </div>
 </div>
+<script src="{% static 'js/password-generator.js' %}"></script>
 {% endblock %}

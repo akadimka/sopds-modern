@@ -26,6 +26,7 @@ urlpatterns = [
     re_path(r"^settings/telegram/chats/$", views.telegram_chats, name="telegram_chats"),
     re_path(r"^settings/telegram/test/$", views.telegram_test, name="telegram_test"),
     re_path(r"^profile/$", views.user_profile, name="profile"),
+    re_path(r"^password/change/$", views.password_change_required, name="password_change_required"),
     re_path(r"^settings/users/$", views.users_list, name="users_list"),
     re_path(r"^settings/users/settings/$", views.users_settings, name="users_settings"),
     re_path(r"^settings/users/create/$", views.user_create, name="user_create"),

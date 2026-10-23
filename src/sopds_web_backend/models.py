@@ -15,6 +15,9 @@ class UserProfile(models.Model):
     # Лимит устройств (браузеров): NULL — по умолчанию из настроек, 0 — без
     # ограничений (docs/devices-design.md).
     max_devices = models.PositiveIntegerField(null=True, blank=True)
+    # Нужно сменить пароль при следующем входе: первый вход, пароль задан
+    # суперпользователем или не отвечает требованиям (password_rules.py).
+    must_change_password = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "User Profile"

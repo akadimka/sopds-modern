@@ -62,6 +62,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     # Устройства учётной записи и их лимит (docs/devices-design.md).
     "sopds_web_backend.devices.DeviceMiddleware",
+    # Смена пароля при первом входе (sopds_web_backend/password_rules.py).
+    "sopds_web_backend.password_rules.PasswordChangeRequiredMiddleware",
     # «Сейчас на сайте» в шапке (sopds_web_backend/online.py).
     "sopds_web_backend.online.OnlineMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -178,7 +180,9 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        # длина по роли (12 — суперпользователь, 8 — пользователь) и четыре
+        # группы символов — sopds_web_backend/password_rules.py
+        "NAME": "sopds_web_backend.password_rules.ComplexityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",

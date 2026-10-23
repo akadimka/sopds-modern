@@ -71,8 +71,9 @@ def sopds_auth_validate(view_function):
             # Со вторым фактором основной пароль читалкам не годится: иначе
             # один пароль без кода открывал бы всю библиотеку аккаунта.
             from sopds_web_backend.login_codes import method_for
-            if user is not None and method_for(user) is not None:
-                user = None
+            from sopds_web_backend.password_rules import must_change
+            if user is not None and (method_for(user) is not None or must_change(user)):
+                user = None   # второй фактор или пароль ещё не сменён — менять его в читалке негде
         else:
             user = None
         if user and user.is_active:

@@ -1382,6 +1382,8 @@ def LoginView(request):
 
     user = authenticate(request, username=username, password=password)
     if user is not None and user.is_active:
+        from .password_rules import check_on_sign_in
+        check_on_sign_in(user, password)   # не отвечает требованиям — смена пароля после входа
         if not devices.can_sign_in(request, user):
             # До второго шага: код не отправляется впустую (docs/devices-design.md).
             logger.warning("Login refused: device limit reached for '%s'", username)
@@ -1532,6 +1534,8 @@ def user_profile(request):
                     user.save()
                     update_session_auth_hash(request, user)
                     _after_password_change(request, user)
+                    from .password_rules import set_must_change
+                    set_must_change(user, False)
                     success = "password"
 
         elif action == "device_name":
@@ -1637,7 +1641,48 @@ def user_profile(request):
         **_profile_totp_context(user),
         **_profile_devices_context(request, user),
         "second_factor": login_codes.method_for(user) is not None,
+        "password_rules": _rules_text(user),
     })
+
+
+def _rules_text(user):
+    from .password_rules import rules_text
+    return rules_text(user)
+
+
+@sopds_login(url="web:login")
+@require_http_methods(["GET", "POST"])
+def password_change_required(request):
+    """Обязательная смена пароля: первый вход, пароль от суперпользователя или
+    не по требованиям (password_rules.py). Пока не сменён — остальной сайт
+    недоступен (PasswordChangeRequiredMiddleware)."""
+    from django.contrib.auth import update_session_auth_hash
+
+    from .password_rules import must_change, rules_text, set_must_change
+    user = request.user
+    if not must_change(user):
+        return redirect(reverse("web:main"))
+    error = None
+    if request.method == "POST":
+        old_pw = request.POST.get("old_password", "")
+        new_pw = request.POST.get("new_password", "")
+        if not user.check_password(old_pw):
+            error = _("Current password is incorrect.")
+        elif new_pw != request.POST.get("confirm_password", ""):
+            error = _("Passwords do not match.")
+        elif new_pw == old_pw:
+            error = _("The new password must differ from the current one.")
+        else:
+            error = _password_error(new_pw, user)
+        if error is None:
+            user.set_password(new_pw)
+            user.save()
+            update_session_auth_hash(request, user)
+            _after_password_change(request, user)
+            set_must_change(user, False)
+            return redirect(reverse("web:main"))
+    return render(request, "sopds_password_change.html",
+                  {"breadcrumbs": [_("Change password")], "rules": rules_text(user), "error": error})
 
 
 # Действия профиля, которые дают долговременный доступ к аккаунту, — с
@@ -1802,12 +1847,16 @@ def user_create(request):
     elif username_taken(username):                       # «Anna» при существующей «anna» — тоже занято
         error = _("User with this username already exists.")
     else:
-        error = _password_error(password, DjangoUser(username=username))
+        future = DjangoUser(username=username)
+        _set_role(future, role)                          # требования к паролю — по роли
+        error = _password_error(password, future)
     if error:
         return _users_list_error(request, error)
     user = DjangoUser.objects.create_user(username=username, password=password)
     _set_role(user, role)
     user.save()
+    from .password_rules import set_must_change
+    set_must_change(user, True)                          # при первом входе — свой пароль
     return redirect(reverse("web:users_list"))
 
 
@@ -1822,15 +1871,20 @@ def user_edit(request, user_id):
         # единственного суперпользователя).
         return _users_list_error(request, _("You cannot remove the superuser role from yourself."))
     password = request.POST.get("password", "").strip()
+    _set_role(user, role)                                # требования к паролю — по новой роли
     if password:
         error = _password_error(password, user)
         if error:
             return _users_list_error(request, error)
         user.set_password(password)
         user.save()
+        from .password_rules import set_must_change
         if user.pk == request.user.pk:
             from django.contrib.auth import update_session_auth_hash
             update_session_auth_hash(request, user)
+            set_must_change(user, False)
+        else:
+            set_must_change(user, True)                  # пароль задал суперпользователь — сменит при входе
         _after_password_change(request, user)
     if "max_devices" in request.POST:
         raw = request.POST.get("max_devices", "").strip()

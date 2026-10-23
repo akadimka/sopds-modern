@@ -1826,6 +1826,84 @@ msgstr ""
 "admin_login_code off» отключает эту настройку, «manage.py totp_reset "
 "<логин>» убирает потерянное приложение."
 
+msgid "at least %(n)d characters"
+msgstr "не меньше %(n)d символов"
+
+msgid "a lowercase letter"
+msgstr "строчная буква"
+
+msgid "an uppercase letter"
+msgstr "заглавная буква"
+
+msgid "a digit"
+msgstr "цифра"
+
+msgid "a special character (!, #, %, -…)"
+msgstr "спецсимвол (!, #, %, -…)"
+
+msgid ""
+"Password: at least %(n)d characters, with a lowercase and an uppercase "
+"letter, a digit and a special character."
+msgstr ""
+"Пароль: не меньше %(n)d символов, строчная и заглавная буква, цифра и "
+"спецсимвол."
+
+msgid "The password must contain: %(list)s."
+msgstr "В пароле должны быть: %(list)s."
+
+msgid "Change your password"
+msgstr "Смените пароль"
+
+msgid ""
+"Set your own password to continue: this is your first sign-in, the password "
+"was set by a superuser, or it does not meet the current requirements."
+msgstr ""
+"Чтобы продолжить, задайте свой пароль: это первый вход, пароль задал "
+"суперпользователь или он не отвечает текущим требованиям."
+
+msgid "Generate a password"
+msgstr "Сгенерировать пароль"
+
+msgid "Sign out"
+msgstr "Выйти"
+
+msgid "The new password must differ from the current one."
+msgstr "Новый пароль должен отличаться от текущего."
+
+msgid ""
+"Password: at least 12 characters for a superuser and 8 for a user, with a "
+"lowercase and an uppercase letter, a digit and a special character. The user"
+" changes it at the first sign-in."
+msgstr ""
+"Пароль: не меньше 12 символов для суперпользователя и 8 для пользователя, "
+"строчная и заглавная буква, цифра и спецсимвол. При первом входе "
+"пользователь сменит его на свой."
+
+msgid "Latin letters only (no Cyrillic or other alphabets)"
+msgstr "только латинские буквы (без кириллицы и других алфавитов)"
+
+msgid "a lowercase Latin letter"
+msgstr "строчная латинская буква"
+
+msgid "an uppercase Latin letter"
+msgstr "заглавная латинская буква"
+
+msgid ""
+"Password: at least %(n)d characters, with a lowercase and an uppercase Latin"
+" letter, a digit and a special character; letters — Latin only."
+msgstr ""
+"Пароль: не меньше %(n)d символов, строчная и заглавная латинская буква, "
+"цифра и спецсимвол; буквы — только латинские."
+
+msgid ""
+"Password: at least 12 characters for a superuser and 8 for a user, with a "
+"lowercase and an uppercase Latin letter, a digit and a special character; "
+"letters — Latin only. The user changes it at the first sign-in."
+msgstr ""
+"Пароль: не меньше 12 символов для суперпользователя и 8 для пользователя, "
+"строчная и заглавная латинская буква, цифра и спецсимвол; буквы — только "
+"латинские. При первом входе пользователь сменит его на свой."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
