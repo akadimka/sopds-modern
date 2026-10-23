@@ -1916,6 +1916,9 @@ msgstr "Лимит устройств"
 msgid "Superusers are not limited"
 msgstr "На суперпользователей лимит не действует"
 
+msgid "Change role"
+msgstr "Смена роли"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

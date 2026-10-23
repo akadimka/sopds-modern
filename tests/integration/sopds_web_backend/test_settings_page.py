@@ -174,3 +174,18 @@ def test_device_limit_has_its_own_column_next_to_devices(page):
     cells = re.findall(r"<td>(.*?)</td>", row, re.S)
     assert 'name="max_devices"' in cells[5] and f'form="user-edit-{anna.pk}"' in cells[5]
     assert f'id="user-edit-{anna.pk}"' in row and 'name="max_devices"' not in cells[6]   # в «Действиях» его нет
+
+
+def test_role_and_password_have_own_columns(page):
+    """«Действия» — только «Сохранить» и «Удалить»; роль и новый пароль — свои
+    колонки «Смена роли» и «Новый пароль», поля — в форме строки (form=…)."""
+    client, _config = page
+    anna = User.objects.create_user("anna", password="Kx7#vQ2!mLp9")
+    html = client.get(reverse("web:users_list")).content.decode("utf-8")
+    headers = re.findall(r"<th>([^<]+)</th>", html.split('class="sp-users"', 1)[1].split("</thead>", 1)[0])
+    assert headers[-3:] == ["Change role", "New password", "Actions"]
+    row = html.split(f'id="user-{anna.pk}"', 1)[1].split("</tr>", 1)[0]
+    cells = re.findall(r"<td>(.*?)</td>", row, re.S)
+    assert 'name="role"' in cells[6] and f'form="user-edit-{anna.pk}"' in cells[6]
+    assert 'name="password"' in cells[7] and f'form="user-edit-{anna.pk}"' in cells[7] and "sopdsFillPassword" in cells[7]
+    assert 'name="role"' not in cells[8] and 'name="password"' not in cells[8] and "Delete" in cells[8]

@@ -130,7 +130,7 @@ def test_user_actions_are_one_aligned_row(superuser_client, django_user_model):
     django_user_model.objects.create_user("reader", password="Kx7#vQ2!mLp9")
     html = superuser_client.get(reverse("web:users_list")).content.decode("utf-8")
     assert 'td style="display:flex' not in html
-    assert html.count('class="sp-user-actions"') == 2
+    assert html.count('class="sp-user-actions"') == 2 * 3   # роль, пароль, действия — у каждой строки
     assert re.search(r"\.sp-user-actions, \.sp-user-actions form \{[^}]*align-items: center;", html)
     assert re.search(r"\.sp-user-actions select, \.sp-user-actions input, \.sp-user-actions \.button \{[^}]*height: 2rem;",
                      html)

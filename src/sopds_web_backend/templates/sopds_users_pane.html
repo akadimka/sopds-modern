@@ -39,6 +39,8 @@
         <th>Telegram</th>
         <th>{% trans "Devices" %}</th>
         <th>{% trans "Device limit" %}</th>
+        <th>{% trans "Change role" %}</th>
+        <th>{% trans "New password" %}</th>
         <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
@@ -92,19 +94,27 @@
                  style="width:110px; height:2rem; margin:0; padding:0 0.5rem; font-size:0.82rem;">
           {% endif %}
         </td>
+        {# роль и пароль — поля формы строки (form=…), сохраняются кнопкой «Сохранить» в «Действиях» #}
         <td>
           <div class="sp-user-actions">
-          <!-- Редактировать роль/пароль -->
-          <form method="post" action="{% url 'web:user_edit' u.pk %}" id="user-edit-{{ u.pk }}">
-            {% csrf_token %}
-            <select name="role">
+            <select name="role" form="user-edit-{{ u.pk }}">
               <option value="user" {% if not u.is_superuser %}selected{% endif %}>{% trans "User" %}</option>
               <option value="superuser" {% if u.is_superuser %}selected{% endif %}>{% trans "Superuser" %}</option>
             </select>
-            <input type="password" name="password" id="pw-{{ u.pk }}" placeholder="{% trans "New password" %}" style="width:150px;"
-                   autocomplete="new-password">
+          </div>
+        </td>
+        <td>
+          <div class="sp-user-actions">
+            <input type="password" name="password" form="user-edit-{{ u.pk }}" id="pw-{{ u.pk }}"
+                   placeholder="{% trans "New password" %}" style="width:150px;" autocomplete="new-password">
             <button type="button" class="button small secondary" onclick="sopdsFillPassword(this)" data-targets="pw-{{ u.pk }}"
                     title="{% trans "Generate a password" %}">🎲</button>
+          </div>
+        </td>
+        <td>
+          <div class="sp-user-actions">
+          <form method="post" action="{% url 'web:user_edit' u.pk %}" id="user-edit-{{ u.pk }}">
+            {% csrf_token %}
             <button type="submit" class="button small">{% trans "Save" %}</button>
           </form>
           <!-- Удалить (нельзя удалить себя) -->
@@ -119,7 +129,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
+      <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
