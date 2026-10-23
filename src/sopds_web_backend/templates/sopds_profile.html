@@ -252,6 +252,16 @@
   <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
     {% trans "In the bot you can search for books and download them; new books are announced in the library channel (the bot sent you the link to join it)." %}
   </p>
+  <form method="post" action="{% url 'web:profile' %}" style="margin:0 0 0.9rem;" id="tg-notify-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="tg_notify">
+    <label class="s-check" style="margin:0;">
+      <input type="checkbox" name="notify_new_books" {% if profile.notify_new_books %}checked{% endif %}
+             onchange="this.form.submit()">
+      <span>{% trans "Send me new books" %}</span>
+    </label>
+    <div class="s-hint">{% trans "After each library scan the bot sends you a personal list of new books — only the ones you can see. Independent of the channel." %}</div>
+  </form>
   <form method="post" action="{% url 'web:profile' %}" style="margin:0; display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;"
         onsubmit="return confirm('{% trans "Unlink Telegram? You will also be removed from the library channel." %}');">
     {% csrf_token %}

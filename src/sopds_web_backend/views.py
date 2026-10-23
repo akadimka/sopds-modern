@@ -1599,6 +1599,17 @@ def user_profile(request):
             # с паролем: украденной сессии мало, чтобы закрепиться в аккаунте.
             errors[_PASSWORD_CONFIRMED_ACTIONS[action]] = _("Password is incorrect.")
 
+        elif action == "tg_notify":
+            # Личная сводка новинок в Telegram. Включили — точка отсчёта
+            # «сейчас», иначе первым сообщением пришла бы вся библиотека.
+            from opds_catalog.autosync_hooks import latest_book_id
+            want = request.POST.get("notify_new_books") == "on"
+            if want and not profile.notify_new_books:
+                profile.new_books_mark = latest_book_id()
+            profile.notify_new_books = want
+            profile.save(update_fields=["notify_new_books", "new_books_mark"])
+            success = "telegram"
+
         elif action == "tg_code":
             from .telegram_users import new_link_code
             new_link_code(user)

@@ -1931,6 +1931,16 @@ msgstr "Страница устарела"
 msgid "Reload the page"
 msgstr "Обновить страницу"
 
+msgid "Send me new books"
+msgstr "Присылать мне новые поступления"
+
+msgid ""
+"After each library scan the bot sends you a personal list of new books — "
+"only the ones you can see. Independent of the channel."
+msgstr ""
+"После каждого скана библиотеки бот присылает вам личный список новых книг — "
+"только тех, что вам видны. Не зависит от канала."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

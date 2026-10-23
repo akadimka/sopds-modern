@@ -18,6 +18,11 @@ class UserProfile(models.Model):
     # Нужно сменить пароль при следующем входе: первый вход, пароль задан
     # суперпользователем или не отвечает требованиям (password_rules.py).
     must_change_password = models.BooleanField(default=False)
+    # Личная сводка новинок в Telegram (галочка в профиле, по умолчанию выкл.):
+    # после каждого полного скана — книги, видимые этому пользователю, с id
+    # больше new_books_mark (opds_catalog/autosync_hooks.announce_to_subscribers).
+    notify_new_books = models.BooleanField(default=False)
+    new_books_mark = models.IntegerField(null=True, blank=True)
 
     class Meta:
         verbose_name = "User Profile"

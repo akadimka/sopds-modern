@@ -53,6 +53,10 @@ def notify_autosync(autosync: Optional[Tuple[Any, Any]], logger: Optional[loggin
         sent.update(announce_catalog_additions(service, result, log))
     except Exception:
         log.exception("Catalog additions announcement failed")
+    try:
+        sent.update(announce_to_subscribers(service, log))
+    except Exception:
+        log.exception("Personal new-books digests failed")
     if sent:
         log.info("Autosync notifications: %s", sent)
     return sent
@@ -74,8 +78,6 @@ def announce_catalog_additions(service, result, logger: Optional[logging.Logger]
     cfg = service.cfg
     if result.status != "off" or not cfg.get("telegram_token") or not cfg.get("telegram_channel"):
         return {}
-    import os
-
     from django.db.models import Max
 
     from opds_catalog import visibility
@@ -90,18 +92,8 @@ def announce_catalog_additions(service, result, logger: Optional[logging.Logger]
         return {}
     if top <= int(mark):
         return {}
-    books = (visibility.visible_books(None).exclude(avail=0)
-             .filter(id__gt=int(mark), id__lte=top)
-             .prefetch_related("authors", "series").order_by("id"))
-    rows = []
-    for b in books:
-        rows.append({
-            "genre": re.split(r"[\\/]", b.path or "")[0] or "—",   # папка верхнего уровня (№166)
-            "author": ", ".join(a.full_name for a in b.authors.all()) or "—",
-            "series": next((s.ser for s in b.series.all()), ""),
-            "title": b.title or "",
-            "library_path": os.path.join(b.path or "", b.filename or ""),
-        })
+    rows = _announcement_rows(visibility.visible_books(None).exclude(avail=0)
+                              .filter(id__gt=int(mark), id__lte=top))
     if rows:
         from fb2parser_core.telegram_notify import (
             TelegramError,
@@ -118,6 +110,84 @@ def announce_catalog_additions(service, result, logger: Optional[logging.Logger]
             return {"catalog": explain_error(e)}   # точку не двигаем — повторим в следующий раз
     journal.set_state(CATALOG_MARK_KEY, str(top))
     return {"catalog": "ok"} if rows else {}
+
+
+def _announcement_rows(books) -> list:
+    """Строки сводки новинок (жанр — папка верхнего уровня, №166)."""
+    import os
+    rows = []
+    for b in books.prefetch_related("authors", "series").order_by("id"):
+        rows.append({
+            "genre": re.split(r"[\\/]", b.path or "")[0] or "—",
+            "author": ", ".join(a.full_name for a in b.authors.all()) or "—",
+            "series": next((s.ser for s in b.series.all()), ""),
+            "title": b.title or "",
+            "library_path": os.path.join(b.path or "", b.filename or ""),
+        })
+    return rows
+
+
+def latest_book_id() -> int:
+    from django.db.models import Max
+
+    from opds_catalog.models import Book
+    return Book.objects.aggregate(m=Max("id"))["m"] or 0
+
+
+def announce_to_subscribers(service, logger: Optional[logging.Logger] = None) -> Dict[str, str]:
+    """Личные сводки новинок в Telegram — тем, кто включил их в профиле
+    (галочка «Присылать мне новые поступления», по умолчанию выкл.).
+
+    Каждому — книги, видимые именно ему (свои, открытые ему, общие), с id
+    больше его отметки; отметка ставится при включении (иначе пришла бы вся
+    библиотека) и двигается после удачной отправки. Не отправилось (бот
+    заблокирован, нет связи) — отметка на месте, придут со следующей сводкой.
+    Не зависит от автосинхронизации и общего канала."""
+    log = logger or _log
+    cfg = service.cfg
+    if not cfg.get("telegram_token"):
+        return {}
+    from opds_catalog import visibility
+    from sopds_web_backend.models import UserProfile
+
+    subscribers = list(UserProfile.objects.filter(
+        notify_new_books=True, user__is_active=True, user__telegram__telegram_id__isnull=False,
+    ).select_related("user", "user__telegram"))
+    if not subscribers:
+        return {}
+    from fb2parser_core.telegram_notify import (
+        TelegramError,
+        build_new_books_message,
+        client_for,
+    )
+
+    top = latest_book_id()
+    client = client_for(cfg)
+    sent = ok = 0
+    failed = []
+    for profile in subscribers:
+        if profile.new_books_mark is None:                 # включено без отметки — с этого места
+            UserProfile.objects.filter(pk=profile.pk).update(new_books_mark=top)
+            continue
+        if top <= profile.new_books_mark:
+            continue
+        user = profile.user
+        rows = _announcement_rows(visibility.visible_books(user).exclude(avail=0)
+                                  .filter(id__gt=profile.new_books_mark, id__lte=top))
+        if rows:
+            try:
+                client.send_message(str(user.telegram.telegram_id),
+                                    build_new_books_message(rows, catalog_link(service, user)))
+                ok += 1
+            except TelegramError as e:
+                log.warning("Personal digest for %s not sent: %s", user.username, e.description)
+                failed.append(user.username)
+                continue                                   # отметку не двигаем — повторим
+            sent += len(rows)
+        UserProfile.objects.filter(pk=profile.pk).update(new_books_mark=top)
+    if not ok and not failed:
+        return {}
+    return {"personal": f"{ok} sent" + (f", failed: {', '.join(failed)}" if failed else "")}
 
 
 def summary(autosync: Optional[Tuple[Any, Any]]) -> Optional[Dict[str, Any]]:
@@ -142,11 +212,12 @@ def public_book_filter():
                                  row.get("author") or "", books=public) is not None
 
 
-def catalog_link(service):
+def catalog_link(service, user=None):
     """Ссылки сводки новинок: в бота библиотеки (t.me/<бот>?start=s<id серии> /
     b<id книги> — открывают серию/книгу с кнопками скачивания и работают без
     публичного адреса сайта), иначе на страницы сайта, если задан его адрес,
-    иначе ссылок нет (docs/telegram-library-bot.md, этап D)."""
+    иначе ссылок нет (docs/telegram-library-bot.md, этап D). `user` — для
+    личной сводки (ссылки на видимое ему); без него — общий канал."""
     from urllib.parse import urlencode
 
     bot = _bot_username(service)
@@ -160,7 +231,7 @@ def catalog_link(service):
     def link(item):
         from opds_catalog import visibility
 
-        public = visibility.visible_books(None)   # ссылки в общем канале — только на видимое всем
+        public = visibility.visible_books(user)   # канал (user=None) — только видимое всем
         if item["kind"] == "series":
             series = find_series(item.get("series") or "", item.get("author") or "", item.get("path") or "",
                                  books=public)
