@@ -1,6 +1,6 @@
 [project]
 name = "sopds-modern"
-version = "2.34.0"
+version = "2.35.0"
 description = "SOPDS-MODERN: Simple OPDS catalog and FB2 library organizer"
 readme = "README.md"
 requires-python = "==3.13.*"
