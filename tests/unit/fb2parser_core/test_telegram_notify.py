@@ -6,13 +6,13 @@ import urllib.error
 import pytest
 
 from fb2parser_core.telegram_notify import (
+    DIGEST_DETAIL_MAX,
     ERR_NETWORK,
     ERR_RIGHTS,
     ERR_START,
     ERR_TOKEN,
     TelegramClient,
     TelegramError,
-    DIGEST_DETAIL_MAX,
     build_admin_report,
     build_digest,
     build_new_books_message,
