@@ -24,17 +24,10 @@ _log = logging.getLogger(__name__)
 DEFAULT_API_URL = "https://api.telegram.org"
 
 
-def _user_agent() -> str:
-    """Своя подпись клиента: стандартную «Python-urllib/…» Cloudflare (через
-    него работает ретранслятор) отклоняет ошибкой 1010 ещё до Worker."""
-    try:
-        from sopds.version import display_version
-        return f"sopds-modern/{display_version()}"
-    except Exception:  # пакет sopds недоступен (fb2parser_core отдельно)
-        return "sopds-modern"
+# Своя подпись клиента: стандартную «Python-urllib/…» Cloudflare (через него
+# работает ретранслятор) отклоняет ошибкой 1010 ещё до Worker.
+from .user_agent import USER_AGENT  # noqa: E402
 
-
-USER_AGENT = _user_agent()
 MAX_MESSAGE = 4000  # лимит Telegram — 4096 символов; запас на разметку
 MAX_UPLOAD = 50 * 1024 * 1024  # лимит Bot API на отправку файла ботом
 UPLOAD_TIMEOUT = 300.0

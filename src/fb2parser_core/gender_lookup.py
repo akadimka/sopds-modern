@@ -319,7 +319,8 @@ class GenderLookupService:
         Каждая стратегия немедленно проверяет своих кандидатов через _check_candidates.
         Если матч найден — возврат, иначе запускается следующая стратегия.
         """
-        _UA     = 'EBookLibraryOrganizer/1.0 (github.com/akadimka/EBLO)'
+        from .user_agent import USER_AGENT
+        _UA     = f'{USER_AGENT} (self-hosted e-book library catalog)'   # подпись для Wikidata
         _MALE   = {'Q6581097', 'Q44148', 'Q2443246'}
         _FEMALE = {'Q6581072', 'Q2449503', 'Q1052281'}
 
