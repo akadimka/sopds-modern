@@ -1789,11 +1789,23 @@ msgstr ""
 "перемещено."
 
 #: fb2parser_web/templates/fb2parser/normalize_table.html
-msgid "Subcycle number: computed from file names for display, not stored in the CSV"
-msgstr "Номер подцикла: вычисляется по именам файлов для отображения, в CSV не хранится"
+msgid ""
+"Subcycle number: computed from file names for display, not stored in the CSV"
+msgstr ""
+"Номер подцикла: вычисляется по именам файлов для отображения, в CSV не "
+"хранится"
 
 msgid "Synchronization is running right now — try again later."
 msgstr "Сейчас идёт синхронизация — повторите позже."
 
-msgid "The compression process ended unexpectedly. Files already compressed stay compressed."
-msgstr "Процесс сжатия неожиданно завершился. Уже сжатые файлы остаются сжатыми."
+msgid ""
+"The compression process ended unexpectedly. Files already compressed stay "
+"compressed."
+msgstr ""
+"Процесс сжатия неожиданно завершился. Уже сжатые файлы остаются сжатыми."
+
+msgid "The site is closed for users (maintenance) — only you see it."
+msgstr "Сайт закрыт для пользователей (ремонт) — его видите только вы."
+
+msgid "Turn off"
+msgstr "Выключить"

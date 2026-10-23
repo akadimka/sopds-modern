@@ -26,6 +26,10 @@ _DEFAULTS: dict = {
     'title_as_filename': False,
     # Шапка (меню, «Сейчас на сайте», поиск) закреплена вверху при прокрутке
     'sticky_header': False,
+    # «На реконструкции»: сайт, OPDS и бот закрыты для всех, кроме суперпользователя
+    # на сайте (sopds_web_backend/maintenance.py); текст — для пользователей
+    'maintenance': False,
+    'maintenance_message': '',
     'fb2toepub': '',
     'fb2tomobi': '',
     'fb2toazw3': '',
@@ -67,6 +71,8 @@ _KEY_MAP: dict[str, str] = {
     'SOPDS_BOOK_EXTENSIONS': 'book_extensions',
     'SOPDS_TITLE_AS_FILENAME': 'title_as_filename',
     'SOPDS_STICKY_HEADER': 'sticky_header',
+    'SOPDS_MAINTENANCE': 'maintenance',
+    'SOPDS_MAINTENANCE_MESSAGE': 'maintenance_message',
     'SOPDS_FB2TOEPUB': 'fb2toepub',
     'SOPDS_FB2TOMOBI': 'fb2tomobi',
     'SOPDS_FB2TOAZW3': 'fb2toazw3',

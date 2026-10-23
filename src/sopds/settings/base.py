@@ -61,6 +61,8 @@ MIDDLEWARE = [
     "axes.middleware.AxesMiddleware",
     "opds_catalog.middleware.SOPDSLocaleMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    # «На реконструкции» (sopds_web_backend/maintenance.py) — до всего, что отдаёт данные.
+    "sopds_web_backend.maintenance.MaintenanceMiddleware",
     # Устройства учётной записи и их лимит (docs/devices-design.md).
     "sopds_web_backend.devices.DeviceMiddleware",
     # Смена пароля при первом входе (sopds_web_backend/password_rules.py).

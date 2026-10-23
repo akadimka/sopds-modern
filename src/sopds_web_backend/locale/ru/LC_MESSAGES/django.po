@@ -1956,6 +1956,42 @@ msgstr ""
 msgid "by aKaDiMkA in 2026 (c)"
 msgstr "by aKaDiMkA in 2026 (c)"
 
+msgid "Maintenance is under way. The library will be back soon."
+msgstr "Идут ремонтные работы. Библиотека скоро вернётся."
+
+msgid "Maintenance"
+msgstr "Обслуживание"
+
+msgid "The site is under maintenance"
+msgstr "На сайте идут ремонтные работы"
+
+msgid "Sign in (superuser)"
+msgstr "Вход (суперпользователь)"
+
+msgid "The site is closed for users (maintenance) — only you see it."
+msgstr "Сайт закрыт для пользователей (ремонт) — его видите только вы."
+
+msgid "The site is under maintenance: only a superuser can sign in."
+msgstr "На сайте идут ремонтные работы: войти может только суперпользователь."
+
+msgid "Under maintenance (closed for users)"
+msgstr "На реконструкции (закрыт для пользователей)"
+
+msgid ""
+"Closes the site, the OPDS catalog and the Telegram bot for everyone except "
+"superusers on the site: users see a maintenance page, reader apps and the "
+"bot get the message below. Superusers see a red strip at the top as a "
+"reminder. If you cannot sign in, on the server: “manage.py maintenance off”."
+msgstr ""
+"Закрывает сайт, OPDS-каталог и Telegram-бота для всех, кроме "
+"суперпользователей на сайте: пользователи видят страницу ремонта, читалки и "
+"бот — сообщение ниже. Суперпользователю для напоминания показывается красная"
+" полоса сверху. Если войти не получается, на сервере: «manage.py maintenance"
+" off»."
+
+msgid "Message for users"
+msgstr "Сообщение для пользователей"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

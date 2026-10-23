@@ -80,6 +80,22 @@
         <div class="s-hint">{% trans "Interface language for visitors who have not chosen one with the EN/RU switch: en-US or ru-RU. Default: en-US." %}</div>
     </div>
 
+    <div class="s-section-title" id="maintenance">{% trans "Maintenance" %}</div>
+
+    <div class="s-field">
+        <label class="s-check">
+            <input type="checkbox" name="maintenance" {% if sopds.maintenance %}checked{% endif %}>
+            <span>{% trans "Under maintenance (closed for users)" %}</span>
+        </label>
+        <div class="s-hint">{% trans "Closes the site, the OPDS catalog and the Telegram bot for everyone except superusers on the site: users see a maintenance page, reader apps and the bot get the message below. Superusers see a red strip at the top as a reminder. If you cannot sign in, on the server: “manage.py maintenance off”." %}</div>
+    </div>
+
+    <div class="s-field">
+        <label>{% trans "Message for users" %}</label>
+        <input type="text" name="maintenance_message" value="{{ sopds.maintenance_message }}" maxlength="300"
+               placeholder="{% trans "Maintenance is under way. The library will be back soon." %}">
+    </div>
+
     <div class="s-section-title">{% trans "Conversion" %}</div>
     {% if not can_edit_exec_fields %}
     <div class="s-hint">{% trans "Only a superuser can change converter paths and the temp directory." %}</div>

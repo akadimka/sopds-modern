@@ -18,6 +18,7 @@ def sopds_processor(request):
     args["fb2toazw3"] = config.SOPDS_FB2TOAZW3 != ""
     args["nozip"] = settings.NOZIP_FORMATS
     args["sticky_header"] = bool(config.SOPDS_STICKY_HEADER)
+    args["maintenance_on"] = bool(config.SOPDS_MAINTENANCE)
 
     # if config.SOPDS_ALPHABET_MENU:
     if args["alphabet"]:

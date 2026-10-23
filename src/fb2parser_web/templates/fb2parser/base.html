@@ -10,6 +10,10 @@
     <link rel="stylesheet" type="text/css" href="{% static "css/theme.css" %}">
 </head>
 <body>
+{% if maintenance_on and request.user.is_superuser %}
+<div class="sp-maintenance-banner">🛠 {% trans "The site is closed for users (maintenance) — only you see it." %}
+  <a href="{% url 'web:settings' %}?tab=general#maintenance">{% trans "Turn off" %}</a></div>
+{% endif %}
 <div class="grid-container fluid">
 
     <!-- Language switcher hidden forms -->

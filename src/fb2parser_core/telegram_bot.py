@@ -46,12 +46,15 @@ class AdminBot:
                  client_factory: Optional[Callable[[dict], Any]] = None,
                  executor: Optional[Executor] = None,
                  sleep: Callable[[float], None] = time.sleep,
-                 extra_handler: Optional[Callable[[Any, Any, dict], bool]] = None):
+                 extra_handler: Optional[Callable[[Any, Any, dict], bool]] = None,
+                 maintenance: Optional[Callable[[], Optional[str]]] = None):
         """extra_handler(service, client, update) -> обработано ли событие —
         читательская часть бота (поиск, скачивание, привязка аккаунтов,
         заявки в канал — sopds_web_backend/telegram_library.py)."""
         self.service_factory = service_factory
         self.extra_handler = extra_handler
+        # maintenance() -> текст ответа во время ремонта или None (сайт работает)
+        self.maintenance = maintenance
         self.client_factory = client_factory or (
             lambda cfg: client_for(cfg))
         # решения выполняются по одному, не задерживая опрос
@@ -85,6 +88,9 @@ class AdminBot:
         updates = client.get_updates(offset, timeout=POLL_TIMEOUT)
         if updates:
             remember_chats(service.journal, updates)
+        notice = self.maintenance() if self.maintenance is not None else None
+        if notice:
+            return self._answer_maintenance(client, updates, offset, notice)
         for upd in updates:
             offset = upd["update_id"] + 1
             try:
@@ -96,6 +102,21 @@ class AdminBot:
                     self.on_message(client, upd["message"])
             except TelegramError as e:
                 _log.warning("telegram_bot: ответ не отправлен: %s", e.description)
+        return offset
+
+    @staticmethod
+    def _answer_maintenance(client, updates, offset, notice: str) -> Optional[int]:
+        """Ремонт: на сообщения и кнопки — только сообщение, ничего не выполняем
+        (заявки в канал остаются ждать)."""
+        for upd in updates:
+            offset = upd["update_id"] + 1
+            try:
+                if upd.get("callback_query"):
+                    client.answer_callback(upd["callback_query"]["id"], notice)
+                elif "message" in upd and (upd["message"].get("chat") or {}).get("type") == "private":
+                    client.send_message(str(upd["message"]["chat"]["id"]), notice)
+            except TelegramError as e:
+                _log.warning("telegram_bot: ответ о ремонте не отправлен: %s", e.description)
         return offset
 
     # ---------- события ----------

@@ -1,0 +1,20 @@
+{% load i18n static %}<!DOCTYPE html>
+{# Страница ремонта — отдельная, без меню, статистики и списков: через неё ничего не утекает #}
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>SOPDS — {% trans "Maintenance" %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+</head>
+<body style="display:flex; min-height:100vh; align-items:center; justify-content:center; padding:1rem;">
+  <div style="max-width:520px; text-align:center;">
+    <div style="font-size:3rem; line-height:1;">🛠</div>
+    <h3 style="color:var(--text); margin:0.8rem 0;">{% trans "The site is under maintenance" %}</h3>
+    <p style="color:var(--text-muted);">{{ message }}</p>
+    <p style="margin-top:2rem; font-size:0.8rem;"><a href="{% url 'web:login' %}" style="color:var(--text-muted);">{% trans "Sign in (superuser)" %}</a></p>
+  </div>
+</body>
+</html>

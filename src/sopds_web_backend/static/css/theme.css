@@ -1420,3 +1420,13 @@ table th { color: var(--text) !important; border: none !important; border-width:
   box-shadow: var(--shadow-md);
 }
 
+/* «На реконструкции» включён — напоминание суперпользователю (maintenance.py) */
+.sp-maintenance-banner {
+  background: var(--status-error);
+  color: #fff;
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.8rem;
+}
+.sp-maintenance-banner a { color: #fff; font-weight: 600; text-decoration: underline; margin-left: 0.6rem; }
+

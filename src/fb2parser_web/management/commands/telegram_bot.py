@@ -19,6 +19,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Telegram-бот запущен (Ctrl+C — остановить).")
         try:
-            AdminBot(get_autosync_service, extra_handler=LibraryHandler()).run_forever()
+            from sopds_web_backend.maintenance import bot_notice
+            AdminBot(get_autosync_service, extra_handler=LibraryHandler(), maintenance=bot_notice).run_forever()
         except KeyboardInterrupt:
             self.stdout.write("Остановлен.")

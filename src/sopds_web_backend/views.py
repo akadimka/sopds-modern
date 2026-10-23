@@ -972,7 +972,7 @@ def sopds_settings(request):
     sm = SettingsManager(_site_config_path())
 
     _BOOL_FIELDS = [
-        'alphabet_menu', 'doubles_hide', 'title_as_filename', 'sticky_header',
+        'alphabet_menu', 'doubles_hide', 'title_as_filename', 'sticky_header', 'maintenance',
         'fb2sax', 'zipscan', 'inpx_enable', 'inpx_skip_unchanged',
         'inpx_test_zip', 'inpx_test_files', 'delete_logical', 'scan_start_directly',
         'samlib_rating', 'authortoday_rating', 'fantlab_rating', 'litmarket_rating',
@@ -980,7 +980,8 @@ def sopds_settings(request):
     # devices_per_user и «Безопасность входа» — на странице пользователей (users_settings).
     _INT_FIELDS = ['maxitems', 'splititems', 'scan_shed_day', 'scan_shed_dow', 'scan_shed_hour', 'scan_shed_min',
                    'watch_debounce_seconds']
-    _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method']
+    _STR_FIELDS = ['root_lib', 'book_extensions', 'fb2toepub', 'fb2tomobi', 'fb2toazw3', 'temp_dir', 'scanner_pid', 'scanner_log', 'language', 'samlib_method',
+                   'maintenance_message']
 
     # Вкладка: после сохранения (и при ошибке) страница открывается на той,
     # где сохраняли, а не на «Общих».

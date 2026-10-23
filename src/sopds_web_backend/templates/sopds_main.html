@@ -1,4 +1,4 @@
-{% load static %}
+{% load static i18n %}
 {% spaceless %}
 <!DOCTYPE html>
 
@@ -23,6 +23,10 @@
 {% comment %}CSRF-токен для htmx-запросов (htmx-config.js) — вне форм: в GET-форме поиска
 он попадал в адрес страницы, историю браузера и логи.{% endcomment %}
 {% csrf_token %}
+{% if maintenance_on and request.user.is_superuser %}
+<div class="sp-maintenance-banner">🛠 {% trans "The site is closed for users (maintenance) — only you see it." %}
+  <a href="{% url 'web:settings' %}?tab=general#maintenance">{% trans "Turn off" %}</a></div>
+{% endif %}
 <div class="grid-container fluid">
     {# Шапка: меню, «Сейчас на сайте», поиск — закрепляется вверху, если включено в настройках #}
     <div class="sp-head{% if sticky_header %} sp-head--sticky{% endif %}" id="sp-head">
