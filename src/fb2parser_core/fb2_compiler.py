@@ -5471,6 +5471,16 @@ class FB2CompilerService:
             was_compressed = any(
                 b.abs_path.name.lower().endswith('.fb2.zip') for b in group.books
             )
+            # Файл с тем же именем (сжатый или нет), который в сборку не вошёл,
+            # не перезаписываем и второй рядом не кладём: сборник из новых томов
+            # ложился «книга.fb2» рядом с прежним «книга.fb2.zip» — в каталоге
+            # два сборника одной серии (сервер 2026-10-22: 189 пар). Тома
+            # остаются отдельными файлами, решать — человеку.
+            in_group = {p.resolve() for p in [b.abs_path for b in group.books] + list(group.duplicate_paths or [])}
+            for existing in (dest_dir / fname, dest_dir / (fname + '.zip')):
+                if existing.exists() and existing.resolve() not in in_group:
+                    raise RuntimeError(f"В папке уже есть «{existing.name}», который не входит "
+                                       f"в сборку, — не перезаписываю и не кладу рядом второй")
             if was_compressed:
                 fname += '.zip'
 
