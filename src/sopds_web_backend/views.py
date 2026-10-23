@@ -1085,9 +1085,9 @@ def offline_page(request):
 
 @require_http_methods(["GET"])
 def online_now(request):
+    """«Сейчас на сайте» для шапки — обновляется раз в минуту (htmx)."""
     if not request.user.is_authenticated:
         return HttpResponse(status=204)            # фоновый опрос htmx: страницу входа в шапку не вставлять
-    """«Сейчас на сайте» для шапки — обновляется раз в минуту (htmx)."""
     from . import online
     return render(request, "sopds_online.html", {"online_users": online.online_users()})
 

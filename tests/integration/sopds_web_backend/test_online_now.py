@@ -90,7 +90,7 @@ def test_inactive_and_anonymous_are_not_listed():
     online.mark(anna.pk, "web")
     User.objects.filter(pk=anna.pk).update(is_active=False)
     assert online.online_users() == []
-    assert Client().get(reverse("web:online")).status_code == 302        # без входа — на страницу входа
+    assert Client().get(reverse("web:online")).status_code == 204        # без входа — пусто (не страница входа в шапке)
 
 
 def test_logout_leaves_list_at_once():
