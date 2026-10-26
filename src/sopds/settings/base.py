@@ -220,7 +220,9 @@ LOCALE_PATHS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+# Часовой пояс сайта (TIME_ZONE в .env, например Europe/Moscow): по нему —
+# время на страницах и границы дня («Новости», серия дней чтения).
+TIME_ZONE = env("TIME_ZONE", default="UTC")
 
 USE_I18N = True
 USE_L10N = True
