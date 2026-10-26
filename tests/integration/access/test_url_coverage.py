@@ -53,6 +53,7 @@ ISOLATION_TESTED = {
     "web:series": (WEB, "test_menus_count_only_visible"),
     "web:genre": (WEB, "test_menus_count_only_visible"),
     "web:ratings_progress": (WEB, "test_rating_progress_admin_only"),
+    "web:news": (WEB, "test_news_shows_only_visible_books"),
 }
 
 NO_CATALOG_DATA = {
@@ -75,6 +76,9 @@ NO_CATALOG_DATA = {
     "web:telegram_chats": "настройки Telegram — только суперпользователь",
     "web:telegram_test": "настройки Telegram — только суперпользователь",
     "web:users_list": "пользователи — только суперпользователь",
+    "web:news_create": "новости — только суперпользователь, книг не отдаёт",
+    "web:news_edit": "новости — только суперпользователь, книг не отдаёт",
+    "web:news_action": "новости — только суперпользователь, книг не отдаёт",
     "web:users_settings": "настройки пользователей и входа — только суперпользователь",
     "web:user_create": "пользователи — только суперпользователь",
     "web:user_edit": "пользователи — только суперпользователь",

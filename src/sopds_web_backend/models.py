@@ -23,6 +23,9 @@ class UserProfile(models.Model):
     # больше new_books_mark (opds_catalog/autosync_hooks.announce_to_subscribers).
     notify_new_books = models.BooleanField(default=False)
     new_books_mark = models.IntegerField(null=True, blank=True)
+    # Когда пользователь последний раз видел «Новости» на главной: новее —
+    # с меткой «новое» (sopds_web_backend/news.py).
+    news_seen = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "User Profile"
@@ -30,6 +33,30 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile({self.user.username})"
+
+
+class News(models.Model):
+    """Новость суперпользователя для блока «Новости» на главной
+    (docs/news-design.md). Не удаляется, а скрывается; править можно только
+    последнюю и только NEWS_EDIT_HOURS после публикации (news.can_edit)."""
+
+    title = models.CharField(max_length=200)
+    text = models.TextField(blank=True, default="")
+    author = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created = models.DateTimeField(db_index=True)
+    edited = models.DateTimeField(null=True, blank=True)
+    hidden = models.BooleanField(default=False)
+    pinned = models.BooleanField(default=False)
+    # когда ушла в канал Telegram (галочка «Отправить также в Telegram»)
+    telegram_sent = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "News"
+        verbose_name_plural = "News"
+        ordering = ["-created"]
+
+    def __str__(self):
+        return f"News({self.created:%Y-%m-%d}: {self.title})"
 
 
 class TelegramLink(models.Model):

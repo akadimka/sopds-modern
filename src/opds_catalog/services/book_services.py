@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from functools import reduce
 from operator import and_
 from typing import Callable, TypeVar
@@ -125,6 +126,22 @@ def find_book_by_id(
     return Book.objects.filter(id=book_id)
 
 
+def find_books_added_on(
+    _: bool, day: str, folder: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Книги, добавленные в этот день (YYYY-MM-DD, по TIME_ZONE) — ссылки
+    «Новостей» на главной; folder — только из этой папки верхнего уровня
+    (жанр, баг №166)."""
+    try:
+        day = date.fromisoformat(day)
+    except (TypeError, ValueError):
+        return Book.objects.none()
+    books = Book.objects.filter(registerdate__date=day)
+    if folder:
+        books = books.filter(Q(path=folder) | Q(path__startswith=folder + "/") | Q(path__startswith=folder + "\\"))
+    return books.order_by(*DEFAULT_ORDER_BY)
+
+
 SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
     SearchType.BY_USER: find_by_bookshelf,
     SearchType.BY_AUTHOR_AND_SERIES: find_by_author_and_series,
@@ -136,6 +153,7 @@ SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
     SearchType.BY_SERIES: find_books_by_series,
     SearchType.BY_GENRE: find_books_by_genre,
     SearchType.BY_ID: find_book_by_id,
+    SearchType.ADDED_ON: find_books_added_on,
 }
 
 

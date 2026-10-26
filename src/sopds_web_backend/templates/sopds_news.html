@@ -1,0 +1,22 @@
+{% extends "sopds_main.html" %}
+{% load i18n %}
+
+{% block ext-body %}
+<div class="cell small-12" style="padding: 1rem 0.5rem;">
+<h2 style="font-size:1.2rem; margin-bottom:0.8rem; color:var(--sp-accent);">🗞 {% trans "News" %}</h2>
+{% if news_page.object_list %}
+<div class="sp-news-grid">
+    {% include "sopds_news_items.html" with items=news_page.object_list %}
+</div>
+{% if news_page.has_other_pages %}
+<nav class="sp-news-pages" aria-label="{% trans 'Pages' %}">
+    {% if news_page.has_previous %}<a href="?page={{ news_page.previous_page_number }}">← {% trans "Newer" %}</a>{% endif %}
+    <span>{{ news_page.number }} / {{ news_page.paginator.num_pages }}</span>
+    {% if news_page.has_next %}<a href="?page={{ news_page.next_page_number }}">{% trans "Older" %} →</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<p style="color:var(--text-muted);">{% trans "No news yet." %}</p>
+{% endif %}
+</div>
+{% endblock %}

@@ -1992,6 +1992,128 @@ msgstr ""
 msgid "Message for users"
 msgstr "Сообщение для пользователей"
 
+msgid "Pinned"
+msgstr "Закреплено"
+
+msgid "new"
+msgstr "новое"
+
+msgid "Library root"
+msgstr "Корень библиотеки"
+
+msgid "Show all"
+msgstr "Показать все"
+
+msgid "News"
+msgstr "Новости"
+
+msgid "All news"
+msgstr "Все новости"
+
+msgid "Pages"
+msgstr "Страницы"
+
+msgid "Newer"
+msgstr "Новее"
+
+msgid "Older"
+msgstr "Старше"
+
+msgid "No news yet."
+msgstr "Новостей пока нет."
+
+msgid "Sent to the Telegram channel."
+msgstr "Отправлено в канал Telegram."
+
+msgid "Publish news"
+msgstr "Опубликовать новость"
+
+msgid "Headline"
+msgstr "Заголовок"
+
+msgid "Text"
+msgstr "Текст"
+
+msgid "Pin (always first in the News block)"
+msgstr "Закрепить (всегда первой в блоке «Новости»)"
+
+msgid "Also send to the Telegram channel"
+msgstr "Отправить также в канал Telegram"
+
+msgid "The Telegram channel is not configured (the Telegram tab)."
+msgstr "Канал Telegram не настроен (вкладка «Telegram»)."
+
+msgid ""
+"Only the latest news can be edited, and only within %(hours)s hours. Instead"
+" of deleting, a news item is hidden: it stays in the archive and can be "
+"shown again."
+msgstr ""
+"Править можно только последнюю новость и только в течение %(hours)s ч после "
+"публикации. Новость не удаляется, а скрывается: она остаётся в архиве, её "
+"можно вернуть."
+
+msgid "Publish"
+msgstr "Опубликовать"
+
+msgid "News archive"
+msgstr "Архив новостей"
+
+msgid "Date"
+msgstr "Дата"
+
+msgid "edited"
+msgstr "изменена"
+
+msgid "hidden"
+msgstr "скрыта"
+
+msgid "Edit"
+msgstr "Изменить"
+
+msgid "Show"
+msgstr "Показать"
+
+msgid "Hide"
+msgstr "Скрыть"
+
+msgid "Unpin"
+msgstr "Открепить"
+
+msgid "Pin"
+msgstr "Закрепить"
+
+msgid "Send to Telegram"
+msgstr "Отправить в Telegram"
+
+msgid ""
+"News about new books is made automatically — one per day of addition; it is "
+"not listed here."
+msgstr ""
+"Новости о новых книгах появляются сами — по одной на день добавления; здесь "
+"они не показываются."
+
+msgid "Added on %(day)s"
+msgstr "Добавлены %(day)s"
+
+msgid "Telegram channel is not configured (Settings → Telegram)."
+msgstr "Канал Telegram не настроен (Настройки → Telegram)."
+
+msgid "Not sent to Telegram: %(reason)s"
+msgstr "Не отправлено в Telegram: %(reason)s"
+
+msgid "The news needs a title."
+msgstr "У новости должен быть заголовок."
+
+msgid "Only the latest news can be edited, and only within %(hours)s hours."
+msgstr ""
+"Править можно только последнюю новость и только в течение %(hours)s ч."
+
+msgid "%(n)s new book"
+msgid_plural "%(n)s new books"
+msgstr[0] "%(n)s новая книга"
+msgstr[1] "%(n)s новые книги"
+msgstr[2] "%(n)s новых книг"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

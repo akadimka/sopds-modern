@@ -1,0 +1,92 @@
+{% load i18n %}{# Вкладка «Новости» страницы настроек (sopds_settings.html) — вне общей формы настроек: у неё свои формы #}
+  {% if news_error %}
+  <div class="s-msg err" style="margin-bottom:1rem;">✖ {{ news_error }}</div>
+  {% endif %}
+  {% if news_sent %}
+  <div class="s-msg ok" style="margin-bottom:1rem;">✓ {% trans "Sent to the Telegram channel." %}</div>
+  {% endif %}
+
+  <style>
+    .sp-news-admin td { vertical-align: top; }
+    .sp-news-admin .sp-news-actions, .sp-news-admin .sp-news-actions form { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0; }
+    .sp-news-admin .button { margin: 0; }
+    .sp-news-hidden { opacity: 0.55; }
+  </style>
+
+  <div class="s-section-title">{% trans "Publish news" %}</div>
+  <div style="max-width:640px; margin-bottom:1.5rem;">
+  <form method="post" action="{% url 'web:news_create' %}">
+    {% csrf_token %}
+    <div class="s-field">
+      <label for="news-title">{% trans "Headline" %}</label>
+      <input type="text" id="news-title" name="title" maxlength="200" required>
+    </div>
+    <div class="s-field">
+      <label for="news-text">{% trans "Text" %}</label>
+      <textarea id="news-text" name="text" rows="4" maxlength="3500"></textarea>
+    </div>
+    <div class="s-field">
+      <label class="s-check"><input type="checkbox" name="pinned"> <span>{% trans "Pin (always first in the News block)" %}</span></label>
+      <label class="s-check"><input type="checkbox" name="telegram" {% if not news_telegram_ready %}disabled{% endif %}>
+        <span>{% trans "Also send to the Telegram channel" %}</span></label>
+      {% if not news_telegram_ready %}<div class="s-hint">{% trans "The Telegram channel is not configured (the Telegram tab)." %}</div>{% endif %}
+    </div>
+    <div class="s-hint" style="margin-bottom:0.6rem;">{% blocktrans with hours=news_edit_hours %}Only the latest news can be edited, and only within {{ hours }} hours. Instead of deleting, a news item is hidden: it stays in the archive and can be shown again.{% endblocktrans %}</div>
+    <button type="submit" class="s-save-btn">📰 {% trans "Publish" %}</button>
+  </form>
+  </div>
+
+  <div class="s-section-title">{% trans "News archive" %}</div>
+  <table class="sp-news-admin" style="width:100%; margin-bottom:1.5rem;">
+    <thead>
+      <tr>
+        <th style="width:9rem;">{% trans "Date" %}</th>
+        <th>{% trans "Headline" %}</th>
+        <th style="width:9rem;">{% trans "Author" %}</th>
+        <th style="width:8rem;">Telegram</th>
+        <th style="width:20rem;">{% trans "Actions" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in news_archive %}
+      <tr id="news-{{ n.pk }}" class="{% if n.hidden %}sp-news-hidden{% endif %}">
+        <td>{{ n.created|date:"d.m.Y H:i" }}{% if n.edited %}<div class="s-hint">{% trans "edited" %} {{ n.edited|date:"d.m H:i" }}</div>{% endif %}</td>
+        <td>
+          {% if n.pinned %}📌 {% endif %}{% if n.hidden %}<em>({% trans "hidden" %})</em>&nbsp;{% endif %}<strong>{{ n.title }}</strong>
+          {% if n.text %}<div style="font-size:0.85rem; color:var(--text-muted);">{{ n.text|linebreaksbr }}</div>{% endif %}
+          {% if n.pk == news_editable_id %}
+          <details style="margin-top:0.4rem;">
+            <summary style="cursor:pointer;">✏ {% trans "Edit" %}</summary>
+            <form method="post" action="{% url 'web:news_edit' n.pk %}" style="margin-top:0.4rem;">
+              {% csrf_token %}
+              <input type="text" name="title" maxlength="200" required value="{{ n.title }}">
+              <textarea name="text" rows="4" maxlength="3500">{{ n.text }}</textarea>
+              <button type="submit" class="button small">{% trans "Save" %}</button>
+            </form>
+          </details>
+          {% endif %}
+        </td>
+        <td>{{ n.author.username|default:"—" }}</td>
+        <td>{% if n.telegram_sent %}✓ {{ n.telegram_sent|date:"d.m H:i" }}{% else %}—{% endif %}</td>
+        <td>
+          <div class="sp-news-actions">
+            <form method="post" action="{% url 'web:news_action' n.pk 'hide' %}">{% csrf_token %}
+              <button type="submit" class="button small secondary">{% if n.hidden %}{% trans "Show" %}{% else %}{% trans "Hide" %}{% endif %}</button>
+            </form>
+            <form method="post" action="{% url 'web:news_action' n.pk 'pin' %}">{% csrf_token %}
+              <button type="submit" class="button small secondary">{% if n.pinned %}{% trans "Unpin" %}{% else %}{% trans "Pin" %}{% endif %}</button>
+            </form>
+            {% if not n.telegram_sent and news_telegram_ready %}
+            <form method="post" action="{% url 'web:news_action' n.pk 'telegram' %}">{% csrf_token %}
+              <button type="submit" class="button small secondary">{% trans "Send to Telegram" %}</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">{% trans "No news yet." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="s-hint">{% trans "News about new books is made automatically — one per day of addition; it is not listed here." %}</div>

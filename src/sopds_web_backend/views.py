@@ -1,16 +1,14 @@
 import logging
-import os
 import re
 import threading
 from random import randint
-from types import SimpleNamespace
 from typing import Any
 from urllib.parse import urlencode
 
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Case, Count, IntegerField, Q, When
+from django.db.models import Case, IntegerField, Q, When
 from django.http import (
     HttpResponse,
     HttpResponseNotAllowed,
@@ -246,6 +244,21 @@ def SearchBooksView(request):
                 .distinct(), request.user
             ).order_by("-docdate")
             args["breadcrumbs"] = [_books_root, {"label": _("Doubles for book"), "url": ""}, {"label": mbook.title, "url": ""}]
+            args["searchobject"] = "title"
+
+        # Книги, добавленные в этот день (ссылки «Новостей» на главной)
+        elif args["searchtype"] == "n":
+            from datetime import date
+
+            from django.utils.formats import date_format
+            try:
+                day_label = date_format(date.fromisoformat(args["searchterms"]), "j E Y")
+            except ValueError:
+                day_label = args["searchterms"]
+            args["breadcrumbs"] = [{"label": _("News"), "url": reverse("web:news")},
+                                   {"label": _("Added on %(day)s") % {"day": day_label}, "url": ""}]
+            if args["searchterms0"]:
+                args["breadcrumbs"].append({"label": args["searchterms0"], "url": ""})
             args["searchobject"] = "title"
 
         # Поиск книги по ID
@@ -959,6 +972,7 @@ _SETTINGS_TABS = {
     'scanner': _lazy('Scanner'),
     'schedule': _lazy('Schedule'),
     'telegram': 'Telegram',
+    'news': _lazy('News'),
     'users': _lazy('Users'),
 }
 
@@ -1044,7 +1058,7 @@ def sopds_settings(request):
     return render(request, 'sopds_settings.html', _settings_context(request, sm, active_tab, errors))
 
 
-def _settings_context(request, sm, active_tab, errors=(), users_error=None):
+def _settings_context(request, sm, active_tab, errors=(), users_error=None, news_error=None):
     """Страница настроек со всеми вкладками, включая «Пользователи»."""
     from opds_catalog.sopds_config import effective
     sopds = effective(sm.settings.get('sopds', {}))     # действующие значения, с умолчаниями
@@ -1061,13 +1075,118 @@ def _settings_context(request, sm, active_tab, errors=(), users_error=None):
         'autosync': {k: v for k, v in autosync.items() if k != 'telegram_token'},
         'telegram_token_tail': autosync['telegram_token'][-4:],
         **_users_context(),
+        **_news_context(request, autosync, news_error),
     }
 
 
-def _settings_page(request, active_tab, users_error=None, status=200):
+def _settings_page(request, active_tab, users_error=None, status=200, news_error=None):
     from fb2parser_core.settings_manager import SettingsManager
-    context = _settings_context(request, SettingsManager(_site_config_path()), active_tab, users_error=users_error)
+    context = _settings_context(request, SettingsManager(_site_config_path()), active_tab,
+                                users_error=users_error, news_error=news_error)
     return render(request, 'sopds_settings.html', context, status=status)
+
+
+# ---------- «Новости» (docs/news-design.md) ----------
+
+def _news_context(request, autosync, news_error=None):
+    """Вкладка «Новости»: архив (со скрытыми) и какую можно править."""
+    from . import news
+    from .models import News
+    archive = list(News.objects.select_related("author"))
+    editable = next((n.pk for n in archive[:1] if news.can_edit(n)), None)
+    return {
+        'news_archive': archive,
+        'news_editable_id': editable,
+        'news_edit_hours': news.EDIT_HOURS,
+        'news_error': news_error,
+        'news_sent': request.GET.get('news_sent') == '1',
+        'news_telegram_ready': bool(autosync.get('telegram_token') and autosync.get('telegram_channel')),
+    }
+
+
+def _news_form(request):
+    title = request.POST.get('title', '').strip()[:200]
+    text = request.POST.get('text', '').strip()[:3500]
+    return title, text
+
+
+def _news_send_telegram(news_item):
+    """Новость — в канал Telegram; None — отправлено, иначе текст ошибки."""
+    from fb2parser_core.settings_manager import SettingsManager
+    from fb2parser_core.telegram_notify import TelegramError, client_for, explain_error
+
+    from . import news
+    cfg = SettingsManager(_site_config_path()).get_autosync_settings()
+    if not (cfg.get('telegram_token') and cfg.get('telegram_channel')):
+        return _('Telegram channel is not configured (Settings → Telegram).')
+    try:
+        client_for(cfg).send_message(cfg['telegram_channel'], news.telegram_text(news_item))
+    except TelegramError as e:
+        return _('Not sent to Telegram: %(reason)s') % {'reason': explain_error(e)}
+    news_item.telegram_sent = timezone.now()
+    news_item.save(update_fields=['telegram_sent'])
+    return None
+
+
+def _news_done(request, error=None, sent=False):
+    if error:
+        return _settings_page(request, 'news', news_error=error, status=422)
+    return redirect(reverse('web:settings') + '?tab=news' + ('&news_sent=1' if sent else ''))
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def news_create(request):
+    from .models import News
+    title, text = _news_form(request)
+    if not title:
+        return _news_done(request, _('The news needs a title.'))
+    item = News.objects.create(title=title, text=text, author=request.user, created=timezone.now(),
+                               pinned=request.POST.get('pinned') == 'on')
+    if request.POST.get('telegram') != 'on':
+        return _news_done(request)
+    error = _news_send_telegram(item)
+    return _news_done(request, error, sent=not error)
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def news_edit(request, news_id):
+    from . import news
+    from .models import News
+    item = get_object_or_404(News, pk=news_id)
+    if not news.can_edit(item):
+        return _news_done(request, _('Only the latest news can be edited, and only within %(hours)s hours.')
+                          % {'hours': news.EDIT_HOURS})
+    title, text = _news_form(request)
+    if not title:
+        return _news_done(request, _('The news needs a title.'))
+    item.title, item.text, item.edited = title, text, timezone.now()
+    item.save(update_fields=['title', 'text', 'edited'])
+    return _news_done(request)
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def news_action(request, news_id, action):
+    """Скрыть/вернуть, закрепить/открепить, отправить в Telegram."""
+    from .models import News
+    item = get_object_or_404(News, pk=news_id)
+    if action == 'telegram':
+        error = _news_send_telegram(item)
+        return _news_done(request, error, sent=not error)
+    field = {'hide': 'hidden', 'pin': 'pinned'}[action]
+    setattr(item, field, not getattr(item, field))
+    item.save(update_fields=[field])
+    return _news_done(request)
+
+
+@sopds_login(url="web:login")
+def news_list(request):
+    """«Все новости» — та же лента, что на главной, постранично."""
+    from . import news
+    page = news.news_page(request.user, visibility.visible_books(request.user), request.GET.get('page'))
+    return render(request, 'sopds_news.html', {'breadcrumbs': [_('News')], 'news_page': page})
 
 
 def service_worker(request):
@@ -1090,23 +1209,6 @@ def online_now(request):
         return HttpResponse(status=204)            # фоновый опрос htmx: страницу входа в шапку не вставлять
     from . import online
     return render(request, "sopds_online.html", {"online_users": online.online_users()})
-
-
-def _genres_by_folder(visible) -> list:
-    """Жанры для блока «Жанры» на главной — ТОЛЬКО названия папок верхнего
-    уровня библиотеки (баг №166, решение пользователя): жанр книги — первая
-    часть её пути («Фантастика/Автор/…» → «Фантастика»), не тег FB2 и не
-    записи Genre. Считаются видимые пользователю книги.
-    """
-    from django.db.models import Value
-    from django.db.models.functions import Concat, StrIndex, Substr
-
-    sep = Value(os.sep)
-    folder = Substr("path", 1, StrIndex(Concat("path", sep), sep) - 1)
-    rows = (visible.order_by().annotate(genre_folder=folder)
-            .values("genre_folder").annotate(cnt=Count("id")).order_by("-cnt", "genre_folder"))
-    return [SimpleNamespace(name=r["genre_folder"], cnt=r["cnt"])
-            for r in rows if r["genre_folder"] not in ("", ".")]
 
 
 @sopds_login(url="web:login")
@@ -1171,11 +1273,13 @@ def hello(request):
         "books_finished_month": books_finished_month,
         "streak_days": streak,
     }
-    all_genres = _genres_by_folder(visible)
+    # Блок «Жанры» — ТОЛЬКО папки верхнего уровня библиотеки (баг №166,
+    # решение пользователя), не теги FB2 и не записи Genre.
+    from . import news
+    all_genres = news.genres_by_folder(visible)
     args["top_genres"]   = all_genres[:5]
     args["chart_genres"] = all_genres
-    # Без рейтингов: у только что добавленных книг их ещё нет.
-    args["recent_books"] = visible.order_by("-id").prefetch_related("genres")[:10]
+    args["news_items"] = news.main_page_news(request.user, visible)
     # Баг №104: order_by("?") компилируется в ORDER BY RANDOM() на SQLite —
     # полная сортировка ВСЕЙ таблицы книг на каждый заход на главную
     # страницу сайта. Тот же offset-based приём, что уже используется

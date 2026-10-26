@@ -1,0 +1,31 @@
+{% load i18n %}
+{# Карточки «Новостей» (sopds_web_backend/news.py): главная — в строку, «Все новости» — сеткой #}
+{% for item in items %}
+<article class="sp-news-card{% if item.pinned %} sp-news-pinned{% endif %}">
+  <header class="sp-news-head">
+    {% if item.pinned %}<span title="{% trans 'Pinned' %}">📌</span>{% endif %}
+    <time datetime="{{ item.when|date:'c' }}">{% if item.kind == 'books' %}{{ item.day|date:"j E Y" }}{% else %}{{ item.when|date:"j E Y" }}{% endif %}</time>
+    {% if item.is_new %}<span class="sp-news-new">{% trans "new" %}</span>{% endif %}
+  </header>
+  {% if item.kind == 'books' %}
+    <div class="sp-news-title">📚 {% blocktrans count n=item.total %}{{ n }} new book{% plural %}{{ n }} new books{% endblocktrans %}</div>
+    {% if item.books %}
+    <ul class="sp-news-books">
+      {% for b in item.books %}
+      <li><a href="{{ b.url }}">{{ b.title }}</a>{% if b.genre %}<span class="sp-news-genre">{{ b.genre }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <ul class="sp-news-genres">
+      {% for g in item.genres %}
+      <li>{% if g.url %}<a href="{{ g.url }}">{{ g.name }}</a>{% else %}{% trans "Library root" %}{% endif %} <span class="sp-news-count">{{ g.cnt }}</span></li>
+      {% endfor %}
+    </ul>
+    <a class="sp-news-all" href="{{ item.all_url }}">{% trans "Show all" %} →</a>
+    {% endif %}
+  {% else %}
+    <div class="sp-news-title">📰 {{ item.news.title }}</div>
+    {% if item.news.text %}<div class="sp-news-text">{{ item.news.text|linebreaksbr }}</div>{% endif %}
+  {% endif %}
+</article>
+{% endfor %}

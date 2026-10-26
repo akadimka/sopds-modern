@@ -1430,3 +1430,49 @@ table th { color: var(--text) !important; border: none !important; border-width:
 }
 .sp-maintenance-banner a { color: #fff; font-weight: 600; text-decoration: underline; margin-left: 0.6rem; }
 
+/* «Новости» (sopds_news_items.html): на главной — в строку с прокруткой вбок,
+   на странице «Все новости» — сеткой */
+.sp-news-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: 0.8rem;
+  overflow-x: auto;
+  padding: 0.8rem !important;
+}
+.sp-news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.8rem;
+}
+.sp-news-card {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.83rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.sp-news-pinned { border-color: var(--sp-accent); }
+.sp-news-head { display: flex; gap: 0.4rem; align-items: center; color: var(--text-muted); font-size: 0.78rem; }
+.sp-news-new {
+  background: var(--sp-accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.sp-news-title { font-weight: 600; color: var(--text); }
+.sp-news-text { color: var(--text); line-height: 1.45; overflow-wrap: anywhere; }
+.sp-news-books, .sp-news-genres { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.sp-news-books li { overflow-wrap: anywhere; }
+.sp-news-genres li { display: flex; justify-content: space-between; gap: 0.6rem; }
+.sp-news-genre, .sp-news-count { color: var(--text-muted); }
+.sp-news-genre { display: block; font-size: 0.75rem; }
+.sp-news-all { margin-top: auto; font-size: 0.8rem; }
+.sp-news-pages { display: flex; gap: 1rem; justify-content: center; align-items: center; margin: 1rem 0; }
+

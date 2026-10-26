@@ -24,6 +24,7 @@ class SearchType(StrEnum):
     BY_USER = "u"  # Поиск по пользователю (книжная полка)
     DOUBLES = "d"  # Поиск дубликатов
     BY_ID = "i"  # Поиск по ID книги
+    ADDED_ON = "n"  # Добавленные в этот день («Новости» на главной)
 
 
 def extract_fb2_cover(

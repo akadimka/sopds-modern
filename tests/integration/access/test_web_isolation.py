@@ -104,6 +104,25 @@ def test_main_page_and_every_page_context(client, lib):
     assert [(g.name, g.cnt) for g in response.context["chart_genres"]] == [("Фантастика", 1)]
 
 
+def test_news_shows_only_visible_books(client, lib):
+    """«Новости»: книги дня, счёт, ссылки «за день» — только видимые (чужая
+    книга того же дня не видна и не считается)."""
+    from django.utils import timezone
+
+    users, _, _ = lib
+    for name in ("main", "news"):
+        _, anna = _page(client, users["anna"], name)
+        assert "Дневник Анны" in anna and "Бориса" not in anna, name
+        _, admin = _page(client, users["admin"], name)
+        assert "Дневник Анны" in admin and "Секрет Бориса" in admin, name
+    client.force_login(users["anna"])
+    item = client.get(reverse("web:main")).context["news_items"][0]
+    assert item.total == 1 and [b.title for b in item.books] == ["Автор Анны - Дневник Анны"]
+    day = {"searchtype": "n", "searchterms": timezone.localdate().isoformat()}
+    _, anna = _page(client, users["anna"], "searchbooks", **day)
+    assert "Дневник Анны" in anna and "Бориса" not in anna
+
+
 @pytest.mark.parametrize("name, params", [
     ("searchauthors", {"searchtype": "b", "searchterms": "АВТОР"}),
     ("searchseries", {"searchtype": "b", "searchterms": "СЕРИЯ"}),

@@ -514,6 +514,11 @@
 
 </form>
 
+<!-- ═══════════ Вкладка: Новости (свои формы — вне формы настроек) ═══════════ -->
+<div id="s-pane-news" class="s-tab-panel{% if active_tab == 'news' %} active{% endif %}">
+{% include "sopds_news_pane.html" %}
+</div>
+
 <!-- ═══════════ Вкладка: Пользователи (свои формы — вне формы настроек) ═══════════ -->
 <div id="s-pane-users" class="s-tab-panel{% if active_tab == 'users' %} active{% endif %}">
 {% include "sopds_users_pane.html" %}

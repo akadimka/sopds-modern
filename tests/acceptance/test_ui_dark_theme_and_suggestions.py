@@ -139,9 +139,9 @@ def test_user_actions_are_one_aligned_row(superuser_client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_recently_added_has_no_rating_columns(superuser_client, override_config):
-    """«Недавно добавленные» — без столбцов рейтингов: у только что
-    добавленных книг их ещё нет, столбцы стояли пустыми."""
+def test_news_block_has_no_ratings(superuser_client, override_config):
+    """Новинки на главной (раньше — «Недавно добавленные», теперь — блок
+    «Новости») — без рейтингов: у только что добавленных книг их ещё нет."""
     from opds_catalog.models import Book, Catalog, SamlibRating
     cat = Catalog.objects.create(cat_name=".", path=".")
     book = Book.objects.create(filename="Автор - Новинка.fb2", path=".", catalog=cat, avail=2, format="fb2",
@@ -149,6 +149,7 @@ def test_recently_added_has_no_rating_columns(superuser_client, override_config)
     SamlibRating.objects.create(book=book, rating=8.5)
     with override_config(SOPDS_SAMLIB_RATING=True):
         html = superuser_client.get(reverse("web:main")).content.decode("utf-8")
-    recent = html.split("Recently added", 1)[1].split("</table>", 1)[0]
-    assert "Автор - Новинка" in recent
-    assert "SL</th>" not in recent and "★" not in recent
+    assert "Recently added" not in html
+    news = html[html.index("sp-news-row"):html.rindex("</article>")]
+    assert "Автор - Новинка" in news
+    assert "SL</th>" not in news and "★" not in news
