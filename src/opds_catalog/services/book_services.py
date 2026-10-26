@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from functools import reduce
 from operator import and_
 from typing import Callable, TypeVar
@@ -12,6 +12,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Count, IntegerField, Prefetch, Q, QuerySet, Value
 from django.db.models.functions import Substr
+from django.utils import timezone
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
@@ -126,6 +127,15 @@ def find_book_by_id(
     return Book.objects.filter(id=book_id)
 
 
+def added_on(day: date) -> Q:
+    """Книги, добавленные в этот день по TIME_ZONE. Интервалом, а не
+    registerdate__date: тот в SQLite переводит время каждой книги функцией
+    Python — на 24 тыс. книг в 5 раз медленнее (главная, «Новости»)."""
+    start = timezone.make_aware(datetime.combine(day, time.min))
+    end = timezone.make_aware(datetime.combine(day + timedelta(days=1), time.min))
+    return Q(registerdate__gte=start, registerdate__lt=end)
+
+
 def find_books_added_on(
     _: bool, day: str, folder: str | None = None, ___=None
 ) -> QuerySet[Book]:
@@ -136,7 +146,7 @@ def find_books_added_on(
         day = date.fromisoformat(day)
     except (TypeError, ValueError):
         return Book.objects.none()
-    books = Book.objects.filter(registerdate__date=day)
+    books = Book.objects.filter(added_on(day))
     if folder:
         books = books.filter(Q(path=folder) | Q(path__startswith=folder + "/") | Q(path__startswith=folder + "\\"))
     return books.order_by(*DEFAULT_ORDER_BY)

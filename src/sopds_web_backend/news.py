@@ -25,6 +25,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from fb2parser_core.telegram_notify import DIGEST_DETAIL_MAX as DETAIL_MAX
+from opds_catalog.services.book_services import added_on
 
 MAIN_PAGE_ITEMS = 5
 PAGE_SIZE = 20
@@ -83,7 +84,7 @@ def _expand(entries, visible):
     for e in entries:
         if e.kind != "books":
             continue
-        books = visible.filter(registerdate__date=e.day)
+        books = visible.filter(added_on(e.day))
         e.all_url = day_books_url(e.day)
         if e.total > DETAIL_MAX:
             e.genres = [SimpleNamespace(name=g.name, cnt=g.cnt, url=day_books_url(e.day, g.name) if g.name else "")
