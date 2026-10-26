@@ -15,6 +15,7 @@ from django.urls import reverse
 
 import opds_catalog.autosync_hooks as hooks
 from fb2parser_core import telegram_notify
+from sopds_web_backend import telegram_users
 from sopds_web_backend.models import TelegramLink, UserProfile
 
 pytestmark = pytest.mark.django_db
@@ -39,6 +40,9 @@ def setup(lib, monkeypatch, settings):
     client = FakeClient()
     monkeypatch.setattr(telegram_notify, "client_for", lambda cfg: client)
     monkeypatch.setattr(hooks, "_bot_username", lambda service: "")
+    # Бот настроен — явно, а не токеном из локального config.json: без этого
+    # профиль показывал галочку только на машине, где бот настроен.
+    monkeypatch.setattr(telegram_users, "autosync_service", _service)
     for n, (name, user) in enumerate(users.items(), start=1):
         TelegramLink.objects.create(user=user, telegram_id=1000 + n, telegram_name=f"@{name}")
     before = min(b.id for b in books.values()) - 1
