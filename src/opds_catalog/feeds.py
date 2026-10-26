@@ -15,6 +15,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.feedgenerator import Atom1Feed, Enclosure, rfc3339_date
+from django.utils.html import escape
 from django.utils.translation import gettext as _
 
 from book_tools.format.mimetype import Mimetype
@@ -634,7 +635,7 @@ class CatalogsFeed(SOPDSBaseFeed):
     def item_description(self, item):
         """Описание элемента."""
         if item["is_catalog"]:
-            return f"Catalog: {item['title']}"
+            return f"Catalog: {escape(item['title'])}"           # имя папки — в HTML-описание
         else:
             return book_services.book_description(item)
 

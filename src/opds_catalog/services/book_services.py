@@ -13,7 +13,7 @@ from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Count, IntegerField, Prefetch, Q, QuerySet, Value
 from django.db.models.functions import Substr
 from django.utils import timezone
-from django.utils.html import strip_tags
+from django.utils.html import escape, strip_tags
 from django.utils.translation import gettext as _
 
 from opds_catalog import visibility
@@ -353,73 +353,32 @@ def paginated_book_content(
     return items, _paginator_to_dict(page)
 
 
+def _field(obj, name):
+    """Поле связанной записи — ORM-объекта или dict (тесты)."""
+    return obj[name] if isinstance(obj, dict) else getattr(obj, name)
+
+
 def book_description(item) -> str:
-    """Форматирование описания книги."""
-    s = [
-        f"<b> {_('Book name:')}</b> {item['title']}<br/>",
-    ]
+    """Описание книги в OPDS (HTML: <content type="text/html">). Всё, что
+    пришло из файла книги — название, авторы, жанры, серии, имя файла,
+    аннотация, — экранируется: читалка отрисовала бы разметку из метаданных."""
+
+    def line(label: str, value) -> str:
+        return f"<b>{escape(label)}</b> {escape(str(value))}<br/>"
+
+    s = [line(_("Book name:"), item["title"])]
     if item["authors"]:
-        # Поддержка как ORM-объектов, так и dict (для тестов)
-        if isinstance(item["authors"][0], dict):
-            s.append(
-                _(
-                    "<b>Authors: </b>%s<br/>"
-                    % ", ".join(a["full_name"] for a in item["authors"])
-                )
-            )
-        else:
-            s.append(
-                _(
-                    "<b>Authors: </b>%s<br/>"
-                    % ", ".join(a.full_name for a in item["authors"])
-                )
-            )
+        s.append(line(_("Authors:"), ", ".join(_field(a, "full_name") for a in item["authors"])))
     if item["genres"]:
-        if isinstance(item["genres"][0], dict):
-            s.append(
-                _(
-                    "<b>Genres: </b>%s<br/>"
-                    % ", ".join(g["subsection"] for g in item["genres"])
-                )
-            )
-        else:
-            s.append(
-                _(
-                    "<b>Genres: </b>%s<br/>"
-                    % ", ".join(g.subsection for g in item["genres"])
-                )
-            )
+        s.append(line(_("Genres:"), ", ".join(_field(g, "subsection") for g in item["genres"])))
     if item["series"]:
-        if isinstance(item["series"][0], dict):
-            s.append(
-                _("<b>Series: </b>%s<br/>")
-                % ", ".join(s["ser"] for s in item["series"])
-            )
-        else:
-            s.append(
-                _("<b>Series: </b>%s<br/>") % ", ".join(s.ser for s in item["series"])
-            )
+        s.append(line(_("Series:"), ", ".join(_field(x, "ser") for x in item["series"])))
     if item["ser_no"]:
-        if isinstance(item["ser_no"][0], dict):
-            s.append(
-                _(
-                    "<b>No in Series: </b>%s<br/>"
-                    % ", ".join(str(s["ser_no"]) for s in item["ser_no"])
-                )
-            )
-        else:
-            s.append(
-                _(
-                    "<b>No in Series: </b>%s<br/>"
-                    % ", ".join(str(s.ser_no) for s in item["ser_no"])
-                )
-            )
-    s.append(
-        _(
-            f"<b>File: </b>{item['filename']}<br/><b>File size: </b>{item['filesize']}<br/><b>Changes date: </b>{item['docdate']}<br/>"
-        )
-    )
-    s.append(f"<p class='book'>{item['annotation']}</p>")
+        s.append(line(_("No in Series:"), ", ".join(str(_field(x, "ser_no")) for x in item["ser_no"])))
+    s.append(line(_("File:"), item["filename"]))
+    s.append(line(_("File size:"), item["filesize"]))
+    s.append(line(_("Changes date:"), item["docdate"]))
+    s.append(f"<p class='book'>{escape(item['annotation'])}</p>")
     return "".join(s)
 
 

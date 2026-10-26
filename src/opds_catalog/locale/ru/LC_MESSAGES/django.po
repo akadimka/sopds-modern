@@ -15,9 +15,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
-"(n%100>=11 && n%100!=14)? 2 : 3);\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100!=14)? 2 : 3);\n"
 
 #: opds_catalog/feeds.py:212
 #, python-format
@@ -261,12 +259,10 @@ msgstr "подсекция"
 #, python-format
 msgid ""
 "Hello %s!\n"
-"Unfortunately you do not have access to information. Please contact the bot "
-"administrator."
+"Unfortunately you do not have access to information. Please contact the bot administrator."
 msgstr ""
 "Здравствуйте %s!\n"
-"К сожалению у Вас отсутствует доступ к информации. Обратитесь к "
-"администратору бота."
+"К сожалению у Вас отсутствует доступ к информации. Обратитесь к администратору бота."
 
 #: opds_catalog/management/commands/sopds_telebot.py:54
 #, python-format
@@ -280,8 +276,7 @@ msgid ""
 "Hello %(username)s! To search for a book, enter part of her title or author:"
 msgstr ""
 "%(subtitle)s\n"
-"Здравствуйте %(username)s! Для поиска книги, введите часть ее наименования "
-"или автора:"
+"Здравствуйте %(username)s! Для поиска книги, введите часть ее наименования или автора:"
 
 #: opds_catalog/management/commands/sopds_telebot.py:174
 #, python-format
@@ -336,26 +331,29 @@ msgstr "Неизвестный автор"
 msgid "All books by %(full_name)s"
 msgstr "Все книги автора %(full_name)s"
 
-#~ msgid "Book name:"
-#~ msgstr "Название:"
+msgid "Book name:"
+msgstr "Название:"
 
-#~ msgid "Authors:"
-#~ msgstr "Авторы:"
+msgid "Authors:"
+msgstr "Авторы:"
 
-#~ msgid "Genres:"
-#~ msgstr "Жанры:"
+msgid "Genres:"
+msgstr "Жанры:"
 
-#~ msgid "Series:"
-#~ msgstr "Серии:"
+msgid "Series:"
+msgstr "Серия:"
 
-#~ msgid "File:"
-#~ msgstr "Файл:"
+msgid "File:"
+msgstr "Файл:"
 
-#~ msgid "File size:"
-#~ msgstr "Размер файла:"
+msgid "File size:"
+msgstr "Размер файла:"
 
-#~ msgid "Changes date:"
-#~ msgstr "Дата правки:"
+msgid "Changes date:"
+msgstr "Дата изменения:"
+
+msgid "No in Series:"
+msgstr "№ в серии:"
 
 #~ msgid "Doubles count:"
 #~ msgstr "Число дубликатов:"

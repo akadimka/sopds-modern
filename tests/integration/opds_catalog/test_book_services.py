@@ -152,6 +152,26 @@ class TestBookServices:
         count = book_services.author_books_count(author.id, user=admin_user)
         assert count == 1
 
+    def test_book_description_escapes_book_metadata(self, book_with_relations):
+        """Описание уходит в OPDS как HTML: разметка из метаданных книги
+        (название, авторы, серия, файл, аннотация) не должна отрисоваться в читалке."""
+        evil = '<img src=x onerror="alert(1)">'
+        book_data = {
+            "title": f"T {evil}",
+            "annotation": f"A & {evil}",
+            "authors": [{"full_name": f"Au {evil}"}],
+            "series": [{"ser": f"S {evil}"}],
+            "ser_no": [{"ser_no": 2}],
+            "genres": [{"subsection": f"G {evil}"}],
+            "filename": f"F {evil}.fb2",
+            "filesize": 500,
+            "docdate": "01.01.2016",
+        }
+        desc = book_services.book_description(book_data)
+        assert "<img" not in desc and "onerror=\"" not in desc
+        assert desc.count("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;") == 6
+        assert "A &amp; " in desc and "<b>" in desc                     # своя разметка — на месте
+
     def test_book_description_with_ser_no(self, book_with_relations):
         """Описание книги с номером в серии."""
         book_data = {
