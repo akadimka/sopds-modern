@@ -1343,6 +1343,10 @@ class RegenCSVService:
         # Вызов идемпотентен (трогает только записи с пустым proposed_series).
         self._postcheck_metadata_rescue()
 
+        # Сборник чужой сборки без серии («Автор. Серия 1-11») — после отката к
+        # метаданным (серия из <sequence> важнее), до коррекции номеров.
+        self._postcheck_omnibus_series_from_title()
+
         # Повторный вызов коррекции series_number из имени файла (Правило 2,
         # "SeriesRoot N. Title") — ТЕПЕРЬ, когда proposed_series наконец
         # разрешилась (в т.ч. только что через metadata_rescue выше). Первый
@@ -2410,6 +2414,119 @@ class RegenCSVService:
         if _count:
             _log.info(f"[POST-CHECK] Normalized series+arc-number → base series: {_count} records")
             self.logger.log(f"[OK] POST-CHECK: Normalized series+arc-number in {_count} records")
+
+    # Сборник чужой сборки: «[Автор. ]Серия N-M[ (пометка)]», «Серия (т. N-M)»,
+    # «Серия (Трилогия)», «Серия (в N книгах)» — в названии книги или имени файла.
+    _OMNIBUS_WORDS = {
+        'дилогия': 2, 'трилогия': 3, 'тетралогия': 4, 'пенталогия': 5, 'гексалогия': 6,
+        'гепталогия': 7, 'септология': 7, 'окталогия': 8, 'октология': 8,
+        'ноналогия': 9, 'нонология': 9, 'декалогия': 10,
+    }
+    _OMNIBUS_TAIL = r'(?:\s*\((?P<tail>[^()\d]*)\))?\s*$'
+    _OMNIBUS_RANGE_RE = re.compile(
+        r'^(?P<series>.+?)[\s.,:;]*\(?\s*(?:тт?\.|книги|кн\.)?\s*'
+        r'(?P<lo>\d{1,3})\s*[-–—]\s*(?P<hi>\d{1,3})\s*\)?' + _OMNIBUS_TAIL, re.I)
+    _OMNIBUS_WORD_RE = re.compile(
+        r'^(?P<series>.+?)[\s.,:;]*\(\s*(?P<word>' + '|'.join(_OMNIBUS_WORDS) + r')\s*\)' + _OMNIBUS_TAIL,
+        re.I)
+    _OMNIBUS_BOOKS_RE = re.compile(
+        r'^(?P<series>.+?)[\s.,:;]*\(?\s*в\s+(?P<n>\d{1,3})\s+книгах\s*\)?' + _OMNIBUS_TAIL, re.I)
+    _OMNIBUS_NOT_SERIES = re.compile(r'(сборник|антолог|рассказ|компиляц|избранн|собрание|'
+                                     r'^(том|тома|книга|книги|часть|части|цикл)$)', re.I)
+
+    @staticmethod
+    def _name_tokens(*names: str) -> set:
+        return {t for n in names for t in re.findall(r'\w{3,}', (n or '').lower().replace('ё', 'е'))}
+
+    def _omnibus_series_from_text(self, text: str, author_tokens: set):
+        """(серия, lo, hi) из «[Автор. ]Серия N-M…» или None.
+
+        Префикс «Автор. » отрезается, только если в нём есть слово из имени
+        автора (папка, proposed_author, metadata_authors) — иначе точка может
+        быть частью названия серии. Серия с цифрами («Антология
+        классического детектива-15. Книги 1-15» — диапазон тут про
+        содержимое тома, а не про тома серии) и «сборник/антология» — не серия.
+        """
+        text = re.sub(r'\s+', ' ', (text or '')).strip()
+        if not text:
+            return None
+        # «Автор. Серия 1-11» и «Автор - Серия (Трилогия)»
+        m = re.match(r'^(?P<prefix>[^.]{2,80}?)(?:\.\s+|\s+[-–—]\s+)(?P<rest>.+)$', text)
+        if m and self._name_tokens(m.group('prefix')) & author_tokens:
+            text = m.group('rest')
+        for rx in (self._OMNIBUS_RANGE_RE, self._OMNIBUS_WORD_RE, self._OMNIBUS_BOOKS_RE):
+            hit = rx.match(text)
+            if not hit:
+                continue
+            if rx is self._OMNIBUS_RANGE_RE:
+                lo, hi = int(hit.group('lo')), int(hit.group('hi'))
+            elif rx is self._OMNIBUS_WORD_RE:
+                lo, hi = 1, self._OMNIBUS_WORDS[hit.group('word').lower()]
+            else:
+                lo, hi = 1, int(hit.group('n'))
+            series = hit.group('series').strip(' .,:;-–—')
+            if (not 1 <= lo < hi <= 60 or re.search(r'\d', series)
+                    or len(re.findall(r'[^\W\d_]', series)) < 3
+                    or self._OMNIBUS_NOT_SERIES.search(series)
+                    or self._name_tokens(series) <= author_tokens):
+                return None
+            return series, lo, hi
+        return None
+
+    def _postcheck_omnibus_series_from_title(self) -> None:
+        """Сборник чужой сборки без серии: серия и диапазон томов — из названия
+        книги или имени файла (docs/series-duplicates.md, вид 1).
+
+        Реальный случай (сервер, 2026-10-27): «Leach23 [Дмитрий Михалек]. Игрок,
+        забравшийся на вершину 1-11» — в <sequence> серии нет, Правило 4
+        (голый диапазон в имени файла) даёт series_number='1-11' без серии,
+        и без серии компилятор файл не видит: он оставался отдельной книгой
+        рядом с компиляцией серии и с более полными сборниками. Теперь у него
+        серия «Игрок, забравшийся на вершину» и series_number «1-11» —
+        дальше компилятор (_precompiled_range, критерий 2) оставляет самую
+        полную версию. Идёт после отката к метаданным: серия из <sequence>
+        важнее. Серия уже есть и совпадает — дописывается только пустой номер.
+        """
+        _count = 0
+        for record in self.records:
+            sn = (record.series_number or '').strip()
+            if sn and not re.fullmatch(r'\d{1,3}\s*[-–—]\s*\d{1,3}', sn):
+                continue                                    # есть номер одного тома — не сборник
+            parts = Path(record.file_path).parts
+            folder_author = parts[-2] if len(parts) >= 2 else ''
+            author_tokens = self._name_tokens(record.proposed_author, record.metadata_authors, folder_author)
+            found = None
+            for text in (file_stem(record.file_path), record.file_title):
+                found = self._omnibus_series_from_text(text, author_tokens)
+                if found:
+                    break
+            if not found:
+                continue
+            series, lo, hi = found
+            current = (record.proposed_series or '').strip()
+            # «Генеральный. Генеральный попаданец 5-8», «Чернок. (Чернокнижник из детдома) 1-5»
+            # при серии из папки «Генеральный»/«Чернок». Скобки в названии серии без
+            # серии из папки не отрезаются: там бывает и подсерия («Мультимир (Великие Игры)»).
+            same = {self._norm_for_series_cmp(v) for v in
+                    (series, series.split('. ')[0], re.sub(r'\s*\([^()]*\)$', '', series))}
+            if current and self._norm_for_series_cmp(current) not in same:
+                continue
+            if not current:
+                # Написание — из <sequence>, если это та же серия с точностью до
+                # знаков: «А можно выйти 1-3» + мета «А можно выйти?!». Мета
+                # только подтверждает найденную серию, а не задаёт её.
+                meta = (record.metadata_series or '').strip()
+                letters = lambda s: ' '.join(re.findall(r'\w+', s.lower().replace('ё', 'е')))  # noqa: E731
+                record.proposed_series = meta if meta and letters(meta) == letters(series) else series
+                record.series_source = 'title_range'
+            if not sn:
+                record.series_number = f'{lo}-{hi}'
+                record.series_number_source = 'title_range'
+            log_decision(record, f"OMNIBUS TITLE: серия {record.proposed_series!r}, тома "
+                                 f"{record.series_number} — из названия/имени файла сборника.")
+            _count += 1
+        if _count:
+            self.logger.log(f"[OK] Omnibus series from title: {_count}")
 
     def _postcheck_prefer_embedded_series_number_when_consistent(self) -> None:
         """Заменяет series_number из folder-позиции файла на встроенный в

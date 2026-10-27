@@ -66,6 +66,38 @@ def _ordinal_omnibus_range(text_before_word: str, size: int) -> Optional[Tuple[i
     return (n - 1) * size + 1, n * size
 
 
+def _omnibus_quality(path) -> Tuple[int, int]:
+    """Качество версии сборника при равной полноте по томам (решение
+    пользователя 2026-10-27, docs/series-duplicates.md): больше глав с
+    заголовками, затем бо́льшая обложка. Пример — Гаркушин «Миры Содружества»:
+    в одной версии вторая книга без разметки глав и с маленькой обложкой."""
+    try:
+        raw = read_fb2_bytes(path)
+    except OSError:
+        return 0, 0
+    chapters = len(re.findall(rb'<section[^>]*>\s*<title>', raw))
+    cover = 0
+    ref = re.search(rb'<coverpage>.*?href="#([^"]+)"', raw, re.S)
+    if ref:
+        data = re.search(rb'<binary[^>]*\bid="' + re.escape(ref.group(1)) + rb'"[^>]*>(.*?)</binary>', raw, re.S)
+        cover = len(data.group(1)) if data else 0
+    return chapters, cover
+
+
+class _Shingles(set):
+    """Хэши фрагментов текста; sampled — прорежены (большой текст)."""
+    sampled = False
+
+
+def _best_precompiled(entries):
+    """Самая полная по томам (шире диапазон); при равенстве — лучше размечена."""
+    widest = max(hi - lo for _book, lo, hi in entries)
+    tied = [e for e in entries if e[2] - e[1] == widest]
+    if len(tied) == 1:
+        return tied[0]
+    return max(tied, key=lambda e: _omnibus_quality(e[0].abs_path))
+
+
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
@@ -1183,6 +1215,17 @@ class FB2CompilerService:
     _DUPLICATE_MIN_COVERAGE = 0.45
     _SHINGLE_WORD_RE = re.compile(r'[^\W\d_]+|\d+')
     _SHINGLE_BINARY_RE = re.compile(rb'<binary\b[^>]*>.*?</binary>', re.DOTALL | re.IGNORECASE)
+    # Память: у больших текстов (больше _SHINGLE_LARGE_WORDS слов — от трёх
+    # романов) хранится каждый _SHINGLE_SAMPLE-й фрагмент (по значению хэша —
+    # одна и та же выборка во всех файлах); при сравнении с таким текстом обе
+    # стороны приводятся к выборке (_shingle_share). В кэше — не больше
+    # _SHINGLE_CACHE_SIZE файлов. Без этого сборник на 13 томов (~1,5 млн
+    # слов) занимал ~100 МБ, а кэш на прогоне всей библиотеки рос без
+    # предела — MemoryError на Test2 (2026-10-27), когда чужие сборники
+    # стали попадать в проверку дублей.
+    _SHINGLE_SAMPLE = 8
+    _SHINGLE_LARGE_WORDS = 300_000
+    _SHINGLE_CACHE_SIZE = 24
     _SHINGLE_ENCODING_RE = re.compile(rb'encoding\s*=\s*["\']([A-Za-z0-9_\-]+)')
 
     def _text_shingles(self, path: Path) -> set:
@@ -1194,7 +1237,9 @@ class FB2CompilerService:
         except OSError:
             return set()
         cache = self.__dict__.setdefault('_shingle_cache', {})
-        if key not in cache:
+        if key in cache:
+            cache[key] = cache.pop(key)                     # недавно использованный — в конец
+        else:
             try:
                 raw = self._SHINGLE_BINARY_RE.sub(b'', read_fb2_bytes(path))
             except (OSError, ValueError):
@@ -1208,8 +1253,30 @@ class FB2CompilerService:
             body = text[text.find('<body'):] if '<body' in text else text
             words = self._SHINGLE_WORD_RE.findall(
                 re.sub(r'<[^>]+>', ' ', body).lower().replace('ё', 'е'))
-            cache[key] = {hash(tuple(words[i:i + 6])) for i in range(len(words) - 5)}
+            hashes = (hash(tuple(words[i:i + 6])) for i in range(len(words) - 5))
+            if len(words) > self._SHINGLE_LARGE_WORDS:
+                cache[key] = _Shingles(h for h in hashes if h % self._SHINGLE_SAMPLE == 0)
+                cache[key].sampled = True
+            else:
+                cache[key] = _Shingles(hashes)
+            while len(cache) > self._SHINGLE_CACHE_SIZE:
+                cache.pop(next(iter(cache)))                # самый давний
         return cache[key]
+
+    def _shingle_sets(self, *sets):
+        """Наборы фрагментов в одной выборке: если хоть один прорежен (большой
+        текст) — все приводятся к той же выборке, иначе как есть."""
+        if not any(getattr(s, 'sampled', False) for s in sets):
+            return sets
+        n = self._SHINGLE_SAMPLE
+        return tuple(s if getattr(s, 'sampled', False) else {h for h in s if h % n == 0} for s in sets)
+
+    def _shingle_share(self, part, covering) -> float:
+        """Доля фрагментов `part`, которые есть хоть в одном из `covering`."""
+        part, *covering = self._shingle_sets(part, *covering)
+        if not part:
+            return 0.0
+        return len(part & set().union(*covering)) / len(part)
 
     def _range_not_backed_by_text(self, book: CompilationBook, lo: int, hi: int,
                                   books: List[CompilationBook]) -> bool:
@@ -1228,7 +1295,7 @@ class FB2CompilerService:
             return False
         for b in in_range:
             other = self._text_shingles(b.abs_path)
-            if not other or len(other & own) / len(other) >= self._DUPLICATE_MIN_COVERAGE:
+            if not other or self._shingle_share(other, [own]) >= self._DUPLICATE_MIN_COVERAGE:
                 return False
         return True
 
@@ -1242,14 +1309,12 @@ class FB2CompilerService:
         и книги с теми же названиями, но другим текстом. Файла нет — удалять
         нечего, судить не по чему (как в _verify_duplicate_paths).
         """
-        covered_by: set = set()
-        for b in large.books:
-            covered_by |= self._text_shingles(b.abs_path)
+        covering = [self._text_shingles(b.abs_path) for b in large.books]
         for b in small.books:
             if not b.abs_path.exists():
                 continue
             own = self._text_shingles(b.abs_path)
-            share = len(own & covered_by) / len(own) if own else 0.0
+            share = self._shingle_share(own, covering)
             if not own or share < self._DUPLICATE_MIN_COVERAGE:
                 self._log(
                     f"  ⚠ «{small.series}» не подавлена группой «{large.series}»: текст "
@@ -1277,9 +1342,7 @@ class FB2CompilerService:
         if not g.duplicate_paths:
             return True
         others = [b.abs_path for b in g.books] + list(g.kept_paths or [])
-        covered_by: set = set()
-        for o in others:
-            covered_by |= self._text_shingles(o)
+        covering = [self._text_shingles(o) for o in others]
         confirmed: List[Path] = []
         old_editions = self.__dict__.get('_old_edition_paths', ())
         for dup in g.duplicate_paths:
@@ -1290,7 +1353,7 @@ class FB2CompilerService:
                 continue
             else:
                 own = self._text_shingles(dup)
-                share = len(own & covered_by) / len(own) if own else 0.0
+                share = self._shingle_share(own, covering)
                 if own and share >= self._DUPLICATE_MIN_COVERAGE:
                     confirmed.append(dup)
                     continue
@@ -2019,8 +2082,8 @@ class FB2CompilerService:
 
         if precompiled:
             regular_count = len(regular_books)
-            # Берём предкомпиляцию с максимальным охватом
-            best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
+            # Берём предкомпиляцию с максимальным охватом (при равенстве — лучше размеченную)
+            best_pre, best_lo, best_hi = _best_precompiled(precompiled)
 
             # Защита от урезанных изданий: широкий диапазон сам по себе не
             # значит "больше контента" — более старая/сокращённая редакция
@@ -2064,7 +2127,7 @@ class FB2CompilerService:
                     )
                     duplicate_paths.append(best_pre.abs_path)
                     precompiled = _others
-                    best_pre, best_lo, best_hi = max(precompiled, key=lambda t: t[2] - t[1])
+                    best_pre, best_lo, best_hi = _best_precompiled(precompiled)
 
             best_count = best_hi - best_lo + 1
 
@@ -2083,8 +2146,8 @@ class FB2CompilerService:
                     precompiled_unique.append(entries[0])
                     continue
                 # Среди нескольких файлов с одинаковым диапазоном:
-                # сохраняем best_pre (если в группе) или первый по порядку
-                winner = next((e for e in entries if e[0] is best_pre), entries[0])
+                # сохраняем best_pre (если в группе) или лучше размеченный
+                winner = next((e for e in entries if e[0] is best_pre), None) or _best_precompiled(entries)
                 precompiled_unique.append(winner)
                 for e in entries:
                     if e is not winner:
@@ -3727,7 +3790,7 @@ class FB2CompilerService:
 
         REVISION_OVERLAP = 0.3  # доля общих 6-словных фрагментов у редакций одной книги
         def _shingle_overlap(a: CompilationBook, b: CompilationBook) -> float:
-            sa, sb = self._text_shingles(a.abs_path), self._text_shingles(b.abs_path)
+            sa, sb = self._shingle_sets(self._text_shingles(a.abs_path), self._text_shingles(b.abs_path))
             if not sa or not sb:
                 return 0.0
             return len(sa & sb) / min(len(sa), len(sb))
