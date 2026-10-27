@@ -1809,3 +1809,103 @@ msgstr "Сайт закрыт для пользователей (ремонт) �
 
 msgid "Turn off"
 msgstr "Выключить"
+
+msgid "Series duplicates"
+msgstr "Дубли серий"
+
+msgid ""
+"Books of a series lying next to its compilation: third-party omnibuses, "
+"volumes already inside the compilation, volumes without a number, series "
+"split across genres. The check only reads the catalog and the files — "
+"nothing is changed."
+msgstr ""
+"Книги серии, лежащие рядом с её компиляцией: сборники чужой сборки, тома, "
+"которые уже есть внутри компиляции, тома без номера, серии в нескольких "
+"жанрах. Проверка только читает каталог и файлы — ничего не меняется."
+
+msgid "Check again"
+msgstr "Проверить заново"
+
+msgid "Run the check"
+msgstr "Запустить проверку"
+
+msgid "Last report: %(when)s"
+msgstr "Последний отчёт: %(when)s"
+
+msgid "takes a few minutes"
+msgstr "занимает несколько минут"
+
+msgid ""
+"Books: %(books)s; series with a compilation: %(series)s; with extra books: "
+"%(extras)s; extra books: %(n)s."
+msgstr ""
+"Книг: %(books)s; серий с компиляцией: %(series)s; с лишними книгами: "
+"%(extras)s; лишних книг: %(n)s."
+
+msgid "Book"
+msgstr "Книга"
+
+msgid "What it is"
+msgstr "Что это"
+
+msgid "Proposed action"
+msgstr "Предлагаемое действие"
+
+msgid "Added"
+msgstr "Добавлена"
+
+msgid "Series in several genres"
+msgstr "Серии в нескольких жанрах"
+
+msgid ""
+"All books of a series move to the genre of the majority; a tie needs a "
+"manual choice."
+msgstr ""
+"Все книги серии переносятся в жанр большинства; при равенстве нужен ручной "
+"выбор."
+
+msgid "Genres (books)"
+msgstr "Жанры (книг)"
+
+msgid "Majority"
+msgstr "Большинство"
+
+msgid "tie — choose manually"
+msgstr "поровну — выбрать вручную"
+
+msgid "Pseudonym and real name"
+msgstr "Псевдоним и настоящее имя"
+
+msgid ""
+"Pairs found in book titles like «Leach23 [Дмитрий Михалек]. …». Candidates "
+"only — authors are not merged automatically."
+msgstr ""
+"Пары из названий книг вида «Leach23 [Дмитрий Михалек]. …». Это только "
+"кандидаты — авторы автоматически не объединяются."
+
+msgid "Pseudonym"
+msgstr "Псевдоним"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "Author folders"
+msgstr "Папки автора"
+
+msgid "Example"
+msgstr "Пример"
+
+msgid "No report yet — run the check."
+msgstr "Отчёта ещё нет — запустите проверку."
+
+msgid "Checking series…"
+msgstr "Проверка серий…"
+
+msgid "Library folder not found."
+msgstr "Папка библиотеки не найдена."
+
+msgid "%(n)s volume"
+msgid_plural "%(n)s volumes"
+msgstr[0] "%(n)s том"
+msgstr[1] "%(n)s тома"
+msgstr[2] "%(n)s томов"

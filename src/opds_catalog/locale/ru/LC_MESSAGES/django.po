@@ -355,6 +355,66 @@ msgstr "Дата изменения:"
 msgid "No in Series:"
 msgstr "№ в серии:"
 
+msgid "Already inside the compilation"
+msgstr "Уже есть внутри компиляции"
+
+msgid "duplicate — remove"
+msgstr "дубль — удалить"
+
+msgid "Third-party omnibus"
+msgstr "Сборник чужой сборки"
+
+msgid "keep the most complete version"
+msgstr "оставить самую полную версию"
+
+msgid "In another genre"
+msgstr "В другом жанре"
+
+msgid "move to the series' majority genre"
+msgstr "перенести в жанр большинства серии"
+
+msgid "Volume number within the compilation"
+msgstr "Номер тома в пределах компиляции"
+
+msgid "probably a duplicate — check"
+msgstr "вероятно, дубль — проверить"
+
+msgid "Volume number beyond the compilation"
+msgstr "Номер тома больше, чем томов в компиляции"
+
+msgid "append to the compilation"
+msgstr "дописать в компиляцию"
+
+msgid "Outside the numbering (vol. 0)"
+msgstr "Вне нумерации («т. 0»)"
+
+msgid "keep separately"
+msgstr "оставить отдельно"
+
+msgid "Short work (story, glossary)"
+msgstr "Малая форма (рассказ, глоссарий)"
+
+msgid "Volume number only in the title"
+msgstr "Номер тома только в названии"
+
+msgid "append once the number is recognised"
+msgstr "дописать, когда номер начнёт распознаваться"
+
+msgid "Volume without a number"
+msgstr "Том без номера"
+
+msgid "no volume marks inside (old format or a third-party omnibus)"
+msgstr "внутри нет разметки томов (старый формат или чужой сборник)"
+
+msgid "the suffix does not match the number of volumes inside"
+msgstr "суффикс не совпадает с числом томов внутри"
+
+msgid "volume titles are the author's name"
+msgstr "названия томов — имя автора"
+
+msgid "keep next to the compilation"
+msgstr "оставить рядом с компиляцией"
+
 #~ msgid "Doubles count:"
 #~ msgstr "Число дубликатов:"
 

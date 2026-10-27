@@ -34,6 +34,11 @@ def _memory_path() -> str:
     return os.path.join(_FB2_SETTINGS_DIR, "library_memory.db")
 
 
+def _series_check_path() -> str:
+    """Последний отчёт «Дубли серий» (opds_catalog/series_check.py)."""
+    return os.path.join(_FB2_SETTINGS_DIR, "series_check.json")
+
+
 def _sync_lock_path() -> str:
     """Общая блокировка ручной синхронизации и автосинхронизации (sync_lock)."""
     return os.path.join(_FB2_SETTINGS_DIR, "sync.lock")

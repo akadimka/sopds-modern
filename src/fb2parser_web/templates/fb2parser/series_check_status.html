@@ -1,0 +1,13 @@
+{% load i18n %}
+<div hx-get="{% url 'fb2parser:series_check_status' %}" hx-trigger="every 2s" hx-swap="outerHTML">
+    <div class="callout primary" style="margin-bottom:0.6rem;">
+        <strong>⏳ {% trans "Checking series…" %}</strong>
+        {% if state.current %}<div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem;">{{ state.current }}</div>{% endif %}
+    </div>
+    <div style="margin-bottom:0.4rem; font-size:0.85rem;">
+        {% trans "Processed:" %} <strong>{{ state.processed }}</strong>{% if state.total > 0 %} {% trans "of" %} {{ state.total }} ({{ pct }}%){% endif %}
+    </div>
+    <div class="progress" style="height:1.2rem;">
+        <span class="progress-meter" style="width:{{ pct }}%; background:#16a085;"></span>
+    </div>
+</div>

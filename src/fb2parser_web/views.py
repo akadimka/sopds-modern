@@ -3562,6 +3562,98 @@ def series_gaps(request):
     return render(request, "fb2parser/series_gaps.html", _ctx("series_gaps", _("Series with Gaps")))
 
 
+# ── Дубли серий (opds_catalog/series_check.py, docs/series-duplicates.md) ─────
+
+series_check_job = JobState("fb2parser:series_check", {
+    "running": False, "done": False, "error": None, "processed": 0, "total": 0, "current": "",
+})
+
+
+def _run_series_check_thread(root):
+    """Отчёт — в файл (_series_check_path): в кэше он может не поместиться,
+    а из файла страница показывает последний отчёт без нового прогона."""
+    import json
+
+    from django import db
+    from django.utils import timezone
+
+    from opds_catalog import series_check as sc
+
+    from .fb2parser_bridge import _series_check_path
+    db.connections.close_all()
+    try:
+        report = sc.check(root, progress=lambda done, total, current: series_check_job.update(
+            processed=done, total=total, current=current))
+        payload = {"created": timezone.now().isoformat(), "root": root, "report": report}
+        tmp = _series_check_path() + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, default=str)
+        os.replace(tmp, _series_check_path())
+        series_check_job.update(done=True, running=False)
+    except Exception as exc:
+        logging.getLogger(__name__).exception("series check failed")
+        series_check_job.update(error=str(exc), running=False)
+    finally:
+        db.connections.close_all()
+
+
+def _load_series_check():
+    import json
+    from datetime import datetime
+
+    from opds_catalog import series_check as sc
+
+    from .fb2parser_bridge import _series_check_path
+    try:
+        with open(_series_check_path(), encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, ValueError):
+        return None
+    report = payload["report"]
+    for row in report["series"]:
+        row["issue_labels"] = [str(sc.ISSUES[i]) for i in row["issues"] if i in sc.ISSUES]
+        for e in row["extras"]:
+            label, action = sc.KINDS.get(e["kind"], (e["kind"], ""))
+            e["label"], e["action"], e["added"] = str(label), str(action), str(e["added"])[:10]
+    kinds = [{"key": k, "label": str(label), "action": str(action), "count": report["kind_counts"].get(k, 0)}
+             for k, (label, action) in sc.KINDS.items()]
+    return {"created": datetime.fromisoformat(payload["created"]), "report": report,
+            "kinds": [k for k in kinds if k["count"]]}
+
+
+@superuser_required
+def series_check(request):
+    return render(request, "fb2parser/series_check.html", _ctx(
+        "series_check", _("Series duplicates"),
+        state=series_check_job.get(), pct=_job_pct(series_check_job.get()), last=_load_series_check(),
+    ))
+
+
+@superuser_required
+@require_http_methods(["POST"])
+def series_check_start(request):
+    root = config.SOPDS_ROOT_LIB or ""
+    if not root or not os.path.isdir(root):
+        return HttpResponse('<div class="callout alert">' + escape(_("Library folder not found.")) + '</div>')
+    if series_check_job.try_start():
+        threading.Thread(target=_run_series_check_thread, args=(root,), daemon=True).start()
+    return series_check_status(request)
+
+
+@superuser_required
+def series_check_status(request):
+    """Пока идёт — прогресс (опрос каждые 2 с); готово — перезагрузить
+    страницу, она покажет новый отчёт."""
+    state = series_check_job.get()
+    if state["running"]:
+        return _render_job("fb2parser/series_check_status.html", state)
+    if state["error"]:
+        return HttpResponse('<div class="callout alert">' + escape(state["error"]) + '</div>')
+    response = HttpResponse("")
+    response["HX-Refresh"] = "true"
+    return response
+
+
 @superuser_required
 def integrity(request):
     return render(request, "fb2parser/integrity.html", _ctx("integrity", _("FB2 Integrity Check")))

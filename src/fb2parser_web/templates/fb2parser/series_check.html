@@ -1,0 +1,102 @@
+{% extends "fb2parser/base.html" %}
+{% load i18n %}
+{% block content %}
+<h2>{% trans "Series duplicates" %}</h2>
+<p style="max-width:56rem;">{% trans "Books of a series lying next to its compilation: third-party omnibuses, volumes already inside the compilation, volumes without a number, series split across genres. The check only reads the catalog and the files — nothing is changed." %}</p>
+
+<style>
+  .sc-kinds { display:flex; flex-wrap:wrap; gap:0.4rem; margin:0.8rem 0; }
+  .sc-kinds button { margin:0; }
+  .sc-table td { vertical-align:top; font-size:0.85rem; }
+  .sc-series td { background:var(--bg-muted); font-weight:600; }
+  .sc-muted { color:var(--text-muted); font-weight:normal; font-size:0.8rem; }
+  .sc-issue { color:#e67e22; font-weight:normal; font-size:0.8rem; }
+</style>
+
+<div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:0.6rem;">
+  <button class="button" style="margin:0;" hx-post="{% url 'fb2parser:series_check_start' %}"
+          hx-target="#sc-status" hx-swap="innerHTML" {% if state.running %}disabled{% endif %}>
+    🔍 {% if last %}{% trans "Check again" %}{% else %}{% trans "Run the check" %}{% endif %}
+  </button>
+  {% if last %}<span class="sc-muted">{% blocktrans with when=last.created|date:"d.m.Y H:i" %}Last report: {{ when }}{% endblocktrans %} · {% trans "takes a few minutes" %}</span>{% endif %}
+</div>
+<div id="sc-status">{% if state.running %}{% include "fb2parser/series_check_status.html" %}{% endif %}</div>
+
+{% if last %}
+{% with r=last.report %}
+<p>{% blocktrans with books=r.totals.books series=r.totals.series_with_compilation extras=r.totals.series_with_extras n=r.totals.extra_books %}Books: {{ books }}; series with a compilation: {{ series }}; with extra books: {{ extras }}; extra books: {{ n }}.{% endblocktrans %}</p>
+
+<div class="sc-kinds">
+  <button type="button" class="button small sc-kind" data-kind="" style="margin:0;">{% trans "All" %} ({{ r.totals.extra_books }})</button>
+  {% for k in last.kinds %}
+  <button type="button" class="button small secondary sc-kind" data-kind="{{ k.key }}" title="{{ k.action }}">{{ k.label }} ({{ k.count }})</button>
+  {% endfor %}
+</div>
+
+<table class="sc-table" style="width:100%;">
+  <thead><tr><th>{% trans "Book" %}</th><th style="width:16rem;">{% trans "What it is" %}</th><th style="width:16rem;">{% trans "Proposed action" %}</th><th style="width:7rem;">{% trans "Added" %}</th></tr></thead>
+  {% for row in r.series %}
+  <tbody class="sc-group">
+    <tr class="sc-series"><td colspan="4">
+      {{ row.author }} / {{ row.series }} <span class="sc-muted">· {{ row.genre }}</span>
+      <div class="sc-muted">📚 {{ row.compilation.path }}{% if row.compilation.volumes %} — {% blocktrans count n=row.compilation.volumes|length %}{{ n }} volume{% plural %}{{ n }} volumes{% endblocktrans %}{% endif %}</div>
+      {% for issue in row.issue_labels %}<div class="sc-issue">⚠ {{ issue }}</div>{% endfor %}
+    </td></tr>
+    {% for e in row.extras %}
+    <tr data-kind="{{ e.kind }}">
+      <td>{{ e.title }}<div class="sc-muted">{{ e.path }}</div></td>
+      <td>{{ e.label }}</td>
+      <td>{{ e.action }}</td>
+      <td class="sc-muted">{{ e.added }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  {% endfor %}
+</table>
+
+<h3 style="margin-top:2rem;">{% trans "Series in several genres" %} ({{ r.genre_splits|length }})</h3>
+<p class="sc-muted">{% trans "All books of a series move to the genre of the majority; a tie needs a manual choice." %}</p>
+<table class="sc-table" style="width:100%;">
+  <thead><tr><th>{% trans "Series" %}</th><th>{% trans "Genres (books)" %}</th><th>{% trans "Majority" %}</th></tr></thead>
+  <tbody>
+  {% for g in r.genre_splits %}
+  <tr><td>{{ g.author }} / {{ g.series }}</td>
+      <td>{% for name, n in g.genres %}{{ name }} ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}</td>
+      <td>{% if g.majority %}{{ g.majority }}{% else %}<span class="sc-issue">{% trans "tie — choose manually" %}</span>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3 style="margin-top:2rem;">{% trans "Pseudonym and real name" %} ({{ r.pseudonyms|length }})</h3>
+<p class="sc-muted">{% trans "Pairs found in book titles like «Leach23 [Дмитрий Михалек]. …». Candidates only — authors are not merged automatically." %}</p>
+<table class="sc-table" style="width:100%;">
+  <thead><tr><th>{% trans "Pseudonym" %}</th><th>{% trans "Name" %}</th><th>{% trans "Books" %}</th><th>{% trans "Author folders" %}</th><th>{% trans "Example" %}</th></tr></thead>
+  <tbody>
+  {% for p in r.pseudonyms %}
+  <tr><td>{{ p.alias }}</td><td>{{ p.name }}</td><td>{{ p.count }}</td><td>{{ p.folders|join:", " }}</td><td class="sc-muted">{{ p.example }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endwith %}
+
+<script>
+document.querySelectorAll('.sc-kind').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var kind = btn.dataset.kind;
+    document.querySelectorAll('.sc-kind').forEach(function (b) { b.classList.toggle('secondary', b !== btn); });
+    document.querySelectorAll('.sc-group').forEach(function (group) {
+      var shown = 0;
+      group.querySelectorAll('tr[data-kind]').forEach(function (tr) {
+        var ok = !kind || tr.dataset.kind === kind;
+        tr.style.display = ok ? '' : 'none';
+        if (ok) shown++;
+      });
+      group.style.display = shown ? '' : 'none';
+    });
+  });
+});
+</script>
+{% else %}
+{% if not state.running %}<p class="sc-muted">{% trans "No report yet — run the check." %}</p>{% endif %}
+{% endif %}
+{% endblock %}
