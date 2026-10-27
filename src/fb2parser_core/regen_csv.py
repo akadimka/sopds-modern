@@ -1488,6 +1488,10 @@ class RegenCSVService:
         # ДО финального гейта "нет серии", т.к. сам меняет только number, не серию.
         self._postcheck_combined_volume_title()
 
+        # Номер тома только в названии («Серия #4 - …», «Серия 1. …») — когда
+        # серия уже окончательная и до «тома 1 по умолчанию» ниже.
+        self._postcheck_series_number_from_title()
+
         # Единственная книга серии без номера, когда у всех остальных номер ≥2 —
         # почти наверняка подразумеваемый том 1 (частая практика: первую книгу
         # издают без явного номера). Идёт после combined_volume, чтобы группы
@@ -2492,9 +2496,8 @@ class RegenCSVService:
             sn = (record.series_number or '').strip()
             if sn and not re.fullmatch(r'\d{1,3}\s*[-–—]\s*\d{1,3}', sn):
                 continue                                    # есть номер одного тома — не сборник
-            parts = Path(record.file_path).parts
-            folder_author = parts[-2] if len(parts) >= 2 else ''
-            author_tokens = self._name_tokens(record.proposed_author, record.metadata_authors, folder_author)
+            # Не папка над файлом: у книги в папке серии это серия, а не автор
+            author_tokens = self._name_tokens(record.proposed_author, record.metadata_authors)
             found = None
             for text in (file_stem(record.file_path), record.file_title):
                 found = self._omnibus_series_from_text(text, author_tokens)
@@ -2527,6 +2530,58 @@ class RegenCSVService:
             _count += 1
         if _count:
             self.logger.log(f"[OK] Omnibus series from title: {_count}")
+
+    # Номер тома сразу после названия серии в названии книги: «Серия #4 - …»,
+    # «Серия 1. …», «Серия. 5. …», «Серия. Кн. 5», «Серия 3» в конце.
+    _TITLE_NUMBER_RES = (
+        # только «#»: «№» — часть названий («Палата № 6», «Хроника № 13» на Test2)
+        re.compile(r'^[^\w#]*#\s*(?P<n>\d{1,3})\b'),
+        re.compile(r'^[\s.,:;]*(?:кн\.?|книга|том|т\.)\s*(?P<n>\d{1,3})\b', re.I),
+        re.compile(r'^[\s.,:;]*(?P<n>\d{1,3})(?!\s*[-–—]\s*\d)(?=\s*[.:)]|\s*$|\s+[-–—]\s)'),
+    )
+
+    def _postcheck_series_number_from_title(self) -> None:
+        """Номер тома только в названии книги (docs/series-duplicates.md, вид
+        «номер только в названии»; сервер 2026-10-27): «Холгер Мунк и Миа
+        Крюгер #4 - Белая как снег», «Ротфусс. Хроника Убийцы Короля 1. День
+        первый», «Одинокий демон. 5. Кавайи, кавайкунай». Ни имя файла, ни
+        <sequence> номера не дают — том без номера не попадал в компиляцию
+        серии и лежал рядом с ней.
+
+        Только когда номера нет совсем (конфликт номеров не решаем — правило
+        проекта) и число стоит ВПЛОТНУЮ после названия уже найденной серии
+        (после «Автор. »/«Автор - » в начале). Число в начале названия («5
+        Начало Конца») и после фамилии («Тамоников 14 Бандеровский эшелон») не
+        берём: так же выглядят «1984» и «451 градус по Фаренгейту»; «№ 13» —
+        тоже (Test2: «Хроника № 13 (сборник)» — название, а не том).
+        """
+        _count = 0
+        for record in self.records:
+            series = (record.proposed_series or '').strip()
+            if not series or '\\' in series or (record.series_number or '').strip():
+                continue
+            title = re.sub(r'\s+', ' ', (record.file_title or '')).strip().replace('ё', 'е').replace('Ё', 'Е')
+            author_tokens = self._name_tokens(record.proposed_author, record.metadata_authors)
+            m = re.match(r'^(?P<prefix>[^.]{2,80}?)(?:\.\s+|\s+[-–—]\s+)(?P<rest>.+)$', title)
+            if m and self._name_tokens(m.group('prefix')) & author_tokens:
+                title = m.group('rest')
+            words = re.findall(r'\w+', series.lower().replace('ё', 'е'))
+            if not words:
+                continue
+            head = re.match(r'^\W*' + r'\W+'.join(map(re.escape, words)) + r'(?P<rest>.*)$', title, re.I)
+            if not head or re.match(r'\w', head.group('rest')):      # «Метро» ≠ «Метрополитен»
+                continue
+            for rx in self._TITLE_NUMBER_RES:
+                hit = rx.match(head.group('rest'))
+                if hit and 1 <= int(hit.group('n')) <= 200:
+                    record.series_number = str(int(hit.group('n')))
+                    record.series_number_source = 'title_number'
+                    log_decision(record, f"TITLE NUMBER: том {record.series_number} серии {series!r} — "
+                                         f"из названия {record.file_title!r}.")
+                    _count += 1
+                    break
+        if _count:
+            self.logger.log(f"[OK] Series number from title: {_count}")
 
     def _postcheck_prefer_embedded_series_number_when_consistent(self) -> None:
         """Заменяет series_number из folder-позиции файла на встроенный в
