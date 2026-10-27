@@ -3617,6 +3617,13 @@ def _load_series_check():
             e["label"], e["action"], e["added"] = str(label), str(action), str(e["added"])[:10]
     kinds = [{"key": k, "label": str(label), "action": str(action), "count": report["kind_counts"].get(k, 0)}
              for k, (label, action) in sc.KINDS.items()]
+    from fb2parser_core.settings_manager import SettingsManager
+
+    from .fb2parser_bridge import _config_path
+    conversions = SettingsManager(_config_path()).get_author_surname_conversions()
+    for p in report["pseudonyms"]:
+        p["options"], p["default"] = sc.alias_spellings(p["alias"], p["name"], p["folders"])
+        p["merged_into"] = conversions.get(p["alias"], "")
     return {"created": datetime.fromisoformat(payload["created"]), "report": report,
             "kinds": [k for k in kinds if k["count"]]}
 
@@ -3627,6 +3634,41 @@ def series_check(request):
         "series_check", _("Series duplicates"),
         state=series_check_job.get(), pct=_job_pct(series_check_job.get()), last=_load_series_check(),
     ))
+
+
+@superuser_required
+@require_http_methods(["POST"])
+def series_check_alias(request):
+    """«Объединить» пару «псевдоним — имя» из отчёта: все написания автора →
+    выбранное, в author_surname_conversions (app_settings.json). Дальше
+    пайплайн (pass1/pass6) и синхронизация кладут книги под одно имя.
+    Записи, указывавшие на объединённые написания, переводятся на выбранное —
+    без цепочек «А → Б → В»."""
+    from django.shortcuts import redirect
+    from django.urls import reverse
+
+    from fb2parser_core.settings_manager import SettingsManager
+    from opds_catalog import series_check as sc
+
+    from .fb2parser_bridge import _config_path
+    alias = request.POST.get("alias", "").strip()
+    name = request.POST.get("name", "").strip()
+    folders = [f for f in request.POST.getlist("folders") if f.strip()]
+    target = request.POST.get("target", "").strip()
+    options, _default = sc.alias_spellings(alias, name, folders)
+    if not alias or not name or target not in options:
+        return HttpResponse(escape(_("Choose one of the offered spellings.")), status=400)
+    variants = sc.alias_variants(alias, name, folders) - {target}
+    sm = SettingsManager(_config_path())
+    conversions = sm.get_author_surname_conversions()
+    for key, value in list(conversions.items()):
+        if value in variants:
+            conversions[key] = target
+    for v in variants:
+        conversions[v] = target
+    conversions.pop(target, None)
+    sm.set_author_surname_conversions(conversions)
+    return redirect(reverse("fb2parser:series_check") + "#pseudonyms")
 
 
 @superuser_required

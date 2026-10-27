@@ -67,13 +67,23 @@
   </tbody>
 </table>
 
-<h3 style="margin-top:2rem;">{% trans "Pseudonym and real name" %} ({{ r.pseudonyms|length }})</h3>
-<p class="sc-muted">{% trans "Pairs found in book titles like «Leach23 [Дмитрий Михалек]. …». Candidates only — authors are not merged automatically." %}</p>
+<h3 id="pseudonyms" style="margin-top:2rem;">{% trans "Pseudonym and real name" %} ({{ r.pseudonyms|length }})</h3>
+<p class="sc-muted">{% trans "Pairs found in book titles like «Leach23 [Дмитрий Михалек]. …». Candidates only — authors are merged only with the «Merge» button: new books of every spelling then go under the chosen name (author name conversions in the fb2parser settings)." %}</p>
 <table class="sc-table" style="width:100%;">
-  <thead><tr><th>{% trans "Pseudonym" %}</th><th>{% trans "Name" %}</th><th>{% trans "Books" %}</th><th>{% trans "Author folders" %}</th><th>{% trans "Example" %}</th></tr></thead>
+  <thead><tr><th>{% trans "Pseudonym" %}</th><th>{% trans "Name" %}</th><th>{% trans "Books" %}</th><th>{% trans "Author folders" %}</th><th>{% trans "Example" %}</th><th style="width:22rem;">{% trans "Merge as" %}</th></tr></thead>
   <tbody>
   {% for p in r.pseudonyms %}
-  <tr><td>{{ p.alias }}</td><td>{{ p.name }}</td><td>{{ p.count }}</td><td>{{ p.folders|join:", " }}</td><td class="sc-muted">{{ p.example }}</td></tr>
+  <tr><td>{{ p.alias }}</td><td>{{ p.name }}</td><td>{{ p.count }}</td><td>{{ p.folders|join:", " }}</td><td class="sc-muted">{{ p.example }}</td>
+      <td>{% if p.merged_into %}✓ {% blocktrans with name=p.merged_into %}merged into «{{ name }}»{% endblocktrans %}{% else %}
+        <form method="post" action="{% url 'fb2parser:series_check_alias' %}" style="display:flex; gap:0.4rem; margin:0;">
+          {% csrf_token %}
+          <input type="hidden" name="alias" value="{{ p.alias }}"><input type="hidden" name="name" value="{{ p.name }}">
+          {% for f in p.folders %}<input type="hidden" name="folders" value="{{ f }}">{% endfor %}
+          <select name="target" style="margin:0; height:2rem; font-size:0.8rem;">
+            {% for o in p.options %}<option value="{{ o }}" {% if o == p.default %}selected{% endif %}>{{ o }}</option>{% endfor %}
+          </select>
+          <button type="submit" class="button small" style="margin:0;">{% trans "Merge" %}</button>
+        </form>{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>

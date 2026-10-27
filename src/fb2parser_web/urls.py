@@ -85,6 +85,7 @@ urlpatterns = [
     path("series-check/",        views.series_check,        name="series_check"),
     path("series-check/start/",  views.series_check_start,  name="series_check_start"),
     path("series-check/status/", views.series_check_status, name="series_check_status"),
+    path("series-check/alias/",  views.series_check_alias,  name="series_check_alias"),
     path("integrity/",    views.integrity,   name="integrity"),
     path("settings/",         views.fb2parser_settings, name="fb2parser_settings"),
     path("settings/list/",    views.settings_list_op,   name="settings_list_op"),

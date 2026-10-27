@@ -154,6 +154,36 @@ def _book_row(book) -> dict:
             "added": book.registerdate}
 
 
+def _name_tokens(s: str) -> frozenset:
+    return frozenset(re.findall(r"\w+", (s or "").lower().replace("ё", "е")))
+
+
+def alias_spellings(alias: str, name: str, folders: list) -> tuple:
+    """Как назвать автора после объединения пары «псевдоним — имя».
+
+    Возвращает (варианты, по умолчанию). По умолчанию — как уже лежит в
+    библиотеке (решение пользователя 2026-10-27): папка с настоящим именем,
+    иначе папка с псевдонимом, иначе имя как в названии книги."""
+    name_folder = next((f for f in folders if _name_tokens(f) == _name_tokens(name)), None)
+    alias_folder = next((f for f in folders if _name_tokens(f) == _name_tokens(alias)), None)
+    if name_folder:
+        real = [name_folder]
+    else:
+        real = [name] + ([" ".join(reversed(name.split()))] if len(name.split()) == 2 else [])
+    pseudo = alias_folder or alias
+    options = list(dict.fromkeys(real + [pseudo, f"{pseudo} ({real[0]})"]))
+    return options, name_folder or alias_folder or real[0]
+
+
+def alias_variants(alias: str, name: str, folders: list) -> set:
+    """Написания одного автора, которые сводятся к выбранному: псевдоним, имя
+    (в обоих порядках) и папки автора, совпадающие с ними по словам."""
+    variants = {alias, name, " ".join(reversed(name.split()))}
+    wanted = {_name_tokens(alias), _name_tokens(name)}
+    variants |= {f for f in folders if _name_tokens(f) in wanted}
+    return {v.strip() for v in variants if v.strip()}
+
+
 def check(root: str, books=None, progress: Optional[Callable[[int, int, str], None]] = None) -> dict:
     """Отчёт по библиотеке. `books` — книги каталога (по умолчанию все
     доступные); `progress(processed, total, current)` — для страницы."""

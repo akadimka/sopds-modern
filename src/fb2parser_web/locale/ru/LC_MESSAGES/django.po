@@ -1876,13 +1876,6 @@ msgstr "поровну — выбрать вручную"
 msgid "Pseudonym and real name"
 msgstr "Псевдоним и настоящее имя"
 
-msgid ""
-"Pairs found in book titles like «Leach23 [Дмитрий Михалек]. …». Candidates "
-"only — authors are not merged automatically."
-msgstr ""
-"Пары из названий книг вида «Leach23 [Дмитрий Михалек]. …». Это только "
-"кандидаты — авторы автоматически не объединяются."
-
 msgid "Pseudonym"
 msgstr "Псевдоним"
 
@@ -1909,3 +1902,26 @@ msgid_plural "%(n)s volumes"
 msgstr[0] "%(n)s том"
 msgstr[1] "%(n)s тома"
 msgstr[2] "%(n)s томов"
+
+msgid ""
+"Pairs found in book titles like «Leach23 [Дмитрий Михалек]. …». Candidates "
+"only — authors are merged only with the «Merge» button: new books of every "
+"spelling then go under the chosen name (author name conversions in the "
+"fb2parser settings)."
+msgstr ""
+"Пары из названий книг вида «Leach23 [Дмитрий Михалек]. …». Это только "
+"кандидаты — авторы объединяются только кнопкой «Объединить»: после этого "
+"новые книги любого написания кладутся под выбранное имя (замены имён авторов"
+" в настройках fb2parser)."
+
+msgid "Merge as"
+msgstr "Объединить как"
+
+msgid "Merge"
+msgstr "Объединить"
+
+msgid "merged into «%(name)s»"
+msgstr "объединено в «%(name)s»"
+
+msgid "Choose one of the offered spellings."
+msgstr "Выберите одно из предложенных написаний."
