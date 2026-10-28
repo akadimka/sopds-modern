@@ -1243,6 +1243,11 @@ class Pass2SeriesFilename:
             known_series=record.proposed_series or '',
             proposed_author=record.proposed_author or ''
         )
+        # Наш суффикс тома «… т. N» — номер, не часть серии (см. тот же
+        # случай в _apply_metadata_fallback_single): без «т» кандидат
+        # совпадает с названием книги, и проверка ниже его отбрасывает.
+        if series_candidate:
+            series_candidate = re.sub(r'\s+т\.?(?:\s*\d{1,4})?\s*$', '', series_candidate).strip() or None
 
         if series_candidate:
             # Базовые фильтры (НЕ валидация) — ДО записи в extracted_series_candidate
@@ -1450,7 +1455,12 @@ class Pass2SeriesFilename:
             # "(СИ)" - Самиздат/Интернет
             # "(ЛП)" - Лицензионное произведение
             file_name_for_fallback = re.sub(r'\s*\([СЛ]И\)\s*$', '', file_name).strip()
-            
+            # Наш суффикс тома «… т. N» (synchronization пишет его в имя файла
+            # книги с номером) — номер, не «Серия N»: «Орунья Мария - Когда мы
+            # были непобедимы т. 3.fb2» (книга без серии) давала серию «Когда мы
+            # были непобедимы т» (сервер 2026-10-28).
+            file_name_for_fallback = re.sub(r'\s+т\.\s*\d{1,4}\s*$', '', file_name_for_fallback).strip()
+
             # Перед fallback к metadata попробуем простое правило: Author. Series RomanNumeral
             # "Яманов Александр. Бесноватый Цесаревич I.fb2" → "Бесноватый Цесаревич"
             if '. ' in file_name_for_fallback:
