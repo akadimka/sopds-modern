@@ -1214,6 +1214,9 @@ class FB2CompilerService:
     # Порог: ложные дубли аудита — 0–2% общего текста, переиздание в новой
     # редакции (баг №138, «Сармат») — ~51%, настоящие копии — 83–100%.
     _DUPLICATE_MIN_COVERAGE = 0.45
+    # Книга без номера — копия тома сборника, только если её текст почти весь
+    # в нём (настоящие копии — от 83%, см. выше).
+    _UNNUMBERED_MIN_COVERAGE = 0.8
     _SHINGLE_WORD_RE = re.compile(r'[^\W\d_]+|\d+')
     _SHINGLE_BINARY_RE = re.compile(rb'<binary\b[^>]*>.*?</binary>', re.DOTALL | re.IGNORECASE)
     # Память: у больших текстов (больше _SHINGLE_LARGE_WORDS слов — от трёх
@@ -2215,14 +2218,24 @@ class FB2CompilerService:
             # навсегда. Книги без номера, которых в сборнике нет, остаются
             # рядом (решение пользователя 2026-10-27). Страховка
             # _verify_duplicate_paths перед удалением проверяет текст ещё раз.
+            # У книги без номера дубль доказывает только текст, поэтому порог
+            # выше, чем у тома с номером, и книга не больше сборника: сервер
+            # 2026-10-28 — «Перешагнуть пропасть. 1-13 (компиляция)» (весь цикл)
+            # на 68% совпала с «(т. 4-6)», а оставшиеся 32% — целые тома; Test2 —
+            # «Цикл „Эпоха перемен“» на 64% в «Трилогии». Настоящие копии на
+            # Test2 — 93–100%.
             _pre_text = None
             for book in list(regular_books):
                 if _vol_num_for_check(book) is not None or not book.abs_path.exists():
                     continue
                 if _pre_text is None:
                     _pre_text = self._text_shingles(best_pre.abs_path)
-                share = self._shingle_share(self._text_shingles(book.abs_path), [_pre_text])
-                if _pre_text and share >= self._DUPLICATE_MIN_COVERAGE:
+                own, pre = self._shingle_sets(self._text_shingles(book.abs_path), _pre_text)
+                share = self._shingle_share(own, [pre])
+                # Больше сборника — копия, только если совпадает почти целиком
+                # (Test2: «Конюшевский. Попытка возврата» — 100%, лишние 0,1% —
+                # служебный текст в начале).
+                if pre and share >= self._UNNUMBERED_MIN_COVERAGE and (len(own) <= len(pre) or share >= 0.98):
                     self._log(f"  ↺ {book.abs_path.name}: без номера, текст есть в "
                               f"{best_pre.abs_path.name} на {share:.0%} — дубль")
                     regular_books.remove(book)

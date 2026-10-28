@@ -53,3 +53,23 @@ def test_book_without_number_does_not_block_cleanup_of_covered_volumes(tmp_path)
     auto_compile_library(str(tmp_path), config_path=_config_path(),
                          filter_paths={str(tmp_path / "Фантастика" / "Сахаров Василий")})
     assert ours.exists() and not vol3.exists() and story.exists()
+
+
+@pytest.mark.parametrize("volumes", [[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5]])
+def test_bigger_unnumbered_omnibus_is_not_a_copy(tmp_path, volumes):
+    """Сервер 2026-10-28: «Перешагнуть пропасть. 1-13 (компиляция)» — весь цикл
+    одним телом, без номера — на 68% совпала со сборником части томов и ушла бы
+    в дубли вместе с томами, которых больше нигде нет. Книга без номера —
+    копия, только если почти вся (≥ 80%) в сборнике и не больше его."""
+    folder = tmp_path / "Фантастика" / "Сахаров Василий" / SERIES
+    folder.mkdir(parents=True)
+    bodies = [(t, f"<body>{_volume_sections(v, True)}</body>")
+              for v, t in enumerate(("Тор", "Темный", "Вице-адмирал", "Диверсант"), 1)]
+    ours = folder / f"Сахаров Василий - {SERIES} (Тетралогия).fb2"
+    ours.write_text(FB2CompilerService()._build_fb2("Сахаров Василий", SERIES, "Тетралогия", "sf", bodies),
+                    encoding="utf-8")
+    whole = _omnibus(folder / f"Сахаров Василий - {SERIES}. Собрание.fb2", "Принц Тор. Собрание",
+                     "Сахаров Василий", volumes, chapters=False)
+    auto_compile_library(str(tmp_path), config_path=_config_path(),
+                         filter_paths={str(tmp_path / "Фантастика" / "Сахаров Василий")})
+    assert ours.exists() and whole.exists()
