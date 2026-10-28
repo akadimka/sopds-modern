@@ -605,7 +605,9 @@ class SynchronizationService:
 
     def _existing_author_variant(self, genre: str, author: str) -> str:
         """Имя существующей папки автора в жанре с теми же словами в другом
-        порядке (баг №178), иначе `author`. Несколько таких папок — не решаем."""
+        порядке (баг №178), иначе `author`. Несколько таких папок — не решаем,
+        кроме одного случая: у `author` знак на краю слова («Эльба .Ирина»), а
+        папка без такого знака одна — она (решение пользователя 2026-10-28)."""
         library = getattr(self, 'library_path', None)
         if not library:
             return author
@@ -620,6 +622,14 @@ class SynchronizationService:
                 pass
             cache[genre] = by_key
         found = cache[genre].get(self._word_set_key(author), [])
+        noisy = RegenCSVService._AUTHOR_EDGE_NOISE_RE
+
+        def _has_noise(name: str) -> bool:
+            return any(noisy.search(w) for w in name.split())
+
+        clean = [f for f in found if not _has_noise(f)]
+        if _has_noise(author) and len(clean) == 1:
+            return clean[0]
         if author in found or len(found) != 1:
             return author
         return found[0]

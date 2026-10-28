@@ -1483,6 +1483,8 @@ class RegenCSVService:
                     rec.proposed_author += ')' * (_open - _close)
         self.logger.log("[OK] Final sanitization applied")
 
+        self._postcheck_author_edge_punctuation()
+
         # «Том N и M» / «Том N и Том M» в заголовке — файл объединяет два тома,
         # а series_number на этот момент указывает только на первый (N). Идёт
         # ДО финального гейта "нет серии", т.к. сам меняет только number, не серию.
@@ -2325,6 +2327,44 @@ class RegenCSVService:
         if filled:
             _log.info(f"[POST-CHECK] Filled {filled} empty author records (fallback)")
             self.logger.log(f"[OK] POST-CHECK: Filled {filled} empty authors")
+
+    # Слово имени с мусорным знаком на краю: «.Ирина», «_N.B._» (инициал «Б.Р.» — нет).
+    _AUTHOR_EDGE_NOISE_RE = re.compile(r'^[._\-–—]|[_\-–—]$')
+
+    def _postcheck_author_edge_punctuation(self) -> None:
+        """Имя автора со знаком на краю слова («Эльба .Ирина» — точка из
+        метаданных) → то же имя без знака, если оно есть у другой книги
+        этого прогона: только там, где написание известно точно (решение
+        пользователя 2026-10-28). Сервер: «Осинская Татьяна, Эльба .Ирина» и
+        «… Эльба Ирина» пришли одной порцией — две папки автора, том 4 «Школы
+        сказок» не видел трилогию. Без чистого двойника имя не трогаем
+        («_N.B._»)."""
+        def _key(name: str) -> str:
+            return ' '.join(sorted(re.findall(r'[^\W\d_]+', name.lower().replace('ё', 'е'))))
+
+        def _noisy(name: str) -> bool:
+            return any(self._AUTHOR_EDGE_NOISE_RE.search(w) for w in name.split())
+
+        clean: dict = {}
+        for rec in self.records:
+            for part in (rec.proposed_author or '').split(','):
+                part = part.strip()
+                if part and not _noisy(part):
+                    clean.setdefault(_key(part), set()).add(part)
+        fixed = 0
+        for rec in self.records:
+            parts = [p.strip() for p in (rec.proposed_author or '').split(',')]
+            if not any(_noisy(p) for p in parts):
+                continue
+            new_parts = []
+            for p in parts:
+                twins = clean.get(_key(p), set()) if _noisy(p) else set()
+                new_parts.append(next(iter(twins)) if len(twins) == 1 else p)
+            if new_parts != parts:
+                rec.proposed_author = ', '.join(new_parts)
+                fixed += 1
+        if fixed:
+            self.logger.log(f"[OK] POST-CHECK: author spelling without edge punctuation: {fixed}")
 
     def _postcheck_strip_digit_prefix_author(self) -> None:
         """Если proposed_author начинается с цифрового префикса (NN. или NN.Слово),
