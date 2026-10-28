@@ -20,6 +20,7 @@ FB2 Compilation Service
 import html as _html
 import re
 import unicodedata
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -1253,7 +1254,11 @@ class FB2CompilerService:
             body = text[text.find('<body'):] if '<body' in text else text
             words = self._SHINGLE_WORD_RE.findall(
                 re.sub(r'<[^>]+>', ' ', body).lower().replace('ё', 'е'))
-            hashes = (hash(tuple(words[i:i + 6])) for i in range(len(words) - 5))
+            # crc32, а не hash(): hash() строк в каждом процессе свой (PYTHONHASHSEED) —
+            # выборка большого текста была бы разной от запуска к запуску, и
+            # решения около порога «плавали» (Test2, 2026-10-27: «Цицерон.
+            # Трилогия» — 45%, то дубль, то нет).
+            hashes = (zlib.crc32(' '.join(words[i:i + 6]).encode('utf-8')) for i in range(len(words) - 5))
             if len(words) > self._SHINGLE_LARGE_WORDS:
                 cache[key] = _Shingles(h for h in hashes if h % self._SHINGLE_SAMPLE == 0)
                 cache[key].sampled = True
@@ -2203,19 +2208,46 @@ class FB2CompilerService:
                     return b.sort_key[2] if b.sort_key[1] == 0 else b.sort_key[1]
                 return None
 
+            # Книга без номера, чей текст уже есть в лучшей предкомпиляции, — её
+            # копия (docs/series-duplicates.md: «Тор. Темный» рядом с «Принц Тор
+            # (Тетралогия)», где «Темный» — том 2): дубль. Без номера она не
+            # «покрыта» диапазоном, и группа не собиралась — копия лежала рядом
+            # навсегда. Книги без номера, которых в сборнике нет, остаются
+            # рядом (решение пользователя 2026-10-27). Страховка
+            # _verify_duplicate_paths перед удалением проверяет текст ещё раз.
+            _pre_text = None
+            for book in list(regular_books):
+                if _vol_num_for_check(book) is not None or not book.abs_path.exists():
+                    continue
+                if _pre_text is None:
+                    _pre_text = self._text_shingles(best_pre.abs_path)
+                share = self._shingle_share(self._text_shingles(book.abs_path), [_pre_text])
+                if _pre_text and share >= self._DUPLICATE_MIN_COVERAGE:
+                    self._log(f"  ↺ {book.abs_path.name}: без номера, текст есть в "
+                              f"{best_pre.abs_path.name} на {share:.0%} — дубль")
+                    regular_books.remove(book)
+                    duplicate_paths.append(book.abs_path)
+
+            # Книги без номера, которых в сборнике нет, в решении «актуальна ли
+            # предкомпиляция» не участвуют: они остаются рядом, ничего не
+            # удаляется и не пересобирается из-за них. Раньше одна такая книга
+            # (рассказ, спутник серии) срывала всю группу — и покрытые тома с
+            # номерами, и копии оставались лежать рядом с компиляцией.
+            _numbered = [r for r in regular_books if _vol_num_for_check(r) is not None]
+            _set_aside = [r for r in regular_books if _vol_num_for_check(r) is None]
             all_covered = (
                 not other_precompiled and
-                (all(
-                    (n := _vol_num_for_check(r)) is not None and best_lo <= n <= best_hi
-                    for r in regular_books
-                ) if regular_books else True)
+                (all(best_lo <= _vol_num_for_check(r) <= best_hi for r in _numbered)
+                 if _numbered else bool(duplicate_paths) or not regular_books)
             )
 
             if all_covered:
                 # 1. АКТУАЛЬНА — компиляция уже сделана, новая не нужна.
                 # Отдельные тома, уже покрытые компиляцией, — на удаление.
-                for book in regular_books:
+                for book in _numbered:
                     duplicate_paths.append(book.abs_path)
+                for book in _set_aside:
+                    self._log(f"  · {book.abs_path.name}: без номера, в сборнике нет — остаётся рядом")
                 if duplicate_paths:
                     # Есть что удалить — сообщаем через cleanup_only группу
                     _emit(CompilationGroup(

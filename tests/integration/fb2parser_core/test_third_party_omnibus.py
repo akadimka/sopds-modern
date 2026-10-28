@@ -155,3 +155,22 @@ def test_large_texts_are_sampled_but_compared_fairly(tmp_path):
         (tmp_path / f"x{i}.fb2").write_text(vol2.read_text(encoding="utf-8"), encoding="utf-8")
         svc._text_shingles(tmp_path / f"x{i}.fb2")
     assert len(svc._shingle_cache) == svc._SHINGLE_CACHE_SIZE
+
+
+def test_sampled_fragments_are_the_same_in_every_process(tmp_path):
+    """Выборка фрагментов большого текста не зависит от процесса: hash()
+    строк рандомизирован (PYTHONHASHSEED), и решения «дубль или нет» около
+    порога менялись от запуска к запуску (Test2, 2026-10-27)."""
+    import os
+    import subprocess
+    import sys
+    big = _omnibus(tmp_path / "big.fb2", "Сборник", "Автор Тестов", ())
+    volumes = "".join(f"<section><p>{_text(v, 100_000)}</p></section>" for v in range(1, 5))
+    big.write_text(big.read_text(encoding="utf-8").replace("<body></body>", f"<body>{volumes}</body>"),
+                   encoding="utf-8")
+    code = ("import sys; from pathlib import Path; from fb2parser_core.fb2_compiler import FB2CompilerService as S; "
+            "s = S()._text_shingles(Path(sys.argv[1])); print(len(s), sum(s) % 1000003)")
+    src = str(Path(__file__).resolve().parents[3] / "src")
+    outs = {subprocess.run([sys.executable, "-c", code, str(big)], capture_output=True, text=True, cwd=src,
+                           env={**os.environ, "PYTHONHASHSEED": seed}).stdout for seed in ("1", "2")}
+    assert len(outs) == 1 and next(iter(outs)).strip()
