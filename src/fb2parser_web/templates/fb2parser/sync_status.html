@@ -159,6 +159,7 @@
                     <td>{{ note.author }} — {{ note.series }}</td>
                     <td>
                         {% for f in note.files %}<div>{{ f.file_path }} — <em>{{ f.genre }}</em></div>{% endfor %}
+                        {% if note.library_books %}<div>{% trans "Already in the library" %}: {% for g, n in note.library_books.items %}<em>{{ g }}</em> ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
                     </td>
                     <td style="white-space:nowrap;">
                         <select id="gconf-genre-{{ forloop.counter0 }}" style="margin:0 0.3rem 0 0; width:auto; font-size:0.78rem; padding:0.1rem 1.4rem 0.1rem 0.3rem; height:auto;">
@@ -231,7 +232,7 @@
                 {% for note in state.genre_unified_notes %}
                 <tr>
                     <td>{{ note.author }} — {{ note.series }}</td>
-                    <td>{{ note.genre }}</td>
+                    <td>{{ note.genre }}{% if note.in_library %}<div><em>{% trans "the series is already there in the library" %}</em></div>{% endif %}</td>
                     <td>{% for f in note.overridden %}<div>{{ f.file_path }} — <em>{{ f.genre }}</em></div>{% endfor %}</td>
                 </tr>
                 {% endfor %}

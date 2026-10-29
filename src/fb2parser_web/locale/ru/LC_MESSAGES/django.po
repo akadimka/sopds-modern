@@ -1255,6 +1255,12 @@ msgstr "Применить к серии"
 msgid "Series genre unified by majority of volumes"
 msgstr "Жанр серии выровнен по большинству томов"
 
+msgid "Already in the library"
+msgstr "Уже в библиотеке"
+
+msgid "the series is already there in the library"
+msgstr "там серия уже лежит в библиотеке"
+
 msgid "Volumes moved from another genre"
 msgstr "Тома, перенесённые из другого жанра"
 

@@ -81,6 +81,70 @@ class TestUnifySeriesGenres:
         assert unified == [] and conflicts == []
 
 
+class TestSeriesAlreadyInLibrary:
+    """Решение пользователя 2026-10-27 (docs/series-duplicates.md): книги
+    серии, уже лежащие в библиотеке, голосуют вместе с порцией — только за
+    жанры, где серия есть; лежащие книги не двигаются, новые идут к ним."""
+
+    @staticmethod
+    def _library(tmp_path, *books):
+        """books: (жанр, папка автора, серия, файл)"""
+        for genre, author, series, name in books:
+            folder = tmp_path / genre / author / series
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / name).write_text("x", encoding="utf-8")
+        service = _service(priority=["Фантастика", "Детектив"])
+        service.library_path = tmp_path
+        return service
+
+    def test_new_volumes_follow_series_into_its_library_genre(self, tmp_path):
+        service = self._library(tmp_path, ("Детектив", "Волков Иван", "Кузнец", "1.fb2.zip"))
+        fs = _fs(
+            ("s/2.fb2", "Фантастика", "Волков Иван", "Кузнец"),
+            ("s/3.fb2", "Фантастика", "Волков Иван", "Кузнец"),
+        )
+        unified, conflicts = service._unify_series_genres(fs)
+        assert {g for g, *_ in fs.values()} == {"Детектив"} and conflicts == []
+        assert unified[0]["genre"] == "Детектив" and unified[0]["in_library"]
+
+    def test_author_folder_with_other_word_order_is_used(self, tmp_path):
+        service = self._library(tmp_path, ("Детектив", "Иван Волков", "Кузнец", "1.fb2"))
+        fs = _fs(("s/2.fb2", "Детектив", "Волков Иван", "Кузнец"))
+        service._unify_series_genres(fs)
+        assert fs["s/2.fb2"][:2] == ("Детектив", "Иван Волков")
+
+    def test_series_in_two_genres_new_volume_tips_the_vote(self, tmp_path):
+        service = self._library(tmp_path, ("Детектив", "Волков Иван", "Кузнец", "1.fb2"),
+                                ("Фантастика", "Волков Иван", "Кузнец", "2.fb2"))
+        fs = _fs(("s/3.fb2", "Фантастика", "Волков Иван", "Кузнец"))
+        unified, conflicts = service._unify_series_genres(fs)
+        assert fs["s/3.fb2"][0] == "Фантастика" and unified == [] and conflicts == []
+
+    def test_genre_where_series_is_not_yet_gets_no_votes(self, tmp_path):
+        service = self._library(tmp_path, ("Детектив", "Волков Иван", "Кузнец", "1.fb2"),
+                                ("Фантастика", "Волков Иван", "Кузнец", "2.fb2"),
+                                ("Фантастика", "Волков Иван", "Кузнец", "3.fb2"))
+        fs = _fs(("s/4.fb2", "Проза", "Волков Иван", "Кузнец"), ("s/5.fb2", "Проза", "Волков Иван", "Кузнец"))
+        service._unify_series_genres(fs)
+        assert {g for g, *_ in fs.values()} == {"Фантастика"}
+
+    def test_tie_in_library_waits_for_choice_with_hint(self, tmp_path):
+        service = self._library(tmp_path, ("Детектив", "Волков Иван", "Кузнец", "1.fb2"),
+                                ("Фантастика", "Волков Иван", "Кузнец", "2.fb2"))
+        fs = _fs(("s/3.fb2", "Проза", "Волков Иван", "Кузнец"))
+        unified, conflicts = service._unify_series_genres(fs)
+        assert fs == {} and unified == []
+        assert conflicts[0]["genres"] == ["Фантастика", "Детектив"]
+        assert conflicts[0]["library_books"] == {"Детектив": 1, "Фантастика": 1}
+
+    def test_empty_series_folder_does_not_count(self, tmp_path):
+        service = self._library(tmp_path)
+        (tmp_path / "Детектив" / "Волков Иван" / "Кузнец").mkdir(parents=True)
+        fs = _fs(("s/2.fb2", "Фантастика", "Волков Иван", "Кузнец"))
+        service._unify_series_genres(fs)
+        assert fs["s/2.fb2"][0] == "Фантастика"
+
+
 _FB2 = """<?xml version="1.0" encoding="utf-8"?>
 <FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
 <description><title-info>

@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from . import ownership_hooks
 from .fb2_utils import has_fb2_files as _has_fb2_util
 from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
+from .library_memory import is_book_file
 from .logger import Logger
 from .path_safety import is_within
 from .regen_csv import RegenCSVService
@@ -916,6 +917,34 @@ class SynchronizationService:
 
         return folder_structure, reconciliation_notes
 
+    def _series_in_library(self, author: str, display_root: str, series: str) -> Dict[str, Tuple[str, int]]:
+        """Жанры, где папка серии уже есть в библиотеке и в ней есть книги:
+        {жанр: (папка автора в этом жанре, число книг)}. Папка автора — как
+        её найдёт `_existing_author_variant` (другой порядок слов и т. п.)."""
+        library = getattr(self, 'library_path', None)
+        if not library:
+            return {}
+        genres = self.__dict__.get('_library_genres')
+        if genres is None:
+            try:
+                genres = sorted(d.name for d in Path(library).iterdir() if d.is_dir())
+            except OSError:
+                genres = []
+            self._library_genres = genres
+        found: Dict[str, Tuple[str, int]] = {}
+        for genre in genres:
+            author_dir = self._existing_author_variant(genre, author)
+            folder = Path(library) / genre / author_dir
+            if display_root:
+                folder = folder / display_root
+            folder = folder / series
+            if not folder.is_dir():
+                continue
+            books = sum(1 for p in folder.rglob('*') if is_book_file(p.name) and p.is_file())
+            if books:
+                found[genre] = (author_dir, books)
+        return found
+
     def _unify_series_genres(self, folder_structure: Dict) -> Tuple[List, List]:
         """Не дать томам одной серии разъехаться по разным жанровым папкам.
 
@@ -930,6 +959,14 @@ class SynchronizationService:
           folder_structure, не перемещается и ждёт ручного выбора.
           `default_genre` — выше по списку приоритета жанров, только как
           предвыбор в UI.
+
+        Серия уже лежит в библиотеке (решение пользователя 2026-10-27,
+        docs/series-duplicates.md) — её книги голосуют вместе с порцией, но
+        только за жанры, где серия уже есть: лежащие книги на лету не
+        двигаются, новые тома кладутся к ним. Раньше голосовала одна порция,
+        и тома, пришедшие разными порциями с разными кодами жанра,
+        разъезжались по папкам (Дрюон «Проклятые короли», Шишков «Емельян
+        Пугачев»). Поровну — выбор вручную, в подсказке — где серия лежит.
 
         Returns:
             (unified_notes, conflict_notes)
@@ -950,9 +987,50 @@ class SynchronizationService:
         for paths in groups.values():
             genres = [folder_structure[p][0] for p in paths]
             counts = Counter(genres)
+            _genre, author, display_root, series, _sub = folder_structure[paths[0]]
+            in_library = self._series_in_library(author, display_root, series)
+            if in_library:
+                votes = {g: n + counts.get(g, 0) for g, (_a, n) in in_library.items()}
+                top = max(votes.values())
+                leaders = [g for g, c in votes.items() if c == top]
+                library_books = {g: n for g, (_a, n) in in_library.items()}
+                if len(leaders) > 1:
+                    options = sorted(leaders, key=_priority_key)
+                    files = [{'file_path': p, 'genre': folder_structure[p][0]} for p in paths]
+                    for p in paths:
+                        del folder_structure[p]
+                    self._log(
+                        f"  ⚠ Жанр серии {author} / {series} не определён: в библиотеке она лежит в "
+                        f"{', '.join(f'{g} ({library_books[g]})' for g in options)} поровну с новыми томами "
+                        f"— серия не перемещена, нужен выбор жанра."
+                    )
+                    conflict_notes.append({
+                        'author': author, 'series': series,
+                        'genres': options, 'default_genre': options[0],
+                        'files': files, 'library_books': library_books,
+                    })
+                    continue
+                winner = leaders[0]
+                winner_author = in_library[winner][0]
+                overridden = []
+                for p in paths:
+                    g, a, d, s, sub = folder_structure[p]
+                    if (g, a) != (winner, winner_author):
+                        folder_structure[p] = (winner, winner_author, d, s, sub)
+                        if g != winner:
+                            overridden.append({'file_path': p, 'genre': g})
+                if overridden:
+                    self._log(
+                        f"  Жанр серии {author} / {series}: {winner} — там она уже лежит в библиотеке "
+                        f"(исправлено файлов: {len(overridden)})"
+                    )
+                    unified_notes.append({
+                        'author': author, 'series': series,
+                        'genre': winner, 'overridden': overridden, 'in_library': True,
+                    })
+                continue
             if len(counts) < 2:
                 continue
-            _genre, author, display_root, series, _sub = folder_structure[paths[0]]
             top = max(counts.values())
             leaders = [g for g, c in counts.items() if c == top]
             if len(leaders) == 1:
