@@ -112,6 +112,21 @@ def test_rename_library_author_transfers_owners(tmp_path, lib, users):
     assert _all_owned(lib) == {(ownership.rel_path(new, str(lib)), "anna")}
 
 
+def test_series_moved_to_another_genre_keeps_owners(tmp_path, lib, users):
+    from fb2parser_core.library_cleanup import find_split_series, move_series_to_genre
+
+    _admin, anna, _ = users
+    _book(lib / "Детектив" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 1.fb2", 1)
+    _book(lib / "Детектив" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 2.fb2", 2)
+    old = _book(lib / "Фантастика" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 3.fb2", 3)
+    ownership.assign(ownership.rel_path(old, str(lib)), anna)
+    [series] = find_split_series(lib)
+    move_series_to_genre(lib, series, "Детектив", tmp_path / "c.db", apply=True)
+    new = lib / "Детектив" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 3.fb2"
+    assert new.exists() and not old.exists()
+    assert _all_owned(lib) == {(ownership.rel_path(new, str(lib)), "anna")}
+
+
 def _groups(lib):
     records = regen_csv.RegenCSVService(bridge._config_path()).generate_csv(str(lib), output_csv_path=None)
     return FB2CompilerService().find_groups(records, lib)

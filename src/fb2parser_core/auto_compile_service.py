@@ -2,10 +2,56 @@
 import os
 import sys
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional, Tuple
 
-from fb2parser_core.fb2_compiler import FB2CompilerService
+from fb2parser_core.fb2_compiler import CompilationGroup, FB2CompilerService
 from fb2parser_core.regen_csv import RegenCSVService
+
+
+def find_library_groups(
+    library_path: str,
+    config_path: Optional[str] = None,
+    filter_paths: Optional[set] = None,
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+) -> Tuple[FB2CompilerService, List[CompilationGroup]]:
+    """Разобрать папку и найти группы компилятора — без изменений на диске.
+
+    Общая часть автокомпиляции и пробного прогона чистки библиотеки
+    (`manage.py library_cleanup`): решения у них одни и те же.
+    """
+    _devnull = open(os.devnull, 'w', encoding='utf-8')
+    _old_out, _old_err = sys.stdout, sys.stderr
+    sys.stdout = sys.stderr = _devnull
+    try:
+        svc_csv = RegenCSVService(config_path=config_path) if config_path else RegenCSVService()
+        records = svc_csv.generate_csv(library_path, output_csv_path=None, filter_paths=filter_paths,
+                                       progress_callback=progress_callback)
+        if not records:
+            records = getattr(svc_csv, 'records', []) or []
+    finally:
+        sys.stdout, sys.stderr = _old_out, _old_err
+        _devnull.close()
+
+    compiler = FB2CompilerService()
+    return compiler, compiler.find_groups(records, Path(library_path))
+
+
+def group_genre(group: CompilationGroup, library_path: Path) -> str:
+    """Жанр итогового файла — из genre-папки библиотеки (первый сегмент пути
+    группы относительно library_path), а не только из <genre> метаданных
+    первой исходной книги: та часто пуста у файлов-кандидатов на компиляцию
+    ("Дилогия"/"в N книгах"), из-за чего компилятор жёстко подставлял
+    заглушку "other", хотя файлы физически уже лежат в правильной жанровой
+    папке (см. compile_group()'s genre_override и docs/quality-roadmap.md).
+    Вызывающий код всегда передаёт реальную, genre-организованную
+    библиотеку — первый сегмент относительного пути всегда genre-папка."""
+    if not group.books:
+        return ''
+    try:
+        rel_parts = group.books[0].abs_path.resolve().relative_to(library_path.resolve()).parts
+    except ValueError:
+        return ''
+    return rel_parts[0] if rel_parts else ''
 
 
 def auto_compile_library(
@@ -33,48 +79,15 @@ def auto_compile_library(
     Returns:
         dict с ключами ok (int), fail (int).
     """
-    _devnull = open(os.devnull, 'w', encoding='utf-8')
-    _old_out, _old_err = sys.stdout, sys.stderr
-    sys.stdout = sys.stderr = _devnull
-    try:
-        svc_csv = RegenCSVService(config_path=config_path) if config_path else RegenCSVService()
-        records = svc_csv.generate_csv(library_path, output_csv_path=None, filter_paths=filter_paths,
-                                       progress_callback=progress_callback)
-        if not records:
-            records = getattr(svc_csv, 'records', []) or []
-    finally:
-        sys.stdout, sys.stderr = _old_out, _old_err
-        _devnull.close()
-
-    compiler = FB2CompilerService()
+    compiler, groups = find_library_groups(library_path, config_path, filter_paths, progress_callback)
     lib_path = Path(library_path)
-    groups = compiler.find_groups(records, lib_path)
 
     ok_cnt = 0
     fail_cnt = 0
     for i, g in enumerate(groups):
         if progress_callback:
             progress_callback(i, len(groups), f"Компиляция: {g.author} — {g.series}")
-        # Жанр итогового файла берём из genre-папки библиотеки (первый
-        # сегмент пути группы относительно library_path), а не только из
-        # <genre> метаданных первой исходной книги — та часто пуста у
-        # файлов-кандидатов на компиляцию ("Дилогия"/"в N книгах"), из-за
-        # чего компилятор жёстко подставлял заглушку "other", хотя файлы
-        # физически уже лежат в правильной жанровой папке (см.
-        # compile_group()'s genre_override и docs/quality-roadmap.md).
-        # Единственный вызывающий код auto_compile_library() (см.
-        # fb2parser_web.views._run_compile_pass) всегда передаёт сюда
-        # library_path — реальную, genre-организованную библиотеку — так
-        # что первый сегмент относительного пути всегда genre-папка.
-        genre_override = ''
-        if g.books:
-            try:
-                rel_parts = g.books[0].abs_path.resolve().relative_to(lib_path.resolve()).parts
-                if rel_parts:
-                    genre_override = rel_parts[0]
-            except ValueError:
-                pass
-        result = compiler.compile_group(g, None, delete_sources=True, genre_override=genre_override)
+        result = compiler.compile_group(g, None, delete_sources=True, genre_override=group_genre(g, lib_path))
         if result.success:
             ok_cnt += 1
         else:

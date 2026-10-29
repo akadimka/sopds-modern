@@ -18,6 +18,7 @@ FB2 Compilation Service
 """
 
 import html as _html
+import os
 import re
 import unicodedata
 import zlib
@@ -5307,6 +5308,55 @@ class FB2CompilerService:
             )
         return suffix, top_lo, top_hi
 
+    def cleanup_rename_target(self, group: CompilationGroup) -> Optional[Path]:
+        """Новый путь оставленного сборника cleanup-группы по нашей схеме
+        «Автор - Серия (Суффикс)», или None — не переименовывать. Отдельно от
+        compile_group, чтобы пробный прогон чистки библиотеки показывал те же
+        переименования."""
+        if not getattr(group, 'cleanup_only', False) or not group.kept_paths:
+            return None
+        old_path = group.kept_paths[0]
+        vol_m = re.match(r'^(\d+)-(\d+)$', group.volume_range or '')
+        if not vol_m or not old_path.exists():
+            return None
+        lo, hi = int(vol_m.group(1)), int(vol_m.group(2))
+        suffix = self._series_suffix(hi - lo + 1, lo, hi, 0,
+                                     series_complete=getattr(group, 'series_complete', True))
+        clean_series = self._clean_series_name(self._group_series_for_naming(group))
+        safe_author = re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(group.author))
+        safe_series = re.sub(r'[/:*?"<>|]', '_', replace_control_chars(self._series_to_display(clean_series)))
+        suffix = self._suppress_redundant_suffix(safe_series, suffix)
+        new_name = f"{safe_author} - {safe_series} ({suffix}).fb2" if suffix else f"{safe_author} - {safe_series}.fb2"
+        if old_path.name.lower().endswith('.fb2.zip'):
+            new_name += '.zip'
+        new_path = old_path.parent / new_name
+        if new_path == old_path:
+            return None
+        # Автор группы — не автор папки: разбор ошибся («Милан» у Arladaar,
+        # «[unknown]» у Leach23 — сервер 2026-10-28), и переименование разнесло
+        # бы ошибку в имя файла библиотеки. Свой автор — имя файла уже
+        # начинается с «Автор - » или автор — папка над папкой серии (не сама
+        # папка серии: у Arladaar она «Милан»).
+        author_key = _norm_key(group.author)
+        if not (_norm_key(old_path.name).startswith(author_key + ' - ')
+                or _norm_key(old_path.parent.parent.name) == author_key):
+            self._log(f"   · {old_path.name}: автор группы «{group.author}» не совпадает с папкой "
+                      f"— не переименовывается")
+            return None
+        # Имя уже по нашему образцу «Автор - Серия (Суффикс)» — не трогаем:
+        # иначе серия берётся в написании разбора («Я попал» → «Я - попал»), а
+        # «(Декалогия в 16 книгах)» теряет число книг (сервер 2026-10-28).
+        old_stem = plain_stem(old_path)
+        old_tail = re.search(r'\(([^()]*)\)\s*$', old_stem)
+        if (suffix and old_tail and _norm_key(old_stem).startswith(author_key + ' - ')
+                and (old_tail.group(1).lower() + ' ').startswith(suffix.lower() + ' ')):
+            return None
+        # Имя занято другим файлом: rename на Linux молча заменил бы его.
+        if new_path.exists() and not os.path.samefile(new_path, old_path):
+            self._log(f"   · {old_path.name}: имя «{new_name}» уже занято — не переименовывается")
+            return None
+        return new_path
+
     # ------------------------------------------------------------------
     # Компиляция
     # ------------------------------------------------------------------
@@ -5359,55 +5409,17 @@ class FB2CompilerService:
                 self._log(f"   ♻ Удалено {len(group.duplicate_paths)} устаревших файлов")
 
             renamed_path = None
-            if group.kept_paths:
+            new_path = self.cleanup_rename_target(group)
+            if new_path is not None:
                 old_path = group.kept_paths[0]
-                vol_m = re.match(r'^(\d+)-(\d+)$', group.volume_range or '')
-                if vol_m and old_path.exists():
-                    lo, hi = int(vol_m.group(1)), int(vol_m.group(2))
-                    n_volumes = hi - lo + 1
-                    suffix = self._series_suffix(
-                        n_volumes, lo, hi, 0,
-                        series_complete=getattr(group, 'series_complete', True),
-                    )
-                    clean_series = self._clean_series_name(self._group_series_for_naming(group))
-                    safe_author = re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(group.author))
-                    safe_series = re.sub(r'[/:*?"<>|]', '_',
-                                        replace_control_chars(self._series_to_display(clean_series)))
-                    suffix = self._suppress_redundant_suffix(safe_series, suffix)
-                    new_name = f"{safe_author} - {safe_series} ({suffix}).fb2" if suffix else f"{safe_author} - {safe_series}.fb2"
-                    if old_path.name.lower().endswith('.fb2.zip'):
-                        new_name += '.zip'
-                    new_path = old_path.parent / new_name
-                    # Автор группы — не автор папки: разбор ошибся («Милан» у
-                    # Arladaar, «[unknown]» у Leach23 — сервер 2026-10-28), и
-                    # переименование разнесло бы ошибку в имя файла библиотеки.
-                    # Свой автор — имя файла уже начинается с «Автор - » или
-                    # автор — папка над папкой серии (не сама папка серии:
-                    # у Arladaar она «Милан»).
-                    _author_key = _norm_key(group.author)
-                    if not (_norm_key(old_path.name).startswith(_author_key + ' - ')
-                            or _norm_key(old_path.parent.parent.name) == _author_key):
-                        self._log(f"   · {old_path.name}: автор группы «{group.author}» не совпадает с папкой "
-                                  f"— не переименовывается")
-                        new_path = old_path
-                    # Имя уже по нашему образцу «Автор - Серия (Суффикс)» — не
-                    # трогаем: иначе серия берётся в написании разбора («Я попал»
-                    # → «Я - попал»), а «(Декалогия в 16 книгах)» теряет число
-                    # книг (сервер 2026-10-28).
-                    _old_stem = plain_stem(old_path)
-                    _old_tail = re.search(r'\(([^()]*)\)\s*$', _old_stem)
-                    if (suffix and _old_tail and _norm_key(_old_stem).startswith(_author_key + ' - ')
-                            and (_old_tail.group(1).lower() + ' ').startswith(suffix.lower() + ' ')):
-                        new_path = old_path
-                    if old_path != new_path:
-                        try:
-                            old_path.rename(new_path)
-                            ownership_hooks.transfer(old_path, new_path)
-                            group.kept_paths[0] = new_path
-                            renamed_path = new_path
-                            self._log(f"   ✎ Переименован: {old_path.name} → {new_name}")
-                        except OSError as e:
-                            self._log(f"   ✗ Не удалось переименовать {old_path.name}: {e}")
+                try:
+                    old_path.rename(new_path)
+                    ownership_hooks.transfer(old_path, new_path)
+                    group.kept_paths[0] = new_path
+                    renamed_path = new_path
+                    self._log(f"   ✎ Переименован: {old_path.name} → {new_path.name}")
+                except OSError as e:
+                    self._log(f"   ✗ Не удалось переименовать {old_path.name}: {e}")
 
             return CompilationResult(
                 group=group,

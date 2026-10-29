@@ -1,0 +1,187 @@
+"""Разовая чистка библиотеки (шаг 3 docs/series-duplicates.md).
+
+Две части, у каждой — пробный прогон (отчёт) и выполнение только по явному
+«да» (`manage.py library_cleanup --apply`):
+
+- **жанры**: серия, лежащая в нескольких жанровых папках, переносится в
+  один жанр — большинства книг; поровну — по выбору суперпользователя
+  (решения пользователя 2026-10-27 и 2026-10-29). Переносятся папки серии,
+  тег <genre> в файлах не меняется: место в библиотеке задаёт папка;
+- **компилятор**: решения автокомпиляции по всей библиотеке — какие файлы
+  удаляются как дубли, какие сборники переименовываются, какие тома
+  собираются (`auto_compile_service.find_library_groups`, те же решения,
+  что у автокомпиляции после синхронизации).
+
+Сначала жанры, потом компилятор: после переноса тома серии лежат в одной
+папке, и группы компилятора меняются — их отчёт снимается заново.
+"""
+import re
+import shutil
+import sqlite3
+from collections import defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable, Dict, List, Optional
+
+from . import ownership_hooks
+from .library_memory import is_book_file
+
+
+def _word_key(name: str) -> str:
+    return ' '.join(sorted(re.findall(r'\w+', (name or '').lower().replace('ё', 'е'))))
+
+
+def _book_count(folder: Path) -> int:
+    return sum(1 for p in folder.rglob('*') if is_book_file(p.name) and p.is_file())
+
+
+@dataclass
+class SplitSeries:
+    """Серия одного автора в нескольких жанровых папках.
+
+    places: {жанр: [папки серии в этом жанре]} — папка автора в разных жанрах
+    может быть записана по-разному («Престон Дуглас» / «Дуглас Престон»).
+    """
+    author: str
+    series: str
+    places: Dict[str, List[Path]] = field(default_factory=dict)
+    books: Dict[str, int] = field(default_factory=dict)
+
+    @property
+    def key(self) -> str:
+        return f"{self.author} / {self.series}"
+
+    def majority(self) -> Optional[str]:
+        top = max(self.books.values())
+        leaders = [g for g, n in self.books.items() if n == top]
+        return leaders[0] if len(leaders) == 1 else None
+
+
+def find_split_series(library: Path) -> List[SplitSeries]:
+    """Серии (папки «Жанр/Автор/Серия» с книгами), которые есть у одного
+    автора (с точностью до порядка слов) больше чем в одном жанре."""
+    found: Dict[tuple, SplitSeries] = {}
+    for genre_dir in sorted(p for p in library.iterdir() if p.is_dir()):
+        for author_dir in sorted(p for p in genre_dir.iterdir() if p.is_dir()):
+            for series_dir in sorted(p for p in author_dir.iterdir() if p.is_dir()):
+                books = _book_count(series_dir)
+                if not books:
+                    continue
+                key = (_word_key(author_dir.name), series_dir.name.lower().replace('ё', 'е'))
+                item = found.setdefault(key, SplitSeries(author_dir.name, series_dir.name))
+                item.places.setdefault(genre_dir.name, []).append(series_dir)
+                item.books[genre_dir.name] = item.books.get(genre_dir.name, 0) + books
+    split = [s for s in found.values() if len(s.books) > 1]
+    for s in split:
+        # Название — как в жанре большинства (или первом по алфавиту).
+        main = s.majority() or sorted(s.books)[0]
+        s.author, s.series = s.places[main][0].parent.name, s.places[main][0].name
+    return sorted(split, key=lambda s: s.key.lower())
+
+
+def read_genre_choices(path: Path) -> Dict[str, str]:
+    """Файл «жанр<TAB>автор / серия» (как в отчёте) → {ключ серии: жанр}."""
+    choices = {}
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if '\t' in line and not line.startswith('#'):
+            genre, key = line.split('\t', 1)
+            choices[key.strip()] = genre.strip()
+    return choices
+
+
+def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path: Optional[Path],
+                         apply: bool = False, log: Optional[Callable] = None) -> Dict[str, int]:
+    """Перенести папки серии из остальных жанров в `genre`.
+
+    Папка автора в целевом жанре — та, где серия уже лежит, иначе папка
+    автора с теми же словами, иначе исходное имя. Файл, чьё место занято,
+    не трогается (в отчёте). Владение — через ownership_hooks.transfer,
+    записи БД библиотеки — новый путь и жанр. apply=False — только отчёт.
+    """
+    log = log or (lambda m: None)
+    stats = {'files': 0, 'moved': 0, 'conflicts': 0, 'errors': 0, 'db_rows': 0}
+    if genre in series.places:
+        author_dir = series.places[genre][0].parent.name
+    else:
+        variants = [p.name for p in (library / genre).iterdir() if p.is_dir()
+                    and _word_key(p.name) == _word_key(series.author)] if (library / genre).is_dir() else []
+        author_dir = variants[0] if len(variants) == 1 else series.author
+    target_root = library / genre / author_dir
+    conn = sqlite3.connect(str(db_path)) if apply and db_path and db_path.exists() else None
+    try:
+        for src_genre, folders in sorted(series.places.items()):
+            if src_genre == genre:
+                continue
+            for src_dir in folders:
+                dst_dir = target_root / src_dir.name
+                log(f"  {src_dir.relative_to(library)} → {dst_dir.relative_to(library)}"
+                    + (" (слияние)" if dst_dir.exists() else ""))
+                for src in sorted(p for p in src_dir.rglob('*') if p.is_file()):
+                    stats['files'] += 1
+                    dst = dst_dir / src.relative_to(src_dir)
+                    if dst.exists():
+                        stats['conflicts'] += 1
+                        log(f"    ⚠ занято, не трогаю: {dst.relative_to(library)}")
+                        continue
+                    stats['moved'] += 1
+                    if not apply:
+                        continue
+                    try:
+                        dst.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(str(src), str(dst))
+                        ownership_hooks.transfer(src, dst)
+                        if conn is not None:
+                            old_rel = src.relative_to(library)
+                            cur = conn.execute(
+                                "UPDATE books SET file_path = ?, genre = ? WHERE file_path IN (?, ?)",
+                                (dst.relative_to(library).as_posix(), genre, str(old_rel), old_rel.as_posix()))
+                            stats['db_rows'] += cur.rowcount
+                    except Exception as exc:  # noqa: BLE001 — один файл не должен остановить остальные
+                        stats['errors'] += 1
+                        log(f"    ✗ {src.name}: {exc}")
+                if apply:
+                    # Пустые папки серии и автора после переноса.
+                    for d in sorted((p for p in src_dir.rglob('*') if p.is_dir()), reverse=True) + [
+                            src_dir, src_dir.parent]:
+                        try:
+                            d.rmdir()
+                        except OSError:
+                            pass
+        if conn is not None:
+            conn.commit()
+    finally:
+        if conn is not None:
+            conn.close()
+    return stats
+
+
+def describe_group(compiler, group, library: Path) -> List[str]:
+    """Строки отчёта о группе компилятора: что останется, уйдёт, соберётся."""
+    def rel(p: Path) -> str:
+        try:
+            return Path(p).relative_to(library).as_posix()
+        except ValueError:
+            return str(p)
+
+    kind = 'очистка' if group.cleanup_only else 'компиляция'
+    series = compiler._series_to_display(compiler._group_series_for_naming(group))
+    lines = [f"{group.author} / {series} [{kind} {group.volume_range}]"]
+    if not group.cleanup_only:
+        lines += [f"  СОБРАТЬ том {b.volume_label}: {rel(b.abs_path)}" for b in group.books]
+    lines += [f"  ОСТАВИТЬ {rel(p)}" for p in group.kept_paths or []]
+    lines += [f"  УДАЛИТЬ {rel(p)}" for p in group.duplicate_paths or []]
+    lines += [f"  НЕ ТРОГАТЬ {rel(p)}" for p in group.excluded_paths or []]
+    new_path = compiler.cleanup_rename_target(group)
+    if new_path is not None:
+        lines.append(f"  ПЕРЕИМЕНОВАТЬ {rel(group.kept_paths[0])} → {new_path.name}")
+    return lines
+
+
+def group_report_counts(groups) -> Dict[str, int]:
+    counts: Dict[str, int] = defaultdict(int)
+    for g in groups:
+        counts['cleanup' if g.cleanup_only else 'compile'] += 1
+        counts['delete'] += len(g.duplicate_paths or [])
+        if not g.cleanup_only:
+            counts['compiled_books'] += len(g.books)
+    return dict(counts)

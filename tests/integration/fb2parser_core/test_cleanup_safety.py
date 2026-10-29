@@ -42,6 +42,15 @@ def test_kept_file_is_renamed_only_under_its_own_author(tmp_path, author, rename
         [f"{author} - Милан (Ноналогия).fb2"] if renamed else [kept.name])
 
 
+def test_rename_does_not_overwrite_an_existing_file(tmp_path):
+    folder = tmp_path / "Фантастика" / "Arladaar" / "Милан"
+    kept = _omnibus(folder / "Arladaar - Милан (Пенталогия).fb2", "Милан", "Arladaar", [1, 2])
+    other = _omnibus(folder / "Arladaar - Милан (Ноналогия).fb2", "Милан", "Arladaar", [3])
+    other_text = other.read_bytes()
+    FB2CompilerService().compile_group(_cleanup("Arladaar", "Милан", kept, [], "1-9"), None, delete_sources=True)
+    assert kept.exists() and other.read_bytes() == other_text
+
+
 @pytest.mark.parametrize("name, series, volume_range", [
     ("Поселягин Владимир - Я попал (Пенталогия).fb2", "Я - попал", "1-5"),
     ("Поселягин Владимир - Я попал (Декалогия в 16 книгах).fb2", "Я попал", "1-10"),
