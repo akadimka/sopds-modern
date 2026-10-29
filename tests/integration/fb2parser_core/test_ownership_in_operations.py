@@ -145,6 +145,31 @@ def test_fuller_version_replacing_same_name_keeps_both_owners(tmp_path, lib, use
     assert _owners_of(lib, short) == {"anna", "boris"}
 
 
+def test_failed_delete_of_extra_copy_keeps_its_owners(tmp_path, lib, users, monkeypatch):
+    """Сервер 2026-10-29: владельцы лишней копии переходили к оставленной до
+    удаления файла, а удаление не удавалось — копия оставалась без владельцев."""
+    from pathlib import Path
+
+    from fb2parser_core import library_cleanup
+
+    _admin, anna, _ = users
+    name = "Иванов Иван - Звезды (Дилогия).fb2"
+    common = " Первая глава о звёздах и людях." * 30
+    _book(lib / "Детектив" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 3.fb2", 3)
+    _book(lib / "Детектив" / "Иванов Иван" / "Звезды" / name, 1, extra=common)
+    copy = _book(lib / "Фантастика" / "Иванов Иван" / "Звезды" / name, 1, extra=common)
+    ownership.assign(ownership.rel_path(copy, str(lib)), anna)
+
+    def _deny(self, *a, **kw):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "unlink", _deny)
+    [series] = library_cleanup.find_split_series(lib)
+    stats = library_cleanup.move_series_to_genre(lib, series, "Детектив", tmp_path / "c.db", apply=True)
+    assert stats["errors"] == 1 and stats["dropped"] == 0
+    assert copy.exists() and _owners_of(lib, copy) == {"anna"}
+
+
 def _groups(lib):
     records = regen_csv.RegenCSVService(bridge._config_path()).generate_csv(str(lib), output_csv_path=None)
     return FB2CompilerService().find_groups(records, lib)

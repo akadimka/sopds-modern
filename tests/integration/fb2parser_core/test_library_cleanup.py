@@ -93,6 +93,19 @@ def test_tie_moves_only_by_choice(lib, tmp_path):
         "1.fb2", "2.fb2"]
 
 
+def test_series_without_write_access_is_not_touched(lib, monkeypatch):
+    """Сервер 2026-10-29: команда шла не от владельца файлов библиотеки —
+    47 «Permission denied» посреди переноса. Права проверяются заранее."""
+    _put(lib, "Детектив/Дашко Дмитрий/Мент/1.fb2.zip")
+    _put(lib, "Детектив/Дашко Дмитрий/Мент/2.fb2.zip")
+    moved = _put(lib, "Фантастика/Дашко Дмитрий/Мент/3.fb2.zip")
+    monkeypatch.setattr(library_cleanup.os, "access", lambda p, mode: "Фантастика" not in str(p))
+    report = _run("--part", "genres")
+    assert "нет прав на запись: Фантастика" in report and "нет прав на запись: 1" in report
+    _run("--part", "genres", "--apply")
+    assert moved.exists() and not (lib / "Детектив/Дашко Дмитрий/Мент/3.fb2.zip").exists()
+
+
 def test_occupied_place_by_unrelated_text_keeps_both(lib):
     _put(lib, "Детектив/Дашко Дмитрий/Мент/1.fb2.zip")
     _put(lib, "Детектив/Дашко Дмитрий/Мент/2.fb2.zip")

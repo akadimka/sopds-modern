@@ -15,6 +15,7 @@
 Сначала жанры, потом компилятор: после переноса тома серии лежат в одной
 папке, и группы компилятора меняются — их отчёт снимается заново.
 """
+import os
 import re
 import shutil
 import sqlite3
@@ -125,7 +126,8 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
     жанр. apply=False — только отчёт.
     """
     log = log or (lambda m: None)
-    stats = {'files': 0, 'moved': 0, 'replaced': 0, 'dropped': 0, 'conflicts': 0, 'errors': 0, 'db_rows': 0}
+    stats = {'files': 0, 'moved': 0, 'replaced': 0, 'dropped': 0, 'conflicts': 0, 'errors': 0, 'db_rows': 0,
+             'no_access': 0}
     if genre in series.places:
         author_dir = series.places[genre][0].parent.name
     else:
@@ -133,6 +135,15 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
                     and _word_key(p.name) == _word_key(series.author)] if (library / genre).is_dir() else []
         author_dir = variants[0] if len(variants) == 1 else series.author
     target_root = library / genre / author_dir
+    # Права проверяются до первого изменения: серия переносится целиком или
+    # не трогается. Сервер 2026-10-29: библиотека принадлежала другой учётной
+    # записи, а команда шла от www-data — 47 файлов «Permission denied».
+    denied = _not_writable(library, series, genre, target_root)
+    if denied:
+        stats['no_access'] = 1
+        log(f"  ✗ нет прав на запись: {denied.relative_to(library) if denied != library else denied} "
+            f"— серия не переносится")
+        return stats
     conn = sqlite3.connect(str(db_path)) if apply and db_path and db_path.exists() else None
     try:
         for src_genre, folders in sorted(series.places.items()):
@@ -162,20 +173,25 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
                         stats['moved'] += 1
                     if not apply:
                         continue
+                    # Владение и БД — только после удавшейся операции с файлом:
+                    # иначе (сервер 2026-10-29) владельцы уходили от файла,
+                    # который так и остался на месте.
                     try:
                         if keep == 'dst':
-                            ownership_hooks.merge([src], dst)
                             src.unlink()
+                            ownership_hooks.merge([src], dst)
                             if conn is not None:
                                 _db_delete(conn, library, src)
                             continue
+                        dst.parent.mkdir(parents=True, exist_ok=True)
                         if keep == 'src':
-                            ownership_hooks.merge([dst], src)
-                            dst.unlink()
+                            # Атомарная замена: на месте сразу полная версия;
+                            # transfer объединяет владельцев обоих путей.
+                            os.replace(src, dst)
                             if conn is not None:
                                 _db_delete(conn, library, dst)
-                        dst.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.move(str(src), str(dst))
+                        else:
+                            shutil.move(str(src), str(dst))
                         ownership_hooks.transfer(src, dst)
                         if conn is not None:
                             old_rel = src.relative_to(library)
@@ -184,6 +200,7 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
                                 (dst.relative_to(library).as_posix(), genre, str(old_rel), old_rel.as_posix()))
                             stats['db_rows'] += cur.rowcount
                     except Exception as exc:  # noqa: BLE001 — один файл не должен остановить остальные
+                        stats[{'dst': 'dropped', 'src': 'replaced'}.get(keep, 'moved')] -= 1
                         stats['errors'] += 1
                         log(f"    ✗ {src.name}: {exc}")
                 if apply:
@@ -200,6 +217,27 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
         if conn is not None:
             conn.close()
     return stats
+
+
+def _not_writable(library: Path, series: SplitSeries, genre: str, target_root: Path) -> Optional[Path]:
+    """Первая папка, в которую переносу серии нужно писать, а прав нет:
+    папки серии в остальных жанрах (файлы уходят, пустые папки удаляются),
+    папка автора над ними, ближайшая существующая папка на месте назначения."""
+    needed: List[Path] = []
+    for src_genre, folders in series.places.items():
+        if src_genre == genre:
+            continue
+        for src_dir in folders:
+            needed += [src_dir, *(p for p in src_dir.rglob('*') if p.is_dir()), src_dir.parent]
+            dst_dir = target_root / src_dir.name
+            if dst_dir.exists():
+                needed += [dst_dir, *(p for p in dst_dir.rglob('*') if p.is_dir())]
+            else:
+                existing = dst_dir
+                while not existing.exists() and existing != library:
+                    existing = existing.parent
+                needed.append(existing)
+    return next((p for p in needed if not os.access(p, os.W_OK)), None)
 
 
 def _db_delete(conn, library: Path, path: Path) -> None:
