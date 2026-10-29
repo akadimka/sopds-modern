@@ -35,10 +35,24 @@ def normalize_stem(stem: str) -> str:
     return _LONG_DASH_AFTER_NAME.sub(r"\1 - ", stem, count=1)
 
 
+def _unzipped(path: Path) -> Path:
+    """«Книга.fb2.zip» разбирается как «Книга.fb2»: иначе в разбор шёл хвост
+    «.fb2» и правила с концом строки («Серия 1-13», «… т. 4») молчали — а в
+    библиотеке сжато почти всё (сервер 2026-10-28: 22 593 из 23 860)."""
+    if path.suffix.lower() == '.zip' and path.stem.lower().endswith('.fb2'):
+        return path.with_name(path.stem)
+    return path
+
+
+def plain_stem(file_path) -> str:
+    """Path.stem, но у «Книга.fb2.zip» — «Книга», без прочей нормализации."""
+    return _unzipped(Path(file_path)).stem
+
+
 def file_stem(file_path) -> str:
-    return normalize_stem(Path(file_path).stem)
+    return normalize_stem(_unzipped(Path(file_path)).stem)
 
 
 def file_name(file_path) -> str:
-    path = Path(file_path)
+    path = _unzipped(Path(file_path))
     return normalize_stem(path.stem) + path.suffix

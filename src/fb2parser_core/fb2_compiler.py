@@ -29,6 +29,7 @@ from typing import Dict, List, Optional, Tuple
 from . import ownership_hooks
 from .evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
 from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
+from .filename_stem import plain_stem
 from .keyword_match import contains_any_keyword
 from .roman_numerals import roman_to_int
 from .series_normalizer import _nfc_lower_yo as _norm_key
@@ -268,7 +269,7 @@ class FB2CompilerService:
         if not group.books or not root:
             return None
         if all(getattr(b.record, 'series_number_source', '') == UMBRELLA_ARC_SN_SOURCE for b in group.books):
-            return umbrella_cycle_number((b.abs_path.stem for b in group.books), root)
+            return umbrella_cycle_number((plain_stem(b.abs_path) for b in group.books), root)
         esc = re.escape(_html.escape(root.replace('ё', 'е')))
         seq_re = re.compile(
             r'<(?:\w+:)?sequence\b[^>]*name\s*=\s*"' + esc
@@ -1200,7 +1201,7 @@ class FB2CompilerService:
             pending_parts.pop(omnibus_path)
             _emit(CompilationGroup(
                 author=(omnibus.proposed_author or '').strip(),
-                series=(omnibus.proposed_series or '').strip() or omnibus_path.stem,
+                series=(omnibus.proposed_series or '').strip() or plain_stem(omnibus_path),
                 books=[],
                 order_determined=True,
                 volume_range='',
@@ -1360,14 +1361,21 @@ class FB2CompilerService:
                 confirmed.append(dup)  # удалять нечего — терять тоже
                 continue
             else:
-                own = self._text_shingles(dup)
-                share = self._shingle_share(own, covering)
-                if own and share >= self._DUPLICATE_MIN_COVERAGE:
+                own, *cov = self._shingle_sets(self._text_shingles(dup), *covering)
+                kept_text = set().union(*cov)
+                share = len(own & kept_text) / len(own) if own else 0.0
+                # Дубль больше всего, что остаётся, — удаляется, только если
+                # совпадает почти целиком: иначе в нём есть то, чего нигде нет.
+                # Сервер 2026-10-28: 22 решения очистки удаляли «Слесарь (в 22
+                # книгах)», оставляя «(в 15 книгах)», — у .fb2.zip число книг из
+                # имени не читалось, а 15/22 текста — выше порога.
+                if own and share >= self._DUPLICATE_MIN_COVERAGE and (len(own) <= len(kept_text) or share >= 0.98):
                     confirmed.append(dup)
                     continue
                 self._log(
                     f"  ⚠ {dup.name}: помечен дублем, но его текст есть в остальных файлах "
-                    f"группы лишь на {share:.0%} — не удаляется"
+                    f"группы лишь на {share:.0%}"
+                    + (" (и он больше их)" if len(own) > len(kept_text) else "") + " — не удаляется"
                 )
             if g.cleanup_only:
                 continue
@@ -1643,7 +1651,7 @@ class FB2CompilerService:
         # Названия всех книг группы — запасная привязка диапазона к серии
         # в _precompiled_range() для франшиз, где имя серии-зонтика не
         # встречается в именах отдельных томов (см. docstring метода).
-        _group_titles = [b.record.file_title or b.abs_path.stem for b in books]
+        _group_titles = [b.record.file_title or plain_stem(b.abs_path) for b in books]
         # Максимальная известная позиция в группе — единственный источник
         # правды для диапазонов вида "N-финал" (баг №68 доп.), где верхняя
         # граница не числовая. Считаем ОДИН раз на весь бакет.
@@ -1714,7 +1722,7 @@ class FB2CompilerService:
             # Уже опознанная предкомпиляция — пропускаем
             if self._RANGE_NUM_RE.match(book.volume_label or ''):
                 continue
-            stem_title = (book.abs_path.stem + ' ' + (book.record.file_title or '')).lower()
+            stem_title = (plain_stem(book.abs_path) + ' ' + (book.record.file_title or '')).lower()
             m = _SWORDS_PAT.search(stem_title)
             if not m:
                 continue
@@ -1767,14 +1775,14 @@ class FB2CompilerService:
             for _book in list(books):
                 if self._RANGE_NUM_RE.match(_book.volume_label or ''):
                     continue
-                if not _SBORNIK_RE.search(_book.abs_path.stem):
+                if not _SBORNIK_RE.search(plain_stem(_book.abs_path)):
                     continue
                 if '\\' in (_book.record.proposed_series or ''):
                     continue
                 # Приоритет: аннотация из файла, запасной — имя файла
                 _search_text = self._extract_annotation_text(_book)
                 if not _search_text:
-                    _search_text = _book.abs_path.stem.lower().replace('ё', 'е')
+                    _search_text = plain_stem(_book.abs_path).lower().replace('ё', 'е')
                 # Ищем ВСЕ совпавшие дуги:
                 # 1) по названию дуги (≥2 слов совпадают)
                 # 2) по названиям книг дуги (хотя бы одна книга упомянута)
@@ -1788,7 +1796,7 @@ class FB2CompilerService:
                         continue
                     # Критерий 2: хотя бы одна книга дуги упомянута в тексте
                     for _ab in _arc_info['books']:
-                        _btitle = (_ab.record.file_title or _ab.abs_path.stem).lower().replace('ё', 'е')
+                        _btitle = (_ab.record.file_title or plain_stem(_ab.abs_path)).lower().replace('ё', 'е')
                         _btitle = re.sub(r'^\d+\.\s*', '', _btitle).strip()
                         _bwords = [w for w in _btitle.split() if len(w) >= 4]
                         if _bwords and sum(1 for w in _bwords if w in _search_text) >= min(2, len(_bwords)):
@@ -1917,7 +1925,7 @@ class FB2CompilerService:
                     continue  # уже распознана как предкомпиляция
                 # Пропускаем файлы с ведущим числом в стеме — это обычная книга с позицией,
                 # а не внешняя компиляция. «4_Спартанец. Племя равных» — том 4, не сборник.
-                _stem_chk = book.abs_path.stem
+                _stem_chk = plain_stem(book.abs_path)
                 if re.match(r'^\d', _stem_chk):
                     continue
                 multi = (book.record.file_title or '').strip().lower().replace('ё', 'е')
@@ -1960,7 +1968,7 @@ class FB2CompilerService:
     def _title_tom_span(cls, book: CompilationBook) -> Optional[Tuple[int, int]]:
         """Тома из названия книги: «Том 3» → (3, 3), «Том 1 и Том 2» → (1, 2).
         None — «Том» нет или он встречается несколько раз отдельно."""
-        title = book.record.file_title or book.abs_path.stem
+        title = book.record.file_title or plain_stem(book.abs_path)
         found = list(cls._TITLE_TOM_RE.finditer(title))
         if len(found) != 1:
             return None
@@ -2054,7 +2062,7 @@ class FB2CompilerService:
                 # Позиция — из префикса имени файла («6. Кузнец. Том VII - VIII»
                 # → 6): series_number к этому шагу уже мог быть переписан
                 # диапазоном («7-8», «1-2» по «Дилогии»).
-                _pos_m = (re.match(r'^\s*(\d{1,3})(?=[.\s_-])', book.abs_path.stem)
+                _pos_m = (re.match(r'^\s*(\d{1,3})(?=[.\s_-])', plain_stem(book.abs_path))
                           or re.match(r'^\s*(\d+)', book.record.series_number or ''))
                 pos = int(_pos_m.group(1)) if _pos_m else (book.sort_key[1] or lo)
                 self._log(
@@ -2429,7 +2437,7 @@ class FB2CompilerService:
                     # stem книги(-гами) доминирующей папки на той же позиции —
                     # иначе не удаляем, оставляем обе.
                     def _significant_words(b: 'CompilationBook') -> set:
-                        s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', b.abs_path.stem)
+                        s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', plain_stem(b.abs_path))
                         return {w.lower() for w in re.split(r'\W+', s) if len(w) >= 4}
 
                     dominant_books_by_vol: Dict[int, List['CompilationBook']] = {}
@@ -2507,12 +2515,12 @@ class FB2CompilerService:
         for same in by_pos.values():
             if len(same) < 2:
                 continue
-            marked = [b for b in same if self._EDITION_MARK_RE.search(b.abs_path.stem)]
+            marked = [b for b in same if self._EDITION_MARK_RE.search(plain_stem(b.abs_path))]
             if len(marked) != 1:
                 continue
-            key = self._edition_title_key(marked[0].abs_path.stem)
+            key = self._edition_title_key(plain_stem(marked[0].abs_path))
             for b in same:
-                if b is not marked[0] and key and self._edition_title_key(b.abs_path.stem) == key:
+                if b is not marked[0] and key and self._edition_title_key(plain_stem(b.abs_path)) == key:
                     old_editions.append(b)
                     self._log(f"  ℹ {b.abs_path.name}: старая редакция «{marked[0].abs_path.name}» — "
                               "не компилируется, остаётся отдельным файлом")
@@ -2533,7 +2541,7 @@ class FB2CompilerService:
         # Из дублей оставляем более позднюю редакцию (по году в имени файла),
         # при равенстве — первый по алфавиту путь (детерминированный выбор).
         def _title_dedup_order(b: CompilationBook):
-            year_m = re.search(r'[-–\s](\d{4})\b', b.abs_path.stem)
+            year_m = re.search(r'[-–\s](\d{4})\b', plain_stem(b.abs_path))
             year = int(year_m.group(1)) if year_m else 0
             # Предкомпиляция с бо́льшим диапазоном побеждает меньшую:
             # «1-16» должна выжить против «1-14» при одинаковом title_key.
@@ -2545,9 +2553,9 @@ class FB2CompilerService:
         for book in sorted(books, key=_title_dedup_order):
             # Если file_title совпадает с именем серии — он не несёт информации
             # о конкретном томе, используем stem файла как более информативный.
-            raw_title = book.record.file_title or book.abs_path.stem
+            raw_title = book.record.file_title or plain_stem(book.abs_path)
             if _norm_key(raw_title) == _norm_key(series):
-                raw_title = book.abs_path.stem
+                raw_title = plain_stem(book.abs_path)
             title_key = self._normalize_title_key(raw_title, series)
             # Для книг с известной позицией тома (level-0) добавляем позицию к ключу,
             # чтобы не дедуплицировать разные тома с одинаковым названием.
@@ -2816,7 +2824,7 @@ class FB2CompilerService:
             return
 
         def _base_title(b: CompilationBook) -> str:
-            raw = b.record.file_title or b.abs_path.stem
+            raw = b.record.file_title or plain_stem(b.abs_path)
             return _norm_key(self._strip_title_part_suffix(self._strip_title_noise(raw)))
 
         clusters: Dict[str, List[CompilationBook]] = {}
@@ -3133,7 +3141,7 @@ class FB2CompilerService:
         # \u0411\u044b\u0441\u0442\u0440\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430: \u0435\u0441\u043b\u0438 \u0432 \u0441\u0442\u0435\u043c\u0435 \u0441\u0435\u0440\u0432\u0438\u0441\u043d\u043e\u0435 \u0441\u043b\u043e\u0432\u043e \u0441\u0442\u043e\u0438\u0442 \u043d\u0435\u043f\u043e\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0435\u043d\u043d\u043e
         # \u043f\u0435\u0440\u0435\u0434 \u043d\u043e\u043c\u0435\u0440\u043e\u043c \u0442\u043e\u043c\u0430 (\u00ab\u0418\u0431\u0438\u0441\u043e\u0432\u0430\u044f \u0442\u0440\u0438\u043b\u043e\u0433\u0438\u044f 2. \u0414\u044b\u043c\u043d\u0430\u044f \u0440\u0435\u043a\u0430\u00bb), \u0444\u0430\u0439\u043b \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f
         # \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u043c \u0442\u043e\u043c\u043e\u043c \u0441\u0435\u0440\u0438\u0438, \u0430 \u043d\u0435 \u043a\u043e\u043c\u043f\u0438\u043b\u044f\u0446\u0438\u0435\u0439 \u2014 \u043d\u0435\u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e \u043e\u0442 \u043c\u0435\u0442\u0430\u0434\u0430\u043d\u043d\u044b\u0445.
-        _stem_lc = book.abs_path.stem.lower().replace('\u0451', '\u0435')
+        _stem_lc = plain_stem(book.abs_path).lower().replace('\u0451', '\u0435')
         for _kw in self._SERIES_WORDS:
             if not _kw:
                 continue
@@ -3150,7 +3158,7 @@ class FB2CompilerService:
             r'\((?:т|ч|том|часть|vol|book)\.?\s*(\d+)\s*[-–—]\s*(\d+)\s*\)',
             re.IGNORECASE | re.UNICODE,
         )
-        _stem_val_early = book.abs_path.stem
+        _stem_val_early = plain_stem(book.abs_path)
         _sm = _SUFFIX_RANGE_RE.search(_stem_val_early)
         if _sm and _has_series_link(_stem_val_early):
             lo_e, hi_e = int(_sm.group(1)), int(_sm.group(2))
@@ -3168,7 +3176,7 @@ class FB2CompilerService:
         # Диапазон в самом начале stem: «01-2_...», «1-3 Название» — явная нумерация файла,
         # не требует проверки series_link (серия может не упоминаться в имени файла).
         _LEADING_RANGE_RE = re.compile(r'^\d+\s*[-–—]\s*\d+', re.UNICODE)
-        _stem_val = book.abs_path.stem
+        _stem_val = plain_stem(book.abs_path)
         for candidate in (_stem_val, book.record.file_title or ''):
             if is_subseries:
                 # Для подсерий: убираем пометки тома родительской серии вида «(т. 7-8)»,
@@ -3348,7 +3356,7 @@ class FB2CompilerService:
         # Проверяем stem ДО series_number, чтобы явное слово в имени файла не было перебито.
         # Исключение: «Ибисовая трилогия 1. Маковое море» — слово является частью названия
         # серии, за ним сразу идёт номер тома; такой файл — НЕ предкомпиляция.
-        _stem_lower = book.abs_path.stem.lower()
+        _stem_lower = plain_stem(book.abs_path).lower()
         for idx, kw in enumerate(self._SERIES_WORDS):
             if kw and kw.lower() in _stem_lower:
                 # Сервисное слово — часть САМОГО НАЗВАНИЯ серии (не структурный
@@ -3459,8 +3467,8 @@ class FB2CompilerService:
         _COMPILATION_WORDS = re.compile(
             r'компилян|компиляц|сборник|omnibus|антолог|собрани', re.IGNORECASE | re.UNICODE
         )
-        _title_text = (book.record.file_title or book.abs_path.stem).lower()
-        if _COMPILATION_WORDS.search(_title_text) or _COMPILATION_WORDS.search(book.abs_path.stem.lower()):
+        _title_text = (book.record.file_title or plain_stem(book.abs_path)).lower()
+        if _COMPILATION_WORDS.search(_title_text) or _COMPILATION_WORDS.search(plain_stem(book.abs_path).lower()):
             lo, hi = _content_range()
             if hi > lo:
                 return lo, hi
@@ -3982,7 +3990,7 @@ class FB2CompilerService:
         # Предвычисляем для каждой книги набор значимых слов stem (без ведущего числа)
         def _stem_words(book: CompilationBook) -> set:
             # Снимаем ведущий числовой префикс с любым разделителем: N. N- N_ N–
-            s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', book.abs_path.stem)
+            s = re.sub(r'^\d+\s*[.\-–—_]\s*', '', plain_stem(book.abs_path))
             return {w.lower() for w in re.split(r'\W+', s) if len(w) >= 3}
 
         _all_stem_words = [_stem_words(b) for b in books]
@@ -4003,7 +4011,7 @@ class FB2CompilerService:
               'Шалашов, Ковальчук. Воля императора'
             - Файл без структуры → возвращаем уникальный stem, cohesion=0.
             """
-            stem = book.abs_path.stem
+            stem = plain_stem(book.abs_path)
             # Случай 1: файл начинается с числа (NN_ или NN-) → нормализуем до разделителя
             m = re.match(r'^\d+\s*([._\-])', stem)
             if m:
@@ -4024,7 +4032,7 @@ class FB2CompilerService:
         def _naming_cohesion(book: CompilationBook) -> int:
             """Число других книг группы с тем же структурным префиксом."""
             pfx = _struct_prefix(book)
-            if pfx == book.abs_path.stem:
+            if pfx == plain_stem(book.abs_path):
                 return 0  # нет структуры
             return sum(1 for p in _all_prefixes if p == pfx) - 1
 
@@ -4061,7 +4069,7 @@ class FB2CompilerService:
             date_key = (-int(date_year),) if date_year.isdigit() else (0,)
 
             # 3. Ключевые слова в имени/названии
-            text = f"{book.abs_path.stem} {book.record.file_title or ''}"
+            text = f"{plain_stem(book.abs_path)} {book.record.file_title or ''}"
             kw_key = 0 if _FRESH_KEYWORDS.search(text) else 1
 
             # 4. Одиночная книга имеет приоритет над многотомной предкомпиляцией.
@@ -4070,7 +4078,7 @@ class FB2CompilerService:
 
             # 5. Год из имени файла (например "- 2022" → свежее 2018, "(2022)" —
             # тоже частый формат, скобка перед годом должна распознаваться так же).
-            year_m = re.search(r'[-–\s(](\d{4})\b', book.abs_path.stem)
+            year_m = re.search(r'[-–\s(](\d{4})\b', plain_stem(book.abs_path))
             year_key = -int(year_m.group(1)) if year_m else 0
 
             return (cohesion_key, fit_key, date_key, kw_key, multi_key, year_key, str(book.abs_path))
@@ -4100,9 +4108,9 @@ class FB2CompilerService:
                     # попадали в компиляцию как разные тома).
                     existing = seen_positions[pos_key]
                     existing_title = _norm_key(self._strip_title_part_suffix(self._strip_title_noise(
-                        existing.record.file_title or existing.abs_path.stem)))
+                        existing.record.file_title or plain_stem(existing.abs_path))))
                     this_title = _norm_key(self._strip_title_part_suffix(self._strip_title_noise(
-                        book.record.file_title or book.abs_path.stem)))
+                        book.record.file_title or plain_stem(book.abs_path))))
                     if existing_title != this_title:
                         result.append(book)  # разные книги с одним номером — берём обе
                     else:
@@ -4120,7 +4128,7 @@ class FB2CompilerService:
             (sort_key_tuple, source_name, is_ambiguous, volume_label)
             volume_label — отображаемый номер/диапазон: "1", "1-3", "2021" и т.п.
         """
-        stem = Path(rec.file_path).stem
+        stem = plain_stem(rec.file_path)
 
 
         # Источник А: series_number из FB2-метаданных.
@@ -4926,7 +4934,7 @@ class FB2CompilerService:
             # Нет нумерации — сортируем по названию (алфавитный порядок)
             sorted_books = sorted(
                 books,
-                key=lambda b: (b.record.file_title or b.abs_path.stem).lower(),
+                key=lambda b: (b.record.file_title or plain_stem(b.abs_path)).lower(),
             )
             return sorted_books, True, True
 
@@ -4950,8 +4958,8 @@ class FB2CompilerService:
             return (
                 sk,
                 range_hi_neg,
-                0 if re.match(r'^\d', b.abs_path.stem) else 1,
-                (b.record.file_title or b.abs_path.stem).lower(),
+                0 if re.match(r'^\d', plain_stem(b.abs_path)) else 1,
+                (b.record.file_title or plain_stem(b.abs_path)).lower(),
                 str(b.abs_path),
             )
 
@@ -5152,7 +5160,7 @@ class FB2CompilerService:
         # Пример: Сафари 1 (Дилогия) + Сафари 2 (Трилогия) + Сафари 3 (Трилогия)
         # → arc_count=3, total_books=8 → «Трилогия в 8 книгах».
         _arc_part_count = 0
-        _group_titles_gs = [b.record.file_title or b.abs_path.stem for b in group.books]
+        _group_titles_gs = [b.record.file_title or plain_stem(b.abs_path) for b in group.books]
         _max_known_pos_gs = max(
             (b.sort_key[1] for b in group.books
              if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0),
@@ -5181,12 +5189,12 @@ class FB2CompilerService:
                 lo, hi = self._precompiled_range(b, group.series, _group_titles_gs, _max_known_pos_gs)
                 if lo == hi > 0:
                     # Arc-point предкомпиляция: считаем по сервисному слову/диапазону
-                    _st = (b.abs_path.stem + ' ' + (b.record.file_title or '')).lower()
+                    _st = (plain_stem(b.abs_path) + ' ' + (b.record.file_title or '')).lower()
                     _m = _swords_pat.search(_st)
                     if _m:
                         _arc_part_count += _swords_idx[_m.group(0).lower()]
                     else:
-                        _rng_in_stem = re.search(r'(\d+)\s*[-–—]\s*(\d+)', b.abs_path.stem)
+                        _rng_in_stem = re.search(r'(\d+)\s*[-–—]\s*(\d+)', plain_stem(b.abs_path))
                         if _rng_in_stem:
                             _r_lo, _r_hi = int(_rng_in_stem.group(1)), int(_rng_in_stem.group(2))
                             if _r_hi > _r_lo and _r_hi - _r_lo < 50:
@@ -5370,6 +5378,18 @@ class FB2CompilerService:
                     if old_path.name.lower().endswith('.fb2.zip'):
                         new_name += '.zip'
                     new_path = old_path.parent / new_name
+                    # Автор группы — не автор папки: разбор ошибся («Милан» у
+                    # Arladaar, «[unknown]» у Leach23 — сервер 2026-10-28), и
+                    # переименование разнесло бы ошибку в имя файла библиотеки.
+                    # Свой автор — имя файла уже начинается с «Автор - » или
+                    # автор — папка над папкой серии (не сама папка серии:
+                    # у Arladaar она «Милан»).
+                    _author_key = _norm_key(group.author)
+                    if not (_norm_key(old_path.name).startswith(_author_key + ' - ')
+                            or _norm_key(old_path.parent.parent.name) == _author_key):
+                        self._log(f"   · {old_path.name}: автор группы «{group.author}» не совпадает с папкой "
+                                  f"— не переименовывается")
+                        new_path = old_path
                     if old_path != new_path:
                         try:
                             old_path.rename(new_path)
@@ -5672,7 +5692,7 @@ class FB2CompilerService:
 
     def _extract_body(self, book: CompilationBook) -> Tuple[str, Optional[str]]:
         """Извлечь заголовок книги и главный <body> блок (без notes/footnotes)."""
-        title = (book.record.file_title or '').strip() or book.abs_path.stem
+        title = (book.record.file_title or '').strip() or plain_stem(book.abs_path)
 
         if not book.abs_path.exists():
             raise RuntimeError(f"Файл не найден: {book.abs_path.name} (путь: {book.abs_path})")
@@ -5797,7 +5817,7 @@ class FB2CompilerService:
            Иначе нумеруем секции последовательно с b_lo.
         3. Если секций нет — возвращаем один элемент (весь body).
         """
-        stem = book.abs_path.stem
+        stem = plain_stem(book.abs_path)
         if not book.abs_path.exists():
             return []
         try:
