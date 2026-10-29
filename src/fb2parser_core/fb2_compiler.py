@@ -5390,6 +5390,15 @@ class FB2CompilerService:
                         self._log(f"   · {old_path.name}: автор группы «{group.author}» не совпадает с папкой "
                                   f"— не переименовывается")
                         new_path = old_path
+                    # Имя уже по нашему образцу «Автор - Серия (Суффикс)» — не
+                    # трогаем: иначе серия берётся в написании разбора («Я попал»
+                    # → «Я - попал»), а «(Декалогия в 16 книгах)» теряет число
+                    # книг (сервер 2026-10-28).
+                    _old_stem = plain_stem(old_path)
+                    _old_tail = re.search(r'\(([^()]*)\)\s*$', _old_stem)
+                    if (suffix and _old_tail and _norm_key(_old_stem).startswith(_author_key + ' - ')
+                            and (_old_tail.group(1).lower() + ' ').startswith(suffix.lower() + ' ')):
+                        new_path = old_path
                     if old_path != new_path:
                         try:
                             old_path.rename(new_path)

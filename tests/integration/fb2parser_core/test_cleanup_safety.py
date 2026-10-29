@@ -40,3 +40,18 @@ def test_kept_file_is_renamed_only_under_its_own_author(tmp_path, author, rename
     FB2CompilerService().compile_group(_cleanup(author, "Милан", kept, [], "1-9"), None, delete_sources=True)
     assert sorted(p.name for p in folder.iterdir()) == (
         [f"{author} - Милан (Ноналогия).fb2"] if renamed else [kept.name])
+
+
+@pytest.mark.parametrize("name, series, volume_range", [
+    ("Поселягин Владимир - Я попал (Пенталогия).fb2", "Я - попал", "1-5"),
+    ("Поселягин Владимир - Я попал (Декалогия в 16 книгах).fb2", "Я попал", "1-10"),
+])
+def test_name_already_in_our_format_is_kept(tmp_path, name, series, volume_range):
+    """Сервер 2026-10-28: очистка переименовывала «Я попал (Пенталогия)» в
+    «Я - попал» (написание серии из разбора) и «(Декалогия в 16 книгах)» в
+    «(Декалогия)» — имя уже по нашему образцу, переименовывать нечего."""
+    folder = tmp_path / "Фантастика" / "Поселягин Владимир" / "Я попал"
+    kept = _omnibus(folder / name, "Я попал", "Поселягин Владимир", [1, 2])
+    FB2CompilerService().compile_group(_cleanup("Поселягин Владимир", series, kept, [], volume_range), None,
+                                       delete_sources=True)
+    assert [p.name for p in folder.iterdir()] == [name]
