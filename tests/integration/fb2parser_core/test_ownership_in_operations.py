@@ -127,6 +127,24 @@ def test_series_moved_to_another_genre_keeps_owners(tmp_path, lib, users):
     assert _all_owned(lib) == {(ownership.rel_path(new, str(lib)), "anna")}
 
 
+def test_fuller_version_replacing_same_name_keeps_both_owners(tmp_path, lib, users):
+    from fb2parser_core.library_cleanup import find_split_series, move_series_to_genre
+
+    _admin, anna, boris = users
+    name = "Иванов Иван - Звезды (Дилогия).fb2"
+    _book(lib / "Детектив" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 3.fb2", 3)
+    common = " Первая глава о звёздах и людях." * 30
+    short = _book(lib / "Детектив" / "Иванов Иван" / "Звезды" / name, 1, extra=common)
+    full = _book(lib / "Фантастика" / "Иванов Иван" / "Звезды" / name, 1,
+                 extra=common + " Ещё глава про дальний путь." * 30)
+    ownership.assign(ownership.rel_path(short, str(lib)), anna)
+    ownership.assign(ownership.rel_path(full, str(lib)), boris)
+    [series] = find_split_series(lib)
+    move_series_to_genre(lib, series, "Детектив", tmp_path / "c.db", apply=True)
+    assert not full.exists() and "Ещё глава" in short.read_text(encoding="utf-8")
+    assert _owners_of(lib, short) == {"anna", "boris"}
+
+
 def _groups(lib):
     records = regen_csv.RegenCSVService(bridge._config_path()).generate_csv(str(lib), output_csv_path=None)
     return FB2CompilerService().find_groups(records, lib)

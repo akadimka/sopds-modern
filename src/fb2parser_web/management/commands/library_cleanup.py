@@ -64,7 +64,7 @@ class Command(BaseCommand):
 
         choices = read_genre_choices(Path(choices_path)) if choices_path else {}
         split = find_split_series(library)
-        total = {"series": 0, "moved": 0, "conflicts": 0, "errors": 0, "waiting": 0}
+        total = {"series": 0, "moved": 0, "replaced": 0, "dropped": 0, "conflicts": 0, "errors": 0, "waiting": 0}
         log(f"Серий в нескольких жанрах: {len(split)}")
         for s in split:
             places = ", ".join(f"{g} ({n})" for g, n in sorted(s.books.items()))
@@ -77,11 +77,12 @@ class Command(BaseCommand):
             log(f"→ {s.key}: {places} → {genre} ({source})")
             stats = move_series_to_genre(library, s, genre, db_path, apply=apply, log=log)
             total["series"] += 1
-            for k in ("moved", "conflicts", "errors"):
+            for k in ("moved", "replaced", "dropped", "conflicts", "errors"):
                 total[k] += stats[k]
         verb = "перенесено" if apply else "перенеслось бы"
-        return (f"Серий: {total['series']}, файлов {verb}: {total['moved']}, занято: {total['conflicts']}, "
-                f"ошибок: {total['errors']}, ждут выбора жанра: {total['waiting']}")
+        return (f"Серий: {total['series']}, файлов {verb}: {total['moved']}; на занятом месте — замена полной версией: "
+                f"{total['replaced']}, удаление лишней: {total['dropped']}, обе остаются: "
+                f"{total['conflicts']}; ошибок: {total['errors']}, ждут выбора жанра: {total['waiting']}")
 
     def _compile(self, library, apply, log):
         from fb2parser_core.auto_compile_service import find_library_groups, group_genre

@@ -89,17 +89,43 @@ def read_genre_choices(path: Path) -> Dict[str, str]:
     return choices
 
 
+def pick_version(src: Path, dst: Path) -> str:
+    """Какой из двух файлов с одним именем оставить (правило 1, решение
+    пользователя 2026-10-27): 'dst', если текст `src` есть в `dst` (и `src`
+    не больше), 'src' — наоборот; почти одинаковые — с лучшей разметкой глав
+    и обложкой; '' — у каждого есть своё, оставить оба. Сервер 2026-10-29:
+    9 серий лежали двумя разными сборками одного имени в двух жанрах
+    («Корморан Страйк (Окталогия)» — 6,0 и 9,8 МБ)."""
+    from .fb2_compiler import FB2CompilerService, _omnibus_quality
+
+    svc = FB2CompilerService()
+    a, b = svc._shingle_sets(svc._text_shingles(src), svc._text_shingles(dst))
+    if not a or not b:
+        return ''
+    common = len(a & b)
+    src_in, dst_in = common / len(a), common / len(b)
+    if src_in >= 0.98 and dst_in >= 0.98:
+        return 'src' if _omnibus_quality(src) > _omnibus_quality(dst) else 'dst'
+    if src_in >= svc._DUPLICATE_MIN_COVERAGE and (len(a) <= len(b) or src_in >= 0.98):
+        return 'dst'
+    if dst_in >= svc._DUPLICATE_MIN_COVERAGE and (len(b) <= len(a) or dst_in >= 0.98):
+        return 'src'
+    return ''
+
+
 def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path: Optional[Path],
                          apply: bool = False, log: Optional[Callable] = None) -> Dict[str, int]:
     """Перенести папки серии из остальных жанров в `genre`.
 
     Папка автора в целевом жанре — та, где серия уже лежит, иначе папка
-    автора с теми же словами, иначе исходное имя. Файл, чьё место занято,
-    не трогается (в отчёте). Владение — через ownership_hooks.transfer,
-    записи БД библиотеки — новый путь и жанр. apply=False — только отчёт.
+    автора с теми же словами, иначе исходное имя. Место занято файлом с тем
+    же именем — остаётся одна версия (`pick_version`), владельцы лишней
+    переходят к оставленной; у каждой своё — обе на месте (в отчёте).
+    Владение — через ownership_hooks, записи БД библиотеки — новый путь и
+    жанр. apply=False — только отчёт.
     """
     log = log or (lambda m: None)
-    stats = {'files': 0, 'moved': 0, 'conflicts': 0, 'errors': 0, 'db_rows': 0}
+    stats = {'files': 0, 'moved': 0, 'replaced': 0, 'dropped': 0, 'conflicts': 0, 'errors': 0, 'db_rows': 0}
     if genre in series.places:
         author_dir = series.places[genre][0].parent.name
     else:
@@ -119,14 +145,35 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
                 for src in sorted(p for p in src_dir.rglob('*') if p.is_file()):
                     stats['files'] += 1
                     dst = dst_dir / src.relative_to(src_dir)
+                    keep = None
                     if dst.exists():
-                        stats['conflicts'] += 1
-                        log(f"    ⚠ занято, не трогаю: {dst.relative_to(library)}")
-                        continue
-                    stats['moved'] += 1
+                        keep = pick_version(src, dst) if is_book_file(src.name) else ''
+                        if not keep:
+                            stats['conflicts'] += 1
+                            log(f"    ⚠ занято другой версией, оставляю обе: {dst.relative_to(library)}")
+                            continue
+                        if keep == 'dst':
+                            stats['dropped'] += 1
+                            log(f"    ≡ на месте версия не хуже, переносимая удаляется: {src.relative_to(library)}")
+                        else:
+                            stats['replaced'] += 1
+                            log(f"    ⇄ переносимая версия полнее, заменяет: {dst.relative_to(library)}")
+                    else:
+                        stats['moved'] += 1
                     if not apply:
                         continue
                     try:
+                        if keep == 'dst':
+                            ownership_hooks.merge([src], dst)
+                            src.unlink()
+                            if conn is not None:
+                                _db_delete(conn, library, src)
+                            continue
+                        if keep == 'src':
+                            ownership_hooks.merge([dst], src)
+                            dst.unlink()
+                            if conn is not None:
+                                _db_delete(conn, library, dst)
                         dst.parent.mkdir(parents=True, exist_ok=True)
                         shutil.move(str(src), str(dst))
                         ownership_hooks.transfer(src, dst)
@@ -153,6 +200,11 @@ def move_series_to_genre(library: Path, series: SplitSeries, genre: str, db_path
         if conn is not None:
             conn.close()
     return stats
+
+
+def _db_delete(conn, library: Path, path: Path) -> None:
+    rel = path.relative_to(library)
+    conn.execute("DELETE FROM books WHERE file_path IN (?, ?)", (str(rel), rel.as_posix()))
 
 
 def describe_group(compiler, group, library: Path) -> List[str]:

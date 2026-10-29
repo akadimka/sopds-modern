@@ -93,12 +93,30 @@ def test_tie_moves_only_by_choice(lib, tmp_path):
         "1.fb2", "2.fb2"]
 
 
-def test_occupied_place_is_not_overwritten(lib):
+def test_occupied_place_by_unrelated_text_keeps_both(lib):
     _put(lib, "Детектив/Дашко Дмитрий/Мент/1.fb2.zip")
     _put(lib, "Детектив/Дашко Дмитрий/Мент/2.fb2.zip")
     other = _put(lib, "Фантастика/Дашко Дмитрий/Мент/1.fb2.zip")
     report = _run("--part", "genres", "--apply")
-    assert "занято, не трогаю" in report and other.exists()
+    assert "занято другой версией, оставляю обе" in report and other.exists()
+
+
+@pytest.mark.parametrize("moved_volumes, kept_volumes", [([1, 2, 3, 4], [1, 2, 3, 4, 5]),
+                                                          ([1, 2, 3, 4, 5], [1, 2, 3])])
+def test_same_name_in_target_genre_keeps_fuller_version(lib, moved_volumes, kept_volumes):
+    """Сервер 2026-10-29: «Корморан Страйк (Окталогия)» — две разные сборки
+    одного имени в «Детективе» и «Фантастике». Остаётся полная (правило 1)."""
+    name = "Гэлбрейт Роберт - Корморан Страйк (Окталогия).fb2"
+    target = lib / "Детектив" / "Гэлбрейт Роберт" / "Корморан Страйк"
+    _omnibus(target / name, "Корморан Страйк", "Гэлбрейт Роберт", kept_volumes)
+    _put(lib, "Детектив/Гэлбрейт Роберт/Корморан Страйк/Гэлбрейт Роберт - Корморан Страйк т. 9.fb2")
+    moved = _omnibus(lib / "Фантастика" / "Гэлбрейт Роберт" / "Корморан Страйк" / name, "Корморан Страйк",
+                     "Гэлбрейт Роберт", moved_volumes)
+    moved_text = moved.read_bytes()
+    _run("--part", "genres", "--apply")
+    assert not moved.exists()
+    fuller = max(moved_volumes, kept_volumes, key=len)
+    assert ((target / name).read_bytes() == moved_text) == (fuller is moved_volumes)
 
 
 def test_compile_report_matches_apply(lib):
