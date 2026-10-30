@@ -1192,6 +1192,22 @@ table th { color: var(--text) !important; border: none !important; border-width:
     color: var(--text-muted) !important;
     font-size: 0.83rem;
 }
+/* Строка книги: название и подпись переносятся, а не растягивают страницу.
+   flex-shrink: 0 у ключа — для коротких ключей алфавитных страниц; длинное
+   название книги с ним уводило всю страницу вбок на телефоне (PWA,
+   «Новости → день → жанр», 2026-10-30). */
+.sopdsitem-book {
+    flex-wrap: wrap;
+}
+.sopdsitem-book .sopdsitem-title {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.sopdsitem-book .sopdsitem-count {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
 .sopdsitem:hover .sopdsitem-key {
     color: var(--sp-accent-hover) !important;
     text-decoration: underline;
