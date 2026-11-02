@@ -1,6 +1,6 @@
 """Разовая чистка библиотеки (шаг 3 docs/series-duplicates.md).
 
-Две части, у каждой — пробный прогон (отчёт) и выполнение только по явному
+Три части, у каждой — пробный прогон (отчёт) и выполнение только по явному
 «да» (`manage.py library_cleanup --apply`):
 
 - **жанры**: серия, лежащая в нескольких жанровых папках, переносится в
@@ -10,10 +10,13 @@
 - **компилятор**: решения автокомпиляции по всей библиотеке — какие файлы
   удаляются как дубли, какие сборники переименовываются, какие тома
   собираются (`auto_compile_service.find_library_groups`, те же решения,
-  что у автокомпиляции после синхронизации).
+  что у автокомпиляции после синхронизации);
+- **книги**: отдельные книги по файлу решений — куда перенести, какие автор,
+  название, серия и жанр записать в файл (книги в ошибочных жанровых папках,
+  сервер 2026-11-02: «Без жанра», `poetry`, `prose_military`).
 
-Сначала жанры, потом компилятор: после переноса тома серии лежат в одной
-папке, и группы компилятора меняются — их отчёт снимается заново.
+Сначала жанры и книги, потом компилятор: после переноса тома серии лежат в
+одной папке, и группы компилятора меняются — их отчёт снимается заново.
 """
 import os
 import re
@@ -26,6 +29,7 @@ from typing import Callable, Dict, List, Optional
 
 from . import ownership_hooks
 from .library_memory import is_book_file
+from .path_safety import is_within
 
 
 def _word_key(name: str) -> str:
@@ -243,6 +247,162 @@ def _not_writable(library: Path, series: SplitSeries, genre: str, target_root: P
 def _db_delete(conn, library: Path, path: Path) -> None:
     rel = path.relative_to(library)
     conn.execute("DELETE FROM books WHERE file_path IN (?, ?)", (str(rel), rel.as_posix()))
+
+
+@dataclass
+class BookFix:
+    """Строка файла решений части «книги».
+
+    dst — куда перенести (путь в библиотеке; '' — оставить на месте, '?' —
+    ждёт выбора пользователя); series — «Серия» или «Серия|N», '-' — убрать
+    ложную серию; пустые поля — не менять.
+    """
+    src: str
+    dst: str = ''
+    author: str = ''
+    title: str = ''
+    series: str = ''
+    genre: str = ''
+
+    @property
+    def tag_changes(self) -> List[str]:
+        names = (('автор', self.author), ('название', self.title), ('серия', self.series), ('жанр', self.genre))
+        return [f"{n}: {'убрать' if v == '-' else v}" for n, v in names if v]
+
+
+def read_book_fixes(path: Path) -> List[BookFix]:
+    """Файл «откуда<TAB>куда<TAB>автор<TAB>название<TAB>серия<TAB>жанр» (пути —
+    от корня библиотеки, через «/»; строки с «#» — комментарии)."""
+    fixes = []
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        cols = [c.strip() for c in line.split('\t')] + [''] * 6
+        fixes.append(BookFix(*cols[:6]))
+    return fixes
+
+
+def fix_book(library: Path, fix: BookFix, db_path: Optional[Path], patch_tags: Callable, set_genre: Callable,
+             apply: bool = False, log: Optional[Callable] = None) -> str:
+    """Перенести книгу и/или поправить её теги по строке файла решений.
+
+    patch_tags(path, author, series, title, series_number=, drop_series=) —
+    `SynchronizationService._patch_fb2_tags`; set_genre(path, genre) —
+    `GenreAssignmentService._assign_genre_to_file`: те же правила записи, что
+    у синхронизации (файл с encoding="latin-1" и текстом в UTF-8 пишется в
+    UTF-8). Место занято — как при переносе серий: остаётся одна версия
+    (`pick_version`) или, если у каждой своё, обе на месте. Владение — через
+    ownership_hooks, запись БД библиотеки — новый путь и жанр.
+
+    Возвращает итог: 'missing', 'waiting', 'no_access', 'conflict', 'error',
+    'dropped' (лишняя копия), 'replaced', 'moved', 'fixed' (теги на месте).
+    """
+    log = log or (lambda m: None)
+    src = library / fix.src
+    if not src.is_file():
+        log(f"✗ нет файла: {fix.src}")
+        return 'missing'
+    if fix.dst == '?':
+        log(f"? {fix.src} — ждёт выбора, куда положить")
+        return 'waiting'
+    dst = library / fix.dst if fix.dst else src
+    log(f"→ {fix.src} → {fix.dst}" if dst != src else f"✎ {fix.src} (на месте)")
+    if fix.tag_changes:
+        log("    " + "; ".join(fix.tag_changes))
+    keep = None
+    if dst != src and dst.exists():
+        keep = pick_version(src, dst) if is_book_file(src.name) else ''
+        if not keep:
+            log("    ⚠ место занято другой версией, оставляю обе — книга не переносится")
+            return 'conflict'
+        log("    ≡ на месте версия не хуже, эта копия удаляется" if keep == 'dst'
+            else "    ⇄ эта версия полнее, заменяет лежащую")
+    if dst != src and _path_too_long(dst):
+        # Пределы синхронизации (Windows MAX_PATH, 255 байт имени) — с запасом
+        # под «.zip.tmp». Проверка до записи тегов: иначе теги записаны, а
+        # перенос падает (копия библиотеки 2026-11-02, «Риордан Рик - Перси
+        # Джексон…» в глубокой папке).
+        log("    ✗ путь назначения слишком длинный — укоротите имя в файле решений")
+        return 'error'
+    existing = dst.parent
+    while not existing.exists() and existing != library:
+        existing = existing.parent
+    needed = [src.parent] + ([existing] if dst != src else []) + ([src] if fix.tag_changes and keep != 'dst' else [])
+    denied = next((p for p in needed if not os.access(p, os.W_OK)), None)
+    if denied:
+        log(f"    ✗ нет прав на запись: {denied}")
+        return 'no_access'
+    outcome = 'dropped' if keep == 'dst' else 'replaced' if keep == 'src' else 'moved' if dst != src else 'fixed'
+    if not apply:
+        return outcome
+    conn = sqlite3.connect(str(db_path)) if db_path and db_path.exists() else None
+    try:
+        if keep == 'dst':
+            src.unlink()
+            ownership_hooks.merge([src], dst)
+            if conn is not None:
+                _db_delete(conn, library, src)
+        else:
+            if fix.author or fix.title or fix.series:
+                name, _, number = fix.series.partition('|')
+                if not patch_tags(src, fix.author or None, '' if name == '-' else name, fix.title or None,
+                                  series_number=number or None, drop_series=name == '-'):
+                    log("    ✗ теги не записаны — книга не переносится")
+                    return 'error'
+            if fix.genre and not set_genre(src, fix.genre):
+                log("    ✗ жанр не записан — книга не переносится")
+                return 'error'
+            if dst != src:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if keep == 'src':
+                    os.replace(src, dst)
+                    if conn is not None:
+                        _db_delete(conn, library, dst)
+                else:
+                    shutil.move(str(src), str(dst))
+                ownership_hooks.transfer(src, dst)
+                if conn is not None:
+                    old_rel = src.relative_to(library)
+                    conn.execute("UPDATE books SET file_path = ?, genre = ? WHERE file_path IN (?, ?)",
+                                 (Path(fix.dst).as_posix(), Path(fix.dst).parts[0], str(old_rel),
+                                  old_rel.as_posix()))
+        if conn is not None:
+            conn.commit()
+    except Exception as exc:  # noqa: BLE001 — одна книга не должна остановить остальные
+        log(f"    ✗ {src.name}: {exc}")
+        return 'error'
+    finally:
+        if conn is not None:
+            conn.close()
+    if dst != src:
+        # Опустевшие папки серии, автора и жанра («Без жанра»).
+        d = src.parent
+        while d != library and is_within(d, library):
+            try:
+                d.rmdir()
+            except OSError:
+                break
+            d = d.parent
+    return outcome
+
+
+def remove_empty_dirs(root: Path) -> None:
+    """Удалить пустые папки внутри `root` и её саму, если опустела."""
+    if not root.is_dir():
+        return
+    for d in sorted((p for p in root.rglob('*') if p.is_dir()), key=lambda p: len(p.parts), reverse=True) + [root]:
+        try:
+            d.rmdir()
+        except OSError:
+            pass
+
+
+def _path_too_long(path: Path) -> bool:
+    from .synchronization import SynchronizationService as S
+
+    reserve = S._NAME_SUFFIX_RESERVE
+    return ((os.name == 'nt' and len(str(path)) + reserve > S._MAX_PATH)
+            or len(path.name.encode('utf-8')) + reserve > S._MAX_NAME_BYTES)
 
 
 def describe_group(compiler, group, library: Path) -> List[str]:

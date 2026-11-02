@@ -69,3 +69,47 @@ def test_genre_assign_writes_into_mislabeled_utf8_file(tmp_path):
     text = path.read_bytes().decode("utf-8")
     assert text.startswith('<?xml version="1.0" encoding="utf-8"?>')
     assert "<genre>Фантастика</genre>" in text and "Этот мир безумен." in text
+
+
+def _with_broken_byte(tmp_path):
+    """Как все 6 книг библиотеки: 1–2 битых символа в тексте (опечатки исходника)."""
+    path = tmp_path / "book.fb2"
+    text = "Этот мир безумен. " * 200
+    path.write_bytes(_FB2.format(text=text).encode("utf-8").replace("безумен".encode("utf-8"), b"\xd0\xb1\xb5", 1))
+    return path
+
+
+def test_declared_encoding_lies_tolerates_rare_broken_bytes():
+    text = ("Этот мир безумен. " * 200).encode("utf-8")
+    assert declared_encoding_lies(text[:100] + b"\xd0" + text[100:], "latin-1")
+    assert not declared_encoding_lies(("Этот мир безумен. " * 200).encode("cp1251"), "windows-1251")
+    assert not declared_encoding_lies("Привет, мир".encode("utf-8") + b"\xd0", "latin-1")   # битых слишком много
+
+
+def test_sync_and_genre_write_file_with_broken_byte(tmp_path):
+    path = _with_broken_byte(tmp_path)
+    assert _service()._patch_fb2_tags(path, "Артемьев Роман", "", "Отец Народа") is True
+    assert GenreAssignmentService()._assign_genre_to_file(path, "Фантастика") is True
+    text = path.read_bytes().decode("utf-8")
+    assert text.startswith('<?xml version="1.0" encoding="utf-8"?>')
+    assert "<last-name>Артемьев</last-name>" in text and "Отец Народа" in text
+    assert "<genre>Фантастика</genre>" in text and text.count("Этот мир безумен.") == 199
+
+
+def test_patch_tags_drops_false_series(tmp_path):
+    path = tmp_path / "book.fb2"
+    path.write_bytes(_FB2.replace("latin-1", "utf-8").replace(
+        "<book-title>", '<sequence name="Алешковский Петр"/><book-title>').format(text="Текст").encode("utf-8"))
+    assert _service()._patch_fb2_tags(path, None, "", None, drop_series=True) is True
+    assert "<sequence" not in path.read_text(encoding="utf-8")
+
+
+def test_utf16_file_gets_tags_and_genre(tmp_path):
+    """«Ивакин Алексей, Ким Сергей - Флешка» — единственная книга библиотеки в
+    UTF-16: декларация в байтах не находилась, теги и жанр не записывались."""
+    path = tmp_path / "book.fb2"
+    path.write_bytes(_FB2.replace("latin-1", "utf-16").format(text="Флешка").encode("utf-16"))
+    assert _service()._patch_fb2_tags(path, None, "", "Флешка") is True
+    assert GenreAssignmentService()._assign_genre_to_file(path, "Военная проза") is True
+    text = path.read_bytes().decode("utf-16")
+    assert "<book-title>Флешка</book-title>" in text and "<genre>Военная проза</genre>" in text

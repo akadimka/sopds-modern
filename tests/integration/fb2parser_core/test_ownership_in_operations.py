@@ -145,6 +145,32 @@ def test_fuller_version_replacing_same_name_keeps_both_owners(tmp_path, lib, use
     assert _owners_of(lib, short) == {"anna", "boris"}
 
 
+def test_book_fixes_move_and_dropped_copy_keep_owners(tmp_path, lib, users):
+    """`library_cleanup --part books`: перенесённая книга — с владельцами,
+    владельцы лишней копии — у оставленной (сервер 2026-11-02, «Без жанра»)."""
+    from fb2parser_core.library_cleanup import BookFix, fix_book
+
+    _admin, anna, boris = users
+    common = " Первая глава о звёздах и людях." * 30
+    moved = _book(lib / "Без жанра" / "Иванов Иван" / "Иванов Иван - Звезды т. 1.fb2", 1)
+    kept = _book(lib / "Фантастика" / "Иванов Иван" / "Звезды" / "Иванов Иван - Звезды т. 2.fb2", 2, extra=common)
+    copy = _book(lib / "Без жанра" / "Иванов Иван" / "Иванов Иван - Звезды т. 2.fb2", 2, extra=common)
+    ownership.assign(ownership.rel_path(moved, str(lib)), anna)
+    ownership.assign(ownership.rel_path(kept, str(lib)), anna)
+    ownership.assign(ownership.rel_path(copy, str(lib)), boris)
+    target = "Фантастика/Иванов Иван/Звезды/Иванов Иван - Звезды т. 1.fb2"
+
+    def _fix(src, dst):
+        return fix_book(lib, BookFix(src.relative_to(lib).as_posix(), dst), None, lambda *a, **k: True,
+                        lambda *a: True, apply=True)
+
+    assert _fix(moved, target) == "moved"
+    assert _fix(copy, kept.relative_to(lib).as_posix()) == "dropped"
+    assert not (lib / "Без жанра").exists()
+    assert _owners_of(lib, lib / target) == {"anna"}
+    assert _owners_of(lib, kept) == {"anna", "boris"}
+
+
 def test_failed_delete_of_extra_copy_keeps_its_owners(tmp_path, lib, users, monkeypatch):
     """Сервер 2026-10-29: владельцы лишней копии переходили к оставленной до
     удаления файла, а удаление не удавалось — копия оставалась без владельцев."""

@@ -29,7 +29,12 @@ from typing import Dict, List, Optional, Tuple
 
 from . import ownership_hooks
 from .evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
-from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
+from .fb2_utils import (
+    declared_encoding_lies,
+    read_fb2_bytes,
+    replace_control_chars,
+    write_fb2_bytes,
+)
 from .filename_stem import plain_stem
 from .keyword_match import contains_any_keyword
 from .roman_numerals import roman_to_int
@@ -1252,6 +1257,10 @@ class FB2CompilerService:
                 raw = b''
             m = self._SHINGLE_ENCODING_RE.search(raw[:200])
             encoding = m.group(1).decode('ascii') if m else 'utf-8'
+            # encoding="latin-1" при тексте в UTF-8: иначе текст — мешанина, и
+            # копия такой книги не узнаётся дублем (сервер 2026-11-02).
+            if declared_encoding_lies(raw, encoding):
+                encoding = 'utf-8'
             try:
                 text = raw.decode(encoding, errors='replace')
             except LookupError:

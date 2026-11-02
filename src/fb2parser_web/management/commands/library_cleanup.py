@@ -4,13 +4,17 @@
     python manage.py library_cleanup --part genres --genre-choices choices.tsv --apply
     python manage.py library_cleanup --part compile --out compile.txt
     python manage.py library_cleanup --part compile --apply
+    python manage.py library_cleanup --part books --fixes book_fixes.tsv --out books.txt
+    python manage.py library_cleanup --part books --fixes book_fixes.tsv --apply
 
 Без --apply — только отчёт, на диске ничего не меняется. Порядок — сначала
 жанры, потом компилятор (после переноса серии в один жанр группы
 компилятора меняются, их отчёт снимается заново). Выбор жанра для серий с
 равным числом книг — файл «жанр<TAB>автор / серия» (ключ — как в отчёте);
-серии без выбора не переносятся. Под блокировкой синхронизации; каталог
-OPDS подхватит новые пути при плановом сканировании.
+серии без выбора не переносятся. Книги — по файлу «откуда<TAB>куда<TAB>
+автор<TAB>название<TAB>серия<TAB>жанр» (`library_cleanup.read_book_fixes`).
+Под блокировкой синхронизации; каталог OPDS подхватит новые пути при
+плановом сканировании.
 """
 from pathlib import Path
 
@@ -18,11 +22,13 @@ from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
-    help = "Чистка библиотеки: серии в нескольких жанрах и решения компилятора (без --apply — отчёт)."
+    help = ("Чистка библиотеки: серии в нескольких жанрах, решения компилятора, книги по файлу решений "
+            "(без --apply — отчёт).")
 
     def add_arguments(self, parser):
-        parser.add_argument("--part", choices=("genres", "compile"), required=True)
+        parser.add_argument("--part", choices=("genres", "compile", "books"), required=True)
         parser.add_argument("--genre-choices", help="файл «жанр<TAB>автор / серия» для серий с равным числом книг")
+        parser.add_argument("--fixes", help="файл решений для --part books")
         parser.add_argument("--out", help="записать отчёт в файл (иначе — на экран)")
         parser.add_argument("--apply", action="store_true", help="выполнить (без него — только отчёт)")
 
@@ -46,6 +52,10 @@ class Command(BaseCommand):
             with sync_lock(_sync_lock_path(), "library_cleanup"):
                 if options["part"] == "genres":
                     summary = self._genres(library, service.db_path, options["genre_choices"], apply, log)
+                elif options["part"] == "books":
+                    if not options["fixes"]:
+                        raise CommandError("Для --part books нужен --fixes")
+                    summary = self._books(library, service, Path(options["fixes"]), apply, log)
                 else:
                     summary = self._compile(library, apply, log)
         except SyncBusy as exc:
@@ -85,6 +95,35 @@ class Command(BaseCommand):
                 f"{total['replaced']}, удаление лишней: {total['dropped']}, обе остаются: "
                 f"{total['conflicts']}; ошибок: {total['errors']}, ждут выбора жанра: {total['waiting']}, "
                 f"не переносятся — нет прав на запись: {total['no_access']}")
+
+    def _books(self, library, service, fixes_path, apply, log):
+        from fb2parser_core.genre_assign import GenreAssignmentService
+        from fb2parser_core.library_cleanup import (
+            fix_book,
+            read_book_fixes,
+            remove_empty_dirs,
+        )
+
+        fixes = read_book_fixes(fixes_path)
+        log(f"Книг в файле решений: {len(fixes)}")
+        service.log_callback = lambda m: log("    " + m.strip())
+        genres = GenreAssignmentService(logger=type("L", (), {"log": staticmethod(lambda m: log("    " + m))})())
+        total = {}
+        for fix in fixes:
+            outcome = fix_book(library, fix, service.db_path, service._patch_fb2_tags, genres._assign_genre_to_file,
+                               apply=apply, log=log)
+            total[outcome] = total.get(outcome, 0) + 1
+        if apply:
+            # Пустые папки в жанрах, откуда уносили книги («Без жанра/Калинин
+            # Даниил» — пустая и до чистки).
+            for top in {Path(f.src).parts[0] for f in fixes if f.dst not in ("", "?")}:
+                remove_empty_dirs(library / top)
+        names =(("moved", "перенесено"), ("fixed", "теги на месте"), ("replaced", "замена полной версией"),
+                 ("dropped", "удаление лишней копии"), ("conflict", "занято другой версией"),
+                 ("waiting", "ждут выбора"), ("missing", "нет файла"), ("no_access", "нет прав на запись"),
+                 ("error", "ошибок"))
+        head = "Книги" if apply else "Книги (только отчёт)"
+        return f"{head}: " + ", ".join(f"{label}: {total.get(key, 0)}" for key, label in names)
 
     def _compile(self, library, apply, log):
         from fb2parser_core.auto_compile_service import find_library_groups, group_genre

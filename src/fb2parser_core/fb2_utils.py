@@ -51,24 +51,37 @@ def norm_encoding(name: str) -> str:
     return (name or '').lower().replace('-', '').replace('_', '')
 
 
+_NON_ASCII = bytes(range(128, 256))
+
+
 def declared_encoding_lies(raw: bytes, declared: Optional[str]) -> bool:
     """Объявлена не-UTF кодировка, а текст на деле в UTF-8.
 
     Встречаются FB2 с encoding="latin-1" и текстом в UTF-8 («Мамбурин Харитон
     - Криндж»). latin-1 декодирует любые байты, поэтому такой файл читался
     без ошибки — кириллицей-мешаниной, — а при записи новых тегов кириллица
-    молча становилась «????». Не-ASCII байты, целиком валидные как UTF-8, в
-    русском тексте в cp1251/koi8-r не встречаются — значит, это UTF-8.
+    молча становилась «????». Русский текст в cp1251/koi8-r как UTF-8 почти
+    весь не читается, а здесь не читаются единицы байтов: во всех 6 таких
+    книгах библиотеки (сервер 2026-11-02) — 1–2 битых символа в тексте,
+    опечатки исходника. Поэтому допускается один битый байт на тысячу
+    не-ASCII.
     """
     if not declared or norm_encoding(declared) in ('utf8', 'utf8sig', 'utf16', 'utf16le', 'utf16be'):
         return False
-    if raw.isascii():
+    non_ascii = len(raw) - len(raw.translate(None, _NON_ASCII))
+    if not non_ascii:
         return False
-    try:
-        raw.decode('utf-8')
-    except UnicodeDecodeError:
-        return False
-    return True
+    bad = raw.decode('utf-8', errors='replace').count('\ufffd') - raw.count(b'\xef\xbf\xbd')
+    return bad * 1000 <= non_ascii
+
+
+def decode_mislabeled_utf8(raw: bytes, declared: Optional[str]) -> Optional[str]:
+    """Текст файла, если декларация врёт (`declared_encoding_lies`), иначе
+    None. Битые байты исходника — «\\ufffd»: в настоящей кодировке их всё
+    равно не прочесть."""
+    if not declared_encoding_lies(raw, declared):
+        return None
+    return raw.decode('utf-8', errors='replace')
 
 
 def set_xml_encoding(text: str, encoding: str) -> str:

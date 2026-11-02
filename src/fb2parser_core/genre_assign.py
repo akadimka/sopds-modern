@@ -19,7 +19,7 @@ from typing import Callable, Dict, List, Optional
 
 from .fb2_utils import (
     MAX_FB2_UNCOMPRESSED_SIZE,
-    declared_encoding_lies,
+    decode_mislabeled_utf8,
     fb2_rglob,
     norm_encoding,
     set_xml_encoding,
@@ -281,18 +281,22 @@ class GenreAssignmentService:
 
                 # Список испытания кодировок (первой ставим объявленную, если есть)
                 enc_candidates = []
-                if declared_encoding_lies(raw_bytes, declared_encoding):
-                    enc_candidates.append('utf-8')
+                # UTF-16 с BOM: декларация в байтах не находится (байты через ноль).
+                if raw_bytes[:2] in (b'\xff\xfe', b'\xfe\xff'):
+                    enc_candidates.append('utf-16')
                 if declared_encoding:
                     enc_candidates.append(declared_encoding)
 
                 enc_candidates.extend(['utf-8-sig', 'utf-8', 'cp1251', 'latin-1'])
 
                 seen_encodings = set()
-                good_content = None
+                # Декларация врёт (encoding="latin-1" при тексте в UTF-8) — UTF-8 сразу.
+                good_content = decode_mislabeled_utf8(raw_bytes, declared_encoding)
+                if good_content is not None:
+                    content_encoding = 'utf-8'
 
                 # Первая попытка - строгий декод, не потеряв символы
-                for encoding in enc_candidates:
+                for encoding in enc_candidates if good_content is None else ():
                     if not encoding or encoding.lower() in seen_encodings:
                         continue
                     seen_encodings.add(encoding.lower())

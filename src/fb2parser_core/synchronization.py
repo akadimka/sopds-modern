@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import ownership_hooks
 from .fb2_utils import (
-    declared_encoding_lies,
+    decode_mislabeled_utf8,
     norm_encoding,
     read_fb2_bytes,
     replace_control_chars,
@@ -2398,7 +2398,8 @@ class SynchronizationService:
         proposed_title: Optional[str] = None,
         series_number: Optional[str] = None,
         root_sequence: Optional[Tuple[str, int]] = None,
-    ) -> None:
+        drop_series: bool = False,
+    ) -> bool:
         """Overwrite <author>, <sequence> and <book-title> tags in a FB2 file.
 
         series_number — номер тома в серии (тот же, что «т. N» в новом имени
@@ -2418,9 +2419,14 @@ class SynchronizationService:
                              Empty string — leave existing <sequence> untouched.
             proposed_title:  Book title to write into <book-title>.
                              ``None`` — leave existing <book-title> untouched.
+            drop_series:     убрать все <sequence> (ложная серия — имя автора
+                             вместо серии); с proposed_series — вместо них одна.
+
+        Returns:
+            False — теги не записаны (ошибка в журнале), иначе True.
         """
-        if proposed_author is None and not proposed_series and proposed_title is None:
-            return
+        if proposed_author is None and not proposed_series and proposed_title is None and not drop_series:
+            return True
 
         try:
             raw_bytes = read_fb2_bytes(fb2_path)  # прозрачно распаковывает fb2.zip
@@ -2438,17 +2444,19 @@ class SynchronizationService:
                     pass
 
             enc_candidates = []
-            if declared_encoding_lies(raw_bytes, declared_enc):
-                enc_candidates.append('utf-8')
+            # UTF-16 с BOM: декларация в байтах не находится (байты через ноль) —
+            # «Ивакин Алексей, Ким Сергей - Флешка» (сервер 2026-11-02).
+            if raw_bytes[:2] in (b'\xff\xfe', b'\xfe\xff'):
+                enc_candidates.append('utf-16')
             if declared_enc:
                 enc_candidates.append(declared_enc)
             enc_candidates.extend(['utf-8-sig', 'utf-8', 'cp1251', 'latin-1'])
 
             seen_enc: set = set()
-            content: Optional[str] = None
+            content: Optional[str] = decode_mislabeled_utf8(raw_bytes, declared_enc)
             content_encoding = 'utf-8'
 
-            for enc in enc_candidates:
+            for enc in enc_candidates if content is None else ():
                 norm = enc.lower().replace('-', '').replace('_', '')
                 if norm in seen_enc:
                     continue
@@ -2464,7 +2472,7 @@ class SynchronizationService:
 
             if content is None:
                 self._log(f"  ⚠️  Не удалось определить кодировку: {fb2_path.name}")
-                return
+                return False
 
             # ---- strip / remember BOM ----
             has_bom = content.startswith('\ufeff')
@@ -2478,7 +2486,7 @@ class SynchronizationService:
             )
             if not ti_m:
                 self._log(f"  ⚠️  <title-info> не найден в {fb2_path.name}")
-                return
+                return False
 
             ti_open  = ti_m.group(1)
             ti_body  = ti_m.group(2)
@@ -2535,6 +2543,9 @@ class SynchronizationService:
                     ti_body = '\n    ' + new_authors_block + ti_body
 
             # ---- 2. patch series tag ----
+            if drop_series:
+                ti_body = re.sub(r'\s*<(?:fb:)?sequence\b[^>]*?(?:/>|>.*?</(?:fb:)?sequence>)', '',
+                                 ti_body, flags=re.DOTALL)
             if proposed_series:
                 seq_m = self._sequence_element(ti_body)
 
@@ -2617,12 +2628,14 @@ class SynchronizationService:
             except (UnicodeEncodeError, LookupError):
                 self._log(f"  ✗ Теги не записаны: их нельзя записать в кодировке файла "
                           f"({content_encoding}), файл, вероятно, повреждён — {fb2_path.name}")
-                return
+                return False
 
             write_fb2_bytes(fb2_path, out_bytes)  # сохраняет zip-формат если нужно
             self._log(f"  ✓ Теги обновлены ({content_encoding}): {fb2_path.name}")
+            return True
 
         except Exception as e:
             import traceback
             self._log(f"  ✗ Ошибка обновления тегов {fb2_path.name}: {e}")
             self._log(traceback.format_exc())
+            return False
