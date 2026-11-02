@@ -130,6 +130,16 @@ def Cover(
     book = visibility.get_visible_book_or_404(request.user, book_id)
     logger.info("Book meta loaded")
     logger.debug(f"Book title = {book.title}")
+    # Обложка не меняется, пока не сменился файл книги: браузер (и PWA) держит
+    # её неделю и потом переспрашивает с ETag. Без этого каждый список книг
+    # заново качал все миниатюры, а сервер заново вынимал их из архива и
+    # уменьшал. ETag проверяется уже после видимости — чужая книга по-прежнему
+    # 404. private — только кэш этого браузера, не общие прокси.
+    etag = f'"cover-{book.id}-{book.filesize}-{settings.THUMB_SIZE if thumbnail else 0}"'
+    if etag in request.headers.get("If-None-Match", ""):
+        response = HttpResponse(status=304)
+        _cache_cover(response, etag)
+        return response
     response = HttpResponse()
 
     try:
@@ -164,8 +174,17 @@ def Cover(
     if not image:
         logger.info(f"Cover for book with id {book.id} is not found")
         # Вместо обработки изображения отдаем ссылку на изображение "Нет обложки"
-        return HttpResponseRedirect(SOPDS_DEFAULT_COVER)
+        return _cache_cover(HttpResponseRedirect(SOPDS_DEFAULT_COVER), etag)
 
+    return _cache_cover(response, etag)
+
+
+COVER_MAX_AGE = 7 * 24 * 3600
+
+
+def _cache_cover(response, etag):
+    response["Cache-Control"] = f"private, max-age={COVER_MAX_AGE}"
+    response["ETag"] = etag
     return response
 
 
@@ -179,6 +198,13 @@ def Thumbnail(request, book_id):
 @xframe_options_exempt
 def ViewHtml(request, book_id):
     """Отдать книгу как HTML для чтения в браузере (только fb2)."""
+    return render_book_html(request, book_id)
+
+
+def render_book_html(request, book_id, back_url: str = ""):
+    """Книга как HTML-страница читалки: OPDS (`ViewHtml`) и сайт
+    (`web:read` — внутри приложения PWA, с кнопкой «к библиотеке» `back_url`).
+    Проверку входа делает вызывающий."""
     from django.urls import reverse
 
     book = visibility.get_visible_book_or_404(request.user, book_id)
@@ -191,10 +217,14 @@ def ViewHtml(request, book_id):
         raise Http404
 
     resume_anchor = ""
+    resume_time = 0
     if request.user.is_authenticated:
         entry = bookshelf.objects.filter(user=request.user, book=book).first()
         if entry:
             resume_anchor = entry.anchor_id
+            # Когда сохранено место на сервере: позиция, отложенная на
+            # устройстве без сети, новее — читалка вернётся к ней.
+            resume_time = int(entry.readtime.timestamp() * 1000) if resume_anchor else 0
 
     convert_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "convert"))
     spec = importlib.util.spec_from_file_location(
@@ -206,6 +236,8 @@ def ViewHtml(request, book_id):
         fb2_data.read(),
         progress_url=reverse("opds:save_progress", args=[book_id]) if request.user.is_authenticated else "",
         resume_anchor=resume_anchor,
+        resume_time=resume_time,
+        back_url=back_url,
     )
 
     return HttpResponse(html_content, content_type="text/html; charset=utf-8")

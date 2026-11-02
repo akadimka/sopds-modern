@@ -42,6 +42,7 @@ urlpatterns = [
     re_path(r"^settings/news/(?P<news_id>\d+)/(?P<action>hide|pin|telegram)/$", views.news_action,
             name="news_action"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
+    re_path(r"^read/(?P<book_id>[0-9]+)/$", views.read_book, name="read"),
     re_path(r"^online/$", views.online_now, name="online"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/progress/$", views.ratings_progress, name="ratings_progress"),

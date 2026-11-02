@@ -54,6 +54,7 @@ ISOLATION_TESTED = {
     "web:genre": (WEB, "test_menus_count_only_visible"),
     "web:ratings_progress": (WEB, "test_rating_progress_admin_only"),
     "web:news": (WEB, "test_news_shows_only_visible_books"),
+    "web:read": (WEB, "test_reader_in_app"),
 }
 
 NO_CATALOG_DATA = {

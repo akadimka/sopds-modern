@@ -28,3 +28,31 @@ class SessionMiddleware(DjangoSessionMiddleware):
                 patch_vary_headers(response, ("Cookie",))
             return response
         return super().process_response(request, response)
+
+
+REFRESH_KEY = "_sopds_refreshed"
+REFRESH_EVERY = 24 * 3600
+
+
+class SessionRefreshMiddleware:
+    """Вход продлевается, пока им пользуются: срок сессии (SESSION_COOKIE_AGE,
+    2 недели) Django отсчитывает от последнего сохранения сессии, а сохраняет
+    её только при изменении — человек, открывающий приложение каждый день,
+    всё равно выходил через 2 недели после входа. Раз в сутки сессия
+    помечается изменённой: срок и cookie продлеваются, запись в базу — одна в
+    сутки, а не на каждый запрос (SESSION_SAVE_EVERY_REQUEST). Две недели
+    без входа — по-прежнему выход."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        import time
+
+        session = getattr(request, "session", None)
+        user = getattr(request, "user", None)
+        if session is not None and user is not None and user.is_authenticated:
+            now = int(time.time())
+            if now - session.get(REFRESH_KEY, 0) >= REFRESH_EVERY:
+                session[REFRESH_KEY] = now
+        return self.get_response(request)

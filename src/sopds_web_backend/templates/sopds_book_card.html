@@ -91,7 +91,7 @@
 
   <div class="sopds-card-actions">
     {% if b.format == 'fb2' %}
-    <a href="{% url 'opds_catalog:view_html' b.id %}" target="_blank"
+    <a href="{% url 'web:read' b.id %}" target="_blank"
        class="button primary small" style="margin:0;">📖 {% trans "Read" %}</a>
     {% endif %}
     <a href="{% url 'opds_catalog:download' b.id 0 %}"

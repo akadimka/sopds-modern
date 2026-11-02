@@ -1198,6 +1198,17 @@ def service_worker(request):
     return HttpResponse(content, content_type='application/javascript')
 
 
+@sopds_login(url="web:login")
+def read_book(request, book_id):
+    """Читалка внутри приложения: адрес под /web/ — в области установленного
+    PWA (scope /web/), поэтому книга открывается в окне приложения, а не во
+    вкладке браузера (на iPhone — не в Safari со своим входом и своими
+    настройками читалки). Без входа — страница входа сайта, а не запрос
+    пароля OPDS. Та же страница, что /opds/view/<id>/, с кнопкой «к библиотеке»."""
+    from opds_catalog.dl import render_book_html
+    return render_book_html(request, book_id, back_url=reverse("web:main"))
+
+
 def offline_page(request):
     return render(request, 'sopds_offline.html')
 

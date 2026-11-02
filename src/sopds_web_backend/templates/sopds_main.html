@@ -114,6 +114,14 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js', { scope: '/web/' })
     .catch(function(err) { console.warn('SW registration failed:', err); });
 }
+// Установленное приложение (PWA): читалка — в том же окне, а не новой вкладкой
+// браузера (там другой вход и нет пути назад). В браузере — как раньше, во вкладке.
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[target="_blank"][href^="/web/read/"]');
+    if (a) a.removeAttribute('target');
+  }, true);
+}
 </script>
 </body>
 </html>

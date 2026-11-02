@@ -58,6 +58,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "opds_catalog.middleware.OpdsOnlySessionMiddleware",
+    # Вход продлевается, пока им пользуются (раз в сутки, sopds/sessions.py).
+    "sopds.sessions.SessionRefreshMiddleware",
     "axes.middleware.AxesMiddleware",
     "opds_catalog.middleware.SOPDSLocaleMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",

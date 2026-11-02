@@ -169,3 +169,20 @@ def test_rating_progress_admin_only(client, lib):
     assert client.get(url).json()["book_title"] == "Секрет Бориса"
     _, main = _page(client, users["anna"], "main")
     assert 'id="ratings-live-' not in main
+
+
+def test_reader_in_app(client, lib):
+    """Читалка внутри приложения (/web/read/<id>/, scope PWA): чужая книга —
+    404, своя — страница читалки с кнопкой «к библиотеке»; без входа —
+    страница входа сайта, а не запрос пароля OPDS."""
+    users, books, _ = lib
+    url = reverse("web:read", args=(books["anna"].pk,))
+    anonymous = client.get(url)
+    assert anonymous.status_code == 302 and reverse("web:login") in anonymous["Location"]
+    client.force_login(users["anna"])
+    assert client.get(reverse("web:read", args=(books["boris"].pk,))).status_code == 404
+    page = client.get(url)
+    assert page.status_code == 200
+    html = page.content.decode("utf-8")
+    assert f'href="{reverse("web:main")}" data-act="back"' in html
+    assert reverse("opds:save_progress", args=(books["anna"].pk,)) in html

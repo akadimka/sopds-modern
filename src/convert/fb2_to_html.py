@@ -432,7 +432,12 @@ main p { text-align: var(--reader-align); }
     padding: .3rem .55rem; font-size: .9rem; line-height: 1;
     font-family: Georgia, serif; cursor: pointer;
 }
-#reader-toolbar button:hover { background: var(--reader-border); }
+#reader-toolbar a[data-act="back"] {
+    color: var(--reader-fg); text-decoration: none;
+    border: 1px solid var(--reader-border); border-radius: 5px;
+    padding: .3rem .55rem; font-size: .9rem; line-height: 1;
+}
+#reader-toolbar button:hover, #reader-toolbar a[data-act="back"]:hover { background: var(--reader-border); }
 #reader-toolbar button.active {
     background: var(--reader-link); color: var(--reader-bg);
     border-color: var(--reader-link);
@@ -442,7 +447,7 @@ main p { text-align: var(--reader-align); }
 
 _READER_TOOLBAR_HTML = """
 <div id="reader-toolbar">
-  <button type="button" data-act="font-dec" title="Уменьшить шрифт">A−</button>
+  {back}<button type="button" data-act="font-dec" title="Уменьшить шрифт">A−</button>
   <button type="button" data-act="font-inc" title="Увеличить шрифт">A+</button>
   <span class="sep"></span>
   <button type="button" data-act="lh-dec" title="Меньше межстрочный интервал">↕−</button>
@@ -456,6 +461,17 @@ _READER_TOOLBAR_HTML = """
   <button type="button" data-act="theme" title="Светлая/тёмная тема">◐</button>
 </div>
 """
+
+
+def _reader_toolbar_html(back_url: str) -> str:
+    """Панель читалки; back_url — кнопка «к библиотеке»: в установленном
+    приложении (PWA) у читалки нет кнопки «назад» браузера."""
+    back = ""
+    if back_url:
+        back = (f'<a href="{html.escape(back_url)}" data-act="back" title="К библиотеке">⟵</a>'
+                '<span class="sep"></span>\n  ')
+    return _READER_TOOLBAR_HTML.replace("{back}", back)
+
 
 _READER_TOOLBAR_JS = """
 (function () {
@@ -518,6 +534,16 @@ _READER_TOOLBAR_JS = """
             save();
         };
 
+        // «К библиотеке»: пришли со страницы библиотеки — назад по истории
+        // (тот же список и прокрутка), иначе — по ссылке.
+        var back = byAct('back');
+        if (back) back.onclick = function (e) {
+            if (history.length > 1 && document.referrer.indexOf(location.origin + '/web/') === 0) {
+                e.preventDefault();
+                history.back();
+            }
+        };
+
         var alignBtns = bar.querySelectorAll('[data-align]');
         alignBtns.forEach(function (btn) {
             btn.onclick = function () { prefs.align = btn.getAttribute('data-align'); save(); updateActive(); };
@@ -553,7 +579,7 @@ _READER_TOOLBAR_JS = """
 """
 
 
-def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
+def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_time: int = 0) -> str:
     """JS: resume at the saved position on load, report reading progress on scroll.
 
     "Page" doesn't exist as a real concept in this continuous HTML (FB2 has no
@@ -562,26 +588,79 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
     _build_html), so the paragraph's position among all of them doubles as an
     approximate page number, and its id is what a saved reading position points
     back to.
+
+    The page is fully loaded, so reading goes on without network — the
+    position that could not be sent is kept on the device (localStorage) and
+    sent when the network is back or the book is opened again; it wins over
+    the server one only if newer (resume_time — when the server one was saved).
+    Images (volume covers etc.) are laid out after DOMContentLoaded and push
+    the text down: the position is restored again on `load`, and nothing is
+    saved until then — otherwise the shifted place was saved and the position
+    crept back on every opening.
     """
     # Defense in depth: escape '<' so a value containing "</script>" can't
     # break out of this inline <script> block no matter what validation the
     # caller applied upstream (resume_anchor is server-stored, user-supplied
     # data — see opds_catalog.dl.SaveProgress's anchor_id allowlist).
     def _js_string(value: str) -> str:
-        return _json.dumps(value).replace("<", "\\u003c")
+        return _json.dumps(value).replace("<", "\u003c")
 
     return f"""
 (function () {{
     var PROGRESS_URL = {_js_string(progress_url)};
     var RESUME_ANCHOR = {_js_string(resume_anchor)};
+    var RESUME_TIME = {int(resume_time)};
+    var PENDING_KEY = 'sopds_progress_pending:' + PROGRESS_URL;
+
+    function readPending() {{
+        try {{ return JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); }} catch (e) {{ return null; }}
+    }}
+    function writePending(p) {{
+        try {{ localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }} catch (e) {{}}
+    }}
+    function dropPending(p) {{
+        try {{
+            var cur = readPending();
+            if (cur && cur.t <= p.t) localStorage.removeItem(PENDING_KEY);
+        }} catch (e) {{}}
+    }}
+    function post(p) {{
+        return fetch(PROGRESS_URL, {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            credentials: 'same-origin',
+            body: JSON.stringify(p),
+            keepalive: true,
+        }}).then(function (r) {{ if (r.ok) dropPending(p); }}).catch(function () {{}});
+    }}
 
     document.addEventListener('DOMContentLoaded', function () {{
         var paras = Array.prototype.slice.call(document.querySelectorAll('[id^="ref-"]'));
 
-        if (RESUME_ANCHOR) {{
-            var target = document.getElementById(RESUME_ANCHOR);
+        // Отложенная без сети позиция новее сохранённой на сервере — читаем с
+        // неё и отправляем; старее — сервер уже знает место дальше.
+        var pending = PROGRESS_URL ? readPending() : null;
+        if (pending && !(pending.t > RESUME_TIME)) {{ dropPending(pending); pending = null; }}
+        var anchor = (pending && pending.anchor_id) || RESUME_ANCHOR;
+        if (pending) post(pending);
+
+        var userMoved = false;
+        var settling = !!anchor;
+        function moved() {{ userMoved = true; settling = false; }}
+        ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (ev) {{
+            window.addEventListener(ev, moved, {{ passive: true, once: true }});
+        }});
+        function restore() {{
+            if (!anchor || userMoved) return;
+            var target = document.getElementById(anchor);
             if (target) target.scrollIntoView({{ block: 'start' }});
         }}
+        function settle() {{
+            restore();
+            setTimeout(function () {{ settling = false; }}, 500);
+        }}
+        restore();
+        if (document.readyState === 'complete') settle(); else window.addEventListener('load', settle);
 
         if (!PROGRESS_URL || paras.length === 0) return;
 
@@ -598,50 +677,50 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str) -> str:
         }}
 
         var lastSentIndex = -1;
-        function send(anchorId, unit, total, percent, useBeacon) {{
-            var body = JSON.stringify({{
-                anchor_id: anchorId, percent: percent,
-                current_unit: unit, total_units: total,
-            }});
+        function report(force, useBeacon) {{
+            if (settling) return;
+            var idx = currentIndex();
+            if (idx === lastSentIndex && !force) return;
+            lastSentIndex = idx;
+            var p = {{
+                anchor_id: paras[idx].id, percent: ((idx + 1) / paras.length) * 100,
+                current_unit: idx + 1, total_units: paras.length, t: Date.now(),
+            }};
+            writePending(p);   // на устройстве — пока сервер не подтвердил
             if (useBeacon && navigator.sendBeacon) {{
-                navigator.sendBeacon(PROGRESS_URL, new Blob([body], {{ type: 'application/json' }}));
+                // Beacon не сообщает, дошёл ли запрос: при сети считаем, что дошёл.
+                var queued = navigator.sendBeacon(PROGRESS_URL, new Blob([JSON.stringify(p)], {{ type: 'application/json' }}));
+                if (queued && navigator.onLine !== false) dropPending(p);
                 return;
             }}
-            fetch(PROGRESS_URL, {{
-                method: 'POST',
-                headers: {{ 'Content-Type': 'application/json' }},
-                credentials: 'same-origin',
-                body: body,
-                keepalive: true,
-            }}).catch(function () {{}});
-        }}
-
-        function reportIfChanged(useBeacon) {{
-            var idx = currentIndex();
-            if (idx === lastSentIndex) return;
-            lastSentIndex = idx;
-            send(paras[idx].id, idx + 1, paras.length, ((idx + 1) / paras.length) * 100, useBeacon);
+            post(p);
         }}
 
         var debounceTimer = null;
         window.addEventListener('scroll', function () {{
             if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(function () {{ reportIfChanged(false); }}, 1500);
+            debounceTimer = setTimeout(function () {{ report(false, false); }}, 1500);
         }}, {{ passive: true }});
 
         // На случай если пользователь закрывает вкладку раньше, чем сработает
         // debounce — sendBeacon гарантированно долетает даже при выгрузке страницы.
         window.addEventListener('pagehide', function () {{
             if (debounceTimer) clearTimeout(debounceTimer);
-            lastSentIndex = -1; // форсируем отправку, даже если позиция не менялась с прошлого report
-            reportIfChanged(true);
+            report(true, true);
+        }});
+
+        // Сеть вернулась — отложенную позицию на сервер.
+        window.addEventListener('online', function () {{
+            var p = readPending();
+            if (p) post(p);
         }});
     }});
 }})();
 """
 
 
-def convert_bytes_to_html_string(fb2_data: bytes, progress_url: str = "", resume_anchor: str = "") -> str:
+def convert_bytes_to_html_string(fb2_data: bytes, progress_url: str = "", resume_anchor: str = "",
+                                 resume_time: int = 0, back_url: str = "") -> str:
     """Convert raw FB2 bytes to an HTML string (for in-memory use in Django views).
 
     Args:
@@ -650,9 +729,14 @@ def convert_bytes_to_html_string(fb2_data: bytes, progress_url: str = "", resume
             Empty string disables progress tracking (e.g. anonymous user).
         resume_anchor: id of the paragraph/section to scroll to on load (the last
             position saved for this user+book), or "" to start at the top.
+        resume_time: when resume_anchor was saved (ms since epoch) — a position
+            kept on the device while offline wins only if it is newer.
+        back_url: "back to the library" button in the toolbar (the reader inside
+            the installed app has no browser back button), "" — no button.
     """
     root = ET.fromstring(fb2_data)
-    return _build_html(root, title_hint="", progress_url=progress_url, resume_anchor=resume_anchor)
+    return _build_html(root, title_hint="", progress_url=progress_url, resume_anchor=resume_anchor,
+                       resume_time=resume_time, back_url=back_url)
 
 
 def fb2_to_html(input_path: Path, output_path: Path):
@@ -662,7 +746,8 @@ def fb2_to_html(input_path: Path, output_path: Path):
     output_path.write_text(html_doc, encoding="utf-8")
 
 
-def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: str = "") -> str:
+def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: str = "",
+                resume_time: int = 0, back_url: str = "") -> str:
     binaries = extract_binaries(root)
     meta, annotation, coverpage = extract_description(root)
     title = meta.get("Название") or title_hint
@@ -703,7 +788,7 @@ def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: st
 </head>
 <body>
 <script>{_READER_TOOLBAR_JS}</script>
-{_READER_TOOLBAR_HTML}
+{_reader_toolbar_html(back_url)}
 <div class="book-header">
 <h1>{html.escape(title)}</h1>
 {render_coverpage(coverpage, binaries)}
@@ -711,7 +796,7 @@ def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: st
 </div>
 {main_html}
 {notes_html}
-<script>{_build_progress_tracker_js(progress_url, resume_anchor)}</script>
+<script>{_build_progress_tracker_js(progress_url, resume_anchor, resume_time)}</script>
 </body>
 </html>
 """
