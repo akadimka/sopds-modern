@@ -141,10 +141,19 @@ python manage.py library_cleanup --part books \
 Только после шагов 1–2а: после переноса группы меняются.
 
 ```
-python manage.py library_cleanup --part compile --out compile.txt
+python manage.py library_cleanup --part compile \
+    --skip ../docs/library-cleanup/compile_skip.txt --out compile.txt
 ```
 
+`--skip` — группы, которые не выполнять, пока их не разберут отдельно
+(`docs/library-cleanup/compile_skip.txt`: пары `.fb2` + `.fb2.zip` с разным
+текстом, «Сборник» антологий; почему — `docs/quality-roadmap.md`, «Чистка
+библиотеки на основном сервере: шаг 3 отложен»). В отчёте у них
+`⏭ ПРОПУСК`, в сводке — «пропущено по списку».
+
 Около 40 минут (разбор ~15–20, поиск групп ~20) — в фоне, под наблюдением.
+На основном сервере 2026-10-29 (23,9 тыс. файлов) — 3 ч 45 мин: почти всё
+время разбор и поиск групп на одном ядре, без промежуточного вывода.
 В отчёте по группам: `СОБРАТЬ`, `ОСТАВИТЬ`, `УДАЛИТЬ`, `НЕ ТРОГАТЬ`,
 `ПЕРЕИМЕНОВАТЬ`. Что показать пользователю:
 - сводку (групп, файлов на удаление, переименований);
@@ -164,7 +173,8 @@ python manage.py library_cleanup --part compile --out compile.txt
 После «да»:
 
 ```
-python manage.py library_cleanup --part compile --out compile_apply.txt --apply
+python manage.py library_cleanup --part compile \
+    --skip ../docs/library-cleanup/compile_skip.txt --out compile_apply.txt --apply
 ```
 
 Тоже долго — в фоне, под наблюдением. Проверить журнал на `✗ ошибка`.

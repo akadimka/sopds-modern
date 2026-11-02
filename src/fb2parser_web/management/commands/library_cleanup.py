@@ -4,6 +4,7 @@
     python manage.py library_cleanup --part genres --genre-choices choices.tsv --apply
     python manage.py library_cleanup --part compile --out compile.txt
     python manage.py library_cleanup --part compile --apply
+    python manage.py library_cleanup --part compile --skip skip.txt --apply
     python manage.py library_cleanup --part books --fixes book_fixes.tsv --out books.txt
     python manage.py library_cleanup --part books --fixes book_fixes.tsv --apply
 
@@ -13,6 +14,8 @@
 равным числом книг — файл «жанр<TAB>автор / серия» (ключ — как в отчёте);
 серии без выбора не переносятся. Книги — по файлу «откуда<TAB>куда<TAB>
 автор<TAB>название<TAB>серия<TAB>жанр» (`library_cleanup.read_book_fixes`).
+Группы компилятора, где есть файл из --skip (путь на строку, «папка/» — всё
+в папке), не выполняются — в отчёте «ПРОПУСК».
 Под блокировкой синхронизации; каталог OPDS подхватит новые пути при
 плановом сканировании.
 """
@@ -29,6 +32,7 @@ class Command(BaseCommand):
         parser.add_argument("--part", choices=("genres", "compile", "books"), required=True)
         parser.add_argument("--genre-choices", help="файл «жанр<TAB>автор / серия» для серий с равным числом книг")
         parser.add_argument("--fixes", help="файл решений для --part books")
+        parser.add_argument("--skip", help="--part compile: не трогать группы с этими файлами (путь на строку)")
         parser.add_argument("--out", help="записать отчёт в файл (иначе — на экран)")
         parser.add_argument("--apply", action="store_true", help="выполнить (без него — только отчёт)")
 
@@ -57,7 +61,8 @@ class Command(BaseCommand):
                         raise CommandError("Для --part books нужен --fixes")
                     summary = self._books(library, service, Path(options["fixes"]), apply, log)
                 else:
-                    summary = self._compile(library, apply, log)
+                    skip = options["skip"]
+                    summary = self._compile(library, apply, log, Path(skip) if skip else None)
         except SyncBusy as exc:
             raise CommandError(f"Идёт синхронизация ({exc.owner}) — повторите позже") from None
         finally:
@@ -125,18 +130,30 @@ class Command(BaseCommand):
         head = "Книги" if apply else "Книги (только отчёт)"
         return f"{head}: " + ", ".join(f"{label}: {total.get(key, 0)}" for key, label in names)
 
-    def _compile(self, library, apply, log):
+    def _compile(self, library, apply, log, skip_path=None):
         from fb2parser_core.auto_compile_service import find_library_groups, group_genre
-        from fb2parser_core.library_cleanup import describe_group, group_report_counts
+        from fb2parser_core.library_cleanup import (
+            describe_group,
+            group_report_counts,
+            read_skip_list,
+            skip_reason,
+        )
         from fb2parser_web.fb2parser_bridge import _config_path
 
+        skip = read_skip_list(skip_path) if skip_path else []
         compiler, groups = find_library_groups(str(library), config_path=_config_path())
-        counts = group_report_counts(groups)
+        skipped = {id(g) for g in groups if skip_reason(g, library, skip)}
+        counts = group_report_counts([g for g in groups if id(g) not in skipped])
         log(f"Групп: {len(groups)} — очистка {counts.get('cleanup', 0)}, компиляция {counts.get('compile', 0)} "
-            f"(томов {counts.get('compiled_books', 0)}); файлов на удаление: {counts.get('delete', 0)}")
+            f"(томов {counts.get('compiled_books', 0)}); файлов на удаление: {counts.get('delete', 0)}"
+            + (f"; пропуск по списку: {len(skipped)} групп" if skip else ""))
         ok = fail = 0
         for g in groups:
             log("\n".join(describe_group(compiler, g, library)))
+            reason = skip_reason(g, library, skip)
+            if reason:
+                log(f"  ⏭ ПРОПУСК — в списке: {reason}")
+                continue
             if not apply:
                 continue
             result = compiler.compile_group(g, None, delete_sources=True, genre_override=group_genre(g, library))
@@ -145,6 +162,8 @@ class Command(BaseCommand):
             else:
                 fail += 1
                 log(f"  ✗ ошибка: {result.error}")
+        skipped_note = f", пропущено по списку: {len(skipped)}" if skip else ""
         if not apply:
-            return f"Групп: {len(groups)}, файлов на удаление: {counts.get('delete', 0)} (только отчёт)"
-        return f"Групп выполнено: {ok}, ошибок: {fail}"
+            return (f"Групп: {len(groups)}, файлов на удаление: {counts.get('delete', 0)}{skipped_note} "
+                    f"(только отчёт)")
+        return f"Групп выполнено: {ok}, ошибок: {fail}{skipped_note}"

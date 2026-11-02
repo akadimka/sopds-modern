@@ -22,6 +22,7 @@ import os
 import re
 import shutil
 import sqlite3
+import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -425,6 +426,35 @@ def describe_group(compiler, group, library: Path) -> List[str]:
     if new_path is not None:
         lines.append(f"  ПЕРЕИМЕНОВАТЬ {rel(group.kept_paths[0])} → {new_path.name}")
     return lines
+
+
+def read_skip_list(path: Path) -> List[str]:
+    """Файл «путь на строку» (от корня библиотеки, через «/»; «#» —
+    комментарий). Путь с «/» на конце — папка: всё, что в ней."""
+    entries = []
+    for line in path.read_text(encoding='utf-8-sig').splitlines():
+        line = line.strip()
+        if line and not line.startswith('#'):
+            entries.append(unicodedata.normalize('NFC', line.replace('\\', '/')))
+    return entries
+
+
+def skip_reason(group, library: Path, skip: List[str]) -> Optional[str]:
+    """Строка списка пропуска, под которую попал хоть один файл группы, или
+    None. Группы со спорными решениями (сервер 2026-10-29: пары `.fb2` +
+    `.fb2.zip` с разным текстом, «Сборник» антологий) остаются как есть, пока
+    их не разберут вручную."""
+    paths = [b.abs_path for b in group.books] + list(group.kept_paths or []) + \
+        list(group.duplicate_paths or []) + list(group.excluded_paths or [])
+    for p in paths:
+        try:
+            rel = unicodedata.normalize('NFC', Path(p).relative_to(library).as_posix())
+        except ValueError:
+            continue
+        for entry in skip:
+            if rel == entry or (entry.endswith('/') and rel.startswith(entry)):
+                return entry
+    return None
 
 
 def group_report_counts(groups) -> Dict[str, int]:

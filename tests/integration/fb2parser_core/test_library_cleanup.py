@@ -146,3 +146,24 @@ def test_compile_report_matches_apply(lib):
     assert copy.exists() and kept.exists()
     _run("--part", "compile", "--apply")
     assert [p.name for p in folder.iterdir()] == [renamed]
+
+
+@pytest.mark.parametrize("entry", ["file", "folder"])
+def test_compile_skip_list_leaves_group_untouched(lib, tmp_path, entry):
+    """--skip: группы со спорными решениями (сервер 2026-10-29: пары .fb2 + .fb2.zip
+    с разным текстом, «Сборник» антологий) не выполняются, пока их не разберут."""
+    folder = lib / "Фантастика" / "Белов Иннокентий" / "Слесарь"
+    kept = _omnibus(folder / "Белов Иннокентий - Слесарь (в 3 книгах).fb2", "Слесарь (в 3 книгах)",
+                    "Белов Иннокентий", [1, 2, 3])
+    copy = _omnibus(folder / "Белов Иннокентий - Слесарь (Дилогия).fb2", "Слесарь (Дилогия)",
+                    "Белов Иннокентий", [1, 2])
+    skip = tmp_path / "skip.txt"
+    line = copy.relative_to(lib).as_posix() if entry == "file" else folder.parent.relative_to(lib).as_posix() + "/"
+    skip.write_text(f"# спорные группы\n{line}\n", encoding="utf-8")
+
+    report = _run("--part", "compile", "--skip", str(skip))
+    assert f"⏭ ПРОПУСК — в списке: {line}" in report
+    assert "пропущено по списку: 1" in report and "файлов на удаление: 0" in report
+
+    _run("--part", "compile", "--skip", str(skip), "--apply")
+    assert sorted(p.name for p in folder.iterdir()) == sorted([kept.name, copy.name])
