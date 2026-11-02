@@ -1,7 +1,11 @@
-const CACHE_VERSION = 'sopds-v32';  // поднимать при каждом изменении статики: она отдаётся из кэша (Cache First)
+const CACHE_VERSION = 'sopds-v33';  // поднимать при каждом изменении статики: она отдаётся из кэша (Cache First)
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE   = CACHE_VERSION + '-pages';
 const OFFLINE_URL  = '/web/offline/';
+// Книги, сохранённые для чтения без сети (кнопка «⤓» в читалке /web/read/<id>/).
+// Без версии — переживают обновления service worker; стираются при «Выходе»
+// и при смене пользователя (sopds_main.html, convert/fb2_to_html.py).
+const BOOKS_CACHE  = 'sopds-books';
 
 const STATIC_ASSETS = [
   '/static/css/app.css',
@@ -31,7 +35,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(keys =>
       Promise.all(
         keys
-          .filter(k => k.startsWith('sopds-') && k !== STATIC_CACHE && k !== PAGE_CACHE)
+          .filter(k => k.startsWith('sopds-') && k !== STATIC_CACHE && k !== PAGE_CACHE && k !== BOOKS_CACHE)
           .map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
@@ -65,6 +69,30 @@ self.addEventListener('fetch', event => {
           return response;
         });
       })
+    );
+    return;
+  }
+
+  // Читалка /web/read/<id>/ — Network First. Книгу, которую пользователь сам
+  // сохранил для чтения без сети, без сети отдаём из BOOKS_CACHE, а с сетью —
+  // обновляем там свежей копией. Несохранённые в кэш не попадают (как и
+  // остальные страницы с данными пользователя — см. ниже).
+  if (url.pathname.startsWith('/web/read/') && event.request.method === 'GET') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok && !response.redirected) {
+            const copy = response.clone();
+            caches.open(BOOKS_CACHE).then(c =>
+              c.match(event.request).then(saved => saved && c.put(event.request, copy)));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.open(BOOKS_CACHE)
+            .then(c => c.match(event.request))
+            .then(saved => saved || caches.match(OFFLINE_URL))
+        )
     );
     return;
   }

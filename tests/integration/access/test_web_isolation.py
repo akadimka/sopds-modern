@@ -186,3 +186,14 @@ def test_reader_in_app(client, lib):
     html = page.content.decode("utf-8")
     assert f'href="{reverse("web:main")}" data-act="back"' in html
     assert reverse("opds:save_progress", args=(books["anna"].pk,)) in html
+    assert 'data-act="offline"' in html and f"var USER = {users['anna'].pk};" in html
+
+
+def test_offline_page_lists_saved_books_without_server_data(client):
+    """Страница «нет связи» (её отдаёт service worker без сети) — общая для
+    всех: список сохранённых книг строится в браузере, сервер в неё данных
+    каталога не кладёт."""
+    page = client.get(reverse("web:offline"))
+    assert page.status_code == 200
+    html = page.content.decode("utf-8")
+    assert 'id="offline-books"' in html and "sopds_offline_books" in html

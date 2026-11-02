@@ -122,6 +122,16 @@ if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.
     if (a) a.removeAttribute('target');
   }, true);
 }
+// «Выход»: книги, сохранённые на устройстве для чтения без сети, — личные,
+// следующему, кто сядет за этот браузер, они не достаются (читалка, кнопка «⤓»).
+document.addEventListener('submit', function (e) {
+  var form = e.target;
+  if (!form.action || !/\/web\/logout\/$/.test(form.action) || form.dataset.cleared) return;
+  e.preventDefault();
+  try { localStorage.removeItem('sopds_offline_books'); } catch (err) {}
+  var done = function () { form.dataset.cleared = '1'; form.submit(); };
+  if (window.caches) caches.delete('sopds-books').then(done, done); else done();
+}, true);
 </script>
 </body>
 </html>

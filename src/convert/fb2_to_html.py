@@ -463,14 +463,88 @@ _READER_TOOLBAR_HTML = """
 """
 
 
-def _reader_toolbar_html(back_url: str) -> str:
+def _reader_toolbar_html(back_url: str, offline: bool = False) -> str:
     """Панель читалки; back_url — кнопка «к библиотеке»: в установленном
-    приложении (PWA) у читалки нет кнопки «назад» браузера."""
+    приложении (PWA) у читалки нет кнопки «назад» браузера; offline — кнопка
+    «сохранить для чтения без сети» (читалка внутри приложения, /web/read/)."""
     back = ""
     if back_url:
         back = (f'<a href="{html.escape(back_url)}" data-act="back" title="К библиотеке">⟵</a>'
                 '<span class="sep"></span>\n  ')
+    if offline:
+        back += ('<button type="button" data-act="offline" hidden '
+                 'title="Сохранить для чтения без сети">⤓</button><span class="sep"></span>\n  ')
     return _READER_TOOLBAR_HTML.replace("{back}", back)
+
+
+def _build_offline_js(user_id: int) -> str:
+    """JS: кнопка «сохранить для чтения без сети». Книга — в кэше устройства
+    `sopds-books` (его отдаёт service worker, когда нет сети, и обновляет при
+    каждом открытии с сетью), список — в localStorage `sopds_offline_books`
+    (страница «нет связи» показывает его). Книги чужие для другого
+    пользователя этого браузера: список помечен владельцем, при смене
+    пользователя и при «Выходе» (sopds_main.html) — стираются."""
+    return f"""
+(function () {{
+    var USER = {int(user_id)};
+    var LIST_KEY = 'sopds_offline_books';
+    var CACHE = 'sopds-books';
+    var url = location.pathname;
+    if (!('caches' in window)) return;
+
+    function readList() {{
+        try {{
+            var l = JSON.parse(localStorage.getItem(LIST_KEY) || 'null');
+            if (l && l.user === USER) return l;
+            if (l) caches.delete(CACHE);           // книги другого пользователя этого браузера
+        }} catch (e) {{}}
+        return {{ user: USER, books: {{}} }};
+    }}
+    function writeList(l) {{
+        try {{ localStorage.setItem(LIST_KEY, JSON.stringify(l)); }} catch (e) {{}}
+    }}
+    var list = readList();
+    writeList(list);
+
+    document.addEventListener('DOMContentLoaded', function () {{
+        var btn = document.querySelector('#reader-toolbar [data-act="offline"]');
+        if (!btn) return;
+        btn.hidden = false;
+        function show(saved) {{
+            btn.textContent = saved ? '✓' : '⤓';
+            btn.title = saved ? 'Сохранено для чтения без сети — нажмите, чтобы убрать с устройства'
+                              : 'Сохранить для чтения без сети';
+            btn.classList.toggle('active', saved);
+        }}
+        show(!!list.books[url]);
+        btn.onclick = function () {{
+            list = readList();
+            if (list.books[url]) {{
+                caches.open(CACHE).then(function (c) {{ return c.delete(url); }});
+                delete list.books[url];
+                writeList(list);
+                show(false);
+                return;
+            }}
+            btn.disabled = true;
+            btn.textContent = '…';
+            if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+            fetch(url, {{ credentials: 'same-origin' }}).then(function (r) {{
+                if (!r.ok || r.redirected) throw new Error('not saved');
+                return caches.open(CACHE).then(function (c) {{ return c.put(url, r); }});
+            }}).then(function () {{
+                list = readList();
+                list.books[url] = {{ title: document.title, saved: Date.now() }};
+                writeList(list);
+                show(true);
+            }}).catch(function () {{
+                show(false);
+                alert('Не удалось сохранить книгу на устройстве: нет сети или не хватает места.');
+            }}).then(function () {{ btn.disabled = false; }});
+        }};
+    }});
+}})();
+"""
 
 
 _READER_TOOLBAR_JS = """
@@ -579,7 +653,8 @@ _READER_TOOLBAR_JS = """
 """
 
 
-def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_time: int = 0) -> str:
+def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_time: int = 0,
+                               user_id: int = 0) -> str:
     """JS: resume at the saved position on load, report reading progress on scroll.
 
     "Page" doesn't exist as a real concept in this continuous HTML (FB2 has no
@@ -589,10 +664,13 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_tim
     approximate page number, and its id is what a saved reading position points
     back to.
 
-    The page is fully loaded, so reading goes on without network — the
-    position that could not be sent is kept on the device (localStorage) and
-    sent when the network is back or the book is opened again; it wins over
-    the server one only if newer (resume_time — when the server one was saved).
+    The page is fully loaded, so reading goes on without network — the last
+    position is kept on the device (localStorage, per user: user_id) with a
+    "sent" mark; an unsent one goes to the server when the network is back or
+    the book is opened again. On opening, the device position wins over the
+    server one only if newer (resume_time — when the server one was saved):
+    a book saved for offline reading opens where it was left, not where it was
+    when saved.
     Images (volume covers etc.) are laid out after DOMContentLoaded and push
     the text down: the position is restored again on `load`, and nothing is
     saved until then — otherwise the shifted place was saved and the position
@@ -610,39 +688,41 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_tim
     var PROGRESS_URL = {_js_string(progress_url)};
     var RESUME_ANCHOR = {_js_string(resume_anchor)};
     var RESUME_TIME = {int(resume_time)};
-    var PENDING_KEY = 'sopds_progress_pending:' + PROGRESS_URL;
+    var LOCAL_KEY = 'sopds_progress:' + {int(user_id)} + ':' + PROGRESS_URL;
 
-    function readPending() {{
-        try {{ return JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); }} catch (e) {{ return null; }}
+    function readLocal() {{
+        try {{ return JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); }} catch (e) {{ return null; }}
     }}
-    function writePending(p) {{
-        try {{ localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }} catch (e) {{}}
+    function writeLocal(p) {{
+        try {{ localStorage.setItem(LOCAL_KEY, JSON.stringify(p)); }} catch (e) {{}}
     }}
-    function dropPending(p) {{
-        try {{
-            var cur = readPending();
-            if (cur && cur.t <= p.t) localStorage.removeItem(PENDING_KEY);
-        }} catch (e) {{}}
+    function markSent(p) {{
+        var cur = readLocal();
+        if (cur && cur.t === p.t) {{ cur.sent = true; writeLocal(cur); }}
+    }}
+    function body(p) {{
+        return JSON.stringify({{ anchor_id: p.anchor_id, percent: p.percent,
+                                current_unit: p.current_unit, total_units: p.total_units }});
     }}
     function post(p) {{
         return fetch(PROGRESS_URL, {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
             credentials: 'same-origin',
-            body: JSON.stringify(p),
+            body: body(p),
             keepalive: true,
-        }}).then(function (r) {{ if (r.ok) dropPending(p); }}).catch(function () {{}});
+        }}).then(function (r) {{ if (r.ok) markSent(p); }}).catch(function () {{}});
     }}
 
     document.addEventListener('DOMContentLoaded', function () {{
         var paras = Array.prototype.slice.call(document.querySelectorAll('[id^="ref-"]'));
 
-        // Отложенная без сети позиция новее сохранённой на сервере — читаем с
-        // неё и отправляем; старее — сервер уже знает место дальше.
-        var pending = PROGRESS_URL ? readPending() : null;
-        if (pending && !(pending.t > RESUME_TIME)) {{ dropPending(pending); pending = null; }}
-        var anchor = (pending && pending.anchor_id) || RESUME_ANCHOR;
-        if (pending) post(pending);
+        // Место на устройстве новее сохранённого на сервере (читали без сети,
+        // открыта сохранённая копия) — читаем с него, неотправленное — на
+        // сервер; старее — сервер уже знает место дальше (другое устройство).
+        var local = PROGRESS_URL ? readLocal() : null;
+        var anchor = (local && local.t > RESUME_TIME && local.anchor_id) || RESUME_ANCHOR;
+        if (local && local.t > RESUME_TIME && !local.sent) post(local);
 
         var userMoved = false;
         var settling = !!anchor;
@@ -684,13 +764,13 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_tim
             lastSentIndex = idx;
             var p = {{
                 anchor_id: paras[idx].id, percent: ((idx + 1) / paras.length) * 100,
-                current_unit: idx + 1, total_units: paras.length, t: Date.now(),
+                current_unit: idx + 1, total_units: paras.length, t: Date.now(), sent: false,
             }};
-            writePending(p);   // на устройстве — пока сервер не подтвердил
+            writeLocal(p);   // на устройстве; sent — когда сервер подтвердил
             if (useBeacon && navigator.sendBeacon) {{
                 // Beacon не сообщает, дошёл ли запрос: при сети считаем, что дошёл.
-                var queued = navigator.sendBeacon(PROGRESS_URL, new Blob([JSON.stringify(p)], {{ type: 'application/json' }}));
-                if (queued && navigator.onLine !== false) dropPending(p);
+                var queued = navigator.sendBeacon(PROGRESS_URL, new Blob([body(p)], {{ type: 'application/json' }}));
+                if (queued && navigator.onLine !== false) markSent(p);
                 return;
             }}
             post(p);
@@ -709,10 +789,10 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_tim
             report(true, true);
         }});
 
-        // Сеть вернулась — отложенную позицию на сервер.
+        // Сеть вернулась — неотправленную позицию на сервер.
         window.addEventListener('online', function () {{
-            var p = readPending();
-            if (p) post(p);
+            var p = readLocal();
+            if (p && !p.sent) post(p);
         }});
     }});
 }})();
@@ -720,7 +800,7 @@ def _build_progress_tracker_js(progress_url: str, resume_anchor: str, resume_tim
 
 
 def convert_bytes_to_html_string(fb2_data: bytes, progress_url: str = "", resume_anchor: str = "",
-                                 resume_time: int = 0, back_url: str = "") -> str:
+                                 resume_time: int = 0, back_url: str = "", user_id: int = 0) -> str:
     """Convert raw FB2 bytes to an HTML string (for in-memory use in Django views).
 
     Args:
@@ -733,10 +813,12 @@ def convert_bytes_to_html_string(fb2_data: bytes, progress_url: str = "", resume
             kept on the device while offline wins only if it is newer.
         back_url: "back to the library" button in the toolbar (the reader inside
             the installed app has no browser back button), "" — no button.
+        user_id: the reader; keys the reading position kept on the device, and
+            with back_url enables "save for offline reading".
     """
     root = ET.fromstring(fb2_data)
     return _build_html(root, title_hint="", progress_url=progress_url, resume_anchor=resume_anchor,
-                       resume_time=resume_time, back_url=back_url)
+                       resume_time=resume_time, back_url=back_url, user_id=user_id)
 
 
 def fb2_to_html(input_path: Path, output_path: Path):
@@ -747,7 +829,7 @@ def fb2_to_html(input_path: Path, output_path: Path):
 
 
 def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: str = "",
-                resume_time: int = 0, back_url: str = "") -> str:
+                resume_time: int = 0, back_url: str = "", user_id: int = 0) -> str:
     binaries = extract_binaries(root)
     meta, annotation, coverpage = extract_description(root)
     title = meta.get("Название") or title_hint
@@ -775,6 +857,7 @@ def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: st
         main_html += "</main>\n"
 
     notes_html = render_notes(root, binaries, note_ids, note_backrefs)
+    offline_js = f"<script>{_build_offline_js(user_id)}</script>" if back_url and user_id else ""
 
     return f"""<!doctype html>
 <html lang="ru">
@@ -788,7 +871,7 @@ def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: st
 </head>
 <body>
 <script>{_READER_TOOLBAR_JS}</script>
-{_reader_toolbar_html(back_url)}
+{_reader_toolbar_html(back_url, offline=bool(back_url and user_id))}
 <div class="book-header">
 <h1>{html.escape(title)}</h1>
 {render_coverpage(coverpage, binaries)}
@@ -796,7 +879,8 @@ def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: st
 </div>
 {main_html}
 {notes_html}
-<script>{_build_progress_tracker_js(progress_url, resume_anchor, resume_time)}</script>
+<script>{_build_progress_tracker_js(progress_url, resume_anchor, resume_time, user_id)}</script>
+{offline_js}
 </body>
 </html>
 """

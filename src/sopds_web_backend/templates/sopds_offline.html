@@ -1,26 +1,54 @@
-{% load static %}
+{% load static i18n %}
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOPDS — Нет соединения</title>
+<title>SOPDS — {% trans "No connection" %}</title>
 <link rel="stylesheet" href="{% static 'css/theme.css' %}">
 <style>
   body { display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; font-family:sans-serif; background:var(--bg); color:var(--text); }
   .box { text-align:center; padding:2rem; max-width:400px; }
   .icon { font-size:4rem; margin-bottom:1rem; }
   h1 { font-size:1.5rem; margin-bottom:0.5rem; }
+  h2 { font-size:1.1rem; margin:1.5rem 0 0.5rem; }
   p { color:var(--text-muted); margin-bottom:1.5rem; }
-  a { display:inline-block; padding:0.6rem 1.5rem; background:var(--sp-accent); color:#fff; border-radius:4px; text-decoration:none; }
+  a.button { display:inline-block; padding:0.6rem 1.5rem; background:var(--sp-accent); color:#fff; border-radius:4px; text-decoration:none; }
+  #offline-books { list-style:none; padding:0; margin:0 0 1rem; text-align:left; }
+  #offline-books li { margin:0.4rem 0; }
+  #offline-books a { color:var(--sp-accent); }
 </style>
 </head>
 <body>
 <div class="box">
   <div class="icon">📚</div>
-  <h1>Нет соединения</h1>
-  <p>Страница недоступна офлайн. Проверьте подключение к интернету и попробуйте снова.</p>
-  <a href="/web/">На главную</a>
+  <h1>{% trans "No connection" %}</h1>
+  <p>{% trans "This page is not available offline. Check your internet connection and try again." %}</p>
+  {# Книги, сохранённые в читалке кнопкой «⤓» (convert/fb2_to_html.py): их отдаёт service worker без сети. #}
+  <div id="offline-saved" hidden>
+    <h2>{% trans "Saved on this device" %}</h2>
+    <ul id="offline-books"></ul>
+  </div>
+  <p id="offline-none" hidden>{% trans "No books are saved on this device. Open a book in the reader and tap ⤓ to read it without network." %}</p>
+  <a class="button" href="/web/">{% trans "To the main page" %}</a>
 </div>
+<script>
+(function () {
+  var books = {};
+  try { books = (JSON.parse(localStorage.getItem('sopds_offline_books') || 'null') || {}).books || {}; } catch (e) {}
+  var urls = Object.keys(books).sort(function (a, b) { return (books[b].saved || 0) - (books[a].saved || 0); });
+  var ul = document.getElementById('offline-books');
+  urls.forEach(function (url) {
+    if (!/^\/web\/read\/\d+\/$/.test(url)) return;
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = url;
+    a.textContent = '📖 ' + (books[url].title || url);
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+  document.getElementById(ul.children.length ? 'offline-saved' : 'offline-none').hidden = false;
+})();
+</script>
 </body>
 </html>

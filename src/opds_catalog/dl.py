@@ -238,6 +238,7 @@ def render_book_html(request, book_id, back_url: str = ""):
         resume_anchor=resume_anchor,
         resume_time=resume_time,
         back_url=back_url,
+        user_id=request.user.pk if request.user.is_authenticated else 0,
     )
 
     return HttpResponse(html_content, content_type="text/html; charset=utf-8")

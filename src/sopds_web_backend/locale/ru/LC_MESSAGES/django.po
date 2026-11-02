@@ -2119,3 +2119,18 @@ msgstr[2] "%(n)s новых книг"
 
 #~ msgid "Search books by series"
 #~ msgstr "Поиск книг по серии"
+
+msgid "No connection"
+msgstr "Нет соединения"
+
+msgid "This page is not available offline. Check your internet connection and try again."
+msgstr "Страница недоступна офлайн. Проверьте подключение к интернету и попробуйте снова."
+
+msgid "Saved on this device"
+msgstr "Сохранено на этом устройстве"
+
+msgid "No books are saved on this device. Open a book in the reader and tap ⤓ to read it without network."
+msgstr "На этом устройстве нет сохранённых книг. Откройте книгу в читалке и нажмите ⤓ — её можно будет читать без сети."
+
+msgid "To the main page"
+msgstr "На главную"
