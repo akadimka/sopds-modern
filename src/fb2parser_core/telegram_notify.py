@@ -307,6 +307,8 @@ def build_admin_report(summary: Dict[str, Any], pending: List[Dict[str, Any]], i
         lines.append(f"⚠ Нужна сверка автора: {len(notes['reconciliation_notes'])} файл(ов)")
     if notes.get("genre_conflict_notes"):
         lines.append(f"⚠ Конфликт жанра внутри серии: {len(notes['genre_conflict_notes'])} сер.")
+    if notes.get("unknown_genre_notes"):
+        lines.append(f"⚠ Жанр не из списка, оставлены на месте: {len(notes['unknown_genre_notes'])} файл(ов)")
     if pending:
         lines += ["", f"<b>Ждут решения: {sum(p['books'] for p in pending)} кн.</b>"]
         lines += [f"• {_e(p['batch'])}: {p['books']}" for p in pending]

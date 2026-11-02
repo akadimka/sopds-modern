@@ -491,7 +491,8 @@ class AutosyncService:
     def _outcome_rows(root: Path, items: List[Dict[str, Any]], stats: dict, failed: set,
                       result: RunResult) -> List[Dict[str, Any]]:
         """Строки журнала: судьба каждой книги после синхронизации."""
-        result.notes = {k: stats.get(k) or [] for k in ("reconciliation_notes", "genre_conflict_notes")}
+        result.notes = {k: stats.get(k) or [] for k in ("reconciliation_notes", "genre_conflict_notes",
+                                                         "unknown_genre_notes")}
         moved = {m["source"]: m for m in stats.get("moved_books") or []}
         rows = []
         for item in items:

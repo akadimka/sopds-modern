@@ -17,7 +17,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-from .fb2_utils import MAX_FB2_UNCOMPRESSED_SIZE, fb2_rglob
+from .fb2_utils import (
+    MAX_FB2_UNCOMPRESSED_SIZE,
+    declared_encoding_lies,
+    fb2_rglob,
+    norm_encoding,
+    set_xml_encoding,
+)
 from .logger import Logger
 
 
@@ -275,6 +281,8 @@ class GenreAssignmentService:
 
                 # Список испытания кодировок (первой ставим объявленную, если есть)
                 enc_candidates = []
+                if declared_encoding_lies(raw_bytes, declared_encoding):
+                    enc_candidates.append('utf-8')
                 if declared_encoding:
                     enc_candidates.append(declared_encoding)
 
@@ -376,8 +384,12 @@ class GenreAssignmentService:
             # Сохранить файл с ОРИГИНАЛЬНОЙ кодировкой (не меняем ео на UTF-8)
             # Обновляем XML-декларацию если кодировка изменилась
             if content_encoding.lower().replace('-', '').replace('_', '') in ('utf8', 'utf8sig'):
-                # Уже UTF-8: просто записываем с BOM если был
+                # Уже UTF-8: просто записываем с BOM если был. Декларация
+                # могла объявлять другое (encoding="latin-1" при тексте в
+                # UTF-8) — исправляется на записанное.
                 encoding_to_write: str = 'utf-8-sig' if has_bom else 'utf-8'
+                if declared_encoding and norm_encoding(declared_encoding) not in ('utf8', 'utf8sig'):
+                    result_text = set_xml_encoding(result_text, 'utf-8')
             else:
                 # Не-UTF-8 (например cp1251): обновить XML-декларацию и записать обратно
                 result_text = re.sub(

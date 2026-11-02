@@ -217,6 +217,30 @@
     })();
     </script>
     {% endif %}
+    {% if state.unknown_genre_notes %}
+    <div class="callout warning" style="font-size:0.85rem; margin-top:0.5rem;">
+        <strong>⚠ {% trans "Genre is not in the genre list" %} ({{ state.unknown_genre_notes|length }})</strong>
+        <div style="font-size:0.78rem; margin-top:0.3rem;">
+            {% trans "The genre tag of these books is empty, damaged or not one of your genres, so it is unclear which genre folder they belong to. They were left untouched in the source folder. Assign a genre to their folder and synchronize again." %}
+        </div>
+        <table class="unstriped" style="font-size:0.78rem; margin-top:0.4rem;">
+            <thead>
+                <tr>
+                    <th>{% trans "File" %}</th>
+                    <th>{% trans "Genre in the file" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in state.unknown_genre_notes %}
+                <tr>
+                    <td>{{ note.file_path }}</td>
+                    <td><em>{{ note.genre|default:"—" }}</em></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
     {% if state.genre_unified_notes %}
     <details style="margin-top:0.5rem; font-size:0.85rem;">
         <summary style="cursor:pointer;">{% trans "Series genre unified by majority of volumes" %} ({{ state.genre_unified_notes|length }})</summary>

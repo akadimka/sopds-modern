@@ -33,6 +33,7 @@ def _tom(n):
         proposed_series="Тысяча и одна ночь. В 12 томах",
         series_source="folder_meta_consensus",
         series_number=str(n),
+        metadata_genre="Классическая проза",
     )
 
 

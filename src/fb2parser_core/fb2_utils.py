@@ -10,7 +10,7 @@ import io
 import re
 import zipfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 _CONTROL_CHARS_RE = re.compile(r'\s*[\x00-\x1f\x7f]+\s*')
 
@@ -42,6 +42,40 @@ MAX_FB2_UNCOMPRESSED_SIZE = 200 * 1024 * 1024  # 200 МБ — см. read_fb2_byt
 TITLE_INFO_SCAN_LIMIT = 32 * 1024 * 1024
 TITLE_INFO_END_RE = re.compile(r'</(?:[\w.-]+:)?title-info\s*>')
 _TITLE_INFO_END_BYTES_RE = re.compile(rb'</(?:[\w.-]+:)?title-info\s*>')
+
+
+_XML_ENCODING_RE = re.compile(r'(<\?xml[^>]*encoding\s*=\s*["\'])[^"\']+(["\'])')
+
+
+def norm_encoding(name: str) -> str:
+    return (name or '').lower().replace('-', '').replace('_', '')
+
+
+def declared_encoding_lies(raw: bytes, declared: Optional[str]) -> bool:
+    """Объявлена не-UTF кодировка, а текст на деле в UTF-8.
+
+    Встречаются FB2 с encoding="latin-1" и текстом в UTF-8 («Мамбурин Харитон
+    - Криндж»). latin-1 декодирует любые байты, поэтому такой файл читался
+    без ошибки — кириллицей-мешаниной, — а при записи новых тегов кириллица
+    молча становилась «????». Не-ASCII байты, целиком валидные как UTF-8, в
+    русском тексте в cp1251/koi8-r не встречаются — значит, это UTF-8.
+    """
+    if not declared or norm_encoding(declared) in ('utf8', 'utf8sig', 'utf16', 'utf16le', 'utf16be'):
+        return False
+    if raw.isascii():
+        return False
+    try:
+        raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return False
+    return True
+
+
+def set_xml_encoding(text: str, encoding: str) -> str:
+    """Кодировка в XML-декларации — та, в которой файл будет записан."""
+    if norm_encoding(encoding) in ('utf8', 'utf8sig'):
+        encoding = 'utf-8'
+    return _XML_ENCODING_RE.sub(lambda m: m.group(1) + encoding + m.group(2), text, count=1)
 
 
 def read_fb2_head(path: Path, head_bytes: int = 65536) -> bytes:

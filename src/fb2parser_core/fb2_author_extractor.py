@@ -14,10 +14,11 @@ docs/quality-roadmap.md, баг №105). Остались только 4 мет�
 """
 
 import html
+import io
 import re
 from pathlib import Path
 
-from .fb2_utils import TITLE_INFO_END_RE, TITLE_INFO_SCAN_LIMIT
+from .fb2_utils import TITLE_INFO_END_RE, TITLE_INFO_SCAN_LIMIT, read_fb2_bytes
 from .settings_manager import SettingsManager
 
 # Любой префикс пространства имён (<fb:genre>, <FictionBook:genre>…) и
@@ -168,11 +169,24 @@ class FB2AuthorExtractor:
         """
         import re as _re
 
+        # .fb2.zip читается из архива целиком (книги в нём небольшие): иначе
+        # декодировались бы байты zip, и у книги не было бы ни названия, ни
+        # автора, ни жанра.
+        unzipped = read_fb2_bytes(fb2_path) if fb2_path.name.lower().endswith('.zip') else None
+
+        def _open(encoding, errors):
+            if unzipped is not None:
+                return io.TextIOWrapper(io.BytesIO(unzipped), encoding=encoding, errors=errors)
+            return open(fb2_path, 'r', encoding=encoding, errors=errors)
+
         # Шаг 1: читаем начало файла в бинарном режиме
         declared_encoding = None
         try:
-            with open(fb2_path, 'rb') as f:
-                raw_start = f.read(256)
+            if unzipped is not None:
+                raw_start = unzipped[:256]
+            else:
+                with open(fb2_path, 'rb') as f:
+                    raw_start = f.read(256)
             if raw_start.startswith(b'\xef\xbb\xbf'):
                 declared_encoding = 'utf-8-sig'
             elif raw_start.startswith((b'\xff\xfe', b'\xfe\xff')):
@@ -190,7 +204,7 @@ class FB2AuthorExtractor:
             меньше, чем до конца <title-info> (баг №136: обложка <binary>
             перед <description> отодвигает его за первые 64 КБ)."""
             try:
-                with open(fb2_path, 'r', encoding=encoding, errors=errors) as f:
+                with _open(encoding, errors) as f:
                     if max_bytes <= 0:
                         return f.read()
                     text = f.read(max_bytes)

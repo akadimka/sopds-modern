@@ -32,6 +32,7 @@ def _rec(file_path, author, series, title):
         file_path=file_path, file_title=title, metadata_authors=author,
         proposed_author=author, author_source="folder_dataset",
         metadata_series=series, proposed_series=series, series_source="folder_dataset",
+        metadata_genre="Фантастика",
     )
 
 

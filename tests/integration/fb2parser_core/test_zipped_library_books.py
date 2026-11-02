@@ -4,9 +4,10 @@
 «Перешагнуть пропасть» — полный чужой сборник «1-13 (компиляция).fb2.zip» не
 распознавался как сборник томов 1–13 и лежал рядом с нашими частями.
 
-Метаданные из архива разбор по-прежнему не читает: на прогоне по всей
-библиотеке чтение меняло авторов («Урсула Ле Гуин» → «Ле Урсула») и брало
-издательские серии — отдельная задача (docs/series-duplicates.md).
+Из архива разбор читает только название и жанр (2026-11-02: без них книга
+из .fb2.zip шла в «Без жанра» с «[no title]» в имени). Автор и серия — по
+папкам и имени: с ними из архивов разбор библиотеки менял авторов («Урсула Ле
+Гуин» → «Ле Урсула») и брал издательские серии (docs/series-duplicates.md).
 """
 import zipfile
 from pathlib import Path
@@ -59,3 +60,19 @@ def test_complete_zipped_omnibus_is_kept_parts_go(tmp_path):
     assert not any(p.exists() for p in parts) and kept.name != omnibus.name
     with zipfile.ZipFile(kept) as z:
         assert "Глава" not in z.read(z.namelist()[0]).decode("utf-8")
+
+
+def test_zipped_book_gives_title_and_genre_but_not_author_or_series(tmp_path):
+    folder = tmp_path / "Фантастика" / "Ле Гуин Урсула"
+    book = _zip(_omnibus(folder / "Ле Гуин Урсула - Земноморье.fb2", "Волшебник Земноморья",
+                         "Ле Урсула", [1]))
+    text = book.read_bytes()
+    with zipfile.ZipFile(book) as z:
+        xml = z.read(z.namelist()[0]).decode("utf-8")
+    with zipfile.ZipFile(book, "w") as z:                     # издательская серия в метаданных
+        z.writestr(book.name[:-4], xml.replace("<lang>", '<sequence name="Спецназ ГРУ"/><lang>'))
+    assert book.read_bytes() != text
+    [rec] = RegenCSVService(_config_path()).generate_csv(str(tmp_path), output_csv_path=None)
+    assert rec.file_title == "Волшебник Земноморья" and rec.metadata_genre == "sf"
+    assert rec.proposed_author == "Ле Гуин Урсула"
+    assert rec.proposed_series != "Спецназ ГРУ" and rec.metadata_series == ""

@@ -2963,6 +2963,7 @@ sync_job = JobState("fb2parser:sync", {
     "reconciliation_notes": [],
     "genre_unified_notes": [],
     "genre_conflict_notes": [],
+    "unknown_genre_notes": [],
     "log": [],
 })
 sync_stop_flag = JobFlag("fb2parser:sync:stop")
@@ -3365,6 +3366,7 @@ def _run_sync_thread():
         reconciliation_notes = stats.pop("reconciliation_notes", None) or []
         genre_unified_notes = stats.pop("genre_unified_notes", None) or []
         genre_conflict_notes = stats.pop("genre_conflict_notes", None) or []
+        unknown_genre_notes = stats.pop("unknown_genre_notes", None) or []
 
         # duplicates_found и duplicates_deleted считают РАЗНОЕ (см.
         # SynchronizationService.stats): duplicates_found — только точные
@@ -3412,7 +3414,8 @@ def _run_sync_thread():
         sync_job.update(done=True, running=False, stats=stats, stats_rows=stats_rows,
                         reconciliation_notes=reconciliation_notes,
                         genre_unified_notes=genre_unified_notes,
-                        genre_conflict_notes=genre_conflict_notes)
+                        genre_conflict_notes=genre_conflict_notes,
+                        unknown_genre_notes=unknown_genre_notes)
 
     except SyncBusy:
         sync_job.update(error=str(_("Automatic synchronization is running right now — try again in a few minutes.")),

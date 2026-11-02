@@ -65,6 +65,15 @@ def process_file_worker(fb2_file_path_str: str, work_dir_str: str,
             if cache:
                 content_hash = cache.cache_metadata(fb2_file, meta)
 
+        # .fb2.zip: из архива — только название и жанр (без них книга шла в
+        # «Без жанра» с «[no title]» в имени). Автор и серия — по-прежнему по
+        # папкам и имени файла: библиотека почти вся в .fb2.zip, и с авторами
+        # и сериями из архивов её разбор портился («Урсула Ле Гуин» → «Ле
+        # Урсула», издательская «Спецназ ГРУ» у одиночных книг двух авторов —
+        # проверка на 915 книгах сервера 2026-11-02, docs/series-duplicates.md).
+        if fb2_file.name.lower().endswith('.zip'):
+            meta = {**meta, 'authors': '', 'series': '', 'series_number': ''}
+
         # folder_author_map: {str(parent_folder): (author, source)} — precomputed per unique folder
         folder_key = str(fb2_file.parent)
         if folder_key in author_folder_cache:

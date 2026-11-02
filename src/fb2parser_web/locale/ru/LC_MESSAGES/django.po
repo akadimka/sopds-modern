@@ -1931,3 +1931,12 @@ msgstr "объединено в «%(name)s»"
 
 msgid "Choose one of the offered spellings."
 msgstr "Выберите одно из предложенных написаний."
+
+msgid "Genre is not in the genre list"
+msgstr "Жанр не из списка жанров"
+
+msgid "The genre tag of these books is empty, damaged or not one of your genres, so it is unclear which genre folder they belong to. They were left untouched in the source folder. Assign a genre to their folder and synchronize again."
+msgstr "Тег жанра у этих книг пустой, испорчен или не совпадает ни с одним из ваших жанров — неясно, в какую жанровую папку их класть. Они оставлены нетронутыми в исходной папке. Присвойте жанр их папке и синхронизируйте снова."
+
+msgid "Genre in the file"
+msgstr "Жанр в файле"

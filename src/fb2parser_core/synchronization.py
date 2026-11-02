@@ -25,8 +25,15 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import ownership_hooks
+from .fb2_utils import (
+    declared_encoding_lies,
+    norm_encoding,
+    read_fb2_bytes,
+    replace_control_chars,
+    set_xml_encoding,
+    write_fb2_bytes,
+)
 from .fb2_utils import has_fb2_files as _has_fb2_util
-from .fb2_utils import read_fb2_bytes, replace_control_chars, write_fb2_bytes
 from .library_memory import is_book_file
 from .logger import Logger
 from .path_safety import is_within
@@ -473,6 +480,13 @@ class SynchronizationService:
             _needs_reconciliation |= {
                 f['file_path'] for n in genre_conflict_notes for f in n['files']
             }
+            unknown_genre_notes = self.stats.get('unknown_genre_notes') or []
+            if unknown_genre_notes:
+                self._log(
+                    f"⚠ {len(unknown_genre_notes)} файлов: жанра нет в списке жанров — "
+                    f"оставлены в исходной папке, назначьте им жанр."
+                )
+            _needs_reconciliation |= {n['file_path'] for n in unknown_genre_notes}
             _needs_reconciliation |= set(hold_files or ())
             _records_to_move = [r for r in records if r.file_path not in _needs_reconciliation]
             _source_of = {id(r): r.file_path for r in _records_to_move}
@@ -701,6 +715,10 @@ class SynchronizationService:
         folder_structure = {}
         duplicates = defaultdict(list)
         reconciliation_notes: List[Dict] = []
+        # Книги, жанр которых не из списка жанров, — остаются в исходной
+        # папке (см. _library_genre); synchronize() не даёт _move_files их удалить.
+        unknown_genre_notes: List[Dict] = []
+        self.stats['unknown_genre_notes'] = unknown_genre_notes
         _reconciliation_skip = _load_reconciliation_skip_set()
 
         # Check database for existing entries
@@ -734,7 +752,6 @@ class SynchronizationService:
                                 f"Анализ файла {i+1}/{len(records)}")
             
             # Extract metadata
-            genre = record.metadata_genre or "Без жанра"
             # Баг №109 (продолжение): author_folder_root — стабильное имя
             # авторской папки для всей folder_dataset-группы (см. PASS4
             # "Widened N folder_dataset authors..."), не зависящее от того,
@@ -753,9 +770,19 @@ class SynchronizationService:
             # физическую группировку при переносе в библиотеку.
             display_root = (getattr(record, 'series_display_root', '') or '').strip()
 
-            # Handle genre with multiple entries
-            genres = [g.strip() for g in genre.split(',') if g.strip()]
-            primary_genre = genres[0] if genres else "Без жанра"
+            primary_genre = self._library_genre(record.metadata_genre or '')
+            if not primary_genre:
+                self._log(
+                    f"  [{i+1}] ЖАНР НЕ ИЗ СПИСКА: {record.file_path} — "
+                    f"«{record.metadata_genre or ''}». Не перемещаю — назначьте жанр."
+                )
+                unknown_genre_notes.append({
+                    'file_path': record.file_path,
+                    'genre': record.metadata_genre or '',
+                    'author': author,
+                    'title': title,
+                })
+                continue
 
             # Защита от недопустимых для Windows-путей символов в значениях
             # ИЗ САМИХ ФАЙЛОВ (испорченные метаданные) — см. _sanitize_path_component.
@@ -913,9 +940,43 @@ class SynchronizationService:
         self._log(f"  Новые файлы: {new_files_count}")
         self._log(f"  Дубликаты: {duplicate_files_count}")
         self._log(f"  Требуют ручной сверки: {len(reconciliation_notes)}")
+        self._log(f"  Жанр не из списка: {len(unknown_genre_notes)}")
         self._log(f"  Итого файлов в структуре: {len(folder_structure)}")
 
         return folder_structure, reconciliation_notes
+
+    def _genres_manager(self):
+        """Список жанров пользователя (genres.xml) — один на запуск."""
+        gm = self.__dict__.get('genres_manager')
+        if gm is None:
+            from .genres_manager import GenresManager
+            getter = getattr(self.__dict__.get('settings'), 'get_genres_file_path', None)
+            path = (getter() if getter else '') or ''
+            if not path or not Path(path).exists():
+                path = str(Path(__file__).resolve().parent.parent / 'fb2_data' / 'genres.xml')
+            gm = self.genres_manager = GenresManager(path)
+        return gm
+
+    def _library_genre(self, metadata_genre: str) -> str:
+        """Жанр библиотеки (папка верхнего уровня) по тегам <genre> книги.
+
+        Имя из списка жанров — как есть; иначе коды FB2 — через надёжную
+        привязку кода к жанру (точная или по справочнику, не «по семейству
+        кода»). '' — жанр не определён, книга остаётся в исходной папке.
+        Раньше папкой становилось первое значение тега как есть — так в
+        библиотеке появлялись «poetry», «prose_military» и «Без жанра»
+        (пустой или испорченный тег, «??????????»).
+        """
+        values = [g.strip() for g in metadata_genre.split(',') if g.strip()]
+        if not values:
+            return ''
+        gm = self._genres_manager()
+        names = {n.lower(): n for n in gm.all_genre_names()}
+        for value in values:
+            if value.lower() in names:
+                return names[value.lower()]
+        genre, reliable = gm.resolve_combo(','.join(values))
+        return genre if genre and reliable else ''
 
     def _series_in_library(self, author: str, display_root: str, series: str) -> Dict[str, Tuple[str, int]]:
         """Жанры, где папка серии уже есть в библиотеке и в ней есть книги:
@@ -2377,6 +2438,8 @@ class SynchronizationService:
                     pass
 
             enc_candidates = []
+            if declared_encoding_lies(raw_bytes, declared_enc):
+                enc_candidates.append('utf-8')
             if declared_enc:
                 enc_candidates.append(declared_enc)
             enc_candidates.extend(['utf-8-sig', 'utf-8', 'cp1251', 'latin-1'])
@@ -2538,14 +2601,23 @@ class SynchronizationService:
             # не трогая <body> (там инлайн-теги, пробелы значимы).
             result = self._pretty_print_description(result)
 
+            # Файл прочитан не в объявленной кодировке (encoding="latin-1" при
+            # тексте в UTF-8) — декларация должна совпасть с записанным.
+            if declared_enc and norm_encoding(declared_enc) != norm_encoding(content_encoding):
+                result = set_xml_encoding(result, content_encoding)
+
             if has_bom:
                 result = '\ufeff' + result
 
             # ---- write back with ORIGINAL encoding ----
+            # Строго: с errors='replace' автор и название, которых нет в
+            # кодировке файла, молча становились «????» (как жанр в №139).
             try:
-                out_bytes = result.encode(content_encoding, errors='replace')
-            except LookupError:
-                out_bytes = result.encode('utf-8', errors='replace')
+                out_bytes = result.encode(content_encoding)
+            except (UnicodeEncodeError, LookupError):
+                self._log(f"  ✗ Теги не записаны: их нельзя записать в кодировке файла "
+                          f"({content_encoding}), файл, вероятно, повреждён — {fb2_path.name}")
+                return
 
             write_fb2_bytes(fb2_path, out_bytes)  # сохраняет zip-формат если нужно
             self._log(f"  ✓ Теги обновлены ({content_encoding}): {fb2_path.name}")

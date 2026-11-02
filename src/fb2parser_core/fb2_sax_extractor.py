@@ -1,9 +1,12 @@
+import codecs
+import io
 import re
 import xml.sax
 import xml.sax.handler
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from .fb2_utils import read_fb2_bytes
 from .settings_manager import SettingsManager
 
 
@@ -190,7 +193,8 @@ class FB2SAXExtractor:
             parser = xml.sax.make_parser()
             parser.setContentHandler(handler)
 
-            with open(fb2_path, 'r', encoding=encoding, errors='ignore') as f:
+            with io.TextIOWrapper(io.BytesIO(read_fb2_bytes(fb2_path)),
+                                  encoding=encoding, errors='ignore') as f:
                 parser.parse(f)
 
             # Формируем список авторов (с дедупликацией)
@@ -224,14 +228,15 @@ class FB2SAXExtractor:
             return [], ""
 
 
-    def _detect_encoding(self, fb2_path: Path) -> Optional[str]:
+    def _detect_encoding(self, fb2_path: Path, raw: Optional[bytes] = None) -> Optional[str]:
         """
-        Определить кодировку FB2 файла.
+        Определить кодировку FB2 файла (raw — уже прочитанное начало XML).
         """
         try:
-            # Читаем первые 1024 байта для определения кодировки
-            with open(fb2_path, 'rb') as f:
-                raw = f.read(1024)
+            # Первые 1024 байта XML; у .fb2.zip — из архива, а не байты zip.
+            if raw is None:
+                raw = read_fb2_bytes(fb2_path)
+            raw = raw[:1024]
 
             # Ищем XML декларацию
             content = raw.decode('utf-8', errors='ignore')
@@ -248,8 +253,10 @@ class FB2SAXExtractor:
                     # Объявлена нестандартная кодировка (latin-1 и т.п.).
                     # Проверяем: если содержимое является валидным UTF-8 —
                     # используем UTF-8 (объявление ошибочное, файл реально в UTF-8).
+                    # final=False: символ, разрезанный границей 1024 байт, —
+                    # не повод считать файл не-UTF-8.
                     try:
-                        raw.decode('utf-8', errors='strict')
+                        codecs.getincrementaldecoder('utf-8')().decode(raw, final=False)
                         return 'utf-8'
                     except (UnicodeDecodeError, ValueError):
                         return encoding
@@ -269,11 +276,13 @@ class FB2SAXExtractor:
         """
         try:
             handler = FB2SAXHandler()
-            encoding = self._detect_encoding(fb2_path)
+            # .fb2.zip — XML из архива: раньше парсер получал байты zip, и
+            # книга из архива оставалась без названия, автора и жанра
+            # (в библиотеке — папка «Без жанра» и «[no title]» в имени).
+            raw_bytes = read_fb2_bytes(fb2_path)
+            encoding = self._detect_encoding(fb2_path, raw_bytes)
             if not encoding:
                 encoding = 'utf-8'
-
-            raw_bytes = fb2_path.read_bytes()
 
             # Если объявленная кодировка — не UTF-8, но байты валидны как UTF-8,
             # патчим XML-декларацию чтобы SAX-парсер не переключился на latin-1/etc.

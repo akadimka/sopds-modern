@@ -9,6 +9,10 @@
 `target_dir.mkdir()` падал с WinError 123 ("синтаксическая ошибка в
 имени файла..."), и ВСЯ синхронизация (0 из 6 файлов перемещено, хотя
 только жанр был испорчен, остальные метаданные — исправны) вставала.
+
+С 2026-11-02 жанровая папка — только из списка жанров: книга с испорченным
+жанром или кодом без привязки не идёт в «Без жанра»/папку кода, а остаётся
+на месте с заметкой (test_genre_folder_from_list.py).
 """
 from pathlib import Path
 
@@ -51,16 +55,16 @@ def _rec(file_path, genre):
 
 
 class TestBuildFolderStructureSanitizesGenre:
-    def test_corrupted_genre_falls_back_to_bez_zhanra(self, tmp_path):
+    def test_corrupted_genre_is_held_without_crash(self, tmp_path):
         svc = _make_service(tmp_path)
-        records = [_rec("Автор Тест - Книга.fb2", "??????????")]
+        records = [_rec("Автор Тест - Книга.fb2", "??????????"), _rec("Автор Тест - Другая.fb2", "Фантастика")]
         folder_structure, _ = svc._build_folder_structure(records)
-        genre, author, display_root, series, subseries = folder_structure["Автор Тест - Книга.fb2"]
-        assert genre == "Без жанра"
+        assert list(folder_structure) == ["Автор Тест - Другая.fb2"]
+        assert [n["genre"] for n in svc.stats["unknown_genre_notes"]] == ["??????????"]
 
     def test_clean_genre_still_used_as_is(self, tmp_path):
         svc = _make_service(tmp_path)
-        records = [_rec("Автор Тест - Книга.fb2", "sf_boevaya")]
+        records = [_rec("Автор Тест - Книга.fb2", "Фантастика")]
         folder_structure, _ = svc._build_folder_structure(records)
         genre, author, display_root, series, subseries = folder_structure["Автор Тест - Книга.fb2"]
-        assert genre == "sf_boevaya"
+        assert genre == "Фантастика"
