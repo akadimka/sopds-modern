@@ -93,6 +93,8 @@ def link_by_code(code: str, tg_user: Dict[str, Any]) -> Tuple[Optional[TelegramL
     link.code, link.code_expires = "", None
     link.linked_at = timezone.now()
     link.save()
+    from . import activity
+    activity.record(None, "telegram_linked", user=link.user, channel="telegram", telegram_name=link.telegram_name)
     return link, ""
 
 

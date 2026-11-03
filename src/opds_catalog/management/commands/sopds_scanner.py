@@ -159,6 +159,19 @@ class Command(BaseCommand):
         self.logger.debug("Releasing lock")
         self.scan_is_active = False
 
+    def activity_cleanup(self):
+        """Раз в сутки — записи журнала действий старше срока хранения
+        (docs/activity-log-design.md, «Хранение во времени»)."""
+        if connection.connection and not connection.is_usable():
+            del connections._connections.default
+        try:
+            from sopds_web_backend import activity
+            removed = activity.cleanup()
+            if any(removed.values()):
+                self.logger.info("Activity log cleanup: %s", removed)
+        except Exception:  # noqa: BLE001 — чистка журнала не должна останавливать сканер
+            self.logger.exception("Activity log cleanup failed")
+
     def run_autosync(self):
         """Первый шаг планового скана: разложить книги из папки наблюдения,
         чтобы следующий за ним скан библиотеки уже их увидел
@@ -237,6 +250,7 @@ class Command(BaseCommand):
             id="scan",
         )
         self.sched.add_job(self.check_settings, "cron", minute="*/10", id="check")
+        self.sched.add_job(self.activity_cleanup, "cron", hour=4, minute=17, id="activity_cleanup")
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
         self.stdout.write("Quit the server with %s.\n" % quit_command)
         try:

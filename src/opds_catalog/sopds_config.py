@@ -58,6 +58,10 @@ _DEFAULTS: dict = {
     # Устройств (браузеров) на пользователя по умолчанию; 0 — без ограничений
     # (docs/devices-design.md).
     'devices_per_user': 0,
+    # Сроки хранения журнала действий, дней; 0 — бессрочно
+    # (docs/activity-log-design.md, «Хранение во времени»).
+    'activity_keep_security_days': 365,
+    'activity_keep_reading_days': 90,
 }
 
 # Маппинг SOPDS_KEY -> json_key
@@ -99,6 +103,8 @@ _KEY_MAP: dict[str, str] = {
     'SOPDS_FANTLAB_RATING': 'fantlab_rating',
     'SOPDS_LITMARKET_RATING': 'litmarket_rating',
     'SOPDS_DEVICES_PER_USER': 'devices_per_user',
+    'SOPDS_ACTIVITY_KEEP_SECURITY_DAYS': 'activity_keep_security_days',
+    'SOPDS_ACTIVITY_KEEP_READING_DAYS': 'activity_keep_reading_days',
 }
 
 

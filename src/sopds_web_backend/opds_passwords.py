@@ -52,8 +52,9 @@ def generate(user) -> str:
     return password
 
 
-def revoke(user) -> None:
-    OpdsPassword.objects.filter(user=user).delete()
+def revoke(user) -> bool:
+    """Отозвать пароль для читалок; False — его и не было."""
+    return OpdsPassword.objects.filter(user=user).delete()[0] > 0
 
 
 def authenticate(username: str, password: str) -> Optional[OpdsPassword]:
@@ -66,6 +67,7 @@ def authenticate(username: str, password: str) -> Optional[OpdsPassword]:
     if record is None or not hmac.compare_digest(record.token_hash, _hash(password)):
         return None
     now = timezone.now()
+    record.first_use = record.last_used is None             # для журнала: первый вход читалки с ним
     if record.last_used is None or now - record.last_used > LAST_USED_STEP:
         record.last_used = now
         record.save(update_fields=["last_used"])

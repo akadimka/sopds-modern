@@ -974,6 +974,7 @@ _SETTINGS_TABS = {
     'telegram': 'Telegram',
     'news': _lazy('News'),
     'users': _lazy('Users'),
+    'journal': _lazy('Journal'),
 }
 
 
@@ -1076,6 +1077,7 @@ def _settings_context(request, sm, active_tab, errors=(), users_error=None, news
         'telegram_token_tail': autosync['telegram_token'][-4:],
         **_users_context(),
         **_news_context(request, autosync, news_error),
+        **_journal_context(request),
     }
 
 
@@ -1510,6 +1512,7 @@ def LoginView(request):
     ) or next_url.split("?")[0] == reverse("web:logout"):     # выход — только POST: после входа был бы 405
         next_url = reverse("web:main")
 
+    from . import activity
     user = authenticate(request, username=username, password=password)
     if user is not None and user.is_active:
         from .password_rules import check_on_sign_in
@@ -1517,12 +1520,14 @@ def LoginView(request):
         if not devices.can_sign_in(request, user):
             # До второго шага: код не отправляется впустую (docs/devices-design.md).
             logger.warning("Login refused: device limit reached for '%s'", username)
+            activity.record(request, "login_refused", user=user, ok=False, reason="device_limit")
             args["system_message"] = {"text": devices.limit_message(user), "type": "alert"}
             return handler403(request, args)
         from . import login_codes
         method = login_codes.method_for(user)
         if method is not None and login_codes.account_locked(user):
             logger.warning("Login refused: too many wrong second-factor codes for '%s'", username)
+            activity.record(request, "login_refused", user=user, ok=False, reason="code_locked")
             args["system_message"] = {"text": login_codes.locked_message(), "type": "alert"}
             return handler403(request, args)
         if method is not None:
@@ -1530,6 +1535,7 @@ def LoginView(request):
             if login_codes.start(request, user, method, user.backend, next_url):
                 return redirect(reverse("web:login_code"))
             logger.warning("Login refused: login code for '%s' could not be delivered", username)
+            activity.record(request, "login_refused", user=user, ok=False, reason="code_not_delivered")
             args["system_message"] = {
                 "text": _("Could not send the sign-in code to Telegram, so superusers cannot sign in right "
                           "now. Check the bot settings; on the server the code can be turned off with "
@@ -1537,16 +1543,17 @@ def LoginView(request):
                 "type": "alert",
             }
             return handler403(request, args)
-        if not _full_login(request, user):
+        if not _full_login(request, user, "password"):
             args["system_message"] = {"text": devices.limit_message(user), "type": "alert"}
             return handler403(request, args)
         return redirect(next_url)
     # Неактивный аккаунт не отличаем от неверного логина/пароля: иначе
     # сообщение «This account is not active» подтверждало бы, что логин и
     # пароль верны (перечисление валидных учёток). Причину входа различаем
-    # только в серверном логе, не в ответе пользователю.
+    # только в серверном логе и журнале, не в ответе пользователю.
     if user is not None and not user.is_active:
         logger.warning("Login refused: account '%s' is inactive", username)
+    record_failed_sign_in(request, username, user)
     args["system_message"] = {
         "text": _("User does not exist or the password is incorrect!"),
         "type": "alert",
@@ -1560,8 +1567,28 @@ def LogoutView(request):
     # Без @sopds_login: уже вышедшего он отправлял на вход с next=/web/logout/,
     # а после входа — на GET выхода (405).
     if request.user.is_authenticated:
+        from . import activity
+        activity.record(request, "logout")
         logout(request)
     return redirect(reverse("web:main"))
+
+
+def record_failed_sign_in(request, username, user=None, reason=None):
+    """Неудачный вход — в журнал: у кого (если имя есть) и почему. Попытка во
+    время блокировки django-axes здесь не пишется — её записал сигнал
+    блокировки (signals.py). user — известная учётная запись, которой вход
+    не дан (reason — почему); иначе ищется по введённому имени."""
+    from . import activity
+    from .usernames import find_user
+    if getattr(request, "axes_locked_out", False):
+        return
+    if user is not None:
+        reason = reason or "inactive"
+    else:
+        user = find_user(username or "")
+        reason = "wrong_password" if user is not None else "unknown_user"
+    activity.record(request, "login_failed", user=user, username=username, ok=False, reason=reason,
+                    entered=username)
 
 
 def csrf_failure(request, reason=""):
@@ -1590,18 +1617,21 @@ def handler403(request, args):
     return response
 
 
-def _full_login(request, user) -> bool:
+def _full_login(request, user, method) -> bool:
     """Полный вход на сайт. Метку «только OPDS» (сессия читалки,
     OpdsOnlySessionMiddleware) снимаем — login() того же пользователя
     сохраняет данные сессии. Устройство (браузер) регистрируется; лимит
-    устройств исчерпан (успели занять, пока вводили код) — выход, False."""
-    from . import devices
+    устройств исчерпан (успели занять, пока вводили код) — выход, False.
+    method — как вошёл (для журнала): password, totp, telegram."""
+    from . import activity, devices
     from .opds_passwords import SESSION_KEY as OPDS_ONLY
     login(request, user)
     request.session.pop(OPDS_ONLY, None)
     if devices.register(request, user) is None:
         logout(request)
+        activity.record(request, "login_refused", user=user, ok=False, reason="device_limit")
         return False
+    activity.record(request, "login", method=method)
     return True
 
 
@@ -1614,9 +1644,10 @@ def LoginCodeView(request):
     if login_codes.pending(request) is None:
         return redirect(reverse("web:login"))
     if request.method == "POST":
+        method = (login_codes.pending(request) or {}).get("method", login_codes.METHOD_TELEGRAM)
         user, error, next_url = login_codes.verify(request, request.POST.get("code", ""))
         if user is not None:
-            if not _full_login(request, user):
+            if not _full_login(request, user, method):
                 from . import devices
                 args["system_message"] = {"text": devices.limit_message(user), "type": "alert"}
                 return handler403(request, args)
@@ -1643,7 +1674,7 @@ def user_profile(request):
 
     from sopds_web_backend.models import OpdsPassword, UserProfile
 
-    from . import login_codes
+    from . import activity, login_codes
 
     user = request.user
     # Не "_": это gettext модуля — затенённый флагом created, он падал
@@ -1685,6 +1716,7 @@ def user_profile(request):
                     user.set_password(new_pw)
                     user.save()
                     update_session_auth_hash(request, user)
+                    activity.record(request, "password_changed")
                     _after_password_change(request, user)
                     from .password_rules import set_must_change
                     set_must_change(user, False)
@@ -1703,6 +1735,7 @@ def user_profile(request):
             if device is not None:
                 current = devices.current_device(request, user)
                 deleted_pk = device.pk          # delete() обнуляет pk объекта
+                activity.record(request, "device_deleted", device=device)
                 device.delete()
                 if current is not None and current.pk == deleted_pk:
                     # Удалили это устройство — выход здесь же (docs/devices-design.md).
@@ -1746,9 +1779,10 @@ def user_profile(request):
             from . import totp
             if totp.confirm(user, request.POST.get("code", "")):
                 login_codes.clear_failures(user)
+                activity.record(request, "totp_enabled")
                 success = "totp_on"
             else:
-                login_codes.note_failure(user)
+                login_codes.note_failure(user, request)
                 errors["totp"] = _("Wrong code — check that the time on the phone is correct and try again.")
 
         elif action == "totp_cancel":
@@ -1761,19 +1795,22 @@ def user_profile(request):
             if totp.verify(user, request.POST.get("code", "")):
                 login_codes.clear_failures(user)
                 totp.disable(user)
+                activity.record(request, "totp_disabled")
                 success = "totp_off"
             else:
-                login_codes.note_failure(user)
+                login_codes.note_failure(user, request)
                 errors["totp"] = _("Wrong code.")
 
         elif action == "opds_new":
             from .opds_passwords import generate
             opds_new_password = generate(user)
+            activity.record(request, "opds_password_created")
             success = "opds"
 
         elif action == "opds_revoke":
             from .opds_passwords import revoke
-            revoke(user)
+            if revoke(user):
+                activity.record(request, "opds_password_revoked")
             success = "opds"
 
         elif action == "tg_unlink":
@@ -1781,6 +1818,7 @@ def user_profile(request):
             from .telegram_users import unlink
             link = TelegramLink.objects.filter(user=user).first()
             if link is not None and link.linked:
+                activity.record(request, "telegram_unlinked", telegram_name=link.telegram_name)
                 unlink(link)
             success = "telegram"
 
@@ -1803,6 +1841,7 @@ def user_profile(request):
         "opds_url": request.build_absolute_uri(reverse("opds:main")),
         **_profile_totp_context(user),
         **_profile_devices_context(request, user),
+        "own_sign_ins": activity.own_sign_ins(user),
         "second_factor": login_codes.method_for(user) is not None,
         "password_rules": _rules_text(user),
     })
@@ -1841,6 +1880,8 @@ def password_change_required(request):
             user.set_password(new_pw)
             user.save()
             update_session_auth_hash(request, user)
+            from . import activity
+            activity.record(request, "password_changed", required=True)
             _after_password_change(request, user)
             set_must_change(user, False)
             return redirect(reverse("web:main"))
@@ -1858,10 +1899,11 @@ def _after_password_change(request, user):
     """Смена пароля закрывает и другие пути входа: пароль для читалок и
     устройства, кроме текущего браузера (сессии браузеров завершает сам
     Django — в них хеш пароля). Telegram остаётся: привязку видно в профиле."""
-    from . import devices
+    from . import activity, devices
     from .models import UserDevice
     from .opds_passwords import revoke
-    revoke(user)
+    if revoke(user):
+        activity.record(request, "opds_password_revoked", user=user, actor=request.user, reason="password_change")
     keep = devices.current_device(request, user) if request.user.pk == user.pk else None
     UserDevice.objects.filter(user=user).exclude(pk=keep.pk if keep is not None else None).delete()
 
@@ -2044,13 +2086,16 @@ def user_edit(request, user_id):
             return _users_list_error(request, error)
         user.set_password(password)
         user.save()
+        from . import activity
         from .password_rules import set_must_change
         if user.pk == request.user.pk:
             from django.contrib.auth import update_session_auth_hash
             update_session_auth_hash(request, user)
             set_must_change(user, False)
+            activity.record(request, "password_changed")
         else:
             set_must_change(user, True)                  # пароль задал суперпользователь — сменит при входе
+            activity.record(request, "password_set", user=user, actor=request.user)
         _after_password_change(request, user)
     if "max_devices" in request.POST:
         raw = request.POST.get("max_devices", "").strip()
@@ -2068,8 +2113,12 @@ def user_edit(request, user_id):
 def user_device_delete(request, user_id, device_id):
     """Суперпользователь удаляет устройство пользователя — освободить место
     (потерян телефон, а войти, чтобы удалить самому, нельзя: лимит)."""
+    from . import activity
     from .models import UserDevice
-    UserDevice.objects.filter(pk=device_id, user_id=user_id).delete()
+    device = UserDevice.objects.select_related("user").filter(pk=device_id, user_id=user_id).first()
+    if device is not None:
+        activity.record(request, "device_deleted", user=device.user, actor=request.user, device=device)
+        device.delete()
     return redirect(reverse("web:users_list") + f"#user-{user_id}")
 
 
@@ -2084,8 +2133,73 @@ def user_telegram_unlink(request, user_id):
     user = get_object_or_404(DjangoUser, pk=user_id)
     link = TelegramLink.objects.filter(user=user).first()
     if link is not None and link.linked:
+        from . import activity
+        activity.record(request, "telegram_unlinked", user=user, actor=request.user,
+                        telegram_name=link.telegram_name)
         unlink(link)
     return redirect(reverse("web:users_list"))
+
+
+# ── Журнал действий (docs/activity-log-design.md) ───────────────────────────
+
+def _journal_context(request, summary=True):
+    """Вкладка «Журнал»: фильтры из адреса, страница строк, сводка за
+    сегодня, сроки хранения."""
+    from urllib.parse import urlencode
+
+    from django.contrib.auth.models import User as DjangoUser
+
+    from . import activity
+    filters = activity.filters_from(request.GET)
+    rows, more, last_day = activity.page_of(filters, request.GET.get("after_day", ""))
+    query = urlencode({k: ("1" if v is True else v) for k, v in filters.items() if k != "page" and v})
+    context = {
+        "journal_rows": rows,
+        "journal_more": more,
+        "journal_next": f"{query}&page={filters['page'] + 1}&after_day={last_day}",
+        "journal_filters": filters,
+    }
+    if summary:
+        context.update({
+            "journal_summary": activity.summary_today(),
+            "journal_users": DjangoUser.objects.order_by("username").only("id", "username"),
+            "journal_periods": list(activity.PERIODS.items()),
+            "journal_categories": [(k, icon, label) for k, (icon, label) in activity.CATEGORIES.items()],
+            "journal_channels": [(k, icon, label) for k, (icon, label) in activity.CHANNELS.items()],
+            "journal_keep": activity.keep_days(),
+            "journal_saved": request.GET.get("journal_saved") == "1",
+        })
+    return context
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["GET"])
+def journal(request):
+    """Журнал действий: страница настроек на вкладке «Журнал»; запрос htmx
+    (фильтры, «Показать ещё») — только строки."""
+    if request.headers.get("HX-Request"):
+        return render(request, "sopds_journal_rows.html", _journal_context(request, summary=False))
+    tab = request.GET.get("tab", "journal")              # переключение вкладок меняет ?tab= в адресе
+    return _settings_page(request, tab if tab in _SETTINGS_TABS else "journal")
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def journal_retention(request):
+    """Сроки хранения журнала, дней (0 — бессрочно)."""
+    from fb2parser_core.settings_manager import SettingsManager
+    sm = SettingsManager(_site_config_path())
+    values = {}
+    for key in ("activity_keep_security_days", "activity_keep_reading_days"):
+        raw = request.POST.get(key, "").strip()
+        if not raw.isdigit():
+            error = _("Retention must be a whole number of days (0 — keep forever).")
+            return render(request, "sopds_settings.html", _settings_context(request, sm, "journal", [error]),
+                          status=422)
+        values[key] = int(raw)
+    sm.settings.setdefault("sopds", {}).update(values)
+    sm.save()
+    return redirect(reverse("web:journal") + "?journal_saved=1")
 
 
 @sopds_admin(url="web:login")

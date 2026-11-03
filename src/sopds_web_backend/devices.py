@@ -117,12 +117,16 @@ def register(request, user, token: Optional[str] = None) -> Optional[UserDevice]
         if not request.COOKIES.get(COOKIE):
             setattr(request, _NEW_TOKEN_ATTR, token)
         fields = {"user_agent": ua, "label": label_for(ua)[:100], "last_ip": _client_ip(request)}
+        created = False
         try:
             with transaction.atomic():
-                device, _created = UserDevice.objects.get_or_create(user=user, token_hash=_hash(token),
-                                                                    defaults=fields)
+                device, created = UserDevice.objects.get_or_create(user=user, token_hash=_hash(token),
+                                                                   defaults=fields)
         except IntegrityError:   # одновременный запрос той же сессии успел создать
             device = UserDevice.objects.get(user=user, token_hash=_hash(token))
+        if created:
+            from . import activity
+            activity.record(request, "device_new", user=user, device=device)
     else:
         UserDevice.objects.filter(pk=device.pk).update(last_seen=now, last_ip=_client_ip(request),
                                                        user_agent=ua, label=label_for(ua)[:100])
@@ -192,4 +196,6 @@ class DeviceMiddleware:
             sign_out(request, removed_message())
             return
         if register(request, user, token=session_token(request)) is None:
+            from . import activity
+            activity.record(request, "login_refused", user=user, ok=False, reason="device_limit")
             sign_out(request, limit_message(user))

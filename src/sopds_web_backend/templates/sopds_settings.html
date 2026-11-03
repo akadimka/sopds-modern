@@ -523,6 +523,11 @@
 <div id="s-pane-users" class="s-tab-panel{% if active_tab == 'users' %} active{% endif %}">
 {% include "sopds_users_pane.html" %}
 </div>
+
+<!-- ═══════════ Вкладка: Журнал (docs/activity-log-design.md; свои формы) ═══════════ -->
+<div id="s-pane-journal" class="s-tab-panel{% if active_tab == 'journal' %} active{% endif %}">
+{% include "sopds_journal_pane.html" %}
+</div>
 </div>
 
 <script src="{% static 'js/password-generator.js' %}"></script>

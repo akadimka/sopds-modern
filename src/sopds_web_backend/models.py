@@ -169,3 +169,38 @@ class UserDevice(models.Model):
 
     def __str__(self):
         return f"Device({self.user_id}, {self.name or self.label})"
+
+
+class ActivityEvent(models.Model):
+    """Запись журнала действий пользователей (docs/activity-log-design.md).
+
+    Пишется только через `sopds_web_backend.activity.record`. Имена
+    пользователя и того, кто сделал, — копии: запись не теряет смысла после
+    удаления учётной записи. IP — только у событий входа и безопасности.
+    В `details` никогда не попадают пароли, коды, токены и cookie."""
+
+    at = models.DateTimeField(db_index=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    username = models.CharField(max_length=150, blank=True, default="")
+    actor = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    actor_name = models.CharField(max_length=150, blank=True, default="")
+    category = models.CharField(max_length=16)
+    action = models.CharField(max_length=40)
+    channel = models.CharField(max_length=16, blank=True, default="")
+    ok = models.BooleanField(default=True)
+    object_type = models.CharField(max_length=16, blank=True, default="")
+    object_id = models.CharField(max_length=64, blank=True, default="")
+    object_label = models.CharField(max_length=300, blank=True, default="")
+    device = models.ForeignKey(UserDevice, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "at"], name="activity_user_at"),
+            models.Index(fields=["category", "at"], name="activity_category_at"),
+        ]
+
+    def __str__(self):
+        return f"ActivityEvent({self.at:%Y-%m-%d %H:%M}, {self.username or '-'}, {self.action})"

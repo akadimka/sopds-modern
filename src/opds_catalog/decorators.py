@@ -61,11 +61,14 @@ def sopds_auth_validate(view_function):
 
         # Сначала — пароль для читалок; основной пароль сайта — только если
         # это не запрещено настройкой (SOPDS_OPDS_APP_PASSWORDS_ONLY).
-        from sopds_web_backend import opds_passwords
+        from sopds_web_backend import activity, opds_passwords
 
+        refused = None
         record = opds_passwords.authenticate(username, password)
         if record is not None:
             user, mark = record.user, opds_passwords.session_mark(record.token_hash)
+            if record.first_use:
+                activity.record(request, "opds_password_first_use", user=user)
         elif not config.SOPDS_OPDS_APP_PASSWORDS_ONLY:
             user, mark = auth.authenticate(request, username=username, password=password), opds_passwords.MARK_MAIN
             # Со вторым фактором основной пароль читалкам не годится: иначе
@@ -73,7 +76,9 @@ def sopds_auth_validate(view_function):
             from sopds_web_backend.login_codes import method_for
             from sopds_web_backend.password_rules import must_change
             if user is not None and (method_for(user) is not None or must_change(user)):
-                user = None   # второй фактор или пароль ещё не сменён — менять его в читалке негде
+                # второй фактор или пароль ещё не сменён — менять его в читалке негде
+                refused = (user, "main_password_not_for_readers")
+                user = None
         else:
             user = None
         if user and user.is_active:
@@ -84,8 +89,13 @@ def sopds_auth_validate(view_function):
             auth.login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             request.session[opds_passwords.SESSION_KEY] = mark
             request.user = user
+            activity.record(request, "login", method="app_password" if record is not None else "password")
             return view_function(*args, **kwargs)
 
+        from sopds_web_backend.views import record_failed_sign_in
+        if refused is None and user is not None:
+            refused = (user, "inactive")
+        record_failed_sign_in(request, username, *(refused or ()))
         return _unauthed()
 
     return wrap

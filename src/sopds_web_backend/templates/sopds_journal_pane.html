@@ -1,0 +1,86 @@
+{% load i18n %}{# Вкладка «Журнал» страницы настроек (docs/activity-log-design.md) — вне общей формы настроек: у неё свои формы #}
+<style>
+  .sp-j-summary { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-size: 0.9rem; margin-bottom: 0.8rem; }
+  .sp-j-summary .sp-j-bad { color: var(--status-error); font-weight: 600; }
+  .sp-j-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
+  .sp-j-filters select { width: auto; margin: 0; height: 2rem; padding: 0 1.6rem 0 0.5rem; font-size: 0.82rem; }
+  .sp-j-filters label { margin: 0; font-size: 0.85rem; display: flex; gap: 0.3rem; align-items: center; }
+  .sp-j-filters input[type=checkbox] { margin: 0; }
+  .sp-j-day { font-weight: 700; font-size: 0.85rem; color: var(--sp-accent); margin: 1rem 0 0.3rem;
+              border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
+  .sp-j-row { display: grid; grid-template-columns: 3.2rem minmax(6rem, 10rem) 7.5rem 1fr 1.5rem; gap: 0.5rem;
+              align-items: baseline; font-size: 0.85rem; padding: 0.25rem 0; border-bottom: 1px dashed var(--border); }
+  .sp-j-row.sp-j-fail .sp-j-act { color: var(--status-error); }
+  .sp-j-time { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .sp-j-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sp-j-ch { color: var(--text-muted); white-space: nowrap; }
+  .sp-j-more { grid-column: 5; margin: 0; }
+  .sp-j-more[open] { grid-column: 1 / -1; }
+  .sp-j-more summary { cursor: pointer; color: var(--text-muted); font-size: 1rem; line-height: 1; list-style: none; }
+  .sp-j-more summary::-webkit-details-marker { display: none; }
+  .sp-j-more summary::before { content: "▸"; }
+  .sp-j-more[open] summary::before { content: "▾"; }
+  .sp-j-more dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.1rem 0.8rem; margin: 0.3rem 0 0.3rem 3.7rem;
+                  font-size: 0.8rem; }
+  .sp-j-more dt { color: var(--text-muted); font-weight: normal; margin: 0; }
+  .sp-j-more dd { margin: 0; word-break: break-word; }
+  .sp-j-moreline { margin-top: 0.8rem; }
+  .sp-j-keep { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: flex-end; }
+  .sp-j-keep label { margin: 0; font-size: 0.85rem; }
+  .sp-j-keep input { width: 7rem; margin: 0; }
+  @media (max-width: 640px) {
+    .sp-j-row { grid-template-columns: 3.2rem auto 1fr 1.5rem; gap: 0.1rem 0.5rem; }
+    .sp-j-row .sp-j-time { grid-row: 1; }
+    .sp-j-row .sp-j-act { grid-column: 2 / 4; grid-row: 1; font-weight: 600; }
+    .sp-j-row .sp-j-who { grid-column: 2; grid-row: 2; font-size: 0.8rem; }
+    .sp-j-row .sp-j-ch { grid-column: 3; grid-row: 2; font-size: 0.8rem; }
+    .sp-j-row .sp-j-more { grid-column: 4; grid-row: 1; }
+    .sp-j-row .sp-j-more[open] { grid-column: 1 / -1; grid-row: 3; }
+    .sp-j-more dl { margin-left: 0; }
+  }
+</style>
+
+{% if journal_saved %}<div class="s-msg ok" style="margin-bottom:0.8rem;">✓ {% trans "Retention saved." %}</div>{% endif %}
+
+<div class="s-section-title">{% trans "Today" %}</div>
+<div class="sp-j-summary">
+  <a href="{% url 'web:journal' %}?period=today&amp;category=security">{% blocktrans with n=journal_summary.logins %}Sign-ins: {{ n }}{% endblocktrans %}</a>
+  <a href="{% url 'web:journal' %}?period=today&amp;category=security&amp;failed=1"{% if journal_summary.failed or journal_summary.locks %} class="sp-j-bad"{% endif %}>{% blocktrans with n=journal_summary.failed %}Failed: {{ n }}{% endblocktrans %}{% if journal_summary.locks %} (⚠ {% blocktrans with n=journal_summary.locks %}lockouts: {{ n }}{% endblocktrans %}){% endif %}</a>
+  <span>{% blocktrans with n=journal_summary.active_users %}Active users: {{ n }}{% endblocktrans %}</span>
+</div>
+
+<div class="s-section-title">{% trans "Journal" %}</div>
+<form class="sp-j-filters" method="get" action="{% url 'web:journal' %}"
+      hx-get="{% url 'web:journal' %}" hx-target="#journal-rows" hx-push-url="true" hx-trigger="change, submit">
+  <select name="period" aria-label="{% trans "Period" %}">
+    {% for key, label in journal_periods %}<option value="{{ key }}"{% if key == journal_filters.period %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <select name="user" aria-label="{% trans "User" %}">
+    <option value="">{% trans "All users" %}</option>
+    {% for u in journal_users %}<option value="{{ u.pk }}"{% if journal_filters.user == u.pk|stringformat:"d" %} selected{% endif %}>{{ u.username }}</option>{% endfor %}
+  </select>
+  <select name="category" aria-label="{% trans "Category" %}">
+    <option value="">{% trans "All categories" %}</option>
+    {% for key, icon, label in journal_categories %}<option value="{{ key }}"{% if key == journal_filters.category %} selected{% endif %}>{{ icon }} {{ label }}</option>{% endfor %}
+  </select>
+  <select name="channel" aria-label="{% trans "Channel" %}">
+    <option value="">{% trans "All channels" %}</option>
+    {% for key, icon, label in journal_channels %}<option value="{{ key }}"{% if key == journal_filters.channel %} selected{% endif %}>{{ icon }} {{ label }}</option>{% endfor %}
+  </select>
+  <label><input type="checkbox" name="failed" value="1"{% if journal_filters.failed %} checked{% endif %}> {% trans "only refusals" %}</label>
+  <a href="{% url 'web:journal' %}" style="font-size:0.85rem;">{% trans "Reset" %}</a>
+  <noscript><button type="submit" class="button small">{% trans "Show" %}</button></noscript>
+</form>
+
+<div id="journal-rows">{% include "sopds_journal_rows.html" %}</div>
+
+<div class="s-section-title">{% trans "Journal retention" %}</div>
+<form method="post" action="{% url 'web:journal_retention' %}" class="sp-j-keep">
+  {% csrf_token %}
+  <label>{% trans "Sign-in, security and changes, days" %}
+    <input type="number" name="activity_keep_security_days" min="0" step="1" value="{{ journal_keep.security }}"></label>
+  <label>{% trans "Reading and downloads, days" %}
+    <input type="number" name="activity_keep_reading_days" min="0" step="1" value="{{ journal_keep.reading }}"></label>
+  <button type="submit" class="button small" style="margin:0;">{% trans "Save" %}</button>
+</form>
+<div class="s-hint">{% trans "0 — keep forever. Older records are removed once a day." %}</div>

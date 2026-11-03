@@ -36,6 +36,8 @@ urlpatterns = [
             name="user_telegram_unlink"),
     re_path(r"^settings/users/(?P<user_id>\d+)/devices/(?P<device_id>\d+)/delete/$", views.user_device_delete,
             name="user_device_delete"),
+    re_path(r"^settings/journal/$", views.journal, name="journal"),
+    re_path(r"^settings/journal/retention/$", views.journal_retention, name="journal_retention"),
     re_path(r"^news/$", views.news_list, name="news"),
     re_path(r"^settings/news/create/$", views.news_create, name="news_create"),
     re_path(r"^settings/news/(?P<news_id>\d+)/edit/$", views.news_edit, name="news_edit"),

@@ -61,14 +61,21 @@ def account_locked(user) -> bool:
     return (cache.get(_failures_key(user)) or 0) >= ACCOUNT_MAX_FAILURES
 
 
-def note_failure(user) -> None:
+def note_failure(user, request=None) -> None:
+    """Неверный код — в счётчик аккаунта и в журнал; набралось на блокировку —
+    в журнал и она."""
     from django.core.cache import cache
+
+    from . import activity
     key = _failures_key(user)
     cache.add(key, 0, ACCOUNT_LOCK_SECONDS)
     try:
         cache.incr(key)
     except ValueError:              # ключ успел истечь
         cache.set(key, 1, ACCOUNT_LOCK_SECONDS)
+    activity.record(request, "code_wrong", user=user, ok=False)
+    if (cache.get(key) or 0) == ACCOUNT_MAX_FAILURES:
+        activity.record(request, "code_locked", user=user, ok=False)
 
 
 def clear_failures(user) -> None:
@@ -186,7 +193,7 @@ def verify(request, code: str) -> Tuple[Optional[object], str, str]:
     else:
         ok = constant_time_compare(_code_hash(code), state["hash"])
     if not ok:
-        note_failure(user)
+        note_failure(user, request)
         if account_locked(user):
             request.session.pop(SESSION_KEY, None)
             return None, ERR_LOCKED, ""

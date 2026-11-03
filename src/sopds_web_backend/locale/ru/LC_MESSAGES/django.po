@@ -2114,23 +2114,275 @@ msgstr[0] "%(n)s новая книга"
 msgstr[1] "%(n)s новые книги"
 msgstr[2] "%(n)s новых книг"
 
+msgid "No connection"
+msgstr "Нет соединения"
+
+msgid ""
+"This page is not available offline. Check your internet connection and try "
+"again."
+msgstr ""
+"Страница недоступна офлайн. Проверьте подключение к интернету и попробуйте "
+"снова."
+
+msgid "Saved on this device"
+msgstr "Сохранено на этом устройстве"
+
+msgid ""
+"No books are saved on this device. Open a book in the reader and tap ⤓ to "
+"read it without network."
+msgstr ""
+"На этом устройстве нет сохранённых книг. Откройте книгу в читалке и нажмите "
+"⤓ — её можно будет читать без сети."
+
+msgid "To the main page"
+msgstr "На главную"
+
+msgid "Sign-in and security"
+msgstr "Вход и безопасность"
+
+msgid "Reading and downloads"
+msgstr "Чтение и скачивание"
+
+msgid "Accounts and rights"
+msgstr "Учётные записи и права"
+
+msgid "Site and library"
+msgstr "Сайт и библиотека"
+
+msgid "System"
+msgstr "Система"
+
+msgid "app"
+msgstr "приложение"
+
+msgid "system"
+msgstr "система"
+
+msgid "server console"
+msgstr "консоль сервера"
+
+msgid "Signed in"
+msgstr "Вход"
+
+msgid "Failed sign-in"
+msgstr "Неудачный вход"
+
+msgid "Sign-in refused"
+msgstr "Вход отклонён"
+
+msgid "Locked out after failed sign-ins"
+msgstr "Блокировка после неудачных входов"
+
+msgid "Signed out"
+msgstr "Выход"
+
+msgid "Wrong second-factor code"
+msgstr "Неверный код второго фактора"
+
+msgid "Locked out by wrong codes"
+msgstr "Блокировка по неверным кодам"
+
+msgid "New device"
+msgstr "Новое устройство"
+
+msgid "Device removed"
+msgstr "Устройство удалено"
+
+msgid "Changed the password"
+msgstr "Смена пароля"
+
+msgid "Password set by a superuser"
+msgstr "Пароль задан суперпользователем"
+
+msgid "Created a password for reader apps"
+msgstr "Создан пароль для читалок"
+
+msgid "Password for reader apps revoked"
+msgstr "Пароль для читалок отозван"
+
+msgid "Reader app signed in with its password for the first time"
+msgstr "Первый вход читалки по паролю для читалок"
+
+msgid "Linked Telegram"
+msgstr "Привязан Telegram"
+
+msgid "Telegram unlinked"
+msgstr "Telegram отвязан"
+
+msgid "Connected an authenticator app"
+msgstr "Подключено приложение-аутентификатор"
+
+msgid "Turned off the authenticator app"
+msgstr "Приложение-аутентификатор отключено"
+
+msgid "Authenticator app reset on the server"
+msgstr "Приложение-аутентификатор сброшено на сервере"
+
+msgid "password"
+msgstr "пароль"
+
+msgid "password and authenticator app"
+msgstr "пароль и приложение-аутентификатор"
+
+msgid "password and code from Telegram"
+msgstr "пароль и код из Telegram"
+
+msgid "password for reader apps"
+msgstr "пароль для читалок"
+
+msgid "device limit reached"
+msgstr "достигнут лимит устройств"
+
+msgid "too many wrong codes"
+msgstr "слишком много неверных кодов"
+
+msgid "the code could not be sent to Telegram"
+msgstr "код не удалось отправить в Telegram"
+
+msgid "the account is disabled"
+msgstr "учётная запись отключена"
+
+msgid "no such user"
+msgstr "нет такого пользователя"
+
+msgid "wrong password"
+msgstr "неверный пароль"
+
+msgid "the password was changed"
+msgstr "пароль сменён"
+
+msgid "the device was removed"
+msgstr "устройство удалено"
+
+msgid ""
+"reader apps do not accept the main password of this account (second factor "
+"or a required password change)"
+msgstr ""
+"читалки не принимают основной пароль этой учётной записи (второй фактор или "
+"обязательная смена пароля)"
+
+msgid "How"
+msgstr "Как"
+
+msgid "Reason"
+msgstr "Причина"
+
+msgid "Entered name"
+msgstr "Введённое имя"
+
+msgid "Device"
+msgstr "Устройство"
+
+msgid "Required change"
+msgstr "Обязательная смена"
+
+msgid "Name in Telegram"
+msgstr "Имя в Telegram"
+
+msgid "yes"
+msgstr "да"
+
+msgid "no"
+msgstr "нет"
+
+msgid "Today"
+msgstr "Сегодня"
+
+msgid "7 days"
+msgstr "7 дней"
+
+msgid "30 days"
+msgstr "30 дней"
+
+msgid "All time"
+msgstr "За всё время"
+
+msgid "Journal"
+msgstr "Журнал"
+
+msgid "Retention must be a whole number of days (0 — keep forever)."
+msgstr "Срок хранения — целое число дней (0 — бессрочно)."
+
+msgid "Retention saved."
+msgstr "Сроки хранения сохранены."
+
+msgid "Sign-ins: %(n)s"
+msgstr "Входов: %(n)s"
+
+msgid "Failed: %(n)s"
+msgstr "Неудачных: %(n)s"
+
+msgid "lockouts: %(n)s"
+msgstr "блокировок: %(n)s"
+
+msgid "Active users: %(n)s"
+msgstr "Активных пользователей: %(n)s"
+
+msgid "Period"
+msgstr "Период"
+
+msgid "All users"
+msgstr "Все пользователи"
+
+msgid "Category"
+msgstr "Категория"
+
+msgid "All categories"
+msgstr "Все категории"
+
+msgid "Channel"
+msgstr "Канал"
+
+msgid "All channels"
+msgstr "Все каналы"
+
+msgid "only refusals"
+msgstr "только отказы"
+
+msgid "Reset"
+msgstr "Сбросить"
+
+msgid "Journal retention"
+msgstr "Хранение журнала"
+
+msgid "Sign-in, security and changes, days"
+msgstr "Вход, безопасность и изменения, дней"
+
+msgid "Reading and downloads, days"
+msgstr "Чтение и скачивание, дней"
+
+msgid "0 — keep forever. Older records are removed once a day."
+msgstr "0 — хранить бессрочно. Более старые записи удаляются раз в сутки."
+
+msgid "Details"
+msgstr "Подробности"
+
+msgid "No events for the chosen filters."
+msgstr "Нет событий по выбранным фильтрам."
+
+msgid "Show more"
+msgstr "Показать ещё"
+
+msgid "Recent sign-ins to your account"
+msgstr "Последние входы в вашу учётную запись"
+
+msgid "No sign-ins recorded yet."
+msgstr "Входов пока не записано."
+
+msgid "Don't recognise a sign-in?"
+msgstr "Видите незнакомый вход?"
+
+msgid "Change the password"
+msgstr "Смените пароль"
+
+msgid "and"
+msgstr "и"
+
+msgid "remove unknown devices"
+msgstr "удалите незнакомые устройства"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
 #~ msgid "Search books by series"
 #~ msgstr "Поиск книг по серии"
-
-msgid "No connection"
-msgstr "Нет соединения"
-
-msgid "This page is not available offline. Check your internet connection and try again."
-msgstr "Страница недоступна офлайн. Проверьте подключение к интернету и попробуйте снова."
-
-msgid "Saved on this device"
-msgstr "Сохранено на этом устройстве"
-
-msgid "No books are saved on this device. Open a book in the reader and tap ⤓ to read it without network."
-msgstr "На этом устройстве нет сохранённых книг. Откройте книгу в читалке и нажмите ⤓ — её можно будет читать без сети."
-
-msgid "To the main page"
-msgstr "На главную"

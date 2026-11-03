@@ -23,5 +23,8 @@ class Command(BaseCommand):
             raise CommandError(f"user not found: {options['username']}")
         had = totp.device_for(user) is not None
         totp.disable(user)
+        if had:
+            from sopds_web_backend import activity
+            activity.record(None, "totp_reset", user=user, channel="cli")
         self.stdout.write(f"authenticator app for {user.username}: "
                           f"{'removed' if had else 'was not connected'}")

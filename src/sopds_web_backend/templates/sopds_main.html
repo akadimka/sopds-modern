@@ -117,10 +117,15 @@ if ('serviceWorker' in navigator) {
 // Установленное приложение (PWA): читалка — в том же окне, а не новой вкладкой
 // браузера (там другой вход и нет пути назад). В браузере — как раньше, во вкладке.
 if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  // Журнал действий: сервер по запросу приложение от сайта не отличит.
+  document.cookie = 'sopds_app=1; path=/; max-age=31536000; samesite=lax';
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[target="_blank"][href^="/web/read/"]');
     if (a) a.removeAttribute('target');
   }, true);
+} else if (document.cookie.indexOf('sopds_app=1') !== -1) {
+  // Тот же браузер открыт обычной вкладкой: у приложения и вкладки общие cookie.
+  document.cookie = 'sopds_app=; path=/; max-age=0; samesite=lax';
 }
 // «Выход»: книги, сохранённые на устройстве для чтения без сети, — личные,
 // следующему, кто сядет за этот браузер, они не достаются (читалка, кнопка «⤓»).

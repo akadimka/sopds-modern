@@ -55,6 +55,9 @@ ISOLATION_TESTED = {
     "web:ratings_progress": (WEB, "test_rating_progress_admin_only"),
     "web:news": (WEB, "test_news_shows_only_visible_books"),
     "web:read": (WEB, "test_reader_in_app"),
+    # Журнал действий: в нём будут книги (чтение, скачивание) — виден только
+    # суперпользователю (docs/activity-log-design.md).
+    "web:journal": ("tests.integration.sopds_web_backend.test_activity_log", "test_journal_is_for_superuser_only"),
 }
 
 NO_CATALOG_DATA = {
@@ -89,6 +92,7 @@ NO_CATALOG_DATA = {
     "web:scan_start": "запуск скана — только суперпользователь",
     "web:scan_status": "статус скана — без книг",
     "web:ratings_restart": "перезапуск рейтингов — только суперпользователь",
+    "web:journal_retention": "сроки хранения журнала — только суперпользователь, без книг",
 }
 
 # Инструменты персонала: суперпользователь и так видит всю библиотеку.

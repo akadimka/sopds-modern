@@ -35,6 +35,21 @@ def _create_profile(sender, instance, created, raw=False, **kwargs):
         UserProfile.objects.get_or_create(user=instance)
 
 
+def _record_lockout(sender, request=None, username=None, **kwargs):
+    """django-axes заблокировал вход после неудачных попыток — в журнал."""
+    from . import activity
+    from .usernames import find_user
+    activity.record(request, "locked_out", user=find_user(username or ""), username=username or "", ok=False,
+                    entered=username)
+
+
+try:
+    from axes.signals import user_locked_out
+    user_locked_out.connect(_record_lockout, dispatch_uid="sopds-activity-lockout")
+except ImportError:  # django-axes не установлен
+    pass
+
+
 @receiver(user_logged_out)
 def leave_online_list(sender, request, user, **kwargs):
     """Вышел с сайта — из «Сейчас на сайте» сразу, не через 5 минут (читалка — свой канал)."""

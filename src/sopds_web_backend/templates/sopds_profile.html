@@ -50,7 +50,7 @@
 </div>
 
 <!-- ── Смена пароля ───────────────────────────────────────────── -->
-<div class="s-section" style="margin-bottom:1.5rem;">
+<div class="s-section" style="margin-bottom:1.5rem;" id="password">
   <div class="s-section-title">{% trans "Change password" %}</div>
   {% if errors.password %}
   <div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">
@@ -123,6 +123,26 @@
   {% empty %}
   <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "No devices yet." %}</p>
   {% endfor %}
+</div>
+
+<!-- ── Последние входы (журнал действий, только свои — docs/activity-log-design.md) ── -->
+<div class="s-section" style="margin-bottom:1.5rem;" id="sign-ins">
+  <div class="s-section-title">{% trans "Recent sign-ins to your account" %}</div>
+  {% for e in own_sign_ins %}
+  <div style="display:flex; flex-wrap:wrap; gap:0.2rem 0.8rem; font-size:0.85rem; padding:0.3rem 0; border-bottom:1px dashed var(--border);{% if not e.ok %} color:var(--status-error);{% endif %}">
+    <span style="color:var(--text-muted); min-width:7.5rem;">{{ e.at|date:"d.m.Y H:i" }}</span>
+    <span style="flex:1 1 12rem;">{% if not e.ok %}✗ {% endif %}{{ e.action_text }}</span>
+    <span style="color:var(--text-muted);">{{ e.channel_icon }} {{ e.channel_text }}{% for label, value in e.detail_rows %} · {{ value }}{% endfor %}</span>
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "No sign-ins recorded yet." %}</p>
+  {% endfor %}
+  {% if own_sign_ins %}
+  <p style="font-size:0.85rem; margin:0.6rem 0 0;">
+    {% trans "Don't recognise a sign-in?" %}
+    <a href="#password">{% trans "Change the password" %}</a> {% trans "and" %} <a href="#devices">{% trans "remove unknown devices" %}</a>.
+  </p>
+  {% endif %}
 </div>
 
 <!-- ── Приложение-аутентификатор (второй фактор входа) ──────── -->

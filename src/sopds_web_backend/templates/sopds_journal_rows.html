@@ -1,0 +1,24 @@
+{% load i18n %}{# Строки журнала действий: вкладка «Журнал» и ответ htmx (фильтры, «Показать ещё») #}
+{% for e in journal_rows %}
+{% if e.day_header %}<div class="sp-j-day">{{ e.at|date:"j E, l" }}</div>{% endif %}
+<div class="sp-j-row{% if not e.ok %} sp-j-fail{% endif %}">
+  <span class="sp-j-time">{{ e.at|time:"H:i" }}</span>
+  <span class="sp-j-who">{% if e.actor_name %}{{ e.actor_name }} → {% endif %}{{ e.username|default:"—" }}</span>
+  <span class="sp-j-ch">{{ e.channel_icon }} {{ e.channel_text }}</span>
+  <span class="sp-j-act">{% if not e.ok %}✗ {% endif %}{{ e.category_icon }} {{ e.action_text }}{% if e.object_label %} — {{ e.object_label }}{% endif %}</span>
+  {% if e.detail_rows %}
+  <details class="sp-j-more">
+    <summary class="sp-j-toggle" title="{% trans "Details" %}" aria-label="{% trans "Details" %}"></summary>
+    <dl>{% for label, value in e.detail_rows %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}</dl>
+  </details>
+  {% endif %}
+</div>
+{% empty %}
+{% if journal_filters.page == 1 %}<p style="color:var(--text-muted); font-size:0.88rem;">{% trans "No events for the chosen filters." %}</p>{% endif %}
+{% endfor %}
+{% if journal_more %}
+<div class="sp-j-moreline">
+  <button type="button" class="button small secondary" style="margin:0;" hx-get="{% url 'web:journal' %}?{{ journal_next }}"
+          hx-target="closest .sp-j-moreline" hx-swap="outerHTML">{% trans "Show more" %}</button>
+</div>
+{% endif %}
