@@ -148,6 +148,40 @@ class FB2SAXHandler(xml.sax.handler.ContentHandler):
             self._genre_text += content
 
 
+def _fill_from_header(result: dict, raw_bytes: bytes, encoding: str) -> None:
+    """SAX оборвался на ошибке XML — то, что в заголовке стоит после неё,
+    не прочитано. Пустые жанр и название добираются из <title-info> тем же
+    разбором, что у сканера жанров (`fb2_author_extractor`).
+
+    Реальный случай (E:\\Temp\\Book Source\\СЕРИЯ.LitRPG, 2026-11-04): файлы
+    «Author Today Book to FB2» в windows-1251 с `<sequence name=""Мир"
+    Первая загрузка">` — кавычки в атрибуте не экранированы, SAX падает на
+    серии, а `<genre>Фантастика</genre>` стоит после неё: книга оставалась
+    без жанра и не попадала в библиотеку (синхронизация кладёт книги только
+    в жанры из списка). Серия по сломанному атрибуту не восстанавливается —
+    её дают папки и имя файла."""
+    import html
+
+    from .fb2_author_extractor import _TITLE_INFO_RE, _genres_from_title_info
+
+    if result['genre'] and result['title']:
+        return
+    try:
+        text = raw_bytes[:65536].decode(encoding or 'utf-8', errors='replace')
+    except LookupError:
+        text = raw_bytes[:65536].decode('utf-8', errors='replace')
+    title_info = _TITLE_INFO_RE.search(text)
+    if not title_info:
+        return
+    block = title_info.group(0)
+    if not result['genre']:
+        result['genre'] = ', '.join(_genres_from_title_info(block))
+    if not result['title']:
+        m = re.search(r'<(?:[\w.-]+:)?book-title>(.*?)</(?:[\w.-]+:)?book-title>', block, re.DOTALL)
+        if m:
+            result['title'] = html.unescape(m.group(1)).strip()
+
+
 class FB2SAXExtractor:
     """
     SAX-based extractor для FB2 файлов.
@@ -295,12 +329,13 @@ class FB2SAXExtractor:
 
             parser = xml.sax.make_parser()
             parser.setContentHandler(handler)
+            broken = False
             try:
                 xml.sax.parseString(raw_bytes, handler)
             except xml.sax.SAXParseException:
                 # Файл может содержать частичные UTF-8 последовательности в теле,
                 # но метаданные в начале файла уже успели извлечься — используем их.
-                pass
+                broken = True
 
             # Формируем строку авторов (с дедупликацией)
             authors_parts = []
@@ -357,13 +392,16 @@ class FB2SAXExtractor:
                 elif nums:
                     series_number = str(nums[0])
 
-            return {
+            result = {
                 'title': handler.book_title.strip() or '',
                 'authors': authors_str,
                 'series': primary_series,
                 'series_number': series_number,
                 'genre': ', '.join(handler.genres),
             }
+            if broken:
+                _fill_from_header(result, raw_bytes, encoding)
+            return result
         except Exception:
             return {'title': '', 'authors': '', 'series': '', 'series_number': '', 'genre': ''}
 
