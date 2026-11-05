@@ -1940,3 +1940,14 @@ msgstr "Тег жанра у этих книг пустой, испорчен и
 
 msgid "Genre in the file"
 msgstr "Жанр в файле"
+
+#, python-format
+msgid "The library is busy: «%(owner)s» on %(host)s since %(since)s. Synchronization will not start until it finishes."
+msgstr "С библиотекой сейчас работает «%(owner)s» на %(host)s с %(since)s. Синхронизация не начнётся, пока это не закончится."
+
+#, python-format
+msgid "The library is busy: «%(owner)s» since %(since)s. Synchronization will not start until it finishes."
+msgstr "С библиотекой сейчас работает «%(owner)s» с %(since)s. Синхронизация не начнётся, пока это не закончится."
+
+msgid "The library is on another computer. File owners and the catalog there are updated only after the owners check (library_owners_check) and the next scan on that computer."
+msgstr "Библиотека — на другом компьютере. Владельцы файлов и каталог там обновятся только после сверки владельцев (library_owners_check) и следующего сканирования на нём."

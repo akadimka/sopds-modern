@@ -41,7 +41,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Библиотека: {service.library_path}  ({'ВЫПОЛНЕНИЕ' if apply else 'только отчёт'})")
         total = {}
         try:
-            with sync_lock(_sync_lock_path(), "library_rename_author"):
+            with sync_lock(_sync_lock_path(), "library_rename_author", library=service.library_path):
                 for old, new in pairs:
                     stats = service.rename_library_author(old, new, apply=apply, log=self.stdout.write)
                     for k, v in stats.items():

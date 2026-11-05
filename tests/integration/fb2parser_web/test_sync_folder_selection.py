@@ -109,3 +109,28 @@ def test_status_clears_a_dead_sync_process(env, monkeypatch):
     state = views.sync_job.get()
     assert state["running"] is False and state["error"]
     assert views.sync_job.try_start()  # блокировка снята — можно запускать снова
+
+
+def test_window_warns_about_a_busy_or_remote_library(env, tmp_path, monkeypatch):
+    """Библиотеку занимает другая машина — видно до запуска; библиотека по
+    сети — предупреждение, что владельцы и каталог обновятся на той машине
+    (2026-11-04: синхронизация с ПК шла одновременно с чисткой на сервере)."""
+    import time
+
+    from fb2parser_core import sync_lock as sl
+    from fb2parser_core.settings_manager import SettingsManager
+
+    client, scan, _ = env
+    library = tmp_path / "lib"
+    library.mkdir()
+    (library / sl.LIBRARY_LOCK_NAME).write_text(json.dumps({
+        "owner": "library_cleanup", "host": "turnkey", "pid": 1, "since": time.time(), "beat": time.time()}),
+        encoding="utf-8")
+    monkeypatch.setattr(SettingsManager, "get_library_path", lambda self: str(library))
+    html = _open(client, scan, scan / "Готово")
+    assert "library_cleanup" in html and "turnkey" in html
+    assert "library_owners_check" not in html                     # своя, не сетевая
+
+    monkeypatch.setattr(SettingsManager, "get_library_path", lambda self: "\\\\turnkey\\Docs\\EBookLibrary")
+    html = _open(client, scan, scan / "Готово")
+    assert "library_owners_check" in html

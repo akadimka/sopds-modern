@@ -24,6 +24,21 @@
     </div>
 </div>
 
+{% if library_busy %}
+<div class="callout alert" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem;">
+    {% if library_busy.host %}
+    {% blocktrans with owner=library_busy.owner host=library_busy.host since=library_busy.since|date:"d.m H:i" %}The library is busy: «{{ owner }}» on {{ host }} since {{ since }}. Synchronization will not start until it finishes.{% endblocktrans %}
+    {% else %}
+    {% blocktrans with owner=library_busy.owner since=library_busy.since|date:"d.m H:i" %}The library is busy: «{{ owner }}» since {{ since }}. Synchronization will not start until it finishes.{% endblocktrans %}
+    {% endif %}
+</div>
+{% endif %}
+{% if library_remote %}
+<div class="callout secondary" style="font-size:0.82rem; padding:0.5rem 0.8rem; margin-bottom:0.8rem;">
+    {% trans "The library is on another computer. File owners and the catalog there are updated only after the owners check (library_owners_check) and the next scan on that computer." %}
+</div>
+{% endif %}
+
 {% if folders %}
 <div style="margin-bottom:0.8rem;">
     <div style="font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:0.4rem;">

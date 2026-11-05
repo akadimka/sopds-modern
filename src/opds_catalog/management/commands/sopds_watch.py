@@ -101,6 +101,13 @@ class LibraryDirtyTracker:
         self._last_event = 0.0
 
     def mark(self, path: str, is_directory: bool) -> None:
+        from fb2parser_core.sync_lock import LIBRARY_LOCK_NAME
+
+        # Общая блокировка в корне библиотеки обновляется раз в минуту, пока
+        # идёт синхронизация или чистка: это не книга — иначе корень библиотеки
+        # был бы «грязным» каждую минуту, а очередь никогда не утихала бы.
+        if not is_directory and os.path.basename(path) == LIBRARY_LOCK_NAME:
+            return
         d = path if is_directory else os.path.dirname(path)
         with self._lock:
             self._dirty.add(d)

@@ -369,7 +369,7 @@ class AutosyncService:
         if mode not in (MODE_DRY_RUN, MODE_AUTO):
             return RunResult(mode, RUN_OFF)
         try:
-            with sync_lock(self.lock_path, "autosync"):
+            with sync_lock(self.lock_path, "autosync", library=self.settings.get_library_path() or None):
                 return self._run_locked(mode, progress)
         except SyncBusy as busy:
             return RunResult(mode, RUN_BUSY, error=f"синхронизацию сейчас выполняет: {busy.owner}")
@@ -570,7 +570,7 @@ class AutosyncService:
             result.status, result.error = RUN_ERROR, "не выбран ни один жанр"
             return result
         try:
-            with sync_lock(self.lock_path, "inbox"):
+            with sync_lock(self.lock_path, "inbox", library=self.settings.get_library_path() or None):
                 result.run_id = self.journal.start_run(MODE_MANUAL)
                 by_genre: Dict[str, List[str]] = defaultdict(list)
                 items: List[Dict[str, Any]] = []

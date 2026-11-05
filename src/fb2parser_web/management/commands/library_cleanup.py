@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
         log(f"Библиотека: {library}  ({'ВЫПОЛНЕНИЕ' if apply else 'только отчёт'})")
         try:
-            with sync_lock(_sync_lock_path(), "library_cleanup"):
+            with sync_lock(_sync_lock_path(), "library_cleanup", library=library):
                 if options["part"] == "genres":
                     summary = self._genres(library, service.db_path, options["genre_choices"], apply, log)
                 elif options["part"] == "books":

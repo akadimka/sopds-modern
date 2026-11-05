@@ -3,23 +3,36 @@
 Ручная синхронизация идёт в процессе веб-сервера, автосинхронизация — в
 процессе планового скана (docs/watch-folder-autosync-design.md). Обе
 перемещают файлы в одну библиотеку, поэтому одновременно работать им
-нельзя. Блокировка — файл, созданный атомарно (O_EXCL); он хранит, кто и
-когда её взял. Брошенный упавшим процессом файл считается устаревшим, если
-процесса больше нет (POSIX) или он старше stale_after.
+нельзя. Блокировка — файл, созданный атомарно (O_EXCL); он хранит, кто,
+на какой машине и когда её взял, и отметку «жив», которую держатель
+обновляет раз в минуту. Брошенный упавшим процессом файл считается
+устаревшим, если отметка не обновлялась BEAT_STALE или (на этой же машине)
+процесса больше нет.
+
+Кроме блокировки машины — общая в корне библиотеки (`library=`): с одной
+библиотекой работают сервер и ПК по сети (SMB), и операции на них не должны
+идти одновременно. Часы машин должны идти примерно одинаково (NTP): чужая
+отметка сверяется по своим часам с запасом BEAT_STALE.
 """
 from __future__ import annotations
 
 import json
 import logging
 import os
+import socket
 import sys
+import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
 
 _log = logging.getLogger(__name__)
 
-DEFAULT_STALE_AFTER = 6 * 3600
+DEFAULT_STALE_AFTER = 6 * 3600      # блокировка без отметки «жив» (записанная до неё)
+BEAT_EVERY = 60                     # держатель обновляет отметку «жив», секунд
+BEAT_STALE = 30 * 60                # отметка старше — держатель упал или завис
+LIBRARY_LOCK_NAME = ".sopds-sync.lock"
+HOST = socket.gethostname()
 
 
 class SyncBusy(RuntimeError):
@@ -86,22 +99,38 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _is_stale(path: Path, info: dict, stale_after: float) -> bool:
-    since = info.get("since")
-    if since is None:
-        try:
-            since = path.stat().st_mtime
-        except OSError:
+    beat = info.get("beat")
+    if beat is not None:
+        # Держатель раз в BEAT_EVERY обновляет отметку: тишина дольше
+        # BEAT_STALE — процесс упал или завис, сколько бы ни шла операция
+        # (шаг 3 чистки — 6 часов). Блокировку другой машины (host) по PID
+        # не проверить — только по отметке.
+        if time.time() - float(beat) > BEAT_STALE:
             return True
-    if time.time() - float(since) > stale_after:
-        return True
+        if info.get("host") != HOST:
+            return False
+    else:
+        since = info.get("since")
+        if since is None:
+            try:
+                since = path.stat().st_mtime
+            except OSError:
+                return True
+        if time.time() - float(since) > stale_after:
+            return True
     pid = info.get("pid")
     return isinstance(pid, int) and not _pid_alive(pid)
 
 
-@contextmanager
-def sync_lock(lock_path, owner: str, stale_after: float = DEFAULT_STALE_AFTER):
-    path = Path(lock_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+def _busy_owner(info: dict) -> str:
+    owner = str(info.get("owner", "?"))
+    host = info.get("host")
+    return f"{owner} ({host})" if host and host != HOST else owner
+
+
+def _acquire(path: Path, owner: str, stale_after: float) -> dict:
+    if path.name != LIBRARY_LOCK_NAME:
+        path.parent.mkdir(parents=True, exist_ok=True)
     for attempt in (1, 2):
         try:
             fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -111,11 +140,67 @@ def sync_lock(lock_path, owner: str, stale_after: float = DEFAULT_STALE_AFTER):
                 _log.warning("sync_lock: снимаю устаревшую блокировку %s", info or path)
                 path.unlink(missing_ok=True)
                 continue
-            raise SyncBusy(str(info.get("owner", "?"))) from None
+            raise SyncBusy(_busy_owner(info)) from None
+        now = time.time()
+        record = {"owner": owner, "host": HOST, "pid": os.getpid(), "since": now, "beat": now}
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump({"owner": owner, "pid": os.getpid(), "since": time.time()}, f)
-        break
+            json.dump(record, f)
+        return record
+    raise SyncBusy("?")
+
+
+def _heartbeat(paths, records, stop: threading.Event) -> None:
+    while not stop.wait(BEAT_EVERY):
+        for path, record in zip(paths, records):
+            record["beat"] = time.time()
+            try:
+                path.write_text(json.dumps(record), encoding="utf-8")
+            except OSError as exc:      # сеть до библиотеки пропала — отметка догонит
+                _log.warning("sync_lock: не обновлена отметка %s: %s", path, exc)
+
+
+@contextmanager
+def sync_lock(lock_path, owner: str, stale_after: float = DEFAULT_STALE_AFTER, library=None):
+    """Блокировка этой машины (`lock_path`) и — если задана `library` — общая
+    блокировка в корне библиотеки (`LIBRARY_LOCK_NAME`). Общую видят все
+    машины, которые меняют библиотеку: сервер и ПК, работающий с ней по сети
+    (2026-11-04: синхронизация с ПК шла одновременно с чисткой на сервере —
+    у каждой машины была своя блокировка, они друг друга не видели)."""
+    paths = [Path(lock_path)]
+    if library and Path(library).is_dir():
+        # Папки библиотеки нет (сеть до сервера пропала, не настроена) — её не
+        # создаём: операция сама сообщит, что библиотеки нет.
+        paths.append(Path(library) / LIBRARY_LOCK_NAME)
+    taken = []
+    records = []
+    stop = threading.Event()
+    beat = None
     try:
+        for path in paths:
+            records.append(_acquire(path, owner, stale_after))
+            taken.append(path)
+        beat = threading.Thread(target=_heartbeat, args=(taken, records, stop), daemon=True,
+                                name="sync-lock-heartbeat")
+        beat.start()
         yield
     finally:
-        path.unlink(missing_ok=True)
+        stop.set()
+        if beat is not None:
+            beat.join(timeout=5)
+        for path in reversed(taken):
+            path.unlink(missing_ok=True)
+
+
+def library_lock_holder(library) -> dict | None:
+    """Кто сейчас держит общую блокировку библиотеки ({owner, host, since})
+    или None — для окна синхронизации: видно до запуска, что библиотека занята
+    (в том числе другой машиной)."""
+    if not library:
+        return None
+    path = Path(library) / LIBRARY_LOCK_NAME
+    if not path.exists():
+        return None
+    info = _read(path)
+    if not info or _is_stale(path, info, DEFAULT_STALE_AFTER):
+        return None
+    return info

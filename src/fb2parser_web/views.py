@@ -711,7 +711,7 @@ def _run_compress_thread(library_path):
         # обновляются на месте (catalog_updater); синхронизация/компиляция в это
         # время не должны переносить и удалять файлы библиотеки.
         try:
-            with sync_lock(_sync_lock_path(), "compress"):
+            with sync_lock(_sync_lock_path(), "compress", library=library_path):
                 update, close = catalog_updater(Path(library_path))
                 try:
                     result = compress_library(
@@ -3028,10 +3028,23 @@ def sync(request):
 
     from .fb2parser_bridge import _config_path
     sm = SettingsManager(_config_path())
+    library_path = sm.get_library_path()
+    from datetime import datetime
+
+    from fb2parser_core.sync_lock import HOST, library_lock_holder
+    holder = library_lock_holder(library_path)
     return render(request, "fb2parser/sync.html", {
         "state": state, "pct": pct,
         "scan_path": scan_path,
-        "library_path": sm.get_library_path(),
+        "library_path": library_path,
+        # Библиотека по сети (\сервер\папка): владельцы и каталог —
+        # в базе той машины, здесь их не обновить (2026-11-04).
+        "library_remote": str(library_path or "").startswith(("\\\\", "//")),
+        "library_busy": holder and {
+            "owner": holder.get("owner", "?"),
+            "host": holder.get("host") if holder.get("host") != HOST else "",
+            "since": datetime.fromtimestamp(float(holder.get("since", 0))),
+        },
         "folders": folders,
         "eligible_count": sum(1 for f in folders if f.eligible),
     })
@@ -3307,7 +3320,7 @@ def _run_sync_thread():
         pending = PendingCompile.beside(_sync_lock_path()) if auto_compile else None
         svc.pending_compile = pending
 
-        with sync_lock(_sync_lock_path(), "web"):
+        with sync_lock(_sync_lock_path(), "web", library=svc.library_path):
             stats = dict(svc.synchronize(
                 progress_callback=on_progress,
                 log_callback=on_log,
