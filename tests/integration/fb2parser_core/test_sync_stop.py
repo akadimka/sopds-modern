@@ -65,7 +65,7 @@ def test_stop_during_move_keeps_library_and_db_consistent(tmp_path):
         svc.synchronize(progress_callback=_stop_at("Перемещение в библиотеку: 2/"),
                         allowed_folders={str(scan / "Иванов Иван")})
 
-    in_library = [p for p in (tmp_path / "lib").rglob("*.fb2")]
+    in_library = [p for p in (tmp_path / "lib").rglob("*.fb2.zip")]   # синхронизация сжимает
     assert len(in_library) == 1                       # перенесён ровно один файл
     assert sum(1 for p in sources if p.exists()) == 2  # остальные остались в исходной папке
     with sqlite3.connect(svc.db_path) as conn:
@@ -79,7 +79,7 @@ def test_stop_before_move_moves_nothing(tmp_path):
     with pytest.raises(InterruptedError):
         _sync(tmp_path, scan).synchronize(progress_callback=_stop_at("Перемещение в библиотеку: 1/"),
                                           allowed_folders={str(scan / "Иванов Иван")})
-    assert all(p.exists() for p in sources) and not list((tmp_path / "lib").rglob("*.fb2"))
+    assert all(p.exists() for p in sources) and not list((tmp_path / "lib").rglob("*.fb2*"))
 
 
 def test_stop_in_auto_compile_leaves_series_untouched(tmp_path):

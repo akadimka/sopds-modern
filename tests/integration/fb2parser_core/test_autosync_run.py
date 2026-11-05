@@ -382,7 +382,7 @@ def test_admin_button_press_syncs_whole_batch(tmp_path, monkeypatch):
                               "message": {"message_id": 7, "chat": {"id": 42}, "text": "Ждёт решения: Новая порция"}})
 
     assert not book.exists()
-    assert any(p.relative_to(lib).parts[0] == "Детектив" for p in lib.rglob("*.fb2"))
+    assert any(p.relative_to(lib).parts[0] == "Детектив" for p in lib.rglob("*.fb2.zip"))
     final = tg.edits[-1]
     assert final[1] == 7 and "✅" in final[2] and final[3] == {"inline_keyboard": []}
 

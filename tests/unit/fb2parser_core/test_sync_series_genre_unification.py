@@ -23,6 +23,7 @@ def _service(priority=()):
     service.log_callback = lambda msg: None
     service.logger = None
     service.settings = SimpleNamespace(get_genre_priority_order=lambda: list(priority))
+    service.pending_compile = None      # без него перенос первой книги падал (до сжатия)
     return service
 
 
@@ -228,5 +229,5 @@ class TestSynchronizeKeepsConflictingSeriesInPlace:
         assert (staging / "src/Кузнец 2.fb2").exists()
         assert [n["series"] for n in stats["genre_conflict_notes"]] == ["Кузнец"]
         assert not (library / "Детектив").exists()
-        moved = sorted(p.name for p in (library / "Фантастика").rglob("*.fb2"))
+        moved = sorted(p.name for p in (library / "Фантастика").rglob("*.fb2.zip"))   # синхронизация сжимает
         assert len(moved) == 3

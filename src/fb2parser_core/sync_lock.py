@@ -153,10 +153,15 @@ def _heartbeat(paths, records, stop: threading.Event) -> None:
     while not stop.wait(BEAT_EVERY):
         for path, record in zip(paths, records):
             record["beat"] = time.time()
+            # Целиком через временный файл: запись на месте на миг оставляла
+            # файл пустым, и другая машина видела блокировку без хозяина.
+            tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
             try:
-                path.write_text(json.dumps(record), encoding="utf-8")
+                tmp.write_text(json.dumps(record), encoding="utf-8")
+                os.replace(tmp, path)
             except OSError as exc:      # сеть до библиотеки пропала — отметка догонит
                 _log.warning("sync_lock: не обновлена отметка %s: %s", path, exc)
+                tmp.unlink(missing_ok=True)
 
 
 @contextmanager

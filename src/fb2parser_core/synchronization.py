@@ -826,7 +826,16 @@ class SynchronizationService:
             # объединить все 12 томов в один файл. См. docs/quality-roadmap.md.
             dup_key = (author, series, title, record.series_number or '')
             in_db = dup_key in existing_entries
-            
+            if in_db and self._fuller_than_library(record, dup_key):
+                # Та же книга, но полнее лежащей в библиотеке — не дубликат:
+                # дальше обычным путём, при совпадении имени заменит лежащую
+                # (_resolve_target_collision). Раньше удалялась как «уже в БД»:
+                # пока записи БД указывали на несжатые пути, после «Сжать» они
+                # вычищались и проверка почти не срабатывала; с синхронизацией,
+                # которая сразу сжимает, записи живые (2026-11-05).
+                self._log(f"  [{i+1}] ПОЛНЕЕ, ЧЕМ В БИБЛИОТЕКЕ: {record.file_path} — не дубликат")
+                in_db = False
+
             if in_db:
                 self._log(f"  [{i+1}] ДУБЛИКАТ: {author} | {series} | {title}")
                 self._log(f"       Файл: {record.file_path}")
@@ -1847,6 +1856,7 @@ class SynchronizationService:
                         series_number=record.series_number or None,
                         root_sequence=self._umbrella_root_sequence(record, source_file),
                     )
+                    target_file = self._compress_in_library(target_file)
 
                     # Update record with new path (relative to library_path)
                     record.file_path = str(target_file.relative_to(self.library_path))
@@ -1865,6 +1875,44 @@ class SynchronizationService:
         self._log(f"Перемещение завершено: {len(moved_records)} файлов переместили")
         return moved_records
     
+    def _fuller_than_library(self, record, dup_key) -> bool:
+        """Поступающая книга больше по содержимому (без сжатия) каждой своей
+        копии в библиотеке по записям БД с тем же ключом. Нет копий на диске —
+        False (решает обычная проверка дубликатов)."""
+        try:
+            incoming = len(read_fb2_bytes(self.last_scan_path / record.file_path))
+        except OSError:
+            return False
+        sizes = []
+        for rel in getattr(self, '_existing_paths', {}).get(dup_key, ()):
+            path = self.library_path / Path(rel.replace('\\', '/'))
+            try:
+                if path.exists():
+                    sizes.append(len(read_fb2_bytes(path)))
+            except OSError:
+                continue
+        return bool(sizes) and incoming > max(sizes)
+
+    def _compress_in_library(self, path: Path) -> Path:
+        """Книга ложится в библиотеку сразу сжатой (.fb2.zip) — как после
+        «Сжать». Раньше синхронизация клала .fb2, и до ручного сжатия книга
+        занимала вдвое больше места, а ночное зеркало увозило её на сервер-2
+        несжатой (2026-11-05: 2 390 книг). Не сжалась (уже есть .fb2.zip с тем
+        же именем, ошибка записи) — остаётся .fb2, синхронизация идёт дальше."""
+        from .fb2_utils import compress_fb2_file
+
+        if path.name.lower().endswith('.zip'):
+            return path
+        try:
+            compress_fb2_file(path)
+        except Exception as e:
+            self._log(f"    ⚠ Не сжат ({e}) — остаётся {path.name}")
+            return path
+        zipped = path.with_name(path.name + '.zip')
+        ownership_hooks.transfer(path, zipped)
+        self._log(f"    Сжат: {zipped.name}")
+        return zipped
+
     def _update_database(
         self,
         records: List,
@@ -2185,14 +2233,18 @@ class SynchronizationService:
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT author, series, title, series_number FROM books
+                SELECT author, series, title, series_number, file_path FROM books
             """)
-            
+
             rows = cursor.fetchall()
             self._log(f"Прочитано из БД: {len(rows)} существующих записей")
-            
+
+            self._existing_paths = defaultdict(list)
             for row in rows:
-                existing.add((row[0], row[1], row[2], row[3] or ''))
+                key = (row[0], row[1], row[2], row[3] or '')
+                existing.add(key)
+                if row[4]:
+                    self._existing_paths[key].append(row[4])
 
             conn.close()
         except Exception as e:

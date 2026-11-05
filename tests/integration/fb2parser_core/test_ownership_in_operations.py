@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 
 from fb2parser_core import regen_csv
 from fb2parser_core.fb2_compiler import CompilationGroup, FB2CompilerService
-from fb2parser_core.fb2_utils import compress_fb2_file
+from fb2parser_core.fb2_utils import compress_fb2_file, read_fb2_bytes
 from fb2parser_core.synchronization import SynchronizationService
 from fb2parser_web import fb2parser_bridge as bridge
 from fb2parser_web.views import _delete_paths_confined
@@ -73,9 +73,10 @@ def test_sync_assigns_moved_files(tmp_path, lib, users):
     for n in (1, 2):
         _book(scan / "Иванов Иван" / "Звезды" / f"{n}. Звезды {n}.fb2", n)
     _sync(tmp_path, lib, scan).synchronize(allowed_folders={str(scan / "Иванов Иван")})
-    files = [p for p in lib.rglob("*.fb2")]
-    assert len(files) == 2
+    files = [p for p in lib.rglob("*.fb2.zip")]              # синхронизация сразу сжимает
+    assert len(files) == 2 and not list(lib.rglob("*.fb2"))
     assert all(_owners_of(lib, p) == {"admin"} for p in files)
+    assert _all_owned(lib) == {(ownership.rel_path(p, str(lib)), "admin") for p in files}   # без .fb2-путей
 
 
 def test_sync_replacing_compressed_file_keeps_its_owners(tmp_path, lib, users):
@@ -83,18 +84,17 @@ def test_sync_replacing_compressed_file_keeps_its_owners(tmp_path, lib, users):
     scan = tmp_path / "in"
     _book(scan / "Иванов Иван" / "Звезды" / "1. Звезды 1.fb2", 1)
     _sync(tmp_path, lib, scan).synchronize(allowed_folders={str(scan / "Иванов Иван")})
-    [placed] = lib.rglob("*.fb2")
+    [placed] = lib.rglob("*.fb2.zip")                         # книга легла сжатой
     LibraryFileOwner.objects.all().update(user=anna)        # книга — у Анны
-    compress_fb2_file(placed)                                 # библиотеку сжали
-    ownership.transfer(ownership.rel_path(placed, str(lib)), ownership.rel_path(str(placed) + ".zip", str(lib)))
 
     scan2 = tmp_path / "in2"                                  # более полная версия той же книги
     _book(scan2 / "Иванов Иван" / "Звезды" / "1. Звезды 1.fb2", 1, extra=" Дополнено." * 50)
     _sync(tmp_path, lib, scan2).synchronize(allowed_folders={str(scan2 / "Иванов Иван")})
 
-    assert not list(lib.rglob("*.fb2.zip"))
-    [replaced] = lib.rglob("*.fb2")
+    assert not list(lib.rglob("*.fb2"))
+    [replaced] = lib.rglob("*.fb2.zip")
     assert replaced == placed
+    assert "Дополнено." in read_fb2_bytes(replaced).decode("utf-8")
     assert _owners_of(lib, replaced) == {"anna", "admin"}
     assert _all_owned(lib) == {(ownership.rel_path(replaced, str(lib)), "anna"),
                                (ownership.rel_path(replaced, str(lib)), "admin")}
