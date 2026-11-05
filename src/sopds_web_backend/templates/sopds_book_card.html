@@ -114,4 +114,22 @@
     {% endif %}
   </div>
 
+  {% if book_events is not None %}
+  {# Журнал действий по книге — только суперпользователю (docs/activity-log-design.md) #}
+  <div class="sopds-card-journal" style="margin-top:0.9rem; font-size:0.82rem;">
+    <div style="font-weight:600; margin-bottom:0.3rem;">{% trans "Who read and downloaded" %}</div>
+    {% for e in book_events %}
+    <div style="display:flex; flex-wrap:wrap; gap:0 0.6rem; padding:0.15rem 0; border-bottom:1px dashed var(--border);">
+      <span style="color:var(--text-muted);">{{ e.at|date:"d.m.Y H:i" }}</span>
+      <span>{{ e.username|default:"—" }}</span>
+      <span>{{ e.action_text }}{% if e.details.format %} ({{ e.details.format }}){% endif %}</span>
+      <span style="color:var(--text-muted);">{{ e.channel_icon }} {{ e.channel_text }}</span>
+    </div>
+    {% empty %}
+    <div style="color:var(--text-muted);">{% trans "Nobody yet." %}</div>
+    {% endfor %}
+    {% if book_events %}<a href="{% url 'web:journal' %}?book={{ b.id }}&amp;period=all">{% trans "Whole journal of this book" %}</a>{% endif %}
+  </div>
+  {% endif %}
+
 </div>

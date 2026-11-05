@@ -1,11 +1,14 @@
-"""Журнал действий пользователей, шаг 1 — вход и безопасность
-(docs/activity-log-design.md).
+"""Журнал действий пользователей (docs/activity-log-design.md): шаг 1 — вход
+и безопасность, шаг 2 — чтение и скачивание.
 
 - каждое событие входа и безопасности пишется: кто, канал, устройство, IP;
 - в журнал не попадают пароли (ни в подробности, ни в подписи);
 - журнал видит только суперпользователь, в профиле — только свои входы;
 - сбой записи не ломает вход;
-- чистка по сроку: срок 0 — не чистится, чтение — своим сроком.
+- чистка по сроку: срок 0 — не чистится, чтение — своим сроком;
+- открытие книги — одна запись на книгу в день, дочитал — один раз,
+  скачивание — каждое, с форматом; канал скачивания с сайта — сайт, хотя
+  адрес /opds/download/; «Кто читал» в карточке — только суперпользователю.
 """
 import base64
 import io
@@ -21,8 +24,11 @@ from django.utils import timezone
 
 import sopds_web_backend.login_codes as lc
 import sopds_web_backend.telegram_users as tu
+from opds_catalog import dl
+from opds_catalog.models import Author, Book, Catalog, bauthor, bookshelf
 from sopds_web_backend import activity, opds_passwords, totp
 from sopds_web_backend.models import ActivityEvent, TelegramLink
+from tests.fixtures.fixture_django import publish_books
 
 PASSWORD = "Kx7#vQ2!mLp9"
 NEW_PASSWORD = "Zq4$wRt8!nBv"
@@ -264,3 +270,94 @@ def test_retention_is_saved_from_the_journal_tab(monkeypatch, tmp_path):
     assert response.status_code == 302
     saved = json.loads(config.read_text(encoding="utf-8"))["sopds"]
     assert (saved["activity_keep_security_days"], saved["activity_keep_reading_days"]) == (0, 30)
+
+
+# ── Шаг 2: чтение и скачивание ───────────────────────────────────────────────
+
+_FB2 = (b'<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'
+        b"<description><title-info><book-title>Night</book-title></title-info></description>"
+        b"<body><section><p>Text</p></section></body></FictionBook>")
+
+
+@pytest.fixture
+def book(monkeypatch):
+    cat = Catalog.objects.create(parent=None, cat_name=".", path=".", cat_type=0)
+    b = Book.objects.create(filename="Лукьяненко Сергей - Ночной Дозор.fb2", path=".", filesize=len(_FB2),
+                            format="fb2", cat_type=0, docdate="2020", lang="ru", title="Ночной Дозор",
+                            search_title="НОЧНОЙ ДОЗОР", annotation="", avail=2, catalog=cat)
+    bauthor.objects.create(book=b, author=Author.objects.create(full_name="Лукьяненко Сергей",
+                                                               search_full_name="ЛУКЬЯНЕНКО СЕРГЕЙ"))
+    publish_books(b)
+    monkeypatch.setattr(dl, "getFileData", lambda book: io.BytesIO(_FB2))
+    return b
+
+
+def _progress(client, book, **data):
+    return client.post(reverse("opds:save_progress", args=[book.pk]), json.dumps(data),
+                       content_type="application/json")
+
+
+def test_opening_a_book_is_recorded_once_a_day(book):
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    client = Client()
+    client.force_login(anna)
+    for _ in range(3):
+        assert client.get(reverse("web:read", args=[book.pk])).status_code == 200
+    [opened] = ActivityEvent.objects.filter(action="book_opened")
+    assert (opened.user, opened.channel, opened.category, opened.ip) == (anna, "web", "reading", None)
+    assert (opened.object_type, opened.object_id, opened.object_label) == (
+        "book", str(book.pk), "Лукьяненко Сергей - Ночной Дозор")
+    ActivityEvent.objects.update(at=timezone.now() - timedelta(days=1))
+    client.get(reverse("web:read", args=[book.pk]))
+    assert ActivityEvent.objects.filter(action="book_opened").count() == 2     # новый день — новая запись
+
+
+def test_finished_once_and_offline_saves_keep_the_place(book):
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    client = Client()
+    client.force_login(anna)
+    _progress(client, book, anchor_id="p-1", percent=50)
+    _progress(client, book, anchor_id="p-9", percent=99)
+    _progress(client, book, anchor_id="p-9", percent=100)
+    _progress(client, book, offline="saved")
+    _progress(client, book, offline="removed")
+    assert _progress(client, book, offline="bogus").status_code == 400
+    reading = ActivityEvent.objects.filter(user=anna, category="reading").order_by("id")
+    assert [e.action for e in reading] == ["book_finished", "book_saved_offline", "book_removed_offline"]
+    entry = bookshelf.objects.get(user=anna, book=book)
+    assert (entry.anchor_id, entry.progress_percent) == ("p-9", 100.0)       # место чтения не тронуто
+
+
+def test_downloads_record_format_and_channel(book):
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    site = Client()
+    site.force_login(anna)
+    site.get(reverse("opds:download", args=[book.pk, 0]))
+    site.get(reverse("opds:download", args=[book.pk, 1]))
+    app_password = opds_passwords.generate(anna)
+    Client().get(reverse("opds:download", args=[book.pk, 0]), **_basic("anna", app_password))
+    downloads = [(e.channel, e.details["format"]) for e in ActivityEvent.objects.filter(action="book_downloaded")
+                 .order_by("id")]
+    assert downloads == [("web", "fb2"), ("web", "fb2.zip"), ("opds", "fb2")]
+
+
+def test_reading_without_sign_in_is_not_recorded(book, override_config):
+    with override_config(SOPDS_AUTH=False):
+        assert Client().get(reverse("opds:download", args=[book.pk, 0])).status_code == 200
+    assert not ActivityEvent.objects.exists()
+
+
+def test_book_card_shows_readers_only_to_superuser(book):
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    activity.record(None, "book_downloaded", user=anna, channel="opds", obj=activity.book_obj(book), format="epub")
+    card = reverse("web:book_card", args=[book.pk])
+    client = Client()
+    client.force_login(anna)
+    page = client.get(card).content.decode()
+    assert "Who read and downloaded" not in page
+    client.force_login(admin)
+    page = client.get(card).content.decode()
+    assert "Who read and downloaded" in page and "anna" in page and "(epub)" in page
+    rows = client.get(reverse("web:journal"), {"book": book.pk, "period": "all"}, HTTP_HX_REQUEST="true")
+    assert rows.content.decode().count('class="sp-j-row') == 1

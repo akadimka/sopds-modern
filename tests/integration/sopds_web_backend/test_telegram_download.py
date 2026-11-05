@@ -13,7 +13,7 @@ import opds_catalog.dl as dl
 import sopds_web_backend.telegram_users as tu
 from opds_catalog.models import Author, Book, Catalog, bauthor, bookshelf
 from sopds_web_backend import telegram_search as ts
-from sopds_web_backend.models import TelegramFile
+from sopds_web_backend.models import ActivityEvent, TelegramFile
 from sopds_web_backend.telegram_library import LibraryHandler
 from tests.fixtures.fixture_django import publish_books
 
@@ -162,6 +162,10 @@ def test_fb2_upload_then_cached_by_file_id(book, converters, reader, monkeypatch
 
     _press(handler, client, f"f:{book.id}:fb2")
     assert client.by_id == [(777, "FID1")] and len(client.docs) == 1
+    # оба раза — скачивание в журнале действий (docs/activity-log-design.md)
+    events = ActivityEvent.objects.filter(action="book_downloaded")
+    assert [(e.channel, e.user, e.object_id, e.details["format"]) for e in events] == [
+        ("telegram", reader, str(book.id), "fb2")] * 2
 
 
 def test_stale_file_id_is_reuploaded(book, converters, reader, monkeypatch):

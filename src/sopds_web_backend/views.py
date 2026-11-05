@@ -1484,7 +1484,17 @@ def book_card(request, book_id):
         "authortoday_rating_enabled": config.SOPDS_AUTHORTODAY_RATING,
         "fantlab_rating_enabled": config.SOPDS_FANTLAB_RATING,
         "litmarket_rating_enabled": config.SOPDS_LITMARKET_RATING,
+        "book_events": _book_events(request, book),
     })
+
+
+def _book_events(request, book):
+    """«Кто читал и скачивал» в карточке книги — только суперпользователю
+    (имена других пользователей — только ему); остальным — None, блока нет."""
+    if not request.user.is_superuser:
+        return None
+    from . import activity
+    return activity.book_events(book.pk)
 
 
 def LoginView(request):

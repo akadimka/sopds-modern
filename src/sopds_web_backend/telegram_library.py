@@ -254,6 +254,7 @@ class LibraryHandler:
             if cached is not None:
                 try:
                     client.send_document_id(chat_id, cached.file_id, caption)
+                    _record_download(user, book, fmt)
                     return
                 except TelegramError:
                     cached.delete()  # file_id больше не действует — загрузим заново
@@ -272,6 +273,7 @@ class LibraryHandler:
                                              "предел — 50 МБ). Скачайте его на сайте библиотеки.")
                 return
             sent = client.send_document(chat_id, filename, data, caption) or {}
+            _record_download(user, book, fmt)
             file_id = (sent.get("document") or {}).get("file_id")
             if file_id:
                 TelegramFile.objects.update_or_create(book=book, fmt=fmt,
@@ -290,3 +292,9 @@ class LibraryHandler:
             from django.db import connection
             if threading.current_thread() is not threading.main_thread():
                 connection.close()  # у потока пула своё соединение с БД
+
+
+def _record_download(user, book, fmt) -> None:
+    """Книга отправлена в Telegram — в журнал как скачивание."""
+    from . import activity
+    activity.record(None, "book_downloaded", user=user, channel="telegram", obj=activity.book_obj(book), format=fmt)

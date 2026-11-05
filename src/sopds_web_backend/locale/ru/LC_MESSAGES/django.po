@@ -2381,6 +2381,36 @@ msgstr "и"
 msgid "remove unknown devices"
 msgstr "удалите незнакомые устройства"
 
+msgid "Opened a book"
+msgstr "Открыта книга"
+
+msgid "Finished a book"
+msgstr "Книга дочитана"
+
+msgid "Saved a book for reading offline"
+msgstr "Книга сохранена для чтения без сети"
+
+msgid "Removed a book saved for offline reading"
+msgstr "Книга убрана с устройства"
+
+msgid "Downloaded a book"
+msgstr "Скачана книга"
+
+msgid "Who read and downloaded"
+msgstr "Кто читал и скачивал"
+
+msgid "Nobody yet."
+msgstr "Пока никто."
+
+msgid "Whole journal of this book"
+msgstr "Весь журнал книги"
+
+msgid "Books opened: %(opened)s · downloaded: %(downloads)s"
+msgstr "Открыто книг: %(opened)s · скачано: %(downloads)s"
+
+msgid "one book"
+msgstr "одна книга"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

@@ -76,6 +76,12 @@ ACTIONS = {
     "totp_enabled": Action(SECURITY, _lazy("Connected an authenticator app")),
     "totp_disabled": Action(SECURITY, _lazy("Turned off the authenticator app")),
     "totp_reset": Action(SECURITY, _lazy("Authenticator app reset on the server")),
+    # Чтение и скачивание: открытие — одна запись на книгу в день (record_once_per_day).
+    "book_opened": Action(READING, _lazy("Opened a book")),
+    "book_finished": Action(READING, _lazy("Finished a book")),
+    "book_saved_offline": Action(READING, _lazy("Saved a book for reading offline")),
+    "book_removed_offline": Action(READING, _lazy("Removed a book saved for offline reading")),
+    "book_downloaded": Action(READING, _lazy("Downloaded a book")),
 }
 
 # Значения подробностей, которые показываются текстом, а не кодом.
@@ -106,6 +112,7 @@ DETAIL_LABELS = {
     "device": _lazy("Device"),
     "required": _lazy("Required change"),
     "telegram_name": _lazy("Name in Telegram"),
+    "format": _lazy("Format"),
 }
 
 _SECRET_WORDS = ("password", "passwd", "token", "code", "secret", "cookie", "session", "key")
@@ -125,9 +132,15 @@ def _clean(details: dict) -> dict:
 
 
 def channel_of(request) -> str:
+    """Канал запроса. Адреса /opds/ — читалка, кроме запросов из сессии сайта:
+    кнопки «скачать» на сайте ведут на /opds/download/."""
     from django.urls import reverse
+
+    from .opds_passwords import SESSION_KEY as OPDS_ONLY
     if request.path_info.startswith(reverse("opds:main")):
-        return "opds"
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated or request.session.get(OPDS_ONLY):
+            return "opds"
     if request.COOKIES.get(APP_COOKIE) == "1":
         return "pwa"
     return "web"
@@ -137,24 +150,38 @@ _REQUEST_USER = object()
 
 
 def record(request, action: str, *, user=_REQUEST_USER, username: str = "", actor=None, actor_name: str = "",
-           ok: bool = True, channel: Optional[str] = None, device=None, obj=None, **details):
+           ok: bool = True, channel: Optional[str] = None, device=None, obj=None, once_per_day: bool = False,
+           **details):
     """Записать событие. user — чьё действие (по умолчанию — вошедший по
     запросу; None — неизвестный, тогда `username` — введённое имя); actor —
     кто сделал, если не сам пользователь (суперпользователь), `actor_name` —
-    подпись без учётной записи («система»); obj — (тип, id, подпись).
-    Ошибка записи не выходит наружу."""
+    подпись без учётной записи («система»); obj — (тип, id, подпись), книга —
+    `book_obj`; once_per_day — не повторять то же действие с тем же объектом
+    у пользователя в тот же день. Ошибка записи не выходит наружу."""
     try:
-        return _record(request, action, user, username, actor, actor_name, ok, channel, device, obj, details)
+        return _record(request, action, user, username, actor, actor_name, ok, channel, device, obj,
+                       once_per_day, details)
     except Exception:  # noqa: BLE001 — журнал не должен ломать действие
         _log.exception("activity: событие %s не записано", action)
         return None
 
 
-def _record(request, action, user, username, actor, actor_name, ok, channel, device, obj, details):
+def book_obj(book) -> tuple:
+    return ("book", book.pk, book.display_title)
+
+
+def _record(request, action, user, username, actor, actor_name, ok, channel, device, obj, once_per_day, details):
     from .models import ActivityEvent
     category = ACTIONS[action].category
     if user is _REQUEST_USER:
         user = request.user if request is not None and request.user.is_authenticated else None
+    if category == READING and user is None:
+        return None                     # без входа (SOPDS_AUTH выключен) — чьё чтение, неизвестно
+    object_type, object_id, object_label = obj or ("", "", "")
+    if once_per_day and ActivityEvent.objects.filter(
+            user=user, action=action, object_type=object_type, object_id=str(object_id),
+            at__gte=start_of_today()).exists():
+        return None
     if channel is None:
         channel = channel_of(request) if request is not None else "system"
     if device is None and request is not None and user is not None and channel in ("web", "pwa"):
@@ -168,7 +195,6 @@ def _record(request, action, user, username, actor, actor_name, ok, channel, dev
         ip = client_ip(request) or None
     if actor is not None and user is not None and actor.pk == user.pk:
         actor = None
-    object_type, object_id, object_label = obj or ("", "", "")
     return ActivityEvent.objects.create(
         at=timezone.now(), user=user, username=user.username if user is not None else (username or "")[:150],
         actor=actor, actor_name=actor.username if actor is not None else actor_name,
@@ -221,6 +247,7 @@ def filters_from(params) -> dict:
     user = params.get("user", "")
     category = params.get("category", "")
     channel = params.get("channel", "")
+    book = params.get("book", "")
     try:
         page = max(1, int(params.get("page", 1)))
     except ValueError:
@@ -230,6 +257,7 @@ def filters_from(params) -> dict:
         "user": user if user.isdigit() else "",
         "category": category if category in CATEGORIES else "",
         "channel": channel if channel in CHANNELS else "",
+        "book": book if book.isdigit() else "",
         "failed": params.get("failed") == "1",
         "page": page,
     }
@@ -248,6 +276,8 @@ def events(filters: dict):
         qs = qs.filter(category=filters["category"])
     if filters["channel"]:
         qs = qs.filter(channel=filters["channel"])
+    if filters["book"]:
+        qs = qs.filter(object_type="book", object_id=filters["book"])
     if filters["failed"]:
         qs = qs.filter(ok=False)
     return qs.select_related("device")
@@ -279,8 +309,18 @@ def summary_today() -> dict:
         "logins": today.filter(action="login").count(),
         "failed": today.filter(action__in=("login_failed", "code_wrong", "login_refused")).count(),
         "locks": today.filter(action__in=("locked_out", "code_locked")).count(),
+        "opened": today.filter(action="book_opened").count(),
+        "downloads": today.filter(action="book_downloaded").count(),
         "active_users": today.exclude(user=None).values("user").distinct().count(),
     }
+
+
+def book_events(book_id, limit: int = 10) -> list:
+    """Последние события по книге — блок «Кто читал и скачивал» в карточке
+    (только суперпользователю)."""
+    from .models import ActivityEvent
+    return [decorate(e) for e in
+            ActivityEvent.objects.filter(object_type="book", object_id=str(book_id)).select_related("device")[:limit]]
 
 
 def own_sign_ins(user, limit: int = 20) -> list:

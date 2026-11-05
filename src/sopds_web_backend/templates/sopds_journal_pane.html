@@ -46,6 +46,7 @@
 <div class="sp-j-summary">
   <a href="{% url 'web:journal' %}?period=today&amp;category=security">{% blocktrans with n=journal_summary.logins %}Sign-ins: {{ n }}{% endblocktrans %}</a>
   <a href="{% url 'web:journal' %}?period=today&amp;category=security&amp;failed=1"{% if journal_summary.failed or journal_summary.locks %} class="sp-j-bad"{% endif %}>{% blocktrans with n=journal_summary.failed %}Failed: {{ n }}{% endblocktrans %}{% if journal_summary.locks %} (⚠ {% blocktrans with n=journal_summary.locks %}lockouts: {{ n }}{% endblocktrans %}){% endif %}</a>
+  <a href="{% url 'web:journal' %}?period=today&amp;category=reading">{% blocktrans with opened=journal_summary.opened downloads=journal_summary.downloads %}Books opened: {{ opened }} · downloaded: {{ downloads }}{% endblocktrans %}</a>
   <span>{% blocktrans with n=journal_summary.active_users %}Active users: {{ n }}{% endblocktrans %}</span>
 </div>
 
@@ -68,6 +69,7 @@
     {% for key, icon, label in journal_channels %}<option value="{{ key }}"{% if key == journal_filters.channel %} selected{% endif %}>{{ icon }} {{ label }}</option>{% endfor %}
   </select>
   <label><input type="checkbox" name="failed" value="1"{% if journal_filters.failed %} checked{% endif %}> {% trans "only refusals" %}</label>
+  {% if journal_filters.book %}<input type="hidden" name="book" value="{{ journal_filters.book }}"><span style="font-size:0.85rem;">📖 {% trans "one book" %}</span>{% endif %}
   <a href="{% url 'web:journal' %}" style="font-size:0.85rem;">{% trans "Reset" %}</a>
   <noscript><button type="submit" class="button small">{% trans "Show" %}</button></noscript>
 </form>

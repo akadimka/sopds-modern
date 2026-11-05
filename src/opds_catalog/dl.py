@@ -101,7 +101,13 @@ def Download(request, book_id, zip_flag):
         response["Content-Length"] = str(s.getbuffer().nbytes)
         response.write(s.getvalue())
 
+    _record_download(request, book, book.format + (".zip" if zip_flag == "1" else ""))
     return response
+
+
+def _record_download(request, book, fmt):
+    from sopds_web_backend import activity
+    activity.record(request, "book_downloaded", obj=activity.book_obj(book), format=fmt)
 
 
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
@@ -216,6 +222,9 @@ def render_book_html(request, book_id, back_url: str = ""):
     if fb2_data is None:
         raise Http404
 
+    from sopds_web_backend import activity
+    activity.record(request, "book_opened", obj=activity.book_obj(book), once_per_day=True)
+
     resume_anchor = ""
     resume_time = 0
     if request.user.is_authenticated:
@@ -265,6 +274,18 @@ def SaveProgress(request, book_id):
         data = json.loads(request.body)
     except (ValueError, TypeError):
         return JsonResponse({"ok": False, "error": "invalid json"}, status=400)
+    if not isinstance(data, dict):
+        return JsonResponse({"ok": False, "error": "invalid json"}, status=400)
+
+    from sopds_web_backend import activity
+    if "offline" in data:
+        # Кнопка «⤓» читалки: книга сохранена на устройстве или убрана с него —
+        # только для журнала, место чтения не трогается.
+        action = {"saved": "book_saved_offline", "removed": "book_removed_offline"}.get(data["offline"])
+        if action is None:
+            return JsonResponse({"ok": False, "error": "invalid offline state"}, status=400)
+        activity.record(request, action, obj=activity.book_obj(book))
+        return JsonResponse({"ok": True})
 
     # Строгий allowlist: anchor_id — это html id вида "ref-123"/"vol_1"
     # (см. fb2_to_html.py), не свободный текст. Отдельно от того что ниже
@@ -292,11 +313,14 @@ def SaveProgress(request, book_id):
     entry.total_units = total_units
     entry.readtime = timezone.now()
     update_fields = ["anchor_id", "progress_percent", "current_unit", "total_units", "readtime"]
-    if percent >= 98.0 and not entry.finished:
+    finished_now = percent >= 98.0 and not entry.finished
+    if finished_now:
         entry.finished = True
         entry.finished_at = entry.readtime
         update_fields += ["finished", "finished_at"]
     entry.save(update_fields=update_fields)
+    if finished_now:
+        activity.record(request, "book_finished", obj=activity.book_obj(book))
     return JsonResponse({"ok": True})
 
 
@@ -440,4 +464,5 @@ def ConvertFB2(request, book_id, convert_type):
     response["Content-Transfer-Encoding"] = "binary"
     response["Content-Length"] = str(len(s))
     response.write(s)
+    _record_download(request, book, convert_type)
     return response

@@ -477,16 +477,24 @@ def _reader_toolbar_html(back_url: str, offline: bool = False) -> str:
     return _READER_TOOLBAR_HTML.replace("{back}", back)
 
 
-def _build_offline_js(user_id: int) -> str:
+def _build_offline_js(user_id: int, progress_url: str = "") -> str:
     """JS: кнопка «сохранить для чтения без сети». Книга — в кэше устройства
     `sopds-books` (его отдаёт service worker, когда нет сети, и обновляет при
     каждом открытии с сетью), список — в localStorage `sopds_offline_books`
     (страница «нет связи» показывает его). Книги чужие для другого
     пользователя этого браузера: список помечен владельцем, при смене
-    пользователя и при «Выходе» (sopds_main.html) — стираются."""
+    пользователя и при «Выходе» (sopds_main.html) — стираются. Сохранение и
+    удаление — в журнал действий: тот же адрес, что у места чтения
+    (`progress_url`, поле `offline`)."""
     return f"""
 (function () {{
     var USER = {int(user_id)};
+    var PROGRESS_URL = {_json.dumps(progress_url)};
+    function note(state) {{
+        if (!PROGRESS_URL) return;
+        fetch(PROGRESS_URL, {{ method: 'POST', credentials: 'same-origin', body: JSON.stringify({{ offline: state }}) }})
+            .catch(function () {{}});
+    }}
     var LIST_KEY = 'sopds_offline_books';
     var CACHE = 'sopds-books';
     var url = location.pathname;
@@ -524,6 +532,7 @@ def _build_offline_js(user_id: int) -> str:
                 delete list.books[url];
                 writeList(list);
                 show(false);
+                note('removed');
                 return;
             }}
             btn.disabled = true;
@@ -537,6 +546,7 @@ def _build_offline_js(user_id: int) -> str:
                 list.books[url] = {{ title: document.title, saved: Date.now() }};
                 writeList(list);
                 show(true);
+                note('saved');
             }}).catch(function () {{
                 show(false);
                 alert('Не удалось сохранить книгу на устройстве: нет сети или не хватает места.');
@@ -857,7 +867,7 @@ def _build_html(root, title_hint: str, progress_url: str = "", resume_anchor: st
         main_html += "</main>\n"
 
     notes_html = render_notes(root, binaries, note_ids, note_backrefs)
-    offline_js = f"<script>{_build_offline_js(user_id)}</script>" if back_url and user_id else ""
+    offline_js = f"<script>{_build_offline_js(user_id, progress_url)}</script>" if back_url and user_id else ""
 
     return f"""<!doctype html>
 <html lang="ru">
