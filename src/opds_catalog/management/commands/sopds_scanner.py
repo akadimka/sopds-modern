@@ -156,6 +156,8 @@ class Command(BaseCommand):
             poke_fetchers_for_new_books()
         if autosync is not None:
             self.notify_autosync(*autosync)
+        from sopds_web_backend.views import _record_scan
+        _record_scan(scanner, "schedule_run")
         self.logger.debug("Releasing lock")
         self.scan_is_active = False
 

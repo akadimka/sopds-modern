@@ -222,6 +222,9 @@ def pause_for_outage(source: str, book, log) -> None:
     resume_at = timezone.now() + timedelta(seconds=SLEEP_OUTAGE)
     set_progress(source, status="site_down", book_id=book.id,
                  book_title=book.title, resume_at=resume_at)
+    from sopds_web_backend import activity
+    activity.record(None, "ratings_site_down", user=None, actor_name=activity.SYSTEM_ACTOR,
+                    channel="system", ok=False, obj=("ratings", source, source), once_per_day=True)
     log(f"  Сайт недоступен — пауза {SLEEP_OUTAGE // 60} мин, книга будет повторена.")
     sleep_or_stop(source, SLEEP_OUTAGE)
 
@@ -255,13 +258,16 @@ def start_fetcher(source: str) -> bool:
         def _run():
             try:
                 call_command(cmd_name)
-            except Exception:
+            except Exception as exc:
                 # Не роняем веб-процесс из-за ошибки в фоновом потоке —
-                # достаточно того, что она видна в логах.
+                # достаточно того, что она видна в логах (и в журнале действий).
                 import logging
                 logging.getLogger(__name__).exception(
                     "ratings fetcher %s crashed", source
                 )
+                from sopds_web_backend import activity
+                activity.record_operation("ratings_failed", channel="system", ok=False, source=source,
+                                          error=str(exc))
 
         t = threading.Thread(target=_run, daemon=True, name=f"ratings-{source}")
         _threads[source] = t

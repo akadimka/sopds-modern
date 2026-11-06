@@ -3,7 +3,7 @@
 {% if e.day_header %}<div class="sp-j-day">{{ e.at|date:"j E, l" }}</div>{% endif %}
 <div class="sp-j-row{% if not e.ok %} sp-j-fail{% endif %}">
   <span class="sp-j-time">{{ e.at|time:"H:i" }}</span>
-  <span class="sp-j-who">{% if e.actor_name %}{{ e.actor_name }} → {% endif %}{{ e.username|default:"—" }}</span>
+  <span class="sp-j-who">{{ e.who }}</span>
   <span class="sp-j-ch">{{ e.channel_icon }} {{ e.channel_text }}</span>
   <span class="sp-j-act">{% if not e.ok %}✗ {% endif %}{{ e.category_icon }} {{ e.action_text }}{% if e.object_label %} — {% if e.object_type == "book" %}<a href="{% url 'web:journal' %}?book={{ e.object_id }}&amp;period=all">{{ e.object_label }}</a>{% else %}{{ e.object_label }}{% endif %}{% endif %}</span>
   {% if e.detail_rows %}

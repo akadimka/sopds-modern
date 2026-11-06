@@ -68,6 +68,10 @@ class Command(BaseCommand):
         finally:
             if out:
                 out.close()
+        if apply:
+            from sopds_web_backend import activity
+            activity.record_operation("library_cleanup", channel="cli", operation=options["part"],
+                                      change=summary)
         self.stdout.write(self.style.SUCCESS(summary))
 
     def _genres(self, library, db_path, choices_path, apply, log):

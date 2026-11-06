@@ -101,6 +101,23 @@ ACTIONS = {
     "news_unpinned": Action(SITE, _lazy("Unpinned news")),
     "news_sent_telegram": Action(SITE, _lazy("Sent news to Telegram")),
     "admin_changed": Action(SITE, _lazy("Changed in /admin/")),
+    # fb2parser и операции с библиотекой — одна запись на операцию, с итогами.
+    "library_synced": Action(SITE, _lazy("Synchronized books into the library")),
+    "library_compiled": Action(SITE, _lazy("Compiled series")),
+    "library_compressed": Action(SITE, _lazy("Compressed the library")),
+    "genre_assigned": Action(SITE, _lazy("Assigned a genre to books")),
+    "files_deleted": Action(SITE, _lazy("Deleted files")),
+    "genres_edited": Action(SITE, _lazy("Changed the genre list")),
+    "alias_merged": Action(SITE, _lazy("Merged author spellings")),
+    "library_cleanup": Action(SITE, _lazy("Library cleanup")),
+    "author_renamed": Action(SITE, _lazy("Renamed an author in the library")),
+    "scan_started": Action(SITE, _lazy("Started a library scan")),
+    "server_restarted": Action(SITE, _lazy("Restarted the server")),
+    # Система.
+    "scan_finished": Action(SYSTEM, _lazy("Library scan")),
+    "autosync_finished": Action(SYSTEM, _lazy("Automatic synchronization")),
+    "ratings_site_down": Action(SYSTEM, _lazy("Ratings site is not responding")),
+    "ratings_failed": Action(SYSTEM, _lazy("Ratings loading crashed")),
 }
 
 # Значения подробностей, которые показываются текстом, а не кодом.
@@ -120,23 +137,39 @@ DETAIL_TEXTS = {
         "wrong_password": _lazy("wrong password"),
         "password_change": _lazy("the password was changed"),
         "device_removed": _lazy("the device was removed"),
-        "added": _lazy("added"),
+        "main_password_not_for_readers": _lazy("reader apps do not accept the main password of this account "
+                                               "(second factor or a required password change)"),
+    },
+    "tab": {
         "general": _lazy("General"),
         "scanner": _lazy("Scanner"),
         "schedule": _lazy("Schedule"),
         "telegram": "Telegram",
         "users": _lazy("Users"),
         "journal": _lazy("Journal"),
+    },
+    "role": {
         "user": _lazy("User"),
         "superuser": _lazy("Superuser"),
         "user → superuser": _lazy("user → superuser"),
         "superuser → user": _lazy("superuser → user"),
+    },
+    "admin_action": {
+        "added": _lazy("added"),
         "changed": _lazy("changed"),
         "deleted": _lazy("deleted"),
-        "main_password_not_for_readers": _lazy("reader apps do not accept the main password of this account "
-                                               "(second factor or a required password change)"),
+    },
+    "what": {
+        "martyrs": _lazy("Martyrs"),
+        "broken": _lazy("Broken/incomplete files"),
+        "duplicates": _lazy("Duplicates"),
+    },
+    "trigger": {
+        "schedule_run": _lazy("schedule"),
+        "manual": _lazy("by hand"),
     },
 }
+
 DETAIL_LABELS = {
     "method": _lazy("How"),
     "reason": _lazy("Reason"),
@@ -153,6 +186,14 @@ DETAIL_LABELS = {
     "admin_action": _lazy("Action"),
     "message": _lazy("What changed"),
     "error": _lazy("Error"),
+    "totals": _lazy("Results"),
+    "genre": _lazy("Genre"),
+    "what": _lazy("What"),
+    "change": _lazy("Change"),
+    "operation": _lazy("Operation"),
+    "source": _lazy("Source"),
+    "mode": _lazy("Mode"),
+    "trigger": _lazy("Started by"),
 }
 
 _SECRET_WORDS = ("password", "passwd", "token", "code", "secret", "cookie", "session", "key")
@@ -215,6 +256,7 @@ def channel_of(request) -> str:
 
 
 _REQUEST_USER = object()
+SYSTEM_ACTOR = "system"          # подпись «кто» у событий без учётной записи (переводится при показе)
 
 
 def record(request, action: str, *, user=_REQUEST_USER, username: str = "", actor=None, actor_name: str = "",
@@ -232,6 +274,21 @@ def record(request, action: str, *, user=_REQUEST_USER, username: str = "", acto
     except Exception:  # noqa: BLE001 — журнал не должен ломать действие
         _log.exception("activity: событие %s не записано", action)
         return None
+
+
+def totals(stats: dict) -> list:
+    """Итоги операции для подробностей: ненулевые числа «ключ: значение»."""
+    return [f"{k}: {v}" for k, v in stats.items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and v]
+
+
+def record_operation(action: str, user_id=None, *, channel: str = "fb2parser", ok: bool = True, **details):
+    """Итог фоновой операции (fb2parser, команда, система): кто запустил — по
+    id из состояния задачи (None — система)."""
+    from django.contrib.auth import get_user_model
+    user = get_user_model().objects.filter(pk=user_id).first() if user_id else None
+    return record(None, action, user=user, actor_name="" if user else SYSTEM_ACTOR, channel=channel,
+                  ok=ok, **details)
 
 
 def book_obj(book) -> tuple:
@@ -288,7 +345,8 @@ def detail_rows(event) -> list:
             value = "; ".join(value)
         elif key == "limit":
             value = value.replace("default", str(_lazy("default")))
-        value = DETAIL_TEXTS.get(key, {}).get(value, value)
+        else:
+            value = DETAIL_TEXTS.get(key, {}).get(value, value)   # код значения — текстом
         rows.append((DETAIL_LABELS.get(key, key), value))
     if event.ip:
         rows.append(("IP", event.ip))
@@ -301,6 +359,11 @@ def decorate(event):
     event.category_icon = CATEGORIES.get(event.category, ("", ""))[0]
     event.channel_icon, event.channel_text = CHANNELS.get(event.channel, ("", event.channel))
     event.detail_rows = detail_rows(event)
+    actor = str(_lazy("system")) if event.actor_name == SYSTEM_ACTOR else event.actor_name
+    if actor and event.username:
+        event.who = f"{actor} → {event.username}"
+    else:
+        event.who = event.username or actor or "—"
     return event
 
 
@@ -385,6 +448,44 @@ def summary_today() -> dict:
         "downloads": today.filter(action="book_downloaded").count(),
         "active_users": today.exclude(user=None).values("user").distinct().count(),
     }
+
+
+ALERT_CACHE_KEY = "sopds-activity-alert"
+ALERT_CACHE_SECONDS = 60
+
+
+def security_alerts() -> int:
+    """Метка в шапке суперпользователя: за сегодня — блокировки (axes, коды)
+    и неудачные входы с адресов, с которых у этого пользователя (или вообще,
+    если имени нет) не было успешного входа. Считается раз в минуту."""
+    from django.core.cache import cache
+
+    from .models import ActivityEvent
+    cached = cache.get(ALERT_CACHE_KEY)
+    if cached is not None:
+        return cached
+    failures = ActivityEvent.objects.filter(at__gte=start_of_today(), category=SECURITY, ok=False,
+                                            action__in=("locked_out", "code_locked", "login_failed"))
+    known = set(ActivityEvent.objects.filter(action="login", ok=True).exclude(ip=None)
+                .values_list("user_id", "ip").distinct())
+    count = sum(1 for action, user_id, ip in failures.values_list("action", "user_id", "ip")
+                if action != "login_failed" or (user_id, ip) not in known)
+    cache.set(ALERT_CACHE_KEY, count, ALERT_CACHE_SECONDS)
+    return count
+
+
+CSV_LIMIT = 100_000
+
+
+def csv_rows(filters: dict):
+    """Строки выгрузки журнала в CSV по тем же фильтрам (без страниц)."""
+    import json
+    yield ["time", "user", "actor", "category", "action", "channel", "ok", "object", "ip", "details"]
+    for e in events(filters).iterator(chunk_size=2000):
+        yield [timezone.localtime(e.at).strftime("%Y-%m-%d %H:%M:%S"), e.username, e.actor_name,
+               str(CATEGORIES.get(e.category, ("", e.category))[1]), str(action_label(e.action)),
+               str(CHANNELS.get(e.channel, ("", e.channel))[1]), "1" if e.ok else "0",
+               e.object_label, e.ip or "", json.dumps(e.details, ensure_ascii=False) if e.details else ""]
 
 
 def book_events(book_id, limit: int = 10) -> list:

@@ -51,7 +51,7 @@
 </div>
 
 <div class="s-section-title">{% trans "Journal" %}</div>
-<form class="sp-j-filters" method="get" action="{% url 'web:journal' %}"
+<form class="sp-j-filters" id="journal-filters" method="get" action="{% url 'web:journal' %}"
       hx-get="{% url 'web:journal' %}" hx-target="#journal-rows" hx-push-url="true" hx-trigger="change, submit">
   <select name="period" aria-label="{% trans "Period" %}">
     {% for key, label in journal_periods %}<option value="{{ key }}"{% if key == journal_filters.period %} selected{% endif %}>{{ label }}</option>{% endfor %}
@@ -71,6 +71,8 @@
   <label><input type="checkbox" name="failed" value="1"{% if journal_filters.failed %} checked{% endif %}> {% trans "only refusals" %}</label>
   {% if journal_filters.book %}<input type="hidden" name="book" value="{{ journal_filters.book }}"><span style="font-size:0.85rem;">📖 {% trans "one book" %}</span>{% endif %}
   <a href="{% url 'web:journal' %}" style="font-size:0.85rem;">{% trans "Reset" %}</a>
+  <a href="{% url 'web:journal' %}?format=csv" style="font-size:0.85rem; margin-left:auto;"
+     onclick="this.href = this.href.split('?')[0] + '?' + new URLSearchParams(new FormData(document.getElementById('journal-filters'))) + '&format=csv';">⤓ CSV</a>
   <noscript><button type="submit" class="button small">{% trans "Show" %}</button></noscript>
 </form>
 

@@ -34,6 +34,15 @@ def run_autosync(logger: Optional[logging.Logger] = None) -> Optional[Tuple[Any,
             result.mode, result.status, len(result.moved), result.pending,
             result.kept, result.removed, f", error: {result.error}" if result.error else "",
         )
+        if result.moved or result.removed or result.error:
+            # В журнал — только прогон, который что-то сделал (или сломался):
+            # пустые прогоны идут после каждого скана и каждого изменения папки.
+            from sopds_web_backend import activity
+            activity.record_operation(
+                "autosync_finished", channel="system", ok=not result.error, mode=result.mode,
+                totals=activity.totals({"moved": len(result.moved), "pending": result.pending,
+                                        "kept": result.kept, "removed": result.removed}),
+                error=result.error or None)
     return service, result
 
 

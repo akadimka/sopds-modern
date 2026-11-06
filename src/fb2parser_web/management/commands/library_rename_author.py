@@ -48,6 +48,11 @@ class Command(BaseCommand):
                         total[k] = total.get(k, 0) + v
         except SyncBusy as exc:
             raise CommandError(f"Идёт синхронизация ({exc.owner}) — повторите позже") from None
+        if apply:
+            from sopds_web_backend import activity
+            activity.record_operation("author_renamed", channel="cli", ok=not total.get("errors"),
+                                      change="; ".join(f"{old} → {new}" for old, new in pairs),
+                                      totals=activity.totals(total))
         self.stdout.write(self.style.SUCCESS(
             f"Файлов: {total.get('files', 0)}, перенесено{'' if apply else ' бы'}: {total.get('moved', 0)}, "
             f"конфликтов: {total.get('conflicts', 0)}, ошибок: {total.get('errors', 0)}, "

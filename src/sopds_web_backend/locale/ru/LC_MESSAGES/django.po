@@ -2495,6 +2495,93 @@ msgstr "суперпользователь → пользователь"
 msgid "default"
 msgstr "по умолчанию"
 
+msgid "Synchronized books into the library"
+msgstr "Синхронизация книг в библиотеку"
+
+msgid "Compiled series"
+msgstr "Компиляция серий"
+
+msgid "Compressed the library"
+msgstr "Сжатие библиотеки"
+
+msgid "Assigned a genre to books"
+msgstr "Назначение жанра книгам"
+
+msgid "Deleted files"
+msgstr "Удаление файлов"
+
+msgid "Changed the genre list"
+msgstr "Изменение списка жанров"
+
+msgid "Merged author spellings"
+msgstr "Объединение написаний автора"
+
+msgid "Library cleanup"
+msgstr "Чистка библиотеки"
+
+msgid "Renamed an author in the library"
+msgstr "Переименование автора в библиотеке"
+
+msgid "Started a library scan"
+msgstr "Запуск сканирования библиотеки"
+
+msgid "Restarted the server"
+msgstr "Перезапуск сервера"
+
+msgid "Library scan"
+msgstr "Сканирование библиотеки"
+
+msgid "Automatic synchronization"
+msgstr "Автосинхронизация"
+
+msgid "Ratings site is not responding"
+msgstr "Сайт рейтингов не отвечает"
+
+msgid "Ratings loading crashed"
+msgstr "Сбой загрузки рейтингов"
+
+msgid "Results"
+msgstr "Итоги"
+
+msgid "Genre"
+msgstr "Жанр"
+
+msgid "What"
+msgstr "Что"
+
+msgid "Change"
+msgstr "Изменение"
+
+msgid "Operation"
+msgstr "Операция"
+
+msgid "Source"
+msgstr "Источник"
+
+msgid "Started by"
+msgstr "Запуск"
+
+msgid "Martyrs"
+msgstr "Великомученницы"
+
+msgid "Broken/incomplete files"
+msgstr "Битые/неполные файлы"
+
+msgid "Duplicates"
+msgstr "Дубликаты"
+
+msgid "schedule"
+msgstr "по расписанию"
+
+msgid "by hand"
+msgstr "вручную"
+
+msgid "Lockouts and failed sign-ins from new addresses today"
+msgstr "Блокировки и неудачные входы с новых адресов за сегодня"
+
+msgid "Security: %(n)s"
+msgstr "Безопасность: %(n)s"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

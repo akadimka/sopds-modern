@@ -63,6 +63,49 @@ class _TrackingScanner(opdsScanner):
         super().processfile(name, full_path, file, cat, archive, file_size)
 
 
+
+# ── Журнал действий (docs/activity-log-design.md, шаг 4) ────────────────────
+
+def activity_totals(stats):
+    from sopds_web_backend.activity import totals
+    return totals(stats)
+
+
+def _journal(action, state, ok=True, **details):
+    """Итог фоновой операции — в журнал: кто запустил — `started_by` в
+    состоянии задачи."""
+    from sopds_web_backend import activity
+    activity.record_operation(action, (state or {}).get("started_by"), ok=ok, **details)
+
+
+def _journal_deleted(request, what, deleted, errors):
+    from sopds_web_backend import activity
+    if deleted or errors:
+        activity.record(request, "files_deleted", ok=not errors, what=what,
+                        totals=activity_totals({"deleted": len(deleted) if isinstance(deleted, (list, tuple)) else deleted,
+                                                "errors": len(errors) if isinstance(errors, (list, tuple)) else errors}))
+
+
+_GENRE_EDIT_FIELDS = ("name", "new_name", "parent", "direction", "code", "pattern", "section", "genre")
+
+
+def _journal_genres(view):
+    """Правка списка жанров (genres.xml, привязки кодов) — в журнал, если
+    удалась: какая операция и с чем."""
+    from functools import wraps
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        response = view(request, *args, **kwargs)
+        if response.status_code == 200 and b'"ok": false' not in response.content:
+            from sopds_web_backend import activity
+            values = [f"{f}={request.POST[f].strip()}" for f in _GENRE_EDIT_FIELDS if request.POST.get(f, "").strip()]
+            activity.record(request, "genres_edited", operation=view.__name__.removeprefix("genres_"),
+                            change="; ".join(values))
+        return response
+    return wrapper
+
+
 def _count_files(root_path):
     """Предварительный подсчёт файлов книг для прогресс-бара."""
     try:
@@ -732,8 +775,12 @@ def _run_compress_thread(library_path):
             compressed=result["compressed"], bytes_saved=result["bytes_saved"],
             errors=result["errors"], stopped=result["stopped"],
         )
+        _journal("library_compressed", compress_job.get(), ok=not result["errors"],
+                 totals=activity_totals({k: result[k] for k in ("processed", "compressed", "bytes_saved", "errors")}),
+                 stopped=bool(result["stopped"]))
     except Exception as exc:
         compress_job.update(error=str(exc), running=False)
+        _journal("library_compressed", compress_job.get(), ok=False, error=str(exc))
     finally:
         compress_stop_flag.clear()
         from django import db as _db
@@ -772,7 +819,7 @@ def compress_start(request):
         )
 
     compress_stop_flag.clear()
-    if not compress_job.try_start(library_path=library_path):
+    if not compress_job.try_start(library_path=library_path, started_by=request.user.pk):
         return _render_compress_status(compress_job.get())
 
     _spawn_compress_process(library_path)
@@ -977,6 +1024,8 @@ def server_restart(request):
     запускается из фонового потока ПОСЛЕ того, как ответ уже отправлен
     браузеру, а не до.
     """
+    from sopds_web_backend import activity
+    activity.record(request, "server_restarted")
     if "gunicorn" in request.META.get("SERVER_SOFTWARE", "").lower():
         import subprocess
         import threading
@@ -1143,8 +1192,13 @@ def _run_assign_genre_thread(genre, paths):
             genre_assign_job.update(results=list(results), processed=base)
 
         genre_assign_job.update(done=True, running=False, processed=base_total, current="")
+        _journal("genre_assigned", genre_assign_job.get(), ok=all(r.get("success") for r in results), genre=genre,
+                 totals=activity_totals({"folders": len(paths),
+                                         "files": sum(r.get("count") or 0 for r in results),
+                                         "failed_folders": sum(1 for r in results if not r.get("success"))}))
     except Exception as exc:
         genre_assign_job.update(error=str(exc), running=False)
+        _journal("genre_assigned", genre_assign_job.get(), ok=False, genre=genre, error=str(exc))
     finally:
         from django import db as _db
         _db.connections.close_all()
@@ -1180,7 +1234,7 @@ def assign_genre_multi(request):
     from fb2parser_core.fb2_utils import fb2_rglob
     total = sum(len(fb2_rglob(Path(p))) for p in paths if os.path.isdir(p))
 
-    if not genre_assign_job.try_start(total=total, results=[]):
+    if not genre_assign_job.try_start(total=total, results=[], started_by=request.user.pk):
         return JsonResponse({"error": _("Genre assignment is already running")}, status=409)
 
     t = threading.Thread(target=_run_assign_genre_thread, args=(genre, paths), daemon=True)
@@ -1325,6 +1379,7 @@ def genres(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_add(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1336,6 +1391,7 @@ def genres_add(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_rename(request):
     from .fb2parser_bridge import get_genres_manager
     old_name = request.POST.get("name", "").strip()
@@ -1347,6 +1403,7 @@ def genres_rename(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_delete(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1357,6 +1414,7 @@ def genres_delete(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_move(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1371,6 +1429,7 @@ def genres_move(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_associate_add(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1384,6 +1443,7 @@ def genres_associate_add(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_associate_remove(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1395,6 +1455,7 @@ def genres_associate_remove(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_pattern_add(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1408,6 +1469,7 @@ def genres_pattern_add(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_pattern_remove(request):
     from .fb2parser_bridge import get_genres_manager
     name = request.POST.get("name", "").strip()
@@ -1419,6 +1481,7 @@ def genres_pattern_remove(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_section_map_set(request):
     from .fb2parser_bridge import get_genres_manager
     section = request.POST.get("section", "").strip()
@@ -1432,6 +1495,7 @@ def genres_section_map_set(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_code_assign_set(request):
     from .fb2parser_bridge import get_genres_manager
     code = request.POST.get("code", "").strip()
@@ -1447,6 +1511,7 @@ def genres_code_assign_set(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_excluded_code_add(request):
     from .fb2parser_bridge import get_genres_manager
     code = request.POST.get("code", "").strip()
@@ -1460,6 +1525,7 @@ def genres_excluded_code_add(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_new_codes_clear(request):
     """Снять отметку «новый» со всех кодов — просмотрены, решено оставить как есть."""
     from django.http import JsonResponse
@@ -1469,6 +1535,7 @@ def genres_new_codes_clear(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_excluded_code_remove(request):
     from .fb2parser_bridge import get_genres_manager
     code = request.POST.get("code", "").strip()
@@ -1479,6 +1546,7 @@ def genres_excluded_code_remove(request):
 
 @superuser_required
 @require_http_methods(["POST"])
+@_journal_genres
 def genres_clear_assigned(request):
     from .fb2parser_bridge import get_genres_manager
     gm = get_genres_manager()
@@ -2185,6 +2253,7 @@ def martyrs_delete(request):
 
     folder = norm_job["folder"]
     deleted, errors = _delete_paths_confined(paths, folder)
+    _journal_deleted(request, "martyrs", deleted, errors)
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
@@ -2334,6 +2403,7 @@ def broken_files_delete(request):
 
     folder = norm_job["folder"]
     deleted, errors = _delete_paths_confined(paths, folder)
+    _journal_deleted(request, "broken", deleted, errors)
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
@@ -2603,6 +2673,7 @@ def duplicates_delete(request):
 
     folder = norm_job["folder"]
     deleted, errors = _delete_paths_confined(paths, folder)
+    _journal_deleted(request, "duplicates", deleted, errors)
     return JsonResponse({"deleted": deleted, "errors": errors})
 
 
@@ -2905,8 +2976,12 @@ def _run_compiler_thread(indices, delete_sources):
             progress=total, total=total,
             current="", log=log,
         )
+        failed = sum(1 for entry in log if not entry["ok"])
+        _journal("library_compiled", compiler_job.get(), ok=not failed,
+                 totals=activity_totals({"groups": total, "failed": failed}), delete_sources=delete_sources)
     except Exception as exc:
         compiler_job.update(error=str(exc), running=False)
+        _journal("library_compiled", compiler_job.get(), ok=False, error=str(exc))
     finally:
         compiler_job.finish()
 
@@ -2935,7 +3010,7 @@ def compiler_run(request):
     if not compiler_job.try_start(
         groups=compiler_job["groups"], folder=compiler_job["folder"],
         done=False, error=None,
-        progress=0, total=len(indices), current="", log=[],
+        progress=0, total=len(indices), current="", log=[], started_by=request.user.pk,
     ):
         return JsonResponse({"error": _("Compilation is already running")}, status=409)
 
@@ -3371,6 +3446,7 @@ def _run_sync_thread():
         # в отчёте синхронизации (sync_status.html рендерит все ключи stats).
         stats.pop("touched_author_dirs", None)
         stats.pop("moved_books", None)
+        _journal("library_synced", sync_job.get(), totals=activity_totals(stats))
 
         # Список файлов, требующих ручной сверки автора (баг №72 доп.,
         # docs/quality-roadmap.md) — список словарей, не годится для общей
@@ -3435,6 +3511,7 @@ def _run_sync_thread():
                         running=False)
     except Exception as exc:
         sync_job.update(error=str(exc), running=False)
+        _journal("library_synced", sync_job.get(), ok=False, error=str(exc))
     finally:
         from django import db as _db
         _db.connections.close_all()
@@ -3470,7 +3547,7 @@ def sync_start(request):
     if not sync_job.try_start(
         processed=0, total=0, current="", stats={}, log=[],
         scan_path=scan_path, allowed_folders=allowed,
-        auto_compile=auto_compile,
+        auto_compile=auto_compile, started_by=request.user.pk,
     ):
         return _render_sync_status(sync_job.get())
 
@@ -3684,6 +3761,8 @@ def series_check_alias(request):
         conversions[v] = target
     conversions.pop(target, None)
     sm.set_author_surname_conversions(conversions)
+    from sopds_web_backend import activity
+    activity.record(request, "alias_merged", change=f"{', '.join(sorted(variants))} → {target}")
     return redirect(reverse("fb2parser:series_check") + "#pseudonyms")
 
 

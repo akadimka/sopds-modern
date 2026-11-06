@@ -442,3 +442,111 @@ def test_users_tab_links_each_user_to_the_journal(boss):
     anna = User.objects.create_user("anna", password=PASSWORD)
     page = client.get(reverse("web:users_list")).content.decode()
     assert f'{reverse("web:journal")}?user={anna.pk}&amp;period=all' in page
+
+
+# ── Шаг 4: fb2parser, система, метка в шапке, CSV ────────────────────────────
+
+def test_fb2parser_operation_records_who_started_it_and_results():
+    from fb2parser_web.views import _journal, activity_totals
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    _journal("library_synced", {"started_by": admin.pk}, totals=activity_totals({"moved": 3, "errors": 0}))
+    _journal("library_compressed", {}, ok=False, error="disk full")
+    synced, compressed = ActivityEvent.objects.order_by("id")
+    assert (synced.user, synced.channel, synced.details["totals"]) == (admin, "fb2parser", ["moved: 3"])
+    assert (compressed.user, compressed.ok, compressed.details["error"]) == (None, False, "disk full")
+    assert activity.decorate(compressed).who == "system" and activity.decorate(synced).who == "admin"
+
+
+def test_deletions_genre_edits_and_restart_are_recorded(monkeypatch):
+    from django.http import JsonResponse
+    from django.test import RequestFactory
+
+    from fb2parser_web import views as fv
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    request = RequestFactory().post("/fb2parser/genres/add/", {"name": "Кинороман", "parent": "Проза"})
+    request.user, request.session = admin, {}
+    fv._journal_deleted(request, "duplicates", ["a.fb2", "b.fb2"], [])
+    fv._journal_genres(lambda r: JsonResponse({"ok": True}))(request)
+    fv._journal_genres(lambda r: JsonResponse({"ok": False}))(request)          # не удалось — не пишется
+    monkeypatch.setattr("pathlib.Path.touch", lambda self: None)
+    monkeypatch.setattr("threading.Thread", lambda target=None, daemon=None, **kw: type(
+        "T", (), {"start": lambda self: None})())
+    fv.server_restart(request)
+    events = list(ActivityEvent.objects.order_by("id"))
+    assert [e.action for e in events] == ["files_deleted", "genres_edited", "server_restarted"]
+    assert events[0].details == {"what": "duplicates", "totals": ["deleted: 2"]}
+    assert events[1].details["change"] == "name=Кинороман; parent=Проза"
+
+
+def test_scans_autosync_and_ratings_outage_are_system_events(monkeypatch):
+    from types import SimpleNamespace
+
+    from opds_catalog import autosync_hooks, ratings_fetchers
+    from sopds_web_backend.views import _record_scan
+    _record_scan(SimpleNamespace(books_added=5, books_deleted=1, bad_books=0), "schedule_run")
+    result = SimpleNamespace(status="ok", mode="auto", moved=["x"], pending=2, kept=0, removed=0, error="")
+    service = SimpleNamespace(run=lambda: result)
+    monkeypatch.setattr("fb2parser_web.fb2parser_bridge.get_autosync_service", lambda: service)
+    autosync_hooks.run_autosync()
+    result.moved = []
+    autosync_hooks.run_autosync()                                   # пустой прогон — не пишется
+    monkeypatch.setattr(ratings_fetchers, "sleep_or_stop", lambda source, seconds: None)
+    monkeypatch.setattr("opds_catalog.ratings_progress.set_progress", lambda *a, **k: None)
+    book = SimpleNamespace(id=1, title="x")
+    ratings_fetchers.pause_for_outage("samlib", book, lambda m: None)
+    ratings_fetchers.pause_for_outage("samlib", book, lambda m: None)   # раз в сутки на источник
+    events = list(ActivityEvent.objects.order_by("id"))
+    assert [(e.action, e.category, e.channel) for e in events] == [
+        ("scan_finished", "system", "system"), ("autosync_finished", "system", "system"),
+        ("ratings_site_down", "system", "system")]
+    assert events[0].details["totals"] == ["added: 5", "deleted: 1"]
+    assert events[1].details["totals"] == ["moved: 1", "pending: 2"]
+
+
+def test_header_alert_counts_lockouts_and_unknown_addresses(monkeypatch):
+    from django.core.cache import cache
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    known = Client(REMOTE_ADDR="10.0.0.1")
+    _login(known, "anna")
+    _login(known, "anna", password="wrong")                    # адрес знакомый — не тревога
+    _login(Client(REMOTE_ADDR="10.9.9.9"), "anna", password="wrong")
+    _login(Client(REMOTE_ADDR="10.9.9.9"), "nobody", password="wrong")
+    cache.delete(activity.ALERT_CACHE_KEY)
+    assert activity.security_alerts() == 2
+    user = Client()
+    user.force_login(anna)
+    assert "Security:" not in user.get(reverse("web:main")).content.decode()
+    boss = Client()
+    boss.force_login(admin)
+    assert "⚠ Security: 2" in boss.get(reverse("web:main")).content.decode()
+
+
+def test_csv_export_follows_filters_and_is_superuser_only():
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    activity.record(None, "login", user=anna, channel="web", method="password")
+    activity.record(None, "login_failed", user=anna, ok=False, channel="opds", reason="wrong_password")
+    url = reverse("web:journal")
+    client = Client()
+    client.force_login(anna)
+    assert client.get(url, {"format": "csv"}).status_code in (302, 403)
+    client.force_login(admin)
+    response = client.get(url, {"format": "csv", "failed": "1", "period": "all"})
+    assert response["Content-Type"].startswith("text/csv")
+    text = b"".join(response.streaming_content).decode("utf-8-sig")
+    lines = text.strip().splitlines()
+    assert lines[0].startswith("time,user,actor,category,action") and len(lines) == 2
+    assert ",anna," in lines[1] and "Failed sign-in" in lines[1] and "wrong_password" in lines[1]
+
+
+def test_detail_codes_are_shown_as_text_of_their_own_key():
+    """«telegram» — и способ входа, и вкладка настроек: у каждого ключа свой текст."""
+    from django.utils import translation
+    login = activity.record(None, "login", user=None, channel="web", method="telegram")
+    saved = activity.record(None, "settings_changed", user=None, channel="web", tab="telegram",
+                            changes=["telegram_channel: a → b"])
+    with translation.override("ru"):
+        assert dict(activity.detail_rows(login))["Как"] == "пароль и код из Telegram"
+        rows = {str(k): str(v) for k, v in activity.detail_rows(saved)}
+        assert rows["Вкладка"] == "Telegram" and rows["Изменения"] == "telegram_channel: a → b"

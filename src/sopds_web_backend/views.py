@@ -56,6 +56,15 @@ sopds_scan_job = JobState("sopds:scan", {"running": False, "done": False, "error
                                         "stage": "", "autosync": None})
 
 
+def _record_scan(scanner, trigger, user_id=None):
+    """Итог сканирования библиотеки — в журнал (система; вручную — кто запустил)."""
+    from . import activity
+    activity.record_operation("scan_finished", user_id, channel="web" if user_id else "system",
+                              ok=not scanner.bad_books, trigger=trigger,
+                              totals=activity.totals({"added": scanner.books_added, "deleted": scanner.books_deleted,
+                                                      "bad": scanner.bad_books}))
+
+
 def _run_sopds_scan():
     import logging
     import traceback as _tb
@@ -98,6 +107,7 @@ def _run_sopds_scan():
             deleted=scanner.books_deleted,
             first_error=_first_err[0] if _first_err else None,
         )
+        _record_scan(scanner, "manual", sopds_scan_job.get().get("started_by"))
         if scanner.books_added:
             from opds_catalog.ratings_fetchers import poke_fetchers_for_new_books
             poke_fetchers_for_new_books()
@@ -108,6 +118,9 @@ def _run_sopds_scan():
             error=str(e), traceback=_tb.format_exc(),
             first_error=_first_err[0] if _first_err else None,
         )
+        from . import activity
+        activity.record_operation("scan_finished", sopds_scan_job.get().get("started_by"), channel="web", ok=False,
+                                  trigger="manual", error=str(e))
     finally:
         _log.removeHandler(_handler)
         sopds_scan_job.finish()
@@ -715,7 +728,9 @@ def BSClearView(request):
 def sopds_scan_start(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
-    if sopds_scan_job.try_start():
+    if sopds_scan_job.try_start(started_by=request.user.pk):
+        from . import activity
+        activity.record(request, "scan_started")
         t = threading.Thread(target=_run_sopds_scan, daemon=True)
         t.start()
     return _render_sopds_scan_status(request)
@@ -2249,10 +2264,34 @@ def _journal_context(request, summary=True):
 def journal(request):
     """Журнал действий: страница настроек на вкладке «Журнал»; запрос htmx
     (фильтры, «Показать ещё») — только строки."""
+    if request.GET.get("format") == "csv":
+        return _journal_csv(request)
     if request.headers.get("HX-Request"):
         return render(request, "sopds_journal_rows.html", _journal_context(request, summary=False))
     tab = request.GET.get("tab", "journal")              # переключение вкладок меняет ?tab= в адресе
     return _settings_page(request, tab if tab in _SETTINGS_TABS else "journal")
+
+
+def _journal_csv(request):
+    """Выгрузка журнала по фильтрам адреса — CSV (UTF-8 с BOM: Excel
+    открывает кириллицу без вопросов)."""
+    import csv
+    import itertools
+
+    from django.http import StreamingHttpResponse
+
+    from . import activity
+
+    class _Echo:
+        def write(self, value):
+            return value
+
+    writer = csv.writer(_Echo())
+    rows = itertools.islice(activity.csv_rows(activity.filters_from(request.GET)), activity.CSV_LIMIT + 1)
+    stream = itertools.chain(["\ufeff"], (writer.writerow(row) for row in rows))
+    response = StreamingHttpResponse(stream, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="journal-{timezone.localdate():%Y-%m-%d}.csv"'
+    return response
 
 
 @sopds_admin(url="web:login")

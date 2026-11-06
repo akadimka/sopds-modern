@@ -77,6 +77,10 @@ def sopds_processor(request):
         args["last_auto_scan"] = scan_times.get("auto_scan")
     if request.user.is_authenticated:
         args["online_users"] = online.online_users()
+    if request.user.is_superuser:
+        # Метка «⚠ безопасность» в шапке (docs/activity-log-design.md).
+        from sopds_web_backend import activity
+        args["security_alerts"] = activity.security_alerts()
 
     # Поиск случайной книги
     books_count = stats.get("allbooks", 0)
