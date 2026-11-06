@@ -649,6 +649,38 @@ class SynchronizationService:
             return author
         return found[0]
 
+    def _existing_coauthor_folder(self, genre: str, author: str, series: str) -> str:
+        """Папка соавторов, где `author` — один из авторов и уже лежит серия
+        `series`, если у самого `author` такой серии нет; иначе `author`.
+
+        Соавторская книга приходила то под парой соавторов, то под одним из
+        них (имя в исходной папке, метаданные) и ложилась второй раз — в
+        папку одиночного автора (2026-11-06: 34 книги в Фантастике, почти все
+        — синхронизация с ПК, у которого в своей БД нет книг, положенных
+        сервером). Смотрим не в БД, а в саму библиотеку: книга идёт к паре
+        соавторов, дальше — обычная проверка имени (_resolve_target_collision):
+        копия — дубликат, полнее — заменяет. Несколько подходящих папок пар —
+        не решаем."""
+        library = getattr(self, 'library_path', None)
+        if not library or not series or ',' in author:
+            return author
+        genre_dir = Path(library) / genre
+        if (genre_dir / author / series).is_dir():
+            return author
+        cache = self.__dict__.setdefault('_coauthor_dirs_cache', {})
+        if genre not in cache:
+            dirs = []
+            try:
+                dirs = [d.name for d in genre_dir.iterdir() if d.is_dir() and ',' in d.name]
+            except OSError:
+                pass
+            cache[genre] = dirs
+        key = self._word_set_key(author)
+        found = [d for d in cache[genre]
+                 if any(self._word_set_key(n) == key for n in d.split(','))
+                 and (genre_dir / d / series).is_dir()]
+        return found[0] if len(found) == 1 else author
+
     @staticmethod
     def _word_set_key(name: str) -> str:
         return ' '.join(sorted(re.findall(r'\w+', (name or '').lower().replace('ё', 'е'))))
@@ -811,6 +843,13 @@ class SynchronizationService:
                 if (record.proposed_author or '').strip() == author:
                     record.proposed_author = _variant
                 author = _variant
+            # Серия этого автора уже лежит у пары соавторов — туда же (2026-11-06).
+            _pair = self._existing_coauthor_folder(primary_genre, author, series)
+            if _pair != author:
+                self._log(f"  [{i+1}] Серия «{series}» уже у соавторов «{_pair}» — книга туда же")
+                if (record.proposed_author or '').strip() == author:
+                    record.proposed_author = _pair
+                author = _pair
 
             # Detect duplicates
             #
