@@ -2411,6 +2411,90 @@ msgstr "Открыто книг: %(opened)s · скачано: %(downloads)s"
 msgid "one book"
 msgstr "одна книга"
 
+msgid "Created a user"
+msgstr "Создан пользователь"
+
+msgid "Deleted a user"
+msgstr "Удалён пользователь"
+
+msgid "Deleted own account"
+msgstr "Удаление своей учётной записи"
+
+msgid "Changed the role"
+msgstr "Смена роли"
+
+msgid "Changed the device limit"
+msgstr "Смена лимита устройств"
+
+msgid "Changed a user in /admin/"
+msgstr "Изменение пользователя в /admin/"
+
+msgid "Changed settings"
+msgstr "Изменение настроек"
+
+msgid "Turned on maintenance mode"
+msgstr "Включён режим «На реконструкции»"
+
+msgid "Turned off maintenance mode"
+msgstr "Выключен режим «На реконструкции»"
+
+msgid "Published news"
+msgstr "Опубликована новость"
+
+msgid "Edited news"
+msgstr "Новость изменена"
+
+msgid "Hid news"
+msgstr "Новость скрыта"
+
+msgid "Showed news again"
+msgstr "Новость снова показана"
+
+msgid "Pinned news"
+msgstr "Новость закреплена"
+
+msgid "Unpinned news"
+msgstr "Новость откреплена"
+
+msgid "Sent news to Telegram"
+msgstr "Новость отправлена в Telegram"
+
+msgid "Changed in /admin/"
+msgstr "Изменение в /admin/"
+
+msgid "Tab"
+msgstr "Вкладка"
+
+msgid "Changes"
+msgstr "Изменения"
+
+msgid "Changed, values not shown"
+msgstr "Изменены (значения не показываются)"
+
+msgid "Action"
+msgstr "Действие"
+
+msgid "What changed"
+msgstr "Что изменено"
+
+msgid "added"
+msgstr "добавлено"
+
+msgid "changed"
+msgstr "изменено"
+
+msgid "deleted"
+msgstr "удалено"
+
+msgid "user → superuser"
+msgstr "пользователь → суперпользователь"
+
+msgid "superuser → user"
+msgstr "суперпользователь → пользователь"
+
+msgid "default"
+msgstr "по умолчанию"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

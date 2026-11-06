@@ -22,6 +22,8 @@ class Command(BaseCommand):
             if message is not None:
                 config.SOPDS_MAINTENANCE_MESSAGE = message
             config.SOPDS_MAINTENANCE = action == "on"
+            from sopds_web_backend import activity
+            activity.record(None, f"maintenance_{action}", user=None, actor_name="manage.py", channel="cli")
         state = "ON" if config.SOPDS_MAINTENANCE else "off"
         text = config.SOPDS_MAINTENANCE_MESSAGE or "(default text)"
         self.stdout.write(f"maintenance: {state}; message: {text}")

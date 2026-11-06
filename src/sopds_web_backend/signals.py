@@ -50,6 +50,31 @@ except ImportError:  # django-axes не установлен
     pass
 
 
+def _record_admin_change(sender, instance, created, raw=False, **kwargs):
+    """Изменение в /admin/ (django.contrib.admin пишет LogEntry) — в журнал:
+    блокировка и разблокировка пользователей и всё прочее, что правят там."""
+    if not created or raw:
+        return
+    from . import activity
+    model = instance.content_type.model_class() if instance.content_type_id else None
+    is_user = model is User
+    target = User.objects.filter(pk=instance.object_id).first() if is_user and instance.object_id else None
+    action = {1: "added", 2: "changed", 3: "deleted"}.get(instance.action_flag, "changed")
+    activity.record(None, "admin_user_changed" if is_user else "admin_changed",
+                    user=target, username=instance.object_repr if is_user else "", actor=instance.user,
+                    channel="web", obj=("" if is_user else (model._meta.verbose_name if model else "object"),
+                                        "" if is_user else instance.object_id or "",
+                                        "" if is_user else instance.object_repr),
+                    admin_action=action, message=instance.get_change_message())
+
+
+try:
+    from django.contrib.admin.models import LogEntry
+    post_save.connect(_record_admin_change, sender=LogEntry, dispatch_uid="sopds-activity-admin")
+except ImportError:  # без django.contrib.admin
+    pass
+
+
 @receiver(user_logged_out)
 def leave_online_list(sender, request, user, **kwargs):
     """Вышел с сайта — из «Сейчас на сайте» сразу, не через 5 минут (читалка — свой канал)."""

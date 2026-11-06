@@ -82,6 +82,25 @@ ACTIONS = {
     "book_saved_offline": Action(READING, _lazy("Saved a book for reading offline")),
     "book_removed_offline": Action(READING, _lazy("Removed a book saved for offline reading")),
     "book_downloaded": Action(READING, _lazy("Downloaded a book")),
+    # Учётные записи и права (действия суперпользователя: user — над кем, actor — кто).
+    "user_created": Action(ACCOUNTS, _lazy("Created a user")),
+    "user_deleted": Action(ACCOUNTS, _lazy("Deleted a user")),
+    "account_deleted": Action(ACCOUNTS, _lazy("Deleted own account")),
+    "role_changed": Action(ACCOUNTS, _lazy("Changed the role")),
+    "device_limit_changed": Action(ACCOUNTS, _lazy("Changed the device limit")),
+    "admin_user_changed": Action(ACCOUNTS, _lazy("Changed a user in /admin/")),
+    # Сайт и библиотека.
+    "settings_changed": Action(SITE, _lazy("Changed settings")),
+    "maintenance_on": Action(SITE, _lazy("Turned on maintenance mode")),
+    "maintenance_off": Action(SITE, _lazy("Turned off maintenance mode")),
+    "news_published": Action(SITE, _lazy("Published news")),
+    "news_edited": Action(SITE, _lazy("Edited news")),
+    "news_hidden": Action(SITE, _lazy("Hid news")),
+    "news_shown": Action(SITE, _lazy("Showed news again")),
+    "news_pinned": Action(SITE, _lazy("Pinned news")),
+    "news_unpinned": Action(SITE, _lazy("Unpinned news")),
+    "news_sent_telegram": Action(SITE, _lazy("Sent news to Telegram")),
+    "admin_changed": Action(SITE, _lazy("Changed in /admin/")),
 }
 
 # Значения подробностей, которые показываются текстом, а не кодом.
@@ -101,6 +120,19 @@ DETAIL_TEXTS = {
         "wrong_password": _lazy("wrong password"),
         "password_change": _lazy("the password was changed"),
         "device_removed": _lazy("the device was removed"),
+        "added": _lazy("added"),
+        "general": _lazy("General"),
+        "scanner": _lazy("Scanner"),
+        "schedule": _lazy("Schedule"),
+        "telegram": "Telegram",
+        "users": _lazy("Users"),
+        "journal": _lazy("Journal"),
+        "user": _lazy("User"),
+        "superuser": _lazy("Superuser"),
+        "user → superuser": _lazy("user → superuser"),
+        "superuser → user": _lazy("superuser → user"),
+        "changed": _lazy("changed"),
+        "deleted": _lazy("deleted"),
         "main_password_not_for_readers": _lazy("reader apps do not accept the main password of this account "
                                                "(second factor or a required password change)"),
     },
@@ -113,6 +145,14 @@ DETAIL_LABELS = {
     "required": _lazy("Required change"),
     "telegram_name": _lazy("Name in Telegram"),
     "format": _lazy("Format"),
+    "role": _lazy("Role"),
+    "limit": _lazy("Device limit"),
+    "tab": _lazy("Tab"),
+    "changes": _lazy("Changes"),
+    "hidden_values": _lazy("Changed, values not shown"),
+    "admin_action": _lazy("Action"),
+    "message": _lazy("What changed"),
+    "error": _lazy("Error"),
 }
 
 _SECRET_WORDS = ("password", "passwd", "token", "code", "secret", "cookie", "session", "key")
@@ -123,12 +163,40 @@ def _clean(details: dict) -> dict:
     отбрасываются, значения — строки до 300 символов (или числа и флаги)."""
     clean = {}
     for key, value in details.items():
-        if value is None or value == "" or any(w in key.lower() for w in _SECRET_WORDS):
+        if value is None or value == "" or value == [] or any(w in key.lower() for w in _SECRET_WORDS):
             continue
-        if not isinstance(value, (bool, int, float)):
+        if isinstance(value, (list, tuple)):
+            value = [str(v)[:300] for v in value[:60]]
+        elif not isinstance(value, (bool, int, float)):
             value = str(value)[:300]
         clean[key] = value
     return clean
+
+
+# Настройки, значения которых в журнал не пишутся — только имя («изменено»):
+# токены, пароли, ключи, прокси (в адресе прокси бывают логин и пароль).
+_SECRET_SETTING_WORDS = ("token", "password", "secret", "key", "proxy")
+
+
+def _short(value) -> str:
+    text = "—" if value in (None, "") else str(value)
+    return text if len(text) <= 80 else text[:77] + "…"
+
+
+def settings_changes(before: dict, after: dict) -> dict:
+    """Что изменилось в настройках: {"changes": ["поле: было → стало"],
+    "hidden_values": ["поле"]} — по разделам словарей (sopds, autosync)."""
+    changes, hidden = [], []
+    for section in sorted(set(before) | set(after)):
+        old, new = before.get(section) or {}, after.get(section) or {}
+        for key in sorted(set(old) | set(new)):
+            if old.get(key) == new.get(key):
+                continue
+            if any(w in key.lower() for w in _SECRET_SETTING_WORDS):
+                hidden.append(key)
+            else:
+                changes.append(f"{key}: {_short(old.get(key))} → {_short(new.get(key))}")
+    return {"changes": changes, "hidden_values": hidden}
 
 
 def channel_of(request) -> str:
@@ -216,6 +284,10 @@ def detail_rows(event) -> list:
     for key, value in (event.details or {}).items():
         if isinstance(value, bool):
             value = _lazy("yes") if value else _lazy("no")
+        elif isinstance(value, list):
+            value = "; ".join(value)
+        elif key == "limit":
+            value = value.replace("default", str(_lazy("default")))
         value = DETAIL_TEXTS.get(key, {}).get(value, value)
         rows.append((DETAIL_LABELS.get(key, key), value))
     if event.ip:

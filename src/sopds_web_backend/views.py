@@ -1005,6 +1005,7 @@ def sopds_settings(request):
 
     errors = []
     if request.method == 'POST':
+        before = _settings_snapshot(sm)
         sopds = sm.settings.setdefault('sopds', {})
         for f in _BOOL_FIELDS:
             sopds[f] = request.POST.get(f) == 'on'
@@ -1024,6 +1025,7 @@ def sopds_settings(request):
         if request.user.is_superuser:
             errors.extend(_apply_autosync_settings(sm, request.POST))
         sm.save()
+        _record_settings(request, before, sm, active_tab)
 
         # Сохранение настроек с включённой галочкой гарантирует, что фоновый сбор
         # рейтингов работает. wake_or_start() покрывает оба режима развёртывания:
@@ -1057,6 +1059,27 @@ def sopds_settings(request):
             return redirect(reverse('web:settings') + f'?saved=1&tab={active_tab}')
 
     return render(request, 'sopds_settings.html', _settings_context(request, sm, active_tab, errors))
+
+
+def _settings_snapshot(sm):
+    """Действующие настройки (с умолчаниями) — для «было → стало» в журнале."""
+    import copy
+
+    from opds_catalog.sopds_config import effective
+    return {"sopds": effective(copy.deepcopy(sm.settings.get("sopds", {}))),
+            "autosync": copy.deepcopy(sm.get_autosync_settings())}
+
+
+def _record_settings(request, before, sm, tab):
+    """Изменённые настройки — в журнал (секреты — только имя поля);
+    «На реконструкции» включён/выключен — отдельным событием."""
+    from . import activity
+    after = _settings_snapshot(sm)
+    diff = activity.settings_changes(before, after)
+    if diff["changes"] or diff["hidden_values"]:
+        activity.record(request, "settings_changed", tab=tab, **diff)
+    if bool(before["sopds"].get("maintenance")) != bool(after["sopds"].get("maintenance")):
+        activity.record(request, "maintenance_on" if after["sopds"].get("maintenance") else "maintenance_off")
 
 
 def _settings_context(request, sm, active_tab, errors=(), users_error=None, news_error=None):
@@ -1145,10 +1168,17 @@ def news_create(request):
         return _news_done(request, _('The news needs a title.'))
     item = News.objects.create(title=title, text=text, author=request.user, created=timezone.now(),
                                pinned=request.POST.get('pinned') == 'on')
+    _record_news(request, "news_published", item)
     if request.POST.get('telegram') != 'on':
         return _news_done(request)
     error = _news_send_telegram(item)
+    _record_news(request, "news_sent_telegram", item, error)
     return _news_done(request, error, sent=not error)
+
+
+def _record_news(request, action, item, error=None):
+    from . import activity
+    activity.record(request, action, obj=("news", item.pk, item.title), ok=not error, error=error)
 
 
 @sopds_admin(url="web:login")
@@ -1165,6 +1195,7 @@ def news_edit(request, news_id):
         return _news_done(request, _('The news needs a title.'))
     item.title, item.text, item.edited = title, text, timezone.now()
     item.save(update_fields=['title', 'text', 'edited'])
+    _record_news(request, "news_edited", item)
     return _news_done(request)
 
 
@@ -1176,11 +1207,17 @@ def news_action(request, news_id, action):
     item = get_object_or_404(News, pk=news_id)
     if action == 'telegram':
         error = _news_send_telegram(item)
+        _record_news(request, "news_sent_telegram", item, error)
         return _news_done(request, error, sent=not error)
     field = {'hide': 'hidden', 'pin': 'pinned'}[action]
     setattr(item, field, not getattr(item, field))
     item.save(update_fields=[field])
+    _record_news(request, _NEWS_ACTIONS[(field, getattr(item, field))], item)
     return _news_done(request)
+
+
+_NEWS_ACTIONS = {("hidden", True): "news_hidden", ("hidden", False): "news_shown",
+                 ("pinned", True): "news_pinned", ("pinned", False): "news_unpinned"}
 
 
 @sopds_login(url="web:login")
@@ -1837,6 +1874,7 @@ def user_profile(request):
             if not user.check_password(confirm_pw):
                 errors["delete"] = _("Password is incorrect.")
             else:
+                activity.record(request, "account_deleted")
                 logout(request)
                 user.delete()
                 return redirect(reverse("web:main"))
@@ -1974,6 +2012,10 @@ def _set_role(user, role):
     user.is_superuser = user.is_staff = (role == ROLE_SUPERUSER)
 
 
+def _role_of(user):
+    return ROLE_SUPERUSER if user.is_superuser else ROLE_USER
+
+
 def _password_error(password, user):
     """Текст ошибки AUTH_PASSWORD_VALIDATORS или None."""
     from django.contrib.auth.password_validation import validate_password
@@ -2036,6 +2078,7 @@ def users_settings(request):
     присылает и иначе сбрасывала бы при каждом сохранении."""
     from fb2parser_core.settings_manager import SettingsManager
     sm = SettingsManager(_site_config_path())
+    before = _settings_snapshot(sm)
     errors = []
     raw = request.POST.get('devices_per_user', '').strip()
     try:
@@ -2045,6 +2088,7 @@ def users_settings(request):
     sm.settings['autosync'] = sm.get_autosync_settings()
     errors.extend(_apply_login_security(sm, request.POST, request.user))
     sm.save()
+    _record_settings(request, before, sm, "users")
     if errors:
         return _users_list_error(request, " ".join(str(e) for e in errors))
     return redirect(reverse("web:users_list") + "?saved=1#user-settings")
@@ -2075,6 +2119,8 @@ def user_create(request):
     user.save()
     from .password_rules import set_must_change
     set_must_change(user, True)                          # при первом входе — свой пароль
+    from . import activity
+    activity.record(request, "user_created", user=user, actor=request.user, role=_role_of(user))
     return redirect(reverse("web:users_list"))
 
 
@@ -2089,6 +2135,7 @@ def user_edit(request, user_id):
         # единственного суперпользователя).
         return _users_list_error(request, _("You cannot remove the superuser role from yourself."))
     password = request.POST.get("password", "").strip()
+    old_role = _role_of(user)
     _set_role(user, role)                                # требования к паролю — по новой роли
     if password:
         error = _password_error(password, user)
@@ -2112,10 +2159,25 @@ def user_edit(request, user_id):
         if raw and not raw.isdigit():
             return _users_list_error(request, _("Device limit must be a whole number (0 — no limit)."))
         from .models import UserProfile
-        UserProfile.objects.update_or_create(user=user, defaults={"max_devices": int(raw) if raw else None})
+        old_limit = UserProfile.objects.filter(user=user).values_list("max_devices", flat=True).first()
+        new_limit = int(raw) if raw else None
+        UserProfile.objects.update_or_create(user=user, defaults={"max_devices": new_limit})
+        if old_limit != new_limit:
+            from . import activity
+            activity.record(request, "device_limit_changed", user=user, actor=request.user,
+                            limit=f"{_limit_text(old_limit)} → {_limit_text(new_limit)}")
     _set_role(user, role)
     user.save()
+    if _role_of(user) != old_role:
+        from . import activity
+        activity.record(request, "role_changed", user=user, actor=request.user,
+                        role=f"{old_role} → {_role_of(user)}")
     return redirect(reverse("web:users_list"))
+
+
+def _limit_text(limit):
+    """Личный лимит устройств для журнала: пусто — «по умолчанию»."""
+    return "default" if limit is None else str(limit)
 
 
 @sopds_admin(url="web:login")
@@ -2199,6 +2261,7 @@ def journal_retention(request):
     """Сроки хранения журнала, дней (0 — бессрочно)."""
     from fb2parser_core.settings_manager import SettingsManager
     sm = SettingsManager(_site_config_path())
+    before = _settings_snapshot(sm)
     values = {}
     for key in ("activity_keep_security_days", "activity_keep_reading_days"):
         raw = request.POST.get(key, "").strip()
@@ -2209,6 +2272,7 @@ def journal_retention(request):
         values[key] = int(raw)
     sm.settings.setdefault("sopds", {}).update(values)
     sm.save()
+    _record_settings(request, before, sm, "journal")
     return redirect(reverse("web:journal") + "?journal_saved=1")
 
 
@@ -2218,5 +2282,7 @@ def user_delete(request, user_id):
     from django.contrib.auth.models import User as DjangoUser
     user = get_object_or_404(DjangoUser, pk=user_id)
     if user.pk != request.user.pk:
+        from . import activity
+        activity.record(request, "user_deleted", user=user, actor=request.user)
         user.delete()
     return redirect(reverse("web:users_list"))

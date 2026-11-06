@@ -361,3 +361,84 @@ def test_book_card_shows_readers_only_to_superuser(book):
     assert "Who read and downloaded" in page and "anna" in page and "(epub)" in page
     rows = client.get(reverse("web:journal"), {"book": book.pk, "period": "all"}, HTTP_HX_REQUEST="true")
     assert rows.content.decode().count('class="sp-j-row') == 1
+
+
+# ── Шаг 3: действия суперпользователя ────────────────────────────────────────
+
+@pytest.fixture
+def boss(monkeypatch, tmp_path):
+    from sopds_web_backend import views
+    config = tmp_path / "config.json"
+    config.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(views, "_site_config_path", lambda: str(config))
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    client = Client()
+    client.force_login(admin)
+    return admin, client
+
+
+def test_settings_changes_hide_secrets():
+    diff = activity.settings_changes(
+        {"sopds": {"maxitems": 60}, "autosync": {"telegram_token": "1:OLD", "telegram_proxy": "u:p@h"}},
+        {"sopds": {"maxitems": 30}, "autosync": {"telegram_token": "1:NEW", "telegram_proxy": "u:q@h"}})
+    assert diff == {"changes": ["maxitems: 60 → 30"], "hidden_values": ["telegram_proxy", "telegram_token"]}
+
+
+def test_settings_retention_and_maintenance_are_recorded(boss, override_config):
+    admin, client = boss
+    client.post(reverse("web:journal_retention"), {"activity_keep_security_days": "100",
+                                                   "activity_keep_reading_days": "90"})
+    event = ActivityEvent.objects.get(action="settings_changed")
+    assert (event.user, event.category, event.details["tab"]) == (admin, "site", "journal")
+    assert event.details["changes"] == ["activity_keep_security_days: 365 → 100"]
+    with override_config(SOPDS_MAINTENANCE=False, SOPDS_MAINTENANCE_MESSAGE=""):
+        call_command("maintenance", "on", stdout=io.StringIO())
+        call_command("maintenance", "off", stdout=io.StringIO())
+    on, off = ActivityEvent.objects.filter(action__startswith="maintenance").order_by("id")
+    assert (on.action, on.channel, on.actor_name, off.action) == ("maintenance_on", "cli", "manage.py",
+                                                                  "maintenance_off")
+
+
+def test_user_management_names_who_and_whom(boss):
+    admin, client = boss
+    client.post(reverse("web:user_create"), {"username": "anna", "password": PASSWORD, "role": "user"})
+    anna = User.objects.get(username="anna")
+    client.post(reverse("web:user_edit", args=[anna.pk]), {"role": "superuser", "max_devices": "3"})
+    client.post(reverse("web:user_delete", args=[anna.pk]))
+    events = list(ActivityEvent.objects.filter(category="accounts").order_by("id"))
+    assert [e.action for e in events] == ["user_created", "device_limit_changed", "role_changed", "user_deleted"]
+    assert all(e.actor == admin and e.username == "anna" for e in events)
+    assert events[1].details["limit"] == "default → 3" and events[2].details["role"] == "user → superuser"
+    assert events[-1].user is None                            # удалён — имя осталось копией
+
+
+def test_news_actions_are_recorded(boss):
+    admin, client = boss
+    client.post(reverse("web:news_create"), {"title": "Новые книги", "text": "…"})
+    news_id = ActivityEvent.objects.get(action="news_published").object_id
+    client.post(reverse("web:news_action", args=[news_id, "pin"]))
+    client.post(reverse("web:news_action", args=[news_id, "hide"]))
+    client.post(reverse("web:news_action", args=[news_id, "hide"]))
+    assert [e.action for e in ActivityEvent.objects.filter(category="site").order_by("id")] == [
+        "news_published", "news_pinned", "news_hidden", "news_shown"]
+    assert ActivityEvent.objects.filter(object_type="news", object_label="Новые книги").count() == 4
+
+
+def test_admin_site_changes_are_recorded(boss):
+    from django.contrib.admin.models import CHANGE, LogEntry
+    from django.contrib.contenttypes.models import ContentType
+    admin, _client = boss
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    LogEntry.objects.create(user=admin, content_type=ContentType.objects.get_for_model(User),
+                            object_id=str(anna.pk), object_repr="anna", action_flag=CHANGE,
+                            change_message='[{"changed": {"fields": ["Active"]}}]')
+    event = ActivityEvent.objects.get(action="admin_user_changed")
+    assert (event.user, event.actor, event.details["admin_action"]) == (anna, admin, "changed")
+    assert "Active" in event.details["message"]
+
+
+def test_users_tab_links_each_user_to_the_journal(boss):
+    admin, client = boss
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    page = client.get(reverse("web:users_list")).content.decode()
+    assert f'{reverse("web:journal")}?user={anna.pk}&amp;period=all' in page

@@ -47,7 +47,7 @@
     <tbody>
       {% for u in users %}
       <tr id="user-{{ u.pk }}">
-        <td><strong>{{ u.username }}</strong></td>
+        <td><strong>{{ u.username }}</strong><br><a href="{% url 'web:journal' %}?user={{ u.pk }}&amp;period=all" style="font-size:0.8rem;">{% trans "Journal" %}</a></td>
         <td>
           {% if u.is_superuser %}
             <span style="color:var(--sp-accent); font-weight:600;">{% trans "Superuser" %}</span>
