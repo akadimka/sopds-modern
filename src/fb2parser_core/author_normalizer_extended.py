@@ -283,8 +283,13 @@ class AuthorNormalizer:
             result = single
             for pattern, replacement in conversions.items():
                 # Skip if replacement is already present — prevents double-application
-                # when pass3 and pass5 both call apply_conversions on the same string.
-                if replacement in result:
+                # when pass3 and pass5 both call apply_conversions on the same string
+                # («Робинсон Ким» → «Робинсон Ким Стэнли» дважды дало бы «… Стэнли Стэнли»).
+                # Только если старое имя входит в новое: когда новое короче
+                # («Поселягин Владимир Г» → «Поселягин Владимир»), оно всегда «уже
+                # есть» внутри старого, и замена не срабатывала никогда (2026-11-06);
+                # повтор ей не грозит — после замены старого имени в строке нет.
+                if pattern in replacement and replacement in result:
                     continue
                 # Используем границы слов чтобы «Бирюк» не срабатывал внутри «Бирюков»
                 result = _re.sub(
