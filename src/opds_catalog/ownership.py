@@ -12,6 +12,9 @@ docs/multiuser-plan.md шаг 1.2).
 
 Правило безопасного отказа: у существующего файла без владельцев владелец —
 суперпользователь (`admin_user()`), а не «никто» и не «все».
+
+Отзывы читателей привязаны к тому же пути и следуют за файлом по тем же
+событиям (`opds_catalog/reviews.py`, docs/reviews-design.md).
 """
 from __future__ import annotations
 
@@ -26,7 +29,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 
-from opds_catalog import visibility
+from opds_catalog import reviews, visibility
 from opds_catalog.models import Book, BookOwner, LibraryFileOwner, LibraryOwnershipLog
 from opds_catalog.sopds_config import sopds_cfg as config
 
@@ -118,6 +121,7 @@ def assign(rel: str, user, *, source=LibraryFileOwner.SOURCE_ADMIN, actor=None,
         created = _add_owner(rel, user.pk, source=source, actor=actor, origin_name=origin_name,
                              origin_sha256=origin_sha256, size=size)
         _link_books(rel, [user.pk])
+        reviews.on_present(rel)
     return created
 
 
@@ -139,6 +143,7 @@ def transfer(old_rel: str, new_rel: str, *, actor=None) -> None:
         if moved:
             _log(LibraryOwnershipLog.TRANSFER, old_rel, target=new_rel, actor=actor)
         _link_books(new_rel, [o.user_id for o in moved])
+        reviews.on_transfer(old_rel, new_rel)
 
 
 def merge(sources: Iterable[str], target: str, *, keep_sources: bool = False, actor=None) -> None:
@@ -157,6 +162,8 @@ def merge(sources: Iterable[str], target: str, *, keep_sources: bool = False, ac
         for s in sources:
             _log(LibraryOwnershipLog.MERGE, s, target=target, actor=actor)
         _link_books(target, owners(target))
+        if not keep_sources:
+            reviews.on_merge(sources, target)
 
 
 def release(rel: str, user=None, *, file_exists: Optional[bool] = None, actor=None) -> None:
@@ -176,6 +183,8 @@ def release(rel: str, user=None, *, file_exists: Optional[bool] = None, actor=No
         if file_exists is None:
             root = config.SOPDS_ROOT_LIB
             file_exists = bool(root) and os.path.exists(os.path.join(root, *rel.split("/")))
+        if user is None and not file_exists:
+            reviews.on_release(rel)
         if file_exists and not LibraryFileOwner.objects.filter(rel_path=rel).exists():
             admin = admin_user()
             if admin is not None:
@@ -190,6 +199,7 @@ def link_book(book: Book) -> None:
     положили в обход учёта: вручную, до перехода на владение)."""
     rel = book_rel_path(book)
     with transaction.atomic():
+        reviews.on_present(rel)
         user_ids = owners(rel)
         if not user_ids:
             admin = admin_user()

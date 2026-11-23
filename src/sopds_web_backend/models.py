@@ -26,6 +26,9 @@ class UserProfile(models.Model):
     # Когда пользователь последний раз видел «Новости» на главной: новее —
     # с меткой «новое» (sopds_web_backend/news.py).
     news_seen = models.DateTimeField(null=True, blank=True)
+    # Подписывать мои отзывы отображаемым именем (иначе — «Читатель»;
+    # docs/reviews-design.md, «Подпись отзыва»).
+    sign_reviews = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "User Profile"

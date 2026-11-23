@@ -58,6 +58,10 @@ ISOLATION_TESTED = {
     # Журнал действий: в нём будут книги (чтение, скачивание) — виден только
     # суперпользователю (docs/activity-log-design.md).
     "web:journal": ("tests.integration.sopds_web_backend.test_activity_log", "test_journal_is_for_superuser_only"),
+    # Отзывы: к чужой книге — 404, не пишутся и не видны (docs/reviews-design.md).
+    "web:review_save": ("tests.integration.access.test_reviews", "test_review_of_a_foreign_book_is_not_written_or_shown"),
+    "web:review_delete": ("tests.integration.access.test_reviews", "test_review_of_a_foreign_book_is_not_written_or_shown"),
+    "web:review_moderate": ("tests.integration.access.test_reviews", "test_superuser_hides_review_and_rating_shows_everywhere"),
 }
 
 NO_CATALOG_DATA = {

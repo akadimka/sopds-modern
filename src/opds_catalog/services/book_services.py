@@ -221,6 +221,7 @@ def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
         "authortoday_rating": getattr(row, 'authortoday_rating', None),
         "fantlab_rating": getattr(row, 'fantlab_rating', None),
         "litmarket_rating": getattr(row, 'litmarket_rating', None),
+        "reader_rating": None,      # всей страницей — reviews.attach_ratings (docs/reviews-design.md)
     }
 
 
@@ -329,6 +330,8 @@ def paginated_book_content(
         _build_book_item(row, user=user, auth_enabled=auth_enabled)
         for row in page_objects
     ]
+    from opds_catalog import reviews
+    reviews.attach_ratings(items, page_objects)
 
     if summary_DOUBLES_HIDE:
         items, prev_title, prev_authors_set = _dedup_items(items)
@@ -375,6 +378,9 @@ def book_description(item) -> str:
         s.append(line(_("Series:"), ", ".join(_field(x, "ser") for x in item["series"])))
     if item["ser_no"]:
         s.append(line(_("No in Series:"), ", ".join(str(_field(x, "ser_no")) for x in item["ser_no"])))
+    rating = item.get("reader_rating")
+    if rating:
+        s.append(line(_("Readers' rating:"), f"{rating.stars} {rating.average:.1f} ({rating.count})"))
     s.append(line(_("File:"), item["filename"]))
     s.append(line(_("File size:"), item["filesize"]))
     s.append(line(_("Changes date:"), item["docdate"]))

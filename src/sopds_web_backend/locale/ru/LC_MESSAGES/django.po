@@ -2582,6 +2582,107 @@ msgstr "Блокировки и неудачные входы с новых ад
 msgid "Security: %(n)s"
 msgstr "Безопасность: %(n)s"
 
+msgid "Reviews"
+msgstr "Отзывы"
+
+msgid "Choose a rating from 1 to 5 stars."
+msgstr "Выберите оценку — от 1 до 5 звёзд."
+
+msgid "Fill in the display name first — reviews are signed with it."
+msgstr "Сначала заполните отображаемое имя — им подписываются отзывы."
+
+msgid "your review"
+msgstr "ваш отзыв"
+
+msgid "Reader"
+msgstr "Читатель"
+
+msgid "Readers' rating:"
+msgstr "Оценка читателей:"
+
+msgid "Readers' rating"
+msgstr "Оценка читателей"
+
+msgid "Wrote a review"
+msgstr "Отзыв о книге"
+
+msgid "Deleted own review"
+msgstr "Удаление своего отзыва"
+
+msgid "Hid a review"
+msgstr "Отзыв скрыт"
+
+msgid "Showed a review again"
+msgstr "Отзыв снова показан"
+
+msgid "Rating"
+msgstr "Оценка"
+
+msgid "Readers' reviews"
+msgstr "Отзывы читателей"
+
+msgid "Your rating:"
+msgstr "Ваша оценка:"
+
+msgid "Rate the book:"
+msgstr "Оцените книгу:"
+
+msgid "A few words about the book (not required)"
+msgstr "Пара слов о книге (необязательно)"
+
+msgid "Save review"
+msgstr "Сохранить отзыв"
+
+msgid "Post review"
+msgstr "Оставить отзыв"
+
+msgid "about the volume «%(about)s»"
+msgstr "о томе «%(about)s»"
+
+msgid "Delete your review?"
+msgstr "Удалить ваш отзыв?"
+
+msgid "No reviews yet — be the first."
+msgstr "Отзывов пока нет — будьте первым."
+
+msgid ""
+"Latest 100 reviews. A hidden review is not shown to anybody and does not "
+"count in the rating; its author can still delete it."
+msgstr ""
+"Последние 100 отзывов. Скрытый отзыв никому не показывается и не входит в "
+"оценку; автор может его удалить."
+
+msgid "book file is gone"
+msgstr "файла книги нет"
+
+msgid "Show again"
+msgstr "Вернуть"
+
+msgid "No reviews yet."
+msgstr "Отзывов пока нет."
+
+msgid "My reviews"
+msgstr "Мои отзывы"
+
+msgid "Sign my reviews with my display name"
+msgstr "Подписывать мои отзывы отображаемым именем"
+
+msgid ""
+"Otherwise other readers see “Reader”. Your login is never shown to them."
+msgstr ""
+"Иначе другие читатели видят «Читатель». Ваш логин им не показывается "
+"никогда."
+
+msgid "hidden by a superuser"
+msgstr "скрыт суперпользователем"
+
+msgid "You have not reviewed any book yet. Rate a book in its card."
+msgstr "Вы ещё не оставляли отзывов. Оценить книгу можно в её карточке."
+
+msgctxt "review"
+msgid "hidden"
+msgstr "скрыт"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 

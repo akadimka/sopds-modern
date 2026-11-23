@@ -248,6 +248,39 @@ class bookshelf(models.Model):
 SIZE_LIBRARY_REL_PATH = SIZE_BOOK_PATH + SIZE_BOOK_FILENAME
 
 
+class Review(models.Model):
+    """Отзыв читателя о книге (docs/reviews-design.md): оценка 1–5 и
+    необязательный текст, у пользователя на книгу один отзыв.
+
+    Привязан к пути файла в библиотеке, как владение (`LibraryFileOwner`):
+    запись `Book` недолговечна — перемещение, сжатие, сборка томов создают
+    новую. Переезд, слияние и удаление файла обрабатывает
+    `opds_catalog/ownership.py` (через `opds_catalog/reviews.py`)."""
+
+    MAX_TEXT = 3000
+
+    rel_path = models.CharField(max_length=SIZE_LIBRARY_REL_PATH, db_index=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
+    rating = models.PositiveSmallIntegerField()
+    text = models.TextField(blank=True, default="")
+    # «О томе …»: отзыв на том, собранный потом в сборник (merge) — пометка тома.
+    about = models.CharField(max_length=300, blank=True, default="")
+    hidden = models.BooleanField(default=False)          # скрыт суперпользователем
+    file_missing = models.BooleanField(default=False)    # файла нет — спрятан, пока он не вернётся
+    created = models.DateTimeField(default=timezone.now)
+    updated = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-updated", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "rel_path", "about"], name="unique_review_per_book"),
+            models.CheckConstraint(condition=models.Q(rating__gte=1, rating__lte=5), name="review_rating_1_5"),
+        ]
+
+    def __str__(self):
+        return f"Review({self.user_id}, {self.rel_path}, {self.rating})"
+
+
 class LibraryFileOwner(models.Model):
     """Владелец файла библиотеки (docs/multiuser-design.md).
 

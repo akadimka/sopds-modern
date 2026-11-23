@@ -990,6 +990,7 @@ _SETTINGS_TABS = {
     'news': _lazy('News'),
     'users': _lazy('Users'),
     'journal': _lazy('Journal'),
+    'reviews': _lazy('Reviews'),
 }
 
 
@@ -1116,6 +1117,7 @@ def _settings_context(request, sm, active_tab, errors=(), users_error=None, news
         **_users_context(),
         **_news_context(request, autosync, news_error),
         **_journal_context(request),
+        **_reviews_admin_context(),
     }
 
 
@@ -1362,6 +1364,9 @@ def hello(request):
             ).get(id=random_book_id)
         except (IndexError, Book.DoesNotExist):
             random_book = None
+    if random_book is not None:
+        from opds_catalog import reviews
+        random_book.reader_rating = reviews.rating_for_book(random_book)
     args["random_book"] = random_book
     args["samlib_rating_enabled"] = config.SOPDS_SAMLIB_RATING
     if config.SOPDS_SAMLIB_RATING:
@@ -1537,7 +1542,97 @@ def book_card(request, book_id):
         "fantlab_rating_enabled": config.SOPDS_FANTLAB_RATING,
         "litmarket_rating_enabled": config.SOPDS_LITMARKET_RATING,
         "book_events": _book_events(request, book),
+        **_reviews_context(request, book),
     })
+
+
+# ── Отзывы читателей (docs/reviews-design.md) ────────────────────────────────
+
+def _reviews_context(request, book, error=None):
+    """Блок «Отзывы» карточки книги: оценка, отзывы, форма своего отзыва."""
+    from opds_catalog import reviews
+    return {
+        "reader_rating": reviews.rating_for_book(book),
+        "book_reviews": reviews.book_reviews(book, request.user),
+        "my_review": reviews.own_review(book, request.user),
+        "review_max": reviews.Review.MAX_TEXT,
+        "review_error": error,
+    }
+
+
+def _render_reviews(request, book, error=None, status=200):
+    return render(request, "sopds_book_reviews.html", {"b": book, **_reviews_context(request, book, error)},
+                  status=status)
+
+
+@sopds_login(url="web:login")
+@require_http_methods(["POST"])
+def review_save(request, book_id):
+    """Свой отзыв на книгу: создать или изменить (оценка 1–5, текст
+    необязателен). Чужая книга — 404, как несуществующая."""
+    from opds_catalog import reviews
+
+    from . import activity
+    book = visibility.get_visible_book_or_404(request.user, book_id)
+    rating = reviews.clean_rating(request.POST.get("rating"))
+    if rating is None:
+        return _render_reviews(request, book, _("Choose a rating from 1 to 5 stars."), status=422)
+    reviews.save(book, request.user, rating, request.POST.get("text", ""))
+    activity.record(request, "review_saved", obj=activity.book_obj(book), rating=rating)
+    return _render_reviews(request, book)
+
+
+@sopds_login(url="web:login")
+@require_http_methods(["POST"])
+def review_delete(request, book_id):
+    """Удалить свой отзыв (по-настоящему — вместе с текстом)."""
+    from opds_catalog.models import Review
+
+    from . import activity
+    book = visibility.get_visible_book_or_404(request.user, book_id)
+    review = Review.objects.filter(pk=request.POST.get("review_id") or 0, user=request.user).first()
+    if review is not None:
+        review.delete()
+        activity.record(request, "review_deleted", obj=activity.book_obj(book))
+    return _render_reviews(request, book)
+
+
+@sopds_admin(url="web:login")
+@require_http_methods(["POST"])
+def review_moderate(request, review_id, action):
+    """Суперпользователь скрывает отзыв или возвращает его (без удаления)."""
+    from opds_catalog.models import Review
+
+    from . import activity
+    review = get_object_or_404(Review, pk=review_id)
+    review.hidden = not review.hidden
+    review.save(update_fields=["hidden"])
+    activity.record(request, "review_hidden" if review.hidden else "review_shown", user=review.user,
+                    actor=request.user, obj=("review", review.pk, _review_label(review)))
+    return redirect(reverse("web:users_list") + "?tab=reviews")
+
+
+def _review_label(review):
+    import posixpath
+
+    from opds_catalog.models import book_display_name
+    return book_display_name(posixpath.basename(review.rel_path))
+
+
+def _review_books(review_list):
+    """Подпись и id книги для списка отзывов (вкладка «Отзывы», профиль)."""
+    from opds_catalog.ownership import _books_at
+    for r in review_list:
+        r.book_label = _review_label(r)
+        book = _books_at(r.rel_path).only("id").first()
+        r.book_id = book.pk if book is not None else None
+    return review_list
+
+
+def _reviews_admin_context():
+    """Вкладка «Отзывы» (суперпользователь): свежие отзывы с логином автора."""
+    from opds_catalog.models import Review
+    return {"admin_reviews": _review_books(list(Review.objects.select_related("user")[:100]))}
 
 
 def _book_events(request, book):
@@ -1784,6 +1879,17 @@ def user_profile(request):
                     set_must_change(user, False)
                     success = "password"
 
+        elif action == "sign_reviews":
+            # Подпись отзывов отображаемым именем — только если оно заполнено
+            # (логин наружу не показывается, docs/reviews-design.md).
+            want = request.POST.get("sign_reviews") == "on"
+            if want and not profile.display_name.strip():
+                errors["reviews"] = _("Fill in the display name first — reviews are signed with it.")
+            else:
+                profile.sign_reviews = want
+                profile.save(update_fields=["sign_reviews"])
+                success = "reviews"
+
         elif action == "device_name":
             from .models import UserDevice
             UserDevice.objects.filter(pk=request.POST.get("device_id") or 0, user=user).update(
@@ -1905,6 +2011,7 @@ def user_profile(request):
         **_profile_totp_context(user),
         **_profile_devices_context(request, user),
         "own_sign_ins": activity.own_sign_ins(user),
+        "my_reviews": _review_books(list(user.reviews.all()[:100])),
         "second_factor": login_codes.method_for(user) is not None,
         "password_rules": _rules_text(user),
     })

@@ -26,7 +26,7 @@
 
 <!-- Book card modal -->
 <div id="BookCardModal" class="reveal" data-reveal
-     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow:hidden;">
+     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow-x:hidden; overflow-y:auto;">
   <button class="close-button" data-close aria-label="{% trans 'Close' %}" type="button">
     <span aria-hidden="true">&times;</span>
   </button>
@@ -42,9 +42,14 @@ function openBookCard(bookId) {
   $('#BookCardModal').foundation('open');
   fetch('/web/book/card/' + bookId + '/')
     .then(function(r){ return r.text(); })
-    .then(function(html){ el.innerHTML = html; })
+    .then(function(html){ el.innerHTML = html; if (window.htmx) htmx.process(el); })
     .catch(function(err){ el.innerHTML = '<div style="padding:1rem;color:red">' + err + '</div>'; });
 }
+// ?book=<id> — сразу карточка книги (ссылки из «Моих отзывов» и вкладки «Отзывы»).
+document.addEventListener('DOMContentLoaded', function () {
+  var id = new URLSearchParams(location.search).get('book');
+  if (id && /^[0-9]+$/.test(id)) openBookCard(id);
+});
 </script>
 
 <div class="cell small-12" style="padding: 1rem 0.5rem;">
@@ -160,6 +165,7 @@ function openBookCard(bookId) {
                     {% if authortoday_rating_enabled and random_book.authortoday_rating and not random_book.authortoday_rating.fetch_error and random_book.authortoday_rating.likes %} <span title="{% trans 'Rating A.T' %}" style="color:#3b82f6; font-size:0.8rem; font-weight:normal; white-space:nowrap;">👍 {{ random_book.authortoday_rating.likes }}</span>{% endif %}
                     {% if fantlab_rating_enabled and random_book.fantlab_rating and not random_book.fantlab_rating.fetch_error and random_book.fantlab_rating.rating %} <span title="{% trans 'Rating FL' %}" style="color:#10b981; font-size:0.8rem; font-weight:normal; white-space:nowrap;">★ {{ random_book.fantlab_rating.rating|floatformat:1 }}</span>{% endif %}
                     {% if litmarket_rating_enabled and random_book.litmarket_rating and not random_book.litmarket_rating.fetch_error and random_book.litmarket_rating.likes %} <span title="{% trans 'Rating LM' %}" style="color:#8b5cf6; font-size:0.8rem; font-weight:normal; white-space:nowrap;">👍 {{ random_book.litmarket_rating.likes }}</span>{% endif %}
+                    {% include "sopds_reader_rating.html" with r=random_book.reader_rating %}
                 </p>
                 {% if random_book.annotation %}
                 <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.5;">{{ random_book.annotation|truncatechars:300 }}</div>

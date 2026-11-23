@@ -82,6 +82,8 @@ ACTIONS = {
     "book_saved_offline": Action(READING, _lazy("Saved a book for reading offline")),
     "book_removed_offline": Action(READING, _lazy("Removed a book saved for offline reading")),
     "book_downloaded": Action(READING, _lazy("Downloaded a book")),
+    "review_saved": Action(READING, _lazy("Wrote a review")),
+    "review_deleted": Action(READING, _lazy("Deleted own review")),
     # Учётные записи и права (действия суперпользователя: user — над кем, actor — кто).
     "user_created": Action(ACCOUNTS, _lazy("Created a user")),
     "user_deleted": Action(ACCOUNTS, _lazy("Deleted a user")),
@@ -101,6 +103,8 @@ ACTIONS = {
     "news_unpinned": Action(SITE, _lazy("Unpinned news")),
     "news_sent_telegram": Action(SITE, _lazy("Sent news to Telegram")),
     "admin_changed": Action(SITE, _lazy("Changed in /admin/")),
+    "review_hidden": Action(SITE, _lazy("Hid a review")),
+    "review_shown": Action(SITE, _lazy("Showed a review again")),
     # fb2parser и операции с библиотекой — одна запись на операцию, с итогами.
     "library_synced": Action(SITE, _lazy("Synchronized books into the library")),
     "library_compiled": Action(SITE, _lazy("Compiled series")),
@@ -194,6 +198,7 @@ DETAIL_LABELS = {
     "source": _lazy("Source"),
     "mode": _lazy("Mode"),
     "trigger": _lazy("Started by"),
+    "rating": _lazy("Rating"),
 }
 
 _SECRET_WORDS = ("password", "passwd", "token", "code", "secret", "cookie", "session", "key")

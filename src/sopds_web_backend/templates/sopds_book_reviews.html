@@ -1,0 +1,53 @@
+{% load i18n %}{# Отзывы читателей в карточке книги (docs/reviews-design.md); ответ на сохранение и удаление — этот же блок #}
+<div id="card-reviews" class="sopds-card-reviews" style="margin-top:1rem; border-top:1px solid var(--border); padding-top:0.8rem;">
+  <style>
+    .sp-stars { display:inline-flex; flex-direction:row-reverse; }
+    .sp-stars input { position:absolute; opacity:0; width:0; height:0; }
+    .sp-stars label { font-size:1.6rem; line-height:1; color:var(--border); cursor:pointer; padding:0 0.1rem; margin:0; }
+    .sp-stars input:checked ~ label, .sp-stars label:hover, .sp-stars label:hover ~ label { color:#f59e0b; }
+    .sp-stars input:focus-visible + label { outline:2px solid var(--sp-accent); }
+    .sp-review { padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.88rem; }
+    .sp-review-head { display:flex; flex-wrap:wrap; gap:0.2rem 0.6rem; align-items:baseline; color:var(--text-muted); font-size:0.8rem; }
+    .sp-review-head .sp-review-stars { color:#f59e0b; font-size:0.95rem; }
+  </style>
+  <div style="font-weight:600; margin-bottom:0.5rem;">
+    {% trans "Readers' reviews" %}{% if reader_rating %} · <span style="color:#e11d48;">♥ {{ reader_rating.average|floatformat:1 }}</span> <span style="color:var(--text-muted); font-weight:normal;">({{ reader_rating.count }})</span>{% endif %}
+  </div>
+
+  {% if review_error %}<div class="callout alert" style="padding:0.4rem 0.7rem; margin-bottom:0.5rem;">{{ review_error }}</div>{% endif %}
+
+  <form hx-post="{% url 'web:review_save' b.id %}" hx-target="#card-reviews" hx-swap="outerHTML" style="margin-bottom:0.8rem;">
+    {% csrf_token %}
+    <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.4rem;">
+      <span style="font-size:0.85rem;">{% if my_review %}{% trans "Your rating:" %}{% else %}{% trans "Rate the book:" %}{% endif %}</span>
+      <span class="sp-stars" role="radiogroup" aria-label="{% trans "Rating" %}">
+        {% for n in "54321" %}<input type="radio" id="rv{{ b.id }}-{{ n }}" name="rating" value="{{ n }}"{% if my_review and my_review.rating|stringformat:"d" == n %} checked{% endif %}><label for="rv{{ b.id }}-{{ n }}" title="{{ n }}">★</label>{% endfor %}
+      </span>
+    </div>
+    <textarea name="text" rows="3" maxlength="{{ review_max }}" style="margin:0 0 0.4rem; font-size:0.88rem;"
+              placeholder="{% trans "A few words about the book (not required)" %}">{{ my_review.text }}</textarea>
+    <button type="submit" class="button small" style="margin:0;">{% if my_review %}{% trans "Save review" %}{% else %}{% trans "Post review" %}{% endif %}</button>
+  </form>
+
+  {% for r in book_reviews %}
+  <div class="sp-review">
+    <div class="sp-review-head">
+      <span class="sp-review-stars" title="{{ r.rating }}">{{ r.stars }}</span>
+      <strong style="color:var(--text);">{{ r.signature }}</strong>
+      <span>{{ r.updated|date:"d.m.Y" }}</span>
+      {% if r.about %}<span>{% blocktrans with about=r.about %}about the volume «{{ about }}»{% endblocktrans %}</span>{% endif %}
+      {% if r.own %}
+      <form hx-post="{% url 'web:review_delete' b.id %}" hx-target="#card-reviews" hx-swap="outerHTML"
+            hx-confirm="{% trans "Delete your review?" %}" style="margin:0 0 0 auto;">
+        {% csrf_token %}
+        <input type="hidden" name="review_id" value="{{ r.pk }}">
+        <button type="submit" class="button tiny secondary" style="margin:0;">{% trans "Delete" %}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if r.text %}<div style="margin-top:0.25rem; white-space:normal;">{{ r.text|linebreaksbr }}</div>{% endif %}
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:0.85rem; margin:0;">{% trans "No reviews yet — be the first." %}</p>
+  {% endfor %}
+</div>

@@ -1,0 +1,1 @@
+{% load i18n %}{% if r %} <span title="{% trans "Readers' rating" %}" style="color:#e11d48; font-size:0.8rem; font-weight:normal; white-space:nowrap;">♥ {{ r.average|floatformat:1 }} ({{ r.count }})</span>{% endif %}

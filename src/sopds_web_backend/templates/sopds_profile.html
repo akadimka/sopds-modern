@@ -145,6 +145,33 @@
   {% endif %}
 </div>
 
+<!-- ── Мои отзывы (docs/reviews-design.md) ───────────────────── -->
+<div class="s-section" style="margin-bottom:1.5rem;" id="reviews">
+  <div class="s-section-title">{% trans "My reviews" %}</div>
+  {% if errors.reviews %}<div class="callout alert" style="padding:0.5rem 0.9rem; border-radius:6px; margin-bottom:0.8rem;">{{ errors.reviews }}</div>{% endif %}
+  <form method="post" action="{% url 'web:profile' %}#reviews" style="margin-bottom:0.8rem;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="sign_reviews">
+    <label class="s-check" style="margin:0;">
+      <input type="checkbox" name="sign_reviews"{% if profile.sign_reviews %} checked{% endif %} onchange="this.form.submit()">
+      <span>{% trans "Sign my reviews with my display name" %}</span>
+    </label>
+    <div class="s-hint">{% trans "Otherwise other readers see “Reader”. Your login is never shown to them." %}</div>
+    <noscript><button type="submit" class="button small">{% trans "Save" %}</button></noscript>
+  </form>
+  {% for r in my_reviews %}
+  <div style="font-size:0.88rem; padding:0.35rem 0; border-bottom:1px dashed var(--border);{% if r.hidden or r.file_missing %} opacity:0.6;{% endif %}">
+    <span style="color:#f59e0b;">{% for n in "12345" %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+    {% if r.book_id %}<a href="{% url 'web:main' %}?book={{ r.book_id }}">{{ r.book_label }}</a>{% else %}{{ r.book_label }}{% endif %}
+    {% if r.about %}<span style="color:var(--text-muted); font-size:0.8rem;">{% blocktrans with about=r.about %}about the volume «{{ about }}»{% endblocktrans %}</span>{% endif %}
+    {% if r.hidden %}<span style="color:var(--text-muted); font-size:0.8rem;">· {% trans "hidden by a superuser" %}</span>{% endif %}
+    {% if r.text %}<div style="color:var(--text-muted); font-size:0.82rem;">{{ r.text|truncatechars:200 }}</div>{% endif %}
+  </div>
+  {% empty %}
+  <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "You have not reviewed any book yet. Rate a book in its card." %}</p>
+  {% endfor %}
+</div>
+
 <!-- ── Приложение-аутентификатор (второй фактор входа) ──────── -->
 <div class="s-section" style="margin-bottom:1.5rem;">
   <div class="s-section-title">{% trans "Authenticator app" %}</div>

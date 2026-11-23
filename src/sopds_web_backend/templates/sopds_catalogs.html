@@ -4,7 +4,7 @@
 
 {% block ext-body %}
 <div id="BookCardModal" class="reveal" data-reveal
-     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow:hidden;">
+     style="width:min(680px,96vw); padding:0; border-radius:var(--radius-lg); overflow-x:hidden; overflow-y:auto;">
     <button class="close-button" data-close aria-label="{% trans 'Close' %}" type="button">
         <span aria-hidden="true">&times;</span>
     </button>
@@ -19,7 +19,7 @@ function openBookCard(bookId) {
     $('#BookCardModal').foundation('open');
     fetch('/web/book/card/' + bookId + '/')
         .then(function(r){ return r.text(); })
-        .then(function(html){ el.innerHTML = html; })
+        .then(function(html){ el.innerHTML = html; if (window.htmx) htmx.process(el); })
         .catch(function(err){ el.innerHTML = '<div style="padding:1rem;color:red">' + err + '</div>'; });
 }
 </script>
@@ -56,6 +56,7 @@ function openBookCard(bookId) {
         {% if b.authortoday_rating and not b.authortoday_rating.fetch_error and b.authortoday_rating.likes %}<span title="{% trans 'Rating A.T' %}" style="color:#3b82f6; font-size:0.8rem; white-space:nowrap;">👍 {{ b.authortoday_rating.likes }}</span>{% endif %}
         {% if b.fantlab_rating and not b.fantlab_rating.fetch_error and b.fantlab_rating.rating %}<span title="{% trans 'Rating FL' %}" style="color:#10b981; font-size:0.8rem; white-space:nowrap;">★ {{ b.fantlab_rating.rating|floatformat:1 }}</span>{% endif %}
         {% if b.litmarket_rating and not b.litmarket_rating.fetch_error and b.litmarket_rating.likes %}<span title="{% trans 'Rating LM' %}" style="color:#8b5cf6; font-size:0.8rem; white-space:nowrap;">👍 {{ b.litmarket_rating.likes }}</span>{% endif %}
+        {% include "sopds_reader_rating.html" with r=b.reader_rating %}
     </a>
 {% endif %}
 

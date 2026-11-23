@@ -1,0 +1,23 @@
+{% load i18n %}{# Вкладка «Отзывы» страницы настроек (docs/reviews-design.md): модерация — скрыть/вернуть, без удаления #}
+<div class="s-section-title">{% trans "Readers' reviews" %}</div>
+<p class="s-hint" style="margin-bottom:0.8rem;">{% trans "Latest 100 reviews. A hidden review is not shown to anybody and does not count in the rating; its author can still delete it." %}</p>
+{% for r in admin_reviews %}
+<div style="padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.88rem;{% if r.hidden or r.file_missing %} opacity:0.6;{% endif %}">
+  <div style="display:flex; flex-wrap:wrap; gap:0.2rem 0.7rem; align-items:baseline;">
+    <span style="color:#f59e0b;">{% for n in "12345" %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+    <strong>{{ r.user.username }}</strong>
+    <span style="color:var(--text-muted); font-size:0.8rem;">{{ r.updated|date:"d.m.Y H:i" }}</span>
+    {% if r.book_id %}<a href="{% url 'web:main' %}?book={{ r.book_id }}">{{ r.book_label }}</a>{% else %}<span>{{ r.book_label }}</span>{% endif %}
+    {% if r.about %}<span style="color:var(--text-muted); font-size:0.8rem;">{% blocktrans with about=r.about %}about the volume «{{ about }}»{% endblocktrans %}</span>{% endif %}
+    {% if r.hidden %}<span class="label secondary" style="font-size:0.72rem;">{% trans "hidden" context "review" %}</span>{% endif %}
+    {% if r.file_missing %}<span class="label secondary" style="font-size:0.72rem;">{% trans "book file is gone" %}</span>{% endif %}
+    <form method="post" action="{% url 'web:review_moderate' r.pk 'hide' %}" style="margin:0 0 0 auto;">
+      {% csrf_token %}
+      <button type="submit" class="button tiny {% if r.hidden %}success{% else %}secondary{% endif %}" style="margin:0;">{% if r.hidden %}{% trans "Show again" %}{% else %}{% trans "Hide" %}{% endif %}</button>
+    </form>
+  </div>
+  {% if r.text %}<div style="margin-top:0.25rem;">{{ r.text|linebreaksbr }}</div>{% endif %}
+</div>
+{% empty %}
+<p style="color:var(--text-muted); font-size:0.88rem;">{% trans "No reviews yet." %}</p>
+{% endfor %}

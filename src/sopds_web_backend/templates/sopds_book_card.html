@@ -76,6 +76,13 @@
       </div>
       {% endif %}
 
+      {% if reader_rating %}
+      <div class="sopds-card-row">
+        <span class="sopds-card-label">{% trans "Readers' rating" %}</span>
+        <span style="color:#e11d48;">♥ {{ reader_rating.average|floatformat:1 }} <span style="color:var(--text-muted); font-size:0.85em;">({{ reader_rating.count }})</span></span>
+      </div>
+      {% endif %}
+
       {% if litmarket_rating_enabled and b.litmarket_rating and not b.litmarket_rating.fetch_error and b.litmarket_rating.likes %}
       <div class="sopds-card-row">
         <span class="sopds-card-label">{% trans "Rating LM" %}</span>
@@ -113,6 +120,8 @@
        class="button secondary small" style="margin:0;">⬇ MOBI</a>
     {% endif %}
   </div>
+
+  {% include "sopds_book_reviews.html" %}
 
   {% if book_events is not None %}
   {# Журнал действий по книге — только суперпользователю (docs/activity-log-design.md) #}

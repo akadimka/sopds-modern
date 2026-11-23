@@ -47,6 +47,10 @@ urlpatterns = [
     re_path(r"^read/(?P<book_id>[0-9]+)/$", views.read_book, name="read"),
     re_path(r"^online/$", views.online_now, name="online"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
+    re_path(r"^book/(?P<book_id>\d+)/review/$", views.review_save, name="review_save"),
+    re_path(r"^book/(?P<book_id>\d+)/review/delete/$", views.review_delete, name="review_delete"),
+    re_path(r"^settings/reviews/(?P<review_id>\d+)/(?P<action>hide)/$", views.review_moderate,
+            name="review_moderate"),
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/progress/$", views.ratings_progress, name="ratings_progress"),
     re_path(r"^ratings/(?P<source>samlib|authortoday|fantlab|litmarket)/restart/$", views.ratings_restart_cycle, name="ratings_restart"),
 ]

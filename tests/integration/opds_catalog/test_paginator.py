@@ -195,7 +195,8 @@ class TestPaginatedBookContent:
             and "RELEASE" not in q["sql"]
         ]
         # COUNT(*) + основная страница + 3 prefetch (authors, genres, series)
-        assert len(db_queries) <= 6, (
+        # + оценки читателей всей страницей одним запросом (docs/reviews-design.md)
+        assert len(db_queries) <= 7, (
             f"Запросов: {len(db_queries)} ({list(q['sql'][:50] for q in db_queries)})"
         )
 

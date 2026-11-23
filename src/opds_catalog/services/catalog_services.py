@@ -117,6 +117,7 @@ def _book_row_to_dict(row, auth_enabled: bool) -> dict:
         "authortoday_rating": getattr(row, "authortoday_rating", None),
         "fantlab_rating": getattr(row, "fantlab_rating", None),
         "litmarket_rating": getattr(row, "litmarket_rating", None),
+        "reader_rating": None,      # всей страницей — reviews.attach_ratings
     }
 
 
@@ -196,8 +197,11 @@ def paginated_catalog_content(
     book_start = max(0, min(start - catalogs_count, books_count))
     book_end = max(0, min(end - catalogs_count, books_count))
     if book_start < book_end:
-        for row in books_list[book_start:book_end]:
-            merged.append(_book_row_to_dict(row, auth_enabled))
+        rows = list(books_list[book_start:book_end])
+        book_items = [_book_row_to_dict(row, auth_enabled) for row in rows]
+        from opds_catalog import reviews
+        reviews.attach_ratings(book_items, rows)
+        merged.extend(book_items)
 
     pager_dict = {
         "num_pages": num_pages,
