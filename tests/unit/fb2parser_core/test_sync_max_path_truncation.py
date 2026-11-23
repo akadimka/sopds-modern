@@ -9,6 +9,7 @@
 считалась как `errors += 1` — файл так и оставался несинхронизированным,
 без явного объяснения причины пользователю.
 """
+import os
 from pathlib import Path
 
 from fb2parser_core.synchronization import (
@@ -150,8 +151,13 @@ class TestShortenPathComponentForAnthologyAuthorFolders:
         # mkdir() тем же именем должен физически сработать без WinError 123.
         many_authors = "Автор " * 60  # заведомо длинное, кириллицы не нужно для сути проверки
         result = _shorten_path_component(many_authors)
-        (tmp_path / result).mkdir()
-        assert (tmp_path / result).is_dir()
+        # Проверяется предел ИМЕНИ папки, не всего пути: временная папка pytest
+        # на Windows сама бывает ~100 символов, и вместе с именем путь выходит
+        # за MAX_PATH (WinError 206). Префикс `\\?\` снимает только предел
+        # всего пути — предел имени одной папки остаётся.
+        base = Path("\\\\?\\" + str(tmp_path.resolve())) if os.name == "nt" else tmp_path
+        (base / result).mkdir()
+        assert (base / result).is_dir()
 
 
 def sync_max_path() -> int:
