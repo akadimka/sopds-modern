@@ -4076,6 +4076,23 @@ class Pass2SeriesFilename:
                         return None
                     series_from_block = None
 
+                # Тот же класс, наоборот: инициал имени принят за Author, а
+                # ФАМИЛИЯ автора — за корень серии. Реальный случай
+                # (regen_Test1.csv): "Б. Акунин - Русский в Англии.
+                # Самоучитель по беллетристике" по паттерну "Author. Series.
+                # SubSeries. Title" → Author="Б", Series="Акунин",
+                # SubSeries="Русский в Англии" — серия "Акунин\Русский в
+                # Англии". Проверка вызывающего (_is_author_surname) сравнивает
+                # кандидата ЦЕЛИКОМ и иерархию не ловит, а позже подсерия
+                # отрезалась — в CSV оставалась серия "Акунин". Корень = фамилия
+                # автора книги → результат паттерна ложный, как и с инициалом.
+                if series_from_block and proposed_author:
+                    _root = series_from_block.split('\\', 1)[0].strip()
+                    if _root and self._is_author_surname(_root, proposed_author):
+                        if not metadata_series:
+                            return None
+                        series_from_block = None
+
                 # Проверяем что это валидная серия
                 if series_from_block and (not validate or self._is_valid_series(series_from_block, skip_author_check=True)):
                     # ✅ ДОБАВЛЕНО: Подтверждение результата с помощью metadata

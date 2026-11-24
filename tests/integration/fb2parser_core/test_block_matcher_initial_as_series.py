@@ -80,3 +80,47 @@ class TestNoFallthroughToAnotherBogusAuthorGuessWithoutMetadata:
             proposed_author="М. Хьюитт Дж.",
         )
         assert not result
+
+
+class TestAuthorSurnameAsSeriesRoot:
+    """Найдено пользователем в `regen_Test1.csv`: "Б. Акунин - Русский в
+    Англии. Самоучитель по беллетристике.fb2" получал серию "Акунин".
+    Паттерн "Author. Series. SubSeries. Title" брал инициал "Б" за автора,
+    фамилию "Акунин" — за серию, "Русский в Англии" — за подсерию. Проверка
+    `_is_author_surname` сравнивала кандидата `Акунин\\Русский в Англии`
+    целиком и не срабатывала; позже подсерия отрезалась, и в CSV оставалась
+    серия-фамилия. Корень серии, совпадающий с фамилией автора, — ложный.
+    """
+
+    def _extractor(self):
+        return Pass2SeriesFilename(Logger(), config_path=_config_path())
+
+    def test_surname_with_subtitle_not_hierarchy(self):
+        result = self._extractor()._extract_series_from_filename(
+            "Акунин Борис - Сборник\\Другие произведения\\"
+            "Б. Акунин - Русский в Англии. Самоучитель по беллетристике.fb2",
+            validate=False,
+            metadata_series="",
+            proposed_author="Акунин Борис",
+        )
+        assert not result
+
+    def test_surname_plain_title_still_no_series(self):
+        result = self._extractor()._extract_series_from_filename(
+            "Акунин Борис - Сборник\\Другие произведения\\"
+            "Б. Акунин - Нечеховская интеллигенция [Короткие истории о всяком разном].fb2",
+            validate=False,
+            metadata_series="",
+            proposed_author="Акунин Борис",
+        )
+        assert not result
+
+    def test_real_series_of_same_author_kept(self):
+        result = self._extractor()._extract_series_from_filename(
+            "Акунин Борис - Сборник\\Другие произведения\\"
+            "Акунин, Чхартишвили - Семейная сага 1. Аристономия.fb2",
+            validate=False,
+            metadata_series="",
+            proposed_author="Акунин Борис",
+        )
+        assert result and result.rstrip("0123456789 ") == "Семейная сага"
