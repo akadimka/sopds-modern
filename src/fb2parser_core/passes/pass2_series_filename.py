@@ -1238,6 +1238,7 @@ class Pass2SeriesFilename:
             return  # Folder extraction already set hierarchical series
 
         # Если папка НЕ дала series → пробуем extraction из filename
+        self._from_part_title = False
         series_candidate = self._extract_series_from_filename(
             record.file_path, validate=False, metadata_series=record.metadata_series,
             known_series=record.proposed_series or '',
@@ -1278,6 +1279,10 @@ class Pass2SeriesFilename:
             # даже когда кандидат прошёл comma-check (например "о том, как")
             if series_candidate and self._is_author_surname(series_candidate, record.proposed_author):
                             series_candidate = None  # Фамилия или полное имя автора
+            # Название книги само кончается номером части — серия это название
+            # без номера (см. _series_from_part_title). Считается ДО проверки
+            # «кандидат = название»: та отбросила бы такой кандидат как название.
+            _part_series = self._series_from_part_title(series_candidate, record.file_title)
             if series_candidate and record.file_title:
                 # TITLE-AS-SERIES GUARD: если кандидат совпадает с названием книги,
                 # это ложный матч (например "Книга" в service_words увела нас не туда).
@@ -1381,6 +1386,11 @@ class Pass2SeriesFilename:
                    # title="Время умирать. Рязань, год 1237" → candidate in title → не серия.
                    (_title_lower and _cand_lower in _title_lower and len(_cand_lower) >= 8)):
                                     series_candidate = None  # Название книги ≠ серия
+            if _part_series:
+                series_candidate = _part_series
+            # Скобка в такой серии — часть имени («(сетевая версия)»), а
+            # _clean_series_name срезает скобку в конце — не пропускаем через неё.
+            self._from_part_title = bool(_part_series and series_candidate == _part_series)
 
             # Сохраняем только если прошёл фильтры (иначе Pass4 может распространить имя автора)
             if series_candidate:
@@ -1397,11 +1407,14 @@ class Pass2SeriesFilename:
         """
         if not series_candidate:
             return False
-        clean = self._clean_series_name(
-            series_candidate,
-            keep_trailing_number=self._last_was_hierarchical
-        )
-        clean = self._remove_blacklist_words(clean)
+        if getattr(self, '_from_part_title', False):
+            clean = series_candidate          # см. _series_from_part_title
+        else:
+            clean = self._clean_series_name(
+                series_candidate,
+                keep_trailing_number=self._last_was_hierarchical
+            )
+            clean = self._remove_blacklist_words(clean)
 
         # Guard: если _clean_series_name убрала служебное слово, но metadata подтверждает
         # полное название — восстанавливаем из metadata.
@@ -5472,6 +5485,54 @@ class Pass2SeriesFilename:
         return text if text else original
 
     
+    _PART_SUFFIX = re.compile(r'[\s,.]*\(?\s*(?:ч\.|часть)\s*(\d{1,3})\s*\)?\s*$', re.IGNORECASE)
+
+    @classmethod
+    def _series_from_part_title(cls, series_candidate, file_title):
+        """Серия из названия книги, которое само кончается номером части.
+
+        Реальный случай (regen_Test1.csv): "Б. Акунин - Любовь к истории
+        (сетевая версия часть 3).fb2", название в файле — "Любовь к истории
+        (сетевая версия) ч.3". Скобка в имени файла даёт кандидата "сетевая
+        версия часть 3" — пометку издания, не серию; по одному имени файла её
+        не отличить от "Дорога домой (Звёздный путь часть 2)". Различает
+        название в файле: оно кончается "ч.N"/"часть N", и кандидат (без
+        номера части) стоит в нём В СКОБКАХ — значит, тома отличаются только
+        номером части, а серия — название без номера: "Любовь к истории
+        (сетевая версия)". Иначе — None (правило не применяется).
+
+        Только так узко: кандидат сам кончается номером части (номер пришёл из
+        скобки имени файла) и в названии он в скобках. Шире — ломало
+        настоящие серии: "Дашко Дмитрий. Мент 9. Ростов-папа 2.fb2" с
+        названием "Мент. Ростов-папа часть 2" — кандидат "Мент" из имени
+        файла входит в название, и подсерия "Мент\\Ростов-папа" (тома 8–9)
+        распадалась.
+        """
+        if not series_candidate or not file_title:
+            return None
+        m = cls._PART_SUFFIX.search(file_title)
+        if not m or not cls._PART_SUFFIX.search(series_candidate):
+            return None
+        base = file_title[:m.start()].strip()
+        cand = cls._PART_SUFFIX.sub('', series_candidate).strip()
+        if len(base) < 4 or not cand:
+            return None
+
+        def _norm(s):
+            return re.sub(r'\s+', ' ', s.lower().replace('ё', 'е'))
+
+        if not re.search(r'\(\s*' + re.escape(_norm(cand)) + r'\s*\)', _norm(base)):
+            return None
+        # Скобку в конце — в «. Пометка»: компилятор группирует серии без
+        # скобки в конце («Серия (ЛП)» = «Серия») и слил бы «Любовь к истории
+        # (сетевая версия)» с бумажной серией «Любовь к истории» — тома 1–4
+        # брались бы из другой подборки.
+        m_tail = re.match(r'^(.*\S)\s*\(\s*([^()]+?)\s*\)$', base)
+        if m_tail:
+            qualifier = m_tail.group(2)
+            return f"{m_tail.group(1).rstrip(' .,')}. {qualifier[:1].upper()}{qualifier[1:]}"
+        return base
+
     def _is_author_surname(self, series_candidate: str, author: str) -> bool:
         """
         Проверить что extracted series это не просто фамилия автора.
