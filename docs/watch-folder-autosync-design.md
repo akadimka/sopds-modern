@@ -166,6 +166,10 @@
 Токен — только в `config.json` (не в git). Перед включением на сервере
 проверить доступ к `api.telegram.org`.
 
+План: получатели оповещений — учётные записи с привязанным Telegram вместо
+одного chat id — `docs/autosync-notifications-plan.md` (согласовано
+2026-11-25).
+
 ## Этапы реализации
 
 1. ✅ **Ядро**: `library_memory.py` (индекс + `orig_codes`), `genre_voting.py`
