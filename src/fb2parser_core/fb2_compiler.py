@@ -1614,6 +1614,7 @@ class FB2CompilerService:
         self._group_majority_numbering_correction(ctx)
         self._group_match_multipart_titles(ctx)
         self._group_renumber_by_title_toms(ctx)
+        self._group_whole_edition_vs_toms(ctx)
         if self._group_filter_precompiled(_emit, ctx):
             return
         self._group_filter_dominant_folder(ctx)
@@ -2026,6 +2027,92 @@ class FB2CompilerService:
             b.sort_source = 'title_tom'
             b.order_ambiguous = False
             b.record.series_number = b.volume_label
+
+    WHOLE_EDITION_MIN_SHARE = 0.95  # цельное издание ≥ 95% текста своих томов — оно полное
+
+    def _group_whole_edition_vs_toms(self, ctx) -> None:
+        """Группа компиляции, шаг 6б: книга серии и цельным изданием, и томами.
+
+        Реальный случай (Акунин, «Приключения магистра», 2026-11-25): №2
+        «Внеклассное чтение» + «Внеклассное чтение. Том 1» + «… Том 2», №3
+        «Ф. М.» + «Ф. М. Том 1» + «… Том 2» (номер книги — из метаданных).
+
+        1. «Том 2» второй книги получал позицию «2», а не «2.2»: номер тома
+           совпал с номером книги, и правило внутреннего тома (№62) приняло
+           «Том 2» за саму книгу — он вставал ПЕРЕД «Томом 1» (2.1), а цельное
+           издание с тем же ключом уходило в дубли. Если на позиции уже есть
+           внутренние тома этой книги, «Том N» с N = позиции — тоже том.
+        2. Цельное «Ф. М.» (3) и его тома (3.1, 3.2) шли в сборник все трое —
+           текст дважды. Сравнение изданий на одной позиции (№60, «Шапка
+           Мономаха») видит только одинаковые ключи. Остаётся то, где больше
+           текста: цельное издание — если в нём не меньше 95% текста томов
+           (тома повторяют аннотацию и заголовки), иначе тома.
+
+        Только если тома позиции вместе дают полный ряд 1..K (K ≥ 2). Иначе
+        это не тома одной книги, а: книги «Том N» = позиция N рядом с другим
+        изданием, сдвинутым на один (Розальев, «Вертел я ваши кланы!»: «02.
+        … Том 3» — «Том 2» не должен стать 2.2); части, разошедшиеся по двум
+        позициям серии (Вязовский, «Шапка Мономаха. Часть I» — 4, «Часть
+        II» — 5); одинокий «Падение сурка. Том 2» (Абрамов) — проверка на
+        Test2 2026-11-25.
+        """
+        books = ctx.books
+
+        def _base(b: CompilationBook) -> str:
+            # «Ф. М.» и «Ф. М. Том 1»: срезка «. Том 1» забирает и точку.
+            raw = b.record.file_title or plain_stem(b.abs_path)
+            return _norm_key(self._strip_title_part_suffix(self._strip_title_noise(raw)).rstrip(' .,;:'))
+
+        toms: Dict[Tuple[int, str], List[CompilationBook]] = {}
+        for b in books:
+            if b.sort_source == 'series_number_inner_tom' and b.sort_key[2]:
+                toms.setdefault((b.sort_key[1], _base(b)), []).append(b)
+        if not toms:
+            return
+
+        wholes: Dict[Tuple[int, str], List[CompilationBook]] = {}
+        tom_equal_pos: Dict[Tuple[int, str], List[CompilationBook]] = {}
+        for b in books:
+            if b.sort_key[0] != 0 or b.sort_key[2] or b.sort_key[3]:
+                continue
+            key = (b.sort_key[1], _base(b))
+            if key not in toms:
+                continue
+            span = self._title_tom_span(b)
+            if span is not None and span[0] == span[1] == b.sort_key[1]:
+                tom_equal_pos.setdefault(key, []).append(b)
+            elif span is None:
+                wholes.setdefault(key, []).append(b)
+
+        complete = set()
+        for key, tom_books in toms.items():
+            extra = tom_equal_pos.get(key, [])
+            nums = sorted([b.sort_key[2] for b in tom_books] + [key[0]] * len(extra))
+            if len(nums) < 2 or nums != list(range(1, len(nums) + 1)):
+                continue
+            complete.add(key)
+            for b in extra:
+                b.sort_key = (0, key[0], key[0], 0)
+                b.volume_label = f'{key[0]}.{key[0]}'
+                b.sort_source = 'series_number_inner_tom'
+                tom_books.append(b)
+
+        for key, whole_books in wholes.items():
+            if key not in complete:
+                continue
+            tom_books = toms[key]
+            toms_text = sum(self._text_volume(b.abs_path)[0] for b in tom_books)
+            best = max(whole_books, key=lambda b: self._text_volume(b.abs_path)[0])
+            if self._text_volume(best.abs_path)[0] >= self.WHOLE_EDITION_MIN_SHARE * toms_text:
+                losers = [b for b in whole_books if b is not best] + tom_books
+                kept = best.abs_path.name
+            else:
+                losers = whole_books
+                kept = ', '.join(b.abs_path.name for b in tom_books)
+            self._log(f"  ℹ «{ctx.series}» №{key[0]}: и цельное издание, и тома — оставлено {kept}")
+            for b in losers:
+                books.remove(b)
+                ctx.duplicate_paths.append(b.abs_path)
 
     def _group_filter_precompiled(self, _emit, ctx) -> bool | None:
         """Группа компиляции, шаг 7: Фильтр 1: заранее скомпилированные файлы."""
@@ -3747,6 +3834,30 @@ class FB2CompilerService:
         except Exception:
             return ''
 
+    _BINARY_BLOCK_RE = re.compile(rb'<binary\b[^>]*>.*?</binary>', re.DOTALL | re.IGNORECASE)
+    _XML_ENCODING_BYTES_RE = re.compile(rb'encoding\s*=\s*["\']([A-Za-z0-9_\-]+)')
+    _TAG_RE = re.compile(r'<[^>]+>')
+    _SPACE_RE = re.compile(r'\s+')
+
+    @classmethod
+    def _text_volume(cls, path: Path) -> Tuple[int, int]:
+        """(объём текста в символах без пробелов и разметки, число иллюстраций
+        <binary>) — мерка «где больше текста» при выборе издания (см.
+        `_dedup_by_content`, `_group_whole_edition_vs_toms`)."""
+        try:
+            raw = read_fb2_bytes(path)
+        except OSError:
+            return 0, 0
+        images = len(re.findall(rb'<binary\b', raw, re.IGNORECASE))
+        raw = cls._BINARY_BLOCK_RE.sub(b'', raw)
+        m = cls._XML_ENCODING_BYTES_RE.search(raw[:200])
+        encoding = m.group(1).decode('ascii') if m else 'utf-8'
+        try:
+            text = raw.decode(encoding, errors='replace')
+        except LookupError:
+            text = raw.decode('utf-8', errors='replace')
+        return len(cls._SPACE_RE.sub('', cls._TAG_RE.sub('', text))), images
+
     def _dedup_by_content(
         self,
         books: List[CompilationBook],
@@ -3806,13 +3917,8 @@ class FB2CompilerService:
                 return 3  # прямая позиция — максимальный приоритет
             return (1 if len(sk) > 2 and sk[2] != 0 else 0) + (1 if len(sk) > 3 and sk[3] != 0 else 0)
 
-        _BINARY_BLOCK_RE = re.compile(rb'<binary\b[^>]*>.*?</binary>', re.DOTALL | re.IGNORECASE)
-
         TEXT_TIE = 0.01        # тексты в пределах 1% — одно и то же издание по содержанию
         ILLUSTRATED_MIN = 10   # «заметно больше иллюстраций» — не обложка-другая
-        _ENCODING_RE = re.compile(rb'encoding\s*=\s*["\']([A-Za-z0-9_\-]+)')
-        _TAG_RE = re.compile(r'<[^>]+>')
-        _SPACE_RE = re.compile(r'\s+')
 
         def _file_size(b: CompilationBook) -> int:
             # Объём ТЕКСТА в символах без пробелов: без встроенных <binary> (иллюстраций) —
@@ -3836,20 +3942,7 @@ class FB2CompilerService:
         def _measure(b: CompilationBook) -> Tuple[int, int]:
             """(объём текста в символах без пробелов, число иллюстраций <binary>)."""
             if id(b) not in _measured:
-                try:
-                    raw = read_fb2_bytes(b.abs_path)
-                except OSError:
-                    _measured[id(b)] = (0, 0)
-                    return _measured[id(b)]
-                images = len(re.findall(rb'<binary\b', raw, re.IGNORECASE))
-                raw = _BINARY_BLOCK_RE.sub(b'', raw)
-                m = _ENCODING_RE.search(raw[:200])
-                encoding = m.group(1).decode('ascii') if m else 'utf-8'
-                try:
-                    text = raw.decode(encoding, errors='replace')
-                except LookupError:
-                    text = raw.decode('utf-8', errors='replace')
-                _measured[id(b)] = (len(_SPACE_RE.sub('', _TAG_RE.sub('', text))), images)
+                _measured[id(b)] = self._text_volume(b.abs_path)
             return _measured[id(b)]
 
         REVISION_OVERLAP = 0.3  # доля общих 6-словных фрагментов у редакций одной книги
