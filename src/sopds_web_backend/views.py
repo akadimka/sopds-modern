@@ -820,6 +820,17 @@ def _apply_autosync_settings(sm, post):
             errors.append(_('%(field)s: expected @name or a numeric id.') % {'field': label})
             continue
         values[key] = value
+    if post.get('autosync_notify_users_form'):
+        # получатели оповещений — только из привязавших Telegram (иначе слать некуда)
+        from .telegram_users import notify_candidates
+        allowed = {link.user_id for link in notify_candidates()}
+        picked = set()
+        for raw in post.getlist('autosync_notify_users'):
+            try:
+                picked.add(int(raw))
+            except ValueError:
+                pass
+        values['notify_users'] = sorted(picked & allowed)
     values['telegram_proxy'] = post.get('autosync_telegram_proxy', '').strip()
     from fb2parser_core.telegram_notify import normalize_api_url
     try:
@@ -1114,11 +1125,25 @@ def _settings_context(request, sm, active_tab, errors=(), users_error=None, news
         'settings_tabs': [(key, label) for key, label in _SETTINGS_TABS.items()],
         'autosync': {k: v for k, v in autosync.items() if k != 'telegram_token'},
         'telegram_token_tail': autosync['telegram_token'][-4:],
+        'notify_candidates': _notify_candidates(autosync) if request.user.is_superuser else [],
         **_users_context(),
         **_news_context(request, autosync, news_error),
         **_journal_context(request),
         **_reviews_admin_context(),
     }
+
+
+def _notify_candidates(autosync):
+    """Кому можно слать оповещения автосинхронизации (привязавшие Telegram) и
+    кто отмечен; не отмечено ни разу — суперпользователи
+    (docs/autosync-notifications-plan.md). Имена — только суперпользователю."""
+    from .telegram_users import notify_candidates
+    chosen = autosync.get('notify_users')
+    chosen = None if chosen is None else {int(i) for i in chosen}
+    return [{'id': link.user_id, 'username': link.user.username, 'telegram_name': link.telegram_name,
+             'is_superuser': link.user.is_superuser,
+             'checked': link.user.is_superuser if chosen is None else link.user_id in chosen}
+            for link in notify_candidates()]
 
 
 def _settings_page(request, active_tab, users_error=None, status=200, news_error=None):

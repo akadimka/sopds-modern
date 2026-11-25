@@ -116,6 +116,9 @@ class SettingsManager:
         "public_url": "",
         # код входа для суперпользователей через Telegram (sopds_web_backend/login_codes.py)
         "admin_login_code": False,
+        # кому слать оповещения автосинхронизации: id учётных записей с привязанным
+        # Telegram; None — все суперпользователи (docs/autosync-notifications-plan.md)
+        "notify_users": None,
     }
 
     def get_autosync_settings(self) -> dict:

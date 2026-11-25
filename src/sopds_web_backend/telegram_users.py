@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.utils import timezone
 
@@ -106,6 +106,44 @@ def linked_user(tg_id) -> Optional[Any]:
         return None
     link = TelegramLink.objects.select_related("user").filter(telegram_id=tg_id, user__is_active=True).first()
     return link.user if link else None
+
+
+def notify_candidates() -> List[TelegramLink]:
+    """Привязки активных учётных записей — кому можно слать оповещения
+    автосинхронизации (суперпользователи первыми)."""
+    return list(TelegramLink.objects.select_related("user")
+                .filter(telegram_id__isnull=False, user__is_active=True)
+                .order_by("-user__is_superuser", "user__username"))
+
+
+def autosync_recipients(cfg: Dict[str, Any]) -> List[Tuple[str, bool]]:
+    """Кому слать оповещения автосинхронизации: [(chat id, решает ли)].
+
+    `notify_users` — id отмеченных учётных записей (None — все суперпользователи
+    с привязанным Telegram). Решать (кнопки жанра, ссылка на «Входящие») —
+    только суперпользователь; назначенный получает те же сообщения без них.
+    «Chat id суперпользователя» из настроек — тоже получатель, как раньше
+    (docs/autosync-notifications-plan.md)."""
+    chosen = cfg.get("notify_users")
+    chosen = None if chosen is None else {int(i) for i in chosen}
+    recipients: Dict[str, bool] = {}
+    for link in notify_candidates():
+        user = link.user
+        if user.is_superuser if chosen is None else user.pk in chosen:
+            recipients[str(link.telegram_id)] = user.is_superuser
+    admin_chat = (cfg.get("telegram_admin_chat") or "").strip()
+    if admin_chat:
+        recipients[admin_chat] = True
+    return list(recipients.items())
+
+
+def can_decide_autosync(tg_id) -> bool:
+    """Нажатие кнопки жанра в Telegram: решает только привязанный активный
+    суперпользователь (назначенные получатели кнопок не получают)."""
+    from django.db import close_old_connections
+    close_old_connections()      # процесс бота живёт долго — соединение могло устареть
+    user = linked_user(tg_id)
+    return bool(user and user.is_superuser)
 
 
 def unlink(link: TelegramLink) -> bool:

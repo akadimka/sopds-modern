@@ -67,8 +67,10 @@ def notify_autosync(autosync: Optional[Tuple[Any, Any]], logger: Optional[loggin
     service, result = autosync
     try:
         from fb2parser_core.autosync_service import notify
+        from sopds_web_backend.telegram_users import autosync_recipients
 
-        sent = notify(service, result, link=catalog_link(service), include=public_book_filter())
+        sent = notify(service, result, link=catalog_link(service), include=public_book_filter(),
+                      recipients=autosync_recipients(service.cfg))
     except Exception:
         log.exception("Autosync notification failed")
         sent = {}

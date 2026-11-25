@@ -471,6 +471,21 @@
                placeholder="123456789"{% if not can_edit_exec_fields %} readonly{% endif %}>
     </div>
 
+    {% if can_edit_exec_fields %}
+    <div class="s-field">
+        <label>{% trans "Who gets autosync notifications" %}</label>
+        <input type="hidden" name="autosync_notify_users_form" value="1">
+        {% for c in notify_candidates %}
+        <label class="s-check"><input type="checkbox" name="autosync_notify_users" value="{{ c.id }}"{% if c.checked %} checked{% endif %}>
+            <span>{{ c.username }}{% if c.telegram_name %} ({{ c.telegram_name }}){% endif %} —
+                {% if c.is_superuser %}{% trans "Superuser" %}{% else %}{% trans "User" %}{% endif %}</span></label>
+        {% empty %}
+        <div class="s-hint">{% trans "Nobody has linked Telegram to the library bot yet — link it in the profile first." %}</div>
+        {% endfor %}
+        <div class="s-hint">{% trans "The library bot sends them a private message with the run results and the batches waiting for a decision. Superusers also get the genre buttons and the Inbox link, other users only the messages. Only accounts that linked Telegram in their profile are listed. The superuser chat id above gets the notifications too." %}</div>
+    </div>
+    {% endif %}
+
     <div class="s-field">
         <label>{% trans "Proxy (optional)" %}</label>
         <input type="text" name="autosync_telegram_proxy" value="{{ autosync.telegram_proxy }}"

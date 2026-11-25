@@ -620,10 +620,16 @@ class AutosyncService:
 
 def notify(service: "AutosyncService", result: RunResult,
            link: Optional[Callable[[Dict[str, Any]], Optional[str]]] = None,
-           client=None, include: Optional[Callable[[Dict[str, Any]], bool]] = None) -> Dict[str, str]:
+           client=None, include: Optional[Callable[[Dict[str, Any]], bool]] = None,
+           recipients: Optional[List[tuple]] = None) -> Dict[str, str]:
     """Telegram после планового запуска (и скана библиотеки): новинки — в
-    канал, итог — админу. Ошибки Telegram не пробрасываются: их видно в
-    логе и в возвращаемом {адресат: "ok" | причина}.
+    канал, итог и спорные порции — получателям. Ошибки Telegram не
+    пробрасываются: их видно в логе и в возвращаемом {адресат: "ok" | причина}.
+
+    `recipients` — [(chat id, решает ли)]: суперпользователь получает кнопки
+    жанра и ссылку на «Входящие», назначенный пользователь — те же сообщения
+    без них (docs/autosync-notifications-plan.md). Не задано — только «chat id
+    суперпользователя» из настроек.
 
     `include(строка журнала)` — какие новинки можно показать в канале (он
     общий для всех привязанных пользователей: только книги открытых всем
@@ -658,27 +664,32 @@ def notify(service: "AutosyncService", result: RunResult,
             sent["channel"] = explain_error(e)
             _log.warning("autosync: сводка в канал не отправлена: %s", e.description)
 
-    # Админ: только когда есть что сказать — иначе каждую ночь одно и то же.
-    if cfg["telegram_admin_chat"]:
+    # Получатели: только когда есть что сказать — иначе каждую ночь одно и то же.
+    if recipients is None:
+        recipients = [(cfg["telegram_admin_chat"], True)] if cfg["telegram_admin_chat"] else []
+    if recipients:
         pending = [{"batch": b.name, "books": b.books} for b in service.inbox()]
         signature = json.dumps(sorted((p["batch"], p["books"]) for p in pending), ensure_ascii=False)
         notes = result.notes or {}
-        worth = (result.status == RUN_ERROR or result.moved or result.kept or result.would_move
-                 or any(notes.values()) or signature != journal.get_state("admin_pending"))
-        if worth:
-            base = (cfg["public_url"] or "").rstrip("/")
-            summary = {"status": result.status, "mode": result.mode, "moved": len(result.moved),
-                       "kept": result.kept, "removed": result.removed, "would_move": result.would_move,
-                       "error": result.error, "notes": notes}
-            try:
-                client.send_message(cfg["telegram_admin_chat"],
-                                    build_admin_report(summary, pending, f"{base}/fb2parser/inbox/" if base else ""))
-                journal.set_state("admin_pending", signature)
-                sent["admin"] = "ok"
-            except TelegramError as e:
-                sent["admin"] = explain_error(e)
-                _log.warning("autosync: отчёт админу не отправлен: %s", e.description)
-        _send_batch_prompts(service, client, sent)
+        changed = (result.status == RUN_ERROR or result.moved or result.kept or result.would_move
+                   or any(notes.values()))
+        base = (cfg["public_url"] or "").rstrip("/")
+        summary = {"status": result.status, "mode": result.mode, "moved": len(result.moved),
+                   "kept": result.kept, "removed": result.removed, "would_move": result.would_move,
+                   "error": result.error, "notes": notes}
+        for chat, decides in recipients:
+            chat = str(chat)
+            key = _recipient_key(cfg, chat)
+            if changed or signature != journal.get_state(f"admin_pending{key}"):
+                inbox_url = f"{base}/fb2parser/inbox/" if base and decides else ""
+                try:
+                    client.send_message(chat, build_admin_report(summary, pending, inbox_url))
+                    journal.set_state(f"admin_pending{key}", signature)
+                    sent[f"admin{key}"] = "ok"
+                except TelegramError as e:
+                    sent[f"admin{key}"] = explain_error(e)
+                    _log.warning("autosync: отчёт %s не отправлен: %s", chat, e.description)
+            _send_batch_prompts(service, client, sent, chat, decides)
     return sent
 
 
@@ -701,14 +712,23 @@ def batch_genre_options(batch: InboxBatch) -> List[str]:
     return options
 
 
-def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str]) -> None:
-    """Каждой НОВОЙ спорной порции — сообщение админу с кнопками жанров.
-    Нажатие обрабатывает процесс бота (telegram_bot) — decide_all."""
+def _recipient_key(cfg: Dict[str, Any], chat: str) -> str:
+    """Суффикс отметок «уже сказано» получателя: у «chat id суперпользователя»
+    — прежние ключи (без суффикса), чтобы после обновления не было повторов."""
+    return "" if chat == str(cfg["telegram_admin_chat"]).strip() else f":{chat}"
+
+
+def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str],
+                        chat: str, decides: bool = True) -> None:
+    """Каждой НОВОЙ спорной порции — сообщение получателю; тому, кто решает, —
+    с кнопками жанров (нажатие обрабатывает процесс бота, telegram_bot —
+    decide_all) и ссылкой на «Входящие», назначенному — без них."""
     from .telegram_notify import TelegramError, build_batch_prompt, explain_error
 
     cfg, journal = service.cfg, service.journal
+    key = _recipient_key(cfg, chat)
     batches = service.inbox()
-    prompted = set(json.loads(journal.get_state("tg_prompted") or "[]"))
+    prompted = set(json.loads(journal.get_state(f"tg_prompted{key}") or "[]"))
     current = {b.name for b in batches}
     base = (cfg["public_url"] or "").rstrip("/")
     count = 0
@@ -716,22 +736,24 @@ def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str]
         if b.name in prompted or count >= MAX_PROMPTS:
             continue
         options = batch_genre_options(b)
-        rows = [[{"text": ("✅ " if i == 0 else "") + g, "callback_data": "d:" + journal.add_action(b.name, g)}]
-                for i, g in enumerate(options)]
-        if base:
-            rows.append([{"text": "📥 Во «Входящие»", "url": f"{base}/fb2parser/inbox/"}])
+        rows = []
+        if decides:
+            rows = [[{"text": ("✅ " if i == 0 else "") + g, "callback_data": "d:" + journal.add_action(b.name, g)}]
+                    for i, g in enumerate(options)]
+            if base:
+                rows.append([{"text": "📥 Во «Входящие»", "url": f"{base}/fb2parser/inbox/"}])
         try:
-            client.send_message(cfg["telegram_admin_chat"], build_batch_prompt(b, options),
+            client.send_message(chat, build_batch_prompt(b, options),
                                 reply_markup={"inline_keyboard": rows} if rows else None)
         except TelegramError as e:
-            sent["prompts"] = explain_error(e)
+            sent[f"prompts{key}"] = explain_error(e)
             break
         prompted.add(b.name)
         count += 1
     if count:
-        sent["prompts"] = sent.get("prompts", "ok")
+        sent[f"prompts{key}"] = sent.get(f"prompts{key}", "ok")
     # забываем решённые порции — если такая папка придёт снова, спросим снова
-    journal.set_state("tg_prompted", json.dumps(sorted(prompted & current), ensure_ascii=False))
+    journal.set_state(f"tg_prompted{key}", json.dumps(sorted(prompted & current), ensure_ascii=False))
 
 
 class _LogAdapter:

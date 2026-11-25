@@ -467,3 +467,85 @@ def test_notify_include_hides_books_from_channel_for_good(tmp_path, monkeypatch)
     tg.sent.clear()
     notify(svc, svc.run(), client=tg)
     assert not [t for c, t in tg.sent if c == "@news"]
+
+
+# ---------- получатели оповещений (docs/autosync-notifications-plan.md) ----------
+
+class _PerChatTelegram(_FakeBotAPI):
+    """Как бот, но у одного получателя отправка не проходит (заблокировал бота)."""
+    def __init__(self, broken=()):
+        super().__init__()
+        self.broken = set(broken)
+
+    def send_message(self, chat, text, reply_markup=None):
+        if chat in self.broken:
+            from fb2parser_core.telegram_notify import TelegramError
+            raise TelegramError("Forbidden: bot was blocked by the user")
+        return super().send_message(chat, text, reply_markup)
+
+
+def _messages(tg, chat):
+    return [(t, m) for (c, t), m in zip(tg.sent, tg.markups) if c == chat]
+
+
+def test_designated_recipient_gets_same_messages_without_buttons_and_inbox_link(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    _detective_batch(watch)
+    tg = _PerChatTelegram()
+
+    notify(svc, svc.run(), client=tg, recipients=[("42", True), ("77", False)])
+
+    boss, helper = _messages(tg, "42"), _messages(tg, "77")
+    assert [t.split("\n")[0] for t, _m in boss] == [t.split("\n")[0] for t, _m in helper]   # те же сообщения
+    assert any("Ждут решения" in t and "/fb2parser/inbox/" in t for t, _m in boss)
+    assert any("Ждут решения" in t for t, _m in helper)
+    assert not any("/fb2parser/inbox/" in t for t, _m in helper)                       # без ссылки
+    assert any(m and m.get("inline_keyboard") for t, m in boss if "Ждёт решения" in t)     # кнопки
+    assert all(m is None for t, m in helper)                                            # без кнопок
+
+
+def test_each_recipient_is_told_once_and_a_new_one_is_not_left_out(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    _detective_batch(watch)
+    notify(svc, svc.run(), client=_PerChatTelegram(), recipients=[("42", True), ("77", False)])
+
+    tg = _PerChatTelegram()
+    notify(svc, svc.run(), client=tg, recipients=[("42", True), ("77", False), ("88", False)])
+
+    assert {c for c, _t in tg.sent} == {"88"}            # старым — не повторять, новому — всё, что ждёт
+    assert any("Ждёт решения" in t for t, _m in _messages(tg, "88"))
+
+
+def test_blocked_recipient_does_not_stop_the_others(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    tg = _PerChatTelegram(broken={"77"})
+
+    sent = notify(svc, svc.run(), client=tg, recipients=[("77", False), ("42", True)])
+
+    assert sent["admin:77"] != "ok" and sent["admin"] == "ok"
+    assert _messages(tg, "42")
+
+
+def test_linked_superuser_can_press_a_button_from_their_own_chat(tmp_path, monkeypatch):
+    from fb2parser_core.autosync_service import notify
+    from fb2parser_core.telegram_bot import AdminBot
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    book = _detective_batch(watch)
+    tg = _FakeBotAPI()
+    notify(svc, svc.run(), client=tg, recipients=[("55", True)])
+    data = _prompt_button(tg, "Детектив")
+    bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor(),
+                   can_decide=lambda tg_id: tg_id == 55)
+
+    bot.on_callback(svc, tg, {"id": "1", "from": {"id": 66}, "data": data, "message": {}})    # не суперпользователь
+    assert book.exists() and "только суперпользователь" in tg.answers[0]
+    bot.on_callback(svc, tg, {"id": "2", "from": {"id": 55}, "data": data,
+                              "message": {"message_id": 3, "chat": {"id": 55}, "text": "Ждёт решения"}})
+    assert not book.exists()

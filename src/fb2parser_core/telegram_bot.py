@@ -47,11 +47,16 @@ class AdminBot:
                  executor: Optional[Executor] = None,
                  sleep: Callable[[float], None] = time.sleep,
                  extra_handler: Optional[Callable[[Any, Any, dict], bool]] = None,
-                 maintenance: Optional[Callable[[], Optional[str]]] = None):
+                 maintenance: Optional[Callable[[], Optional[str]]] = None,
+                 can_decide: Optional[Callable[[Any], bool]] = None):
         """extra_handler(service, client, update) -> обработано ли событие —
         читательская часть бота (поиск, скачивание, привязка аккаунтов,
-        заявки в канал — sopds_web_backend/telegram_library.py)."""
+        заявки в канал — sopds_web_backend/telegram_library.py).
+        can_decide(telegram id) — может ли нажавший решать спорные порции
+        (привязанный суперпользователь); кроме него — «chat id
+        суперпользователя» из настроек."""
         self.service_factory = service_factory
+        self.can_decide = can_decide
         self.extra_handler = extra_handler
         # maintenance() -> текст ответа во время ремонта или None (сайт работает)
         self.maintenance = maintenance
@@ -131,7 +136,10 @@ class AdminBot:
 
     def on_callback(self, service, client, cq: dict) -> None:
         cfg = service.cfg
-        if str((cq.get("from") or {}).get("id")) != str(cfg["telegram_admin_chat"]):
+        from_id = (cq.get("from") or {}).get("id")
+        allowed = str(from_id) == str(cfg["telegram_admin_chat"]).strip() or (
+            self.can_decide is not None and self.can_decide(from_id))
+        if not allowed:
             client.answer_callback(cq["id"], "Решения принимает только суперпользователь.")
             return
         data = cq.get("data") or ""
