@@ -31,6 +31,7 @@ from . import ownership_hooks
 from .evidence import UMBRELLA_ARC_SN_SOURCE, umbrella_cycle_number
 from .fb2_utils import (
     declared_encoding_lies,
+    long_path,
     read_fb2_bytes,
     replace_control_chars,
     write_fb2_bytes,
@@ -1169,8 +1170,8 @@ class FB2CompilerService:
                     else:
                         _prev = _seen[_key]
                         try:
-                            _sz_b    = _b.abs_path.stat().st_size
-                            _sz_prev = _prev.abs_path.stat().st_size
+                            _sz_b    = long_path(_b.abs_path).stat().st_size
+                            _sz_prev = long_path(_prev.abs_path).stat().st_size
                         except OSError:
                             _sz_b = _sz_prev = 0
                         if _sz_b >= _sz_prev:
@@ -1243,7 +1244,7 @@ class FB2CompilerService:
         """Множество хэшей 6-словных фрагментов текста книги (<body>), с кэшем
         по пути и времени изменения файла."""
         try:
-            st = path.stat()
+            st = long_path(path).stat()
             key = (str(path), st.st_mtime_ns, st.st_size)
         except OSError:
             return set()
@@ -1330,7 +1331,7 @@ class FB2CompilerService:
         """
         covering = [self._text_shingles(b.abs_path) for b in large.books]
         for b in small.books:
-            if not b.abs_path.exists():
+            if not long_path(b.abs_path).exists():
                 continue
             own = self._text_shingles(b.abs_path)
             share = self._shingle_share(own, covering)
@@ -1367,7 +1368,7 @@ class FB2CompilerService:
         for dup in g.duplicate_paths:
             if dup in old_editions:
                 pass  # старая редакция (№156): только исключается — никогда не удаляется
-            elif not dup.exists():
+            elif not long_path(dup).exists():
                 confirmed.append(dup)  # удалять нечего — терять тоже
                 continue
             else:
@@ -2244,7 +2245,7 @@ class FB2CompilerService:
             # Test2 — 93–100%.
             _pre_text = None
             for book in list(regular_books):
-                if _vol_num_for_check(book) is not None or not book.abs_path.exists():
+                if _vol_num_for_check(book) is not None or not long_path(book.abs_path).exists():
                     continue
                 if _pre_text is None:
                     _pre_text = self._text_shingles(best_pre.abs_path)
@@ -3526,9 +3527,9 @@ class FB2CompilerService:
         Возвращает (lo, hi) или (0, 0) если не удалось определить.
         """
         try:
-            if not abs_path.exists():
+            if not long_path(abs_path).exists():
                 return 0, 0
-            with abs_path.open('rb') as f:
+            with long_path(abs_path).open('rb') as f:
                 raw = f.read(65536)
             try:
                 text = raw.decode('utf-8', errors='replace')
@@ -3702,9 +3703,9 @@ class FB2CompilerService:
         Читает только первые _OPENING_READ_LIMIT байт файла.
         """
         try:
-            if not book.abs_path.exists():
+            if not long_path(book.abs_path).exists():
                 return ''
-            with book.abs_path.open('rb') as fh:
+            with long_path(book.abs_path).open('rb') as fh:
                 raw = fh.read(self._OPENING_READ_LIMIT)
             # Быстрое определение кодировки из XML-декларации (первые 256 байт)
             enc_m = re.search(rb'encoding\s*=\s*["\']([^"\']+)["\']', raw[:256], re.IGNORECASE)
@@ -4799,9 +4800,9 @@ class FB2CompilerService:
         Возвращает None если дата не найдена или файл недоступен.
         """
         try:
-            if not path.exists():
+            if not long_path(path).exists():
                 return None
-            with path.open('rb') as f:
+            with long_path(path).open('rb') as f:
                 chunk = f.read(8192)
             try:
                 text = chunk.decode('utf-8', errors='replace')
@@ -4837,10 +4838,10 @@ class FB2CompilerService:
     def _extract_year_from_fb2(self, path: Path, section: str) -> Optional[int]:
         """Извлечь год из <date> внутри указанной секции FB2."""
         try:
-            if not path.exists():
+            if not long_path(path).exists():
                 return None
             # Минимальное чтение — только первые 8 КБ (метаданные в начале)
-            with path.open('rb') as f:
+            with long_path(path).open('rb') as f:
                 chunk = f.read(8192)
             try:
                 text = chunk.decode('utf-8', errors='replace')
@@ -5061,7 +5062,7 @@ class FB2CompilerService:
         """
         path = book.abs_path
         try:
-            mtime = path.stat().st_mtime
+            mtime = long_path(path).stat().st_mtime
         except OSError:
             return 1
         cache_key = (str(path), mtime, author)
@@ -5326,7 +5327,7 @@ class FB2CompilerService:
             return None
         old_path = group.kept_paths[0]
         vol_m = re.match(r'^(\d+)-(\d+)$', group.volume_range or '')
-        if not vol_m or not old_path.exists():
+        if not vol_m or not long_path(old_path).exists():
             return None
         lo, hi = int(vol_m.group(1)), int(vol_m.group(2))
         suffix = self._series_suffix(hi - lo + 1, lo, hi, 0,
@@ -5361,7 +5362,7 @@ class FB2CompilerService:
                 and (old_tail.group(1).lower() + ' ').startswith(suffix.lower() + ' ')):
             return None
         # Имя занято другим файлом: rename на Linux молча заменил бы его.
-        if new_path.exists() and not os.path.samefile(new_path, old_path):
+        if long_path(new_path).exists() and not os.path.samefile(long_path(new_path), long_path(old_path)):
             self._log(f"   · {old_path.name}: имя «{new_name}» уже занято — не переименовывается")
             return None
         return new_path
@@ -5422,7 +5423,7 @@ class FB2CompilerService:
             if new_path is not None:
                 old_path = group.kept_paths[0]
                 try:
-                    old_path.rename(new_path)
+                    long_path(old_path).rename(long_path(new_path))
                     ownership_hooks.transfer(old_path, new_path)
                     group.kept_paths[0] = new_path
                     renamed_path = new_path
@@ -5636,7 +5637,7 @@ class FB2CompilerService:
             # остаются отдельными файлами, решать — человеку.
             in_group = {p.resolve() for p in [b.abs_path for b in group.books] + list(group.duplicate_paths or [])}
             for existing in (dest_dir / fname, dest_dir / (fname + '.zip')):
-                if existing.exists() and existing.resolve() not in in_group:
+                if long_path(existing).exists() and existing.resolve() not in in_group:
                     raise RuntimeError(f"В папке уже есть «{existing.name}», который не входит "
                                        f"в сборку, — не перезаписываю и не кладу рядом второй")
             if was_compressed:
@@ -5647,7 +5648,7 @@ class FB2CompilerService:
             if was_compressed:
                 write_fb2_bytes(output_path, output_xml.encode('utf-8'))
             else:
-                output_path.write_text(output_xml, encoding='utf-8')
+                long_path(output_path).write_text(output_xml, encoding='utf-8')
 
             self._log(f"  ✓ Создан файл: {output_path.name}")
 
@@ -5692,7 +5693,7 @@ class FB2CompilerService:
 
     def _read_file_text(self, path: Path) -> str:
         """Прочитать файл с автоопределением кодировки. Поддерживает zip-упакованные FB2."""
-        raw = path.read_bytes()
+        raw = long_path(path).read_bytes()
         # Zip-упакованный FB2 (сигнатура PK): распаковываем первый .fb2-файл внутри
         if raw[:2] == b'PK':
             import io as _io
@@ -5724,7 +5725,7 @@ class FB2CompilerService:
         """Извлечь заголовок книги и главный <body> блок (без notes/footnotes)."""
         title = (book.record.file_title or '').strip() or plain_stem(book.abs_path)
 
-        if not book.abs_path.exists():
+        if not long_path(book.abs_path).exists():
             raise RuntimeError(f"Файл не найден: {book.abs_path.name} (путь: {book.abs_path})")
 
         try:
@@ -5848,7 +5849,7 @@ class FB2CompilerService:
         3. Если секций нет — возвращаем один элемент (весь body).
         """
         stem = plain_stem(book.abs_path)
-        if not book.abs_path.exists():
+        if not long_path(book.abs_path).exists():
             return []
         try:
             text = self._read_file_text(book.abs_path)
@@ -5960,7 +5961,7 @@ class FB2CompilerService:
 
     def _extract_annotation_text(self, book: CompilationBook) -> str:
         """Извлечь текст <annotation> из FB2 (без тегов, нижний регистр, ё→е)."""
-        if not book.abs_path.exists():
+        if not long_path(book.abs_path).exists():
             return ''
         try:
             text = self._read_file_text(book.abs_path)
@@ -5976,7 +5977,7 @@ class FB2CompilerService:
 
     def _extract_annotation_xml(self, book: CompilationBook) -> str:
         """Извлечь сырой XML блок <annotation>...</annotation> из первой книги."""
-        if not book.abs_path.exists():
+        if not long_path(book.abs_path).exists():
             self._log(f"  ⚠ Аннотация: файл не найден {book.abs_path.name}")
             return ''
         try:
@@ -5994,7 +5995,7 @@ class FB2CompilerService:
 
     def _extract_coverpage_id(self, book: CompilationBook) -> Optional[str]:
         """Извлечь ID бинаря обложки из <coverpage><image l:href="#id"/>."""
-        if not book.abs_path.exists():
+        if not long_path(book.abs_path).exists():
             return None
         try:
             text = self._read_file_text(book.abs_path)
@@ -6040,7 +6041,7 @@ class FB2CompilerService:
 
         Возвращает список XML-фрагментов, каждый — один <binary> блок.
         """
-        if not book.abs_path.exists():
+        if not long_path(book.abs_path).exists():
             return []
         try:
             text = self._read_file_text(book.abs_path)
@@ -6205,8 +6206,8 @@ class FB2CompilerService:
         """Удалить исходные файлы после компиляции."""
         for path in paths:
             try:
-                if path.exists():
-                    path.unlink()
+                if long_path(path).exists():
+                    long_path(path).unlink()
                     ownership_hooks.release(path, file_exists=False)
                     self._log(f"  🗑 Удалён исходник: {path.name}")
                 # Удалить папку, если пуста

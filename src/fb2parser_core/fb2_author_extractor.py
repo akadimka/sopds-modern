@@ -18,7 +18,12 @@ import io
 import re
 from pathlib import Path
 
-from .fb2_utils import TITLE_INFO_END_RE, TITLE_INFO_SCAN_LIMIT, read_fb2_bytes
+from .fb2_utils import (
+    TITLE_INFO_END_RE,
+    TITLE_INFO_SCAN_LIMIT,
+    long_path,
+    read_fb2_bytes,
+)
 from .settings_manager import SettingsManager
 
 # Любой префикс пространства имён (<fb:genre>, <FictionBook:genre>…) и
@@ -177,7 +182,7 @@ class FB2AuthorExtractor:
         def _open(encoding, errors):
             if unzipped is not None:
                 return io.TextIOWrapper(io.BytesIO(unzipped), encoding=encoding, errors=errors)
-            return open(fb2_path, 'r', encoding=encoding, errors=errors)
+            return open(long_path(fb2_path), 'r', encoding=encoding, errors=errors)
 
         # Шаг 1: читаем начало файла в бинарном режиме
         declared_encoding = None
@@ -185,7 +190,7 @@ class FB2AuthorExtractor:
             if unzipped is not None:
                 raw_start = unzipped[:256]
             else:
-                with open(fb2_path, 'rb') as f:
+                with open(long_path(fb2_path), 'rb') as f:
                     raw_start = f.read(256)
             if raw_start.startswith(b'\xef\xbb\xbf'):
                 declared_encoding = 'utf-8-sig'

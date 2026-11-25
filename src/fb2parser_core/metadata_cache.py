@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
+from .fb2_utils import long_path
+
 _log = logging.getLogger(__name__)
 
 _CONTENT_HASH_BYTES = 256 * 1024  # 256 KB — совпадает с gui_duplicate_finder._file_hash
@@ -146,7 +148,7 @@ class MetadataCache:
         if self._disabled:
             return None, ''
         try:
-            stat = file_path.stat()
+            stat = long_path(file_path).stat()
             current_mtime = stat.st_mtime
 
             with self._connect() as conn:
@@ -172,7 +174,7 @@ class MetadataCache:
         content_hash = ''
         try:
             from .fb2_utils import read_fb2_bytes
-            stat = file_path.stat()
+            stat = long_path(file_path).stat()
             raw = read_fb2_bytes(file_path)
             file_hash = hashlib.md5(raw).hexdigest()
             content_hash = hashlib.sha256(raw[:_CONTENT_HASH_BYTES]).hexdigest()
@@ -199,7 +201,7 @@ class MetadataCache:
         """Calculate MD5 hash of raw file bytes for cache validity check."""
         hash_obj = hashlib.md5()
         try:
-            with open(file_path, 'rb') as f:
+            with open(long_path(file_path), 'rb') as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hash_obj.update(chunk)
             return hash_obj.hexdigest()

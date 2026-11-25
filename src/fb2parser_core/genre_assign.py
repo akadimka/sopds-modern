@@ -21,6 +21,7 @@ from .fb2_utils import (
     MAX_FB2_UNCOMPRESSED_SIZE,
     decode_mislabeled_utf8,
     fb2_rglob,
+    long_path,
     norm_encoding,
     set_xml_encoding,
 )
@@ -243,8 +244,9 @@ class GenreAssignmentService:
             content = None
             content_encoding = 'utf-8'  # default; overridden below
             zip_inner = None
-            if zipfile.is_zipfile(fb2_path):
-                with zipfile.ZipFile(fb2_path, 'r') as zf:
+            io_path = long_path(fb2_path)
+            if zipfile.is_zipfile(io_path):
+                with zipfile.ZipFile(io_path, 'r') as zf:
                     xml_files = [f for f in zf.namelist() if f.lower().endswith(('.xml', '.fb2'))]
                     if not xml_files:
                         self.logger.log(f"ОШИБКА: {fb2_path} - в архиве не найдены XML файлы")
@@ -265,7 +267,7 @@ class GenreAssignmentService:
                     zip_inner = xml_files[0]
                     raw_bytes = zf.read(zip_inner)
             else:
-                raw_bytes = fb2_path.read_bytes()
+                raw_bytes = io_path.read_bytes()
 
             # Декодирование (одинаково для файла и XML из архива)
             if content is None:
@@ -426,7 +428,7 @@ class GenreAssignmentService:
             if has_bom:
                 result_text = result_text.lstrip('\ufeff')
             data = result_text.encode(encoding_to_write, errors='replace')
-            tmp_path = fb2_path.with_name(fb2_path.name + '.tmp')
+            tmp_path = io_path.with_name(io_path.name + '.tmp')
             try:
                 with open(tmp_path, 'wb') as out:
                     if zip_inner is not None:
@@ -434,7 +436,7 @@ class GenreAssignmentService:
                             zf.writestr(zip_inner, data)
                     else:
                         out.write(data)
-                os.replace(tmp_path, fb2_path)
+                os.replace(tmp_path, io_path)
             except Exception:
                 tmp_path.unlink(missing_ok=True)
                 raise

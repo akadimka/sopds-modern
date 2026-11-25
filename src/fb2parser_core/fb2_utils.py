@@ -7,12 +7,47 @@ fb2.zip — это обычный ZIP-архив, содержащий один 
 from __future__ import annotations
 
 import io
+import os
 import re
 import zipfile
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 
 _CONTROL_CHARS_RE = re.compile(r'\s*[\x00-\x1f\x7f]+\s*')
+
+_P = TypeVar('_P', str, Path)
+_LONG_PATH_PREFIX = '\\\\?\\'
+# MAX_PATH — 260 символов с завершающим нулём, у папок — 248; с запасом.
+_WIN_LONG_PATH_FROM = 240
+
+
+def long_path(path: _P) -> _P:
+    """Путь для обращения к файлу на диске (открыть, проверить, переместить).
+
+    Windows без включённой поддержки длинных путей (LongPathsEnabled=0) не
+    открывает файл, если путь длиннее 260 символов: open/stat падают, а
+    exists() отвечает False. Реальный случай (Test1, 2026-11-25):
+    «Акунин Борис - Сборник\\История\\Библиотека проекта Б. Акунина История
+    Российского государства\\Том I…\\Документальные дополнения\\IДД-01. …» —
+    23 книги из 47 шли в CSV с «[unknown]»/«[no title]», а синхронизация
+    молча пропустила бы их. С префиксом \\\\?\\ ограничения нет.
+
+    Только для вызовов ОС: в ключах словарей, сравнениях, `relative_to` и
+    в записях владения — путь как есть (префикс зависит от длины, у
+    соседних файлов одной папки он может быть разным). На других ОС —
+    путь без изменений."""
+    if os.name != 'nt':
+        return path
+    s = os.fspath(path)
+    if len(s) < _WIN_LONG_PATH_FROM or s.startswith(_LONG_PATH_PREFIX):
+        return path
+    s = _with_long_prefix(s)
+    return Path(s) if isinstance(path, Path) else s
+
+
+def _with_long_prefix(s: str) -> str:
+    s = os.path.abspath(s)
+    return (_LONG_PATH_PREFIX + 'UNC' + s[1:]) if s.startswith('\\\\') else _LONG_PATH_PREFIX + s
 
 
 def replace_control_chars(value: str) -> str:
@@ -25,10 +60,19 @@ def replace_control_chars(value: str) -> str:
 
 
 def fb2_rglob(directory: Path) -> List[Path]:
-    """Рекурсивно найти все FB2 и FB2.ZIP файлы в каталоге."""
-    plain = list(directory.rglob('*.fb2'))
-    zipped = list(directory.rglob('*.fb2.zip'))
-    return sorted(plain + zipped, key=lambda p: str(p).lower())
+    """Рекурсивно найти все FB2 и FB2.ZIP файлы в каталоге.
+
+    На Windows обход идёт через префикс \\\\?\\ (`long_path`): папку длиннее
+    248 символов rglob иначе молча пропускает, и её книги не попадали бы
+    в CSV. Пути в результате — в том же виде, что `directory`, без префикса."""
+    root = Path(directory)
+    walk_root = root
+    if os.name == 'nt' and not str(root).startswith(_LONG_PATH_PREFIX):
+        walk_root = Path(_with_long_prefix(str(root)))
+    found = list(walk_root.rglob('*.fb2')) + list(walk_root.rglob('*.fb2.zip'))
+    if walk_root != root:
+        found = [root / p.relative_to(walk_root) for p in found]
+    return sorted(found, key=lambda p: str(p).lower())
 
 
 MAX_FB2_UNCOMPRESSED_SIZE = 200 * 1024 * 1024  # 200 МБ — см. read_fb2_bytes (баг №97)
@@ -98,7 +142,7 @@ def read_fb2_head(path: Path, head_bytes: int = 65536) -> bytes:
         raw = read_fb2_bytes(path)
         end = _TITLE_INFO_END_BYTES_RE.search(raw, 0, TITLE_INFO_SCAN_LIMIT)
         return raw[:max(head_bytes, end.end() if end else head_bytes)]
-    with open(path, 'rb') as f:
+    with open(long_path(path), 'rb') as f:
         data = f.read(head_bytes)
         searched_from = 0
         while not _TITLE_INFO_END_BYTES_RE.search(data, searched_from) \
@@ -114,7 +158,7 @@ def read_fb2_head(path: Path, head_bytes: int = 65536) -> bytes:
 
 def read_fb2_bytes(path: Path) -> bytes:
     """Прочитать содержимое FB2 (XML) из файла или zip-архива."""
-    raw = path.read_bytes()
+    raw = long_path(Path(path)).read_bytes()
     if raw[:2] == b'PK':
         try:
             with zipfile.ZipFile(io.BytesIO(raw)) as zf:
@@ -153,10 +197,10 @@ def write_fb2_bytes(path: Path, xml_bytes: bytes) -> None:
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
             zf.writestr(inner_name, xml_bytes)
-        path.write_bytes(buf.getvalue())
+        long_path(path).write_bytes(buf.getvalue())
     else:
         # Для обычного .fb2 — просто запись
-        path.write_bytes(xml_bytes)
+        long_path(path).write_bytes(xml_bytes)
 
 
 def compress_fb2_file(path: Path) -> int:
@@ -177,6 +221,7 @@ def compress_fb2_file(path: Path) -> int:
     if path.name.lower().endswith('.fb2.zip'):
         raise ValueError(f"Уже сжат: {path}")
 
+    path = long_path(path)
     target = path.with_name(path.name + '.zip')
     tmp = path.with_name(path.name + '.zip.tmp')
     # Рядом уже лежит «книга.fb2.zip» — rename молча перезаписал бы его

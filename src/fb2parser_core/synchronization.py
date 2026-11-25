@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from . import ownership_hooks
 from .fb2_utils import (
     decode_mislabeled_utf8,
+    long_path,
     norm_encoding,
     read_fb2_bytes,
     replace_control_chars,
@@ -885,8 +886,8 @@ class SynchronizationService:
                 # Удаляем дубликат из файловой системы
                 try:
                     file_to_delete = self.last_scan_path / record.file_path
-                    if file_to_delete.exists():
-                        os.unlink(str(file_to_delete))
+                    if long_path(file_to_delete).exists():
+                        os.unlink(long_path(str(file_to_delete)))
                         self._log("       ✓ Удален")
                         self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
                     else:
@@ -1410,9 +1411,9 @@ class SynchronizationService:
 
         for rec in records_to_delete:
             src = scan_path / rec.file_path
-            if src.exists():
+            if long_path(src).exists():
                 try:
-                    src.unlink()
+                    long_path(src).unlink()
                     self._log(f"  ✓ Удалён файл: {rec.file_path}")
                     deleted_paths.append(rec.file_path)
                     self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
@@ -1478,13 +1479,13 @@ class SynchronizationService:
             (источник удалён как дубль, либо удаление не удалось).
         """
         try:
-            source_size = len(read_fb2_bytes(source_file)) if source_file.exists() else -1
+            source_size = len(read_fb2_bytes(source_file)) if long_path(source_file).exists() else -1
             target_size = len(read_fb2_bytes(target_file))
         except OSError:
             source_size = target_size = -1
         if 0 <= source_size <= target_size:
             try:
-                source_file.unlink()
+                long_path(source_file).unlink()
                 self._log(f"  🗑️  Дубликат уже существующей компиляции удалён из источника: "
                           f"{source_file.name} ({source_size} Б содержимого ⊆ {target_file.name}, {target_size} Б)")
                 self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
@@ -1494,7 +1495,7 @@ class SynchronizationService:
             return False
 
         try:
-            target_file.unlink()
+            long_path(target_file).unlink()
             self._log(f"  ♻️  Источник БОЛЬШЕ уже существующего файла в библиотеке "
                       f"({source_size} Б содержимого > {target_size} Б) — заменяю: {target_file.name}")
             return True
@@ -1758,8 +1759,8 @@ class SynchronizationService:
                 self._log(f"[{i+1}/{len(records)}] 🗑️  УДАЛЕН: {record.file_path} (дубликат - уже в БД)")
                 try:
                     file_to_delete = self.last_scan_path / record.file_path
-                    if file_to_delete.exists():
-                        os.unlink(str(file_to_delete))
+                    if long_path(file_to_delete).exists():
+                        os.unlink(long_path(str(file_to_delete)))
                         self._log("       ✓ Успешно удален")
                         self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
                     else:
@@ -1837,9 +1838,9 @@ class SynchronizationService:
                         continue
 
                 # Move file
-                if source_file.exists():
+                if long_path(source_file).exists():
                     self._log(f"  → Перемещение: {source_file.name}")
-                    shutil.move(str(source_file), str(target_file))
+                    shutil.move(long_path(str(source_file)), long_path(str(target_file)))
                     self._log("  ✓ Успешно перемещён")
                     # Владельцы: заменённая полнее версия той же книги остаётся
                     # у прежних владельцев (сжатый старый файл — переезд на
@@ -2306,7 +2307,7 @@ class SynchronizationService:
         try:
             hash_obj = hashlib.sha256()
             
-            with open(file_path, 'rb') as f:
+            with open(long_path(file_path), 'rb') as f:
                 while True:
                     chunk = f.read(chunk_size)
                     if not chunk:
