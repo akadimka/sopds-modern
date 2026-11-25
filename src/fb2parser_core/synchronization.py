@@ -407,6 +407,7 @@ class SynchronizationService:
             records, compilation_deletions = self._deduplicate_by_compilation(
                 records, progress_callback
             )
+            self.stats['compilation_deletions'] = len(compilation_deletions)
             if compilation_deletions:
                 self._log(f"  Компиляционная дедупликация: удалено {len(compilation_deletions)} одиночных томов")
                 self._delete_records_and_files(compilation_deletions, self.last_scan_path)
@@ -1498,6 +1499,7 @@ class SynchronizationService:
             long_path(target_file).unlink()
             self._log(f"  ♻️  Источник БОЛЬШЕ уже существующего файла в библиотеке "
                       f"({source_size} Б содержимого > {target_size} Б) — заменяю: {target_file.name}")
+            self.stats['replaced'] = self.stats.get('replaced', 0) + 1
             return True
         except OSError as e:
             self._log(f"  ✗ Не удалось удалить старую версию для замены {target_file.name}: {e}")

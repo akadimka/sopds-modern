@@ -270,6 +270,14 @@ class LibraryMemory:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
         return {"total": len(files), "updated": len(rows), "removed": len(gone)}
 
+    def known_series_and_authors(self) -> Tuple[Set[Tuple[str, str]], Set[str]]:
+        """Что уже есть в библиотеке (по последнему refresh): пары (автор,
+        серия — компоненты через _SEP) и авторы — для итогов автосинхронизации
+        («дополнили серии» / «новые серии» / «новые авторы»)."""
+        with self._connect() as conn:
+            rows = conn.execute("SELECT author, series FROM books").fetchall()
+        return {(a or "", s or "") for a, s in rows if s}, {a for a, _s in rows if a}
+
     def library_fingerprints(self) -> Set[str]:
         with self._connect() as conn:
             return {fp for (fp,) in conn.execute("SELECT fingerprint FROM books WHERE fingerprint IS NOT NULL")}

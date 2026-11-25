@@ -2013,3 +2013,190 @@ msgstr ""
 msgctxt "inbox plan column"
 msgid "Series"
 msgstr "Серия"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Run failed:"
+msgstr "Сбой запуска:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Added to the library:"
+msgstr "Добавлено в библиотеку:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "books outside series:"
+msgstr "книг вне серий:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "new authors:"
+msgstr "новых авторов:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Replaced with fuller versions:"
+msgstr "Заменено более полными версиями:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Removed as duplicates:"
+msgstr "Удалено как дубликаты:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "already in the library:"
+msgstr "уже были в библиотеке:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "already inside a compilation:"
+msgstr "уже входят в сборник:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Compilation:"
+msgstr "Автокомпиляция:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "compilations built:"
+msgstr "собрано сборников:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "failed:"
+msgstr "ошибок:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "compilation crashed, it will be redone on the next run"
+msgstr "сбой автокомпиляции — она будет доделана при следующем запуске"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Left in the watch folder by the synchronization:"
+msgstr "Оставлено синхронизацией в папке наблюдения:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Author check needed:"
+msgstr "Нужна сверка автора:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Genre conflict inside a series:"
+msgstr "Конфликт жанра внутри серии:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Genre not in the list, left in place:"
+msgstr "Жанр не из списка, оставлено на месте:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Waiting for a decision:"
+msgstr "Ждут решения:"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "📊 Last results"
+msgstr "📊 Последние итоги"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "decision on the batch “%(batch)s”"
+msgstr "решение по порции «%(batch)s»"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "automatic run"
+msgstr "автоматический запуск"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "%(m)s min %(s)s s"
+msgstr "%(m)s мин %(s)s с"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "new author"
+msgstr "новый автор"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "series added to"
+msgstr "серия дополнена"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "new series"
+msgstr "новая серия"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "outside series"
+msgstr "вне серии"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Earlier runs"
+msgstr "Предыдущие запуски"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "When"
+msgstr "Когда"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "What"
+msgstr "Что"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Duplicates removed"
+msgstr "Удалено дублей"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Left in place"
+msgstr "Оставлено"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "Compilations"
+msgstr "Сборников"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "added to existing series: %(n)s series (+%(books)s books)"
+msgid_plural "added to existing series: %(n)s series (+%(books)s books)"
+msgstr[0] "дополнили существующие серии: %(n)s серия (+%(books)s кн.)"
+msgstr[1] "дополнили существующие серии: %(n)s серии (+%(books)s кн.)"
+msgstr[2] "дополнили существующие серии: %(n)s серий (+%(books)s кн.)"
+msgstr[3] "дополнили существующие серии: %(n)s серии (+%(books)s кн.)"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "new series: %(n)s (%(books)s books)"
+msgid_plural "new series: %(n)s (%(books)s books)"
+msgstr[0] "новых серий: %(n)s (%(books)s кн.)"
+msgstr[1] "новых серий: %(n)s (%(books)s кн.)"
+msgstr[2] "новых серий: %(n)s (%(books)s кн.)"
+msgstr[3] "новых серий: %(n)s (%(books)s кн.)"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+#: fb2parser_web/templates/fb2parser/inbox_run_totals.html
+msgid "By author and series (%(n)s)"
+msgid_plural "By author and series (%(n)s)"
+msgstr[0] "По авторам и сериям (%(n)s)"
+msgstr[1] "По авторам и сериям (%(n)s)"
+msgstr[2] "По авторам и сериям (%(n)s)"
+msgstr[3] "По авторам и сериям (%(n)s)"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgctxt "inbox runs column"
+msgid "Added"
+msgstr "Добавлено"

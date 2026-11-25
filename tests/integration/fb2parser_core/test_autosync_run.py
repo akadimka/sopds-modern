@@ -532,6 +532,60 @@ def test_blocked_recipient_does_not_stop_the_others(tmp_path, monkeypatch):
     assert _messages(tg, "42")
 
 
+@pytest.mark.django_db
+def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, monkeypatch, client, settings):
+    """Итоги запусков во «Входящих» (2026-11-25): сколько добавлено, какие серии
+    дополнены, какие новые, новые авторы, дубли, автокомпиляция; решения по
+    порциям — тоже запуски."""
+    from django.contrib.auth.models import User
+    from django.urls import reverse
+
+    import fb2parser_web.fb2parser_bridge as bridge
+
+    settings.STORAGES = {**settings.STORAGES,
+                         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    svc._compile_fn = lambda *_a, **_k: {"ok": 2, "fail": 0}
+
+    result = svc.run()
+
+    d = result.details
+    assert (d["series_extended"], d["books_extended"], d["series_new"], d["authors_new"]) == (1, 1, 0, [])
+    assert d["series"] == [{"author": "Иванов Иван", "series": "Звезды", "books": 1, "state": "extended",
+                            "new_author": False}]
+    assert d["compiled"] == 2
+    runs = svc.journal.recent_runs()
+    assert [r["mode"] for r in runs] == [MODE_AUTO] and runs[0]["summary"]["series_extended"] == 1
+
+    unit = svc.inbox()[0].units[0]
+    decided = svc.decide("Чужая порция", {unit.uid: "Детектив"})
+    assert decided.details["authors_new"] == ["Петров Петр"]           # ё → е в папке автора
+    assert decided.details["books_extended"] == 0
+    assert [r["mode"] for r in svc.journal.recent_runs()] == ["manual", MODE_AUTO]
+    svc.run()                                            # пустой запуск — в итоги не попадает
+    assert len(svc.journal.recent_runs()) == 2
+
+    monkeypatch.setattr(bridge, "get_autosync_service", lambda: svc)
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
+    page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+    assert 'id="autosync-results"' in page and "Чужая порция" in page and "Петров Петр" in page
+    assert "Earlier runs" in page                        # предыдущий запуск — в таблице ниже
+
+
+def test_run_details_split_duplicates_and_compilation():
+    from fb2parser_core.autosync_service import run_details
+    known = ({("Иванов Иван", "Звезды")}, {"Иванов Иван"})
+    rows = [{"outcome": "moved", "library_path": "Фантастика/Иванов Иван/Звезды/Иванов Иван - Звезды 5.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Иванов Иван/Луна/Иванов Иван - Луна 1.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Иванов Иван/Иванов Иван - Рассказ.fb2.zip"},
+            {"outcome": "removed", "library_path": None}]
+    d = run_details(known, {"duplicates_deleted": 7, "compilation_deletions": 5, "replaced": 1,
+                            "compile_result": {"ok": 3, "fail": 1}}, rows)
+    assert (d["series_extended"], d["series_new"], d["books_no_series"]) == (1, 1, 1)
+    assert (d["dup_library"], d["dup_compilation"], d["replaced"]) == (2, 5, 1)
+    assert (d["compiled"], d["compile_failed"], d["authors_new"]) == (3, 1, [])
+
+
 def test_buttons_turned_off_leave_superuser_only_the_inbox_link(tmp_path, monkeypatch):
     """Один бот на два сервера: нажатия принимает другой сервер — кнопок жанра нет
     (основной сервер, 2026-11-25), ссылка на «Входящие» остаётся."""

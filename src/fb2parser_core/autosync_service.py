@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .genre_voting import BookEvidence, GenreVoter, UnitDecision
-from .library_memory import LibraryMemory, is_book_file, read_evidence
+from .library_memory import _SEP, LibraryMemory, is_book_file, parse_library_path, read_evidence
 from .pending_compile import PendingCompile
 from .settings_manager import SettingsManager
 from .sync_lock import SyncBusy, sync_lock
@@ -88,6 +88,9 @@ class RunResult:
     error: str = ""
     # заметки синхронизации, требующие человека (сверка автора, конфликт жанра серии)
     notes: Dict[str, list] = field(default_factory=dict)
+    # итоги для страницы «Входящие»: серии дополнены/новые, новые авторы,
+    # замены, дубли, автокомпиляция (run_details)
+    details: Dict[str, Any] = field(default_factory=dict)
 
 
 _JOURNAL_SCHEMA = """
@@ -197,6 +200,27 @@ class AutosyncJournal:
         with self._connect() as conn:
             row = conn.execute("SELECT batch, genre FROM autosync_tg_actions WHERE key = ?", (key,)).fetchone()
         return {"batch": row[0], "genre": row[1]} if row else None
+
+    def recent_runs(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Последние запуски, которые что-то сделали (перенесли, удалили,
+        оставили, сломались) или были решениями во «Входящих», — для итогов на
+        странице «Входящие»; summary — разобранный JSON."""
+        out: List[Dict[str, Any]] = []
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            for row in conn.execute("SELECT * FROM autosync_runs WHERE mode IN (?, ?) ORDER BY id DESC LIMIT 500",
+                                    (MODE_AUTO, MODE_MANUAL)):
+                run = dict(row)
+                try:
+                    run["summary"] = json.loads(run.get("summary") or "{}")
+                except ValueError:
+                    run["summary"] = {}
+                s = run["summary"]
+                if run["mode"] == MODE_MANUAL or s.get("moved") or s.get("removed") or s.get("kept")                         or run["status"] == RUN_ERROR:
+                    out.append(run)
+                    if len(out) >= limit:
+                        break
+        return out
 
     def last_run(self, modes: Optional[tuple] = None) -> Optional[Dict[str, Any]]:
         sql, args = "SELECT * FROM autosync_runs", ()
@@ -395,7 +419,7 @@ class AutosyncService:
             "moved": len(result.moved), "pending": result.pending, "kept": result.kept,
             "removed": result.removed, "would_move": result.would_move, "error": result.error,
             "batches": {r.name: r.status for r in result.reports},
-            "notes": result.notes,
+            "notes": result.notes, **result.details,
         })
         return result
 
@@ -438,8 +462,11 @@ class AutosyncService:
                     batches_to_sync.add(r.path)
                 else:
                     hold.update(d.files)
+        known = self.memory.known_series_and_authors()   # память обновлена в preview()
         stats, failed = self._assign_and_sync(root, by_genre, hold, batches_to_sync, "auto", progress)
-        return self._outcome_rows(root, items, stats, failed, result)
+        rows = self._outcome_rows(root, items, stats, failed, result)
+        result.details = run_details(known, stats, rows)
+        return rows
 
     def _assign_and_sync(self, root: Path, by_genre: Dict[str, List[str]], hold: set, batches: set,
                          decided_by: str, progress) -> tuple:
@@ -480,9 +507,11 @@ class AutosyncService:
             if compile_fn is None:
                 from .auto_compile_service import auto_compile_library as compile_fn
             try:
-                compile_fn(str(sync.library_path), config_path=self.config_path, filter_paths=touched)
+                stats["compile_result"] = compile_fn(str(sync.library_path), config_path=self.config_path,
+                                                     filter_paths=touched)
             except Exception:
                 _log.exception("autosync: сбой автокомпиляции")
+                stats["compile_result"] = {"error": True}
             else:
                 pending.discard(touched)
         return stats, failed
@@ -607,15 +636,60 @@ class AutosyncService:
                 batch_dir = root / batch
                 hold = {os.path.relpath(os.path.join(d, n), root)
                         for d, _s, names in os.walk(batch_dir) for n in names if is_book_file(n)} - decided
+                library = self.settings.get_library_path()
+                if library and os.path.isdir(library):
+                    self.memory.refresh(library)       # «дополнили серии / новые» — относительно текущей библиотеки
+                known = self.memory.known_series_and_authors()
                 stats, failed = self._assign_and_sync(root, by_genre, hold, {str(batch_dir)}, "user", progress)
                 rows = self._outcome_rows(root, items, stats, failed, result)
+                result.details = run_details(known, stats, rows)
                 self.journal.add_books(result.run_id, rows)
                 self.journal.finish_run(result.run_id, result.status, {
                     "batch": batch, "moved": len(result.moved), "kept": result.kept,
-                    "removed": result.removed, "notes": result.notes})
+                    "removed": result.removed, "notes": result.notes, **result.details})
         except SyncBusy as busy:
             result.status, result.error = RUN_BUSY, f"синхронизацию сейчас выполняет: {busy.owner}"
         return result
+
+
+def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Итоги запуска для страницы «Входящие» (docs/watch-folder-autosync-design.md):
+    по каждой серии, куда легли книги, — дополнена ли (серия уже была в
+    библиотеке до запуска) или новая; новые авторы; замены более полными
+    версиями, дубли, автокомпиляция. known — known_series_and_authors() до
+    синхронизации."""
+    series_known, authors_known = known
+    groups: Counter = Counter()
+    for r in rows:
+        if r.get("outcome") == OUTCOME_MOVED and r.get("library_path"):
+            _genre, author, series = parse_library_path(r["library_path"])
+            groups[(author, _SEP.join(series))] += 1
+    series = []
+    for (author, skey), n in sorted(groups.items(), key=lambda kv: (kv[0][0].lower(), kv[0][1].lower())):
+        state = "none" if not skey else ("extended" if (author, skey) in series_known else "new")
+        series.append({"author": author, "series": skey.replace(_SEP, " / "), "books": n, "state": state,
+                       "new_author": author not in authors_known})
+    compile_result = stats.get("compile_result") or {}
+
+    def total(state):
+        return sum(s["books"] for s in series if s["state"] == state)
+
+    return {
+        "series": series,
+        "series_extended": sum(1 for s in series if s["state"] == "extended"),
+        "books_extended": total("extended"),
+        "series_new": sum(1 for s in series if s["state"] == "new"),
+        "books_new_series": total("new"),
+        "books_no_series": total("none"),
+        "authors_new": sorted({s["author"] for s in series if s["new_author"]}),
+        "replaced": stats.get("replaced", 0),
+        # duplicates_deleted — все удалённые дубли, в том числе тома, уже входящие в сборник
+        "dup_compilation": stats.get("compilation_deletions", 0),
+        "dup_library": max(0, stats.get("duplicates_deleted", 0) - stats.get("compilation_deletions", 0)),
+        "compiled": compile_result.get("ok", 0),
+        "compile_failed": compile_result.get("fail", 0),
+        "compile_error": bool(compile_result.get("error")),
+    }
 
 
 def notify(service: "AutosyncService", result: RunResult,

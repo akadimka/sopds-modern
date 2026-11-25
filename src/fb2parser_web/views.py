@@ -3993,6 +3993,26 @@ def _inbox_signal_text(signals):
     return "; ".join(parts)
 
 
+def _inbox_run_view(run):
+    """Запуск из журнала — для итогов во «Входящих»: время, длительность, цифры."""
+    from datetime import datetime
+    s = run["summary"]
+    notes = s.get("notes") or {}
+    view = {"mode": run["mode"], "status": run["status"], "s": s, "has_details": "series" in s,
+            "reconciliation": len(notes.get("reconciliation_notes") or []),
+            "genre_conflicts": len(notes.get("genre_conflict_notes") or []),
+            "unknown_genres": len(notes.get("unknown_genre_notes") or [])}
+    try:
+        started = datetime.fromisoformat(run["started"])
+        finished = datetime.fromisoformat(run["finished"]) if run.get("finished") else None
+    except (TypeError, ValueError):
+        started = finished = None
+    view["at"] = finished or started
+    seconds = int((finished - started).total_seconds()) if started and finished else None
+    view["minutes"], view["seconds"] = (divmod(seconds, 60) if seconds is not None else (None, None))
+    return view
+
+
 @superuser_required
 def inbox(request):
     from .fb2parser_bridge import get_autosync_service
@@ -4010,12 +4030,13 @@ def inbox(request):
         except ValueError:
             last["totals"] = {}
     plan = svc.dry_run_plan()
+    runs = [_inbox_run_view(r) for r in svc.journal.recent_runs(10)]
     state = inbox_job.get()
     if state.get("done") and not state.get("running"):
         inbox_job.reset()  # итог прошлой задачи показываем один раз
     return render(request, "fb2parser/inbox.html", _ctx(
         "inbox", _("Inbox"), batches=batches, genres=_inbox_genre_choices(svc),
-        autosync=svc.cfg, last_run=last, plan=plan, state=state,
+        autosync=svc.cfg, last_run=last, plan=plan, runs=runs, state=state,
     ))
 
 

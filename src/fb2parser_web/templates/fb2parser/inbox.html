@@ -36,6 +36,79 @@
 
 {% include "fb2parser/inbox_status.html" %}
 
+{% if runs %}
+{% with r=runs.0 %}
+<div class="card" id="autosync-results">
+    <div class="card-divider">
+        <strong>{% trans "📊 Last results" %}</strong>&nbsp;—&nbsp;{{ r.at|date:"d.m.Y H:i" }},
+        {% if r.mode == 'manual' %}{% blocktrans with batch=r.s.batch %}decision on the batch “{{ batch }}”{% endblocktrans %}{% else %}{% trans "automatic run" %}{% endif %}{% if r.minutes is not None %},
+        {% blocktrans with m=r.minutes s=r.seconds %}{{ m }} min {{ s }} s{% endblocktrans %}{% endif %}
+    </div>
+    <div class="card-section">
+        {% include "fb2parser/inbox_run_totals.html" %}
+        {% if r.s.series %}
+        <details style="margin-top:0.6rem;">
+            <summary>{% blocktrans count n=r.s.series|length %}By author and series ({{ n }}){% plural %}By author and series ({{ n }}){% endblocktrans %}</summary>
+            <div style="overflow-x:auto;">
+            <table class="unstriped" style="font-size:0.85rem; margin-top:0.4rem;">
+                <thead>
+                    <tr>
+                        <th>{% trans "Author" %}</th>
+                        <th>{% trans "Series" context "inbox plan column" %}</th>
+                        <th>{% trans "Books" %}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for x in r.s.series %}
+                    <tr>
+                        <td>{{ x.author|default:"—" }}{% if x.new_author %} <span style="color:#27ae60;">({% trans "new author" %})</span>{% endif %}</td>
+                        <td>{{ x.series|default:"—" }}</td>
+                        <td>{{ x.books }}</td>
+                        <td>{% if x.state == 'extended' %}{% trans "series added to" %}{% elif x.state == 'new' %}{% trans "new series" %}{% else %}{% trans "outside series" %}{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </details>
+        {% endif %}
+        {% if runs|length > 1 %}
+        <details style="margin-top:0.6rem;">
+            <summary>{% trans "Earlier runs" %}</summary>
+            <div style="overflow-x:auto;">
+            <table class="unstriped" style="font-size:0.85rem; margin-top:0.4rem;">
+                <thead>
+                    <tr>
+                        <th>{% trans "When" %}</th>
+                        <th>{% trans "What" %}</th>
+                        <th>{% trans "Added" context "inbox runs column" %}</th>
+                        <th>{% trans "Duplicates removed" %}</th>
+                        <th>{% trans "Left in place" %}</th>
+                        <th>{% trans "Compilations" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for x in runs|slice:"1:" %}
+                    <tr>
+                        <td>{{ x.at|date:"d.m.Y H:i" }}</td>
+                        <td>{% if x.mode == 'manual' %}{% blocktrans with batch=x.s.batch %}decision on the batch “{{ batch }}”{% endblocktrans %}{% else %}{% trans "automatic run" %}{% endif %}{% if x.status == 'error' %} ❌{% endif %}</td>
+                        <td>{{ x.s.moved|default:0 }}</td>
+                        <td>{{ x.s.removed|default:0 }}</td>
+                        <td>{{ x.s.kept|default:0 }}</td>
+                        <td>{% if x.has_details %}{{ x.s.compiled|default:0 }}{% else %}—{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </details>
+        {% endif %}
+    </div>
+</div>
+{% endwith %}
+{% endif %}
+
 {% if not batches %}
 <div class="callout secondary">{% trans "Nothing is waiting for a decision." %}</div>
 {% endif %}
@@ -111,7 +184,7 @@
             {% trans "Books the last dry run would have filed automatically. Nothing was moved: to file them, switch autosync to the automatic mode in the settings." %}
         </p>
         {% for b in plan %}
-        <details{% if forloop.first %} open{% endif %} style="margin-bottom:0.6rem;">
+        <details style="margin-bottom:0.6rem;">
             <summary><strong>{{ b.batch }}</strong> — {% blocktrans count n=b.books %}{{ n }} book{% plural %}{{ n }} books{% endblocktrans %}</summary>
             <div style="overflow-x:auto;">
             <table class="unstriped" style="font-size:0.85rem; margin-top:0.4rem;">

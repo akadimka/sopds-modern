@@ -1,0 +1,29 @@
+{% load i18n %}{# Итоги одного запуска автосинхронизации (r — _inbox_run_view) #}
+<ul style="list-style:none; margin:0; font-size:0.9rem; line-height:1.7;">
+    {% if r.status == 'error' %}
+    <li style="color:#c0392b;">❌ {% trans "Run failed:" %} {{ r.s.error }}</li>
+    {% endif %}
+    <li>📚 {% trans "Added to the library:" %} <strong>{{ r.s.moved|default:0 }}</strong>
+        {% if r.has_details and r.s.moved %}
+        <ul style="list-style:none; margin:0 0 0 1.4rem;">
+            {% if r.s.series_extended %}<li>{% blocktrans count n=r.s.series_extended with books=r.s.books_extended %}added to existing series: {{ n }} series (+{{ books }} books){% plural %}added to existing series: {{ n }} series (+{{ books }} books){% endblocktrans %}</li>{% endif %}
+            {% if r.s.series_new %}<li>{% blocktrans count n=r.s.series_new with books=r.s.books_new_series %}new series: {{ n }} ({{ books }} books){% plural %}new series: {{ n }} ({{ books }} books){% endblocktrans %}</li>{% endif %}
+            {% if r.s.books_no_series %}<li>{% trans "books outside series:" %} {{ r.s.books_no_series }}</li>{% endif %}
+            {% if r.s.authors_new %}<li>{% trans "new authors:" %} {{ r.s.authors_new|length }} — {{ r.s.authors_new|join:", " }}</li>{% endif %}
+        </ul>
+        {% endif %}
+    </li>
+    {% if r.s.replaced %}<li>♻ {% trans "Replaced with fuller versions:" %} {{ r.s.replaced }}</li>{% endif %}
+    <li>🗑 {% trans "Removed as duplicates:" %} <strong>{{ r.s.removed|default:0 }}</strong>
+        {% if r.has_details and r.s.removed %}<span style="color:var(--text-muted);">
+            ({% trans "already in the library:" %} {{ r.s.dup_library }}, {% trans "already inside a compilation:" %} {{ r.s.dup_compilation }})</span>{% endif %}
+    </li>
+    {% if r.has_details and r.s.compiled or r.s.compile_failed or r.s.compile_error %}
+    <li>📦 {% trans "Compilation:" %} {% trans "compilations built:" %} {{ r.s.compiled|default:0 }}{% if r.s.compile_failed %}, {% trans "failed:" %} {{ r.s.compile_failed }}{% endif %}{% if r.s.compile_error %} — <span style="color:#c0392b;">{% trans "compilation crashed, it will be redone on the next run" %}</span>{% endif %}</li>
+    {% endif %}
+    {% if r.s.kept %}<li>⏸ {% trans "Left in the watch folder by the synchronization:" %} {{ r.s.kept }}</li>{% endif %}
+    {% if r.reconciliation %}<li>⚠ {% trans "Author check needed:" %} {{ r.reconciliation }}</li>{% endif %}
+    {% if r.genre_conflicts %}<li>⚠ {% trans "Genre conflict inside a series:" %} {{ r.genre_conflicts }}</li>{% endif %}
+    {% if r.unknown_genres %}<li>⚠ {% trans "Genre not in the list, left in place:" %} {{ r.unknown_genres }}</li>{% endif %}
+    {% if r.mode == 'auto' %}<li>📥 {% trans "Waiting for a decision:" %} {{ r.s.pending|default:0 }}</li>{% endif %}
+</ul>
