@@ -1674,13 +1674,25 @@ class FB2CompilerService:
         # получал «1-7» по позиции 7 у «7-8», и «Фильма 7-8» шёл в сборник
         # вторым томом после цельного цикла — текст 7–8 дважды, «Октология».
         _max_known_pos = 0
+        _ranges = {id(b): self._precompiled_range(b, series, _group_titles) for b in books}
         for b in books:
             if b.sort_key[0] != 0 or not isinstance(b.sort_key[1], int) or b.sort_key[1] <= 0:
                 continue
             _max_known_pos = max(_max_known_pos, b.sort_key[1])
-            lo, hi = self._precompiled_range(b, series, _group_titles)
+            lo, hi = _ranges[id(b)]
             if lo == b.sort_key[1] and hi > _max_known_pos:
                 _max_known_pos = hi
+        # Файл без своей позиции, но с диапазоном, продолжающим известный ряд
+        # («Фильма 9-10» без <sequence> после «7-8»), — тоже известные позиции:
+        # иначе цикл из 10 фильм назывался «Окталогией». Только продолжение
+        # ряда — случайное «1914-1918» в названии границу не раздувает.
+        _extended = True
+        while _max_known_pos and _extended:
+            _extended = False
+            for b in books:
+                lo, hi = _ranges[id(b)]
+                if 1 < lo <= _max_known_pos + 1 and _max_known_pos < hi < 1900:
+                    _max_known_pos, _extended = hi, True
         _max_known_pos = _max_known_pos or None
         ctx._group_titles = _group_titles
         ctx._max_known_pos = _max_known_pos
@@ -3384,8 +3396,10 @@ class FB2CompilerService:
 
         # Критерий 1.6: паттерн "книги/томов N-M" — слово ПЕРЕД диапазоном.
         # Пример: «Преисподняя. Компиляция. Книги 1-5» — слово "Книги" стоит до диапазона.
+        # «Фильма» — части романа-кино Акунина: «Смерть на брудершафт. Фильма
+        # 9-10. Батальон ангелов» (диапазон после точки, критерий 1 его не видит).
         _BOOKS_BEFORE_RANGE_RE = re.compile(
-            r'(?:книги?|кн\.?|томов?|vols?\.?)\s+(\d{1,4})\s*[-–—]\s*(\d{1,4})\b',
+            r'(?:книги?|кн\.?|томов?|фильм[аы]?|vols?\.?)\s+(\d{1,4})\s*[-–—]\s*(\d{1,4})\b',
             re.IGNORECASE | re.UNICODE,
         )
         for candidate in (_stem_val, book.record.file_title or ''):

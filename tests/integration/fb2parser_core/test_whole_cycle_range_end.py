@@ -1,5 +1,5 @@
 """Найдено пользователем в компиляции «Акунин Борис / Смерть на брудершафт»
-(2026-11-25): «Октология» из «Весь цикл в одном томе» (1-7) и «Фильма 7-8».
+(2026-11-25): «Окталогия» из «Весь цикл в одном томе» (1-7) и «Фильма 7-8».
 
 Цикл — 10 фильм в файлах 1, 2, 3, 4, «Фильма 5-6», «Фильма 7-8» (номер 7
 в метаданных), «Фильма 9-10» и «Весь цикл в одном томе» без номера. Верхняя
@@ -7,6 +7,10 @@
 «7-8»), так что «Фильма 7-8» шёл в сборник вторым томом: текст 7–8 дважды.
 Конец диапазона «7-8» — тоже известная позиция: цельный том покрывает всё,
 компилировать нечего, остаётся только чистка дублей.
+
+Потом (v2.46.006): имя «… (Окталогия)», хотя фильм 10 — «Фильма 9-10» без
+<sequence> и с транслитом в имени файла не давал позиций 9–10. Диапазон
+«Фильма 9-10» в названии, продолжающий ряд, — тоже известные позиции.
 """
 from fb2parser_core.fb2_compiler import FB2CompilerService
 from fb2parser_core.regen_csv import RegenCSVService
@@ -46,6 +50,8 @@ def test_whole_cycle_covers_range_end_of_last_numbered_file(tmp_path):
          f"{SERIES} (фильма пятая и шестая)", _seq(5, 6), [5, 6]),
         ("Akunin_Smert_na_brudershaft_7_Smert_na_brudershaft_Filma_7-8.fb2",
          f"{SERIES} (фильма 7-8)", _seq(7), [7, 8]),
+        ("Akunin_Smert_na_brudershaft_9_Smert_na_brudershaft_Filma_9-10.fb2",
+         f"{SERIES}. Фильма 9-10. Батальон ангелов", "", [9, 10]),
     ]
     for name, title, seq, films in files:
         (folder / name).write_text(
@@ -53,11 +59,13 @@ def test_whole_cycle_covers_range_end_of_last_numbered_file(tmp_path):
     whole = f"Б. Акунин - {SERIES} (Весь цикл в одном томе).fb2"
     (folder / whole).write_text(
         _FB2.format(title=f"Весь цикл «{SERIES}» в одном томе.", seq="",
-                    text="".join(_film(n) for n in range(1, 9))), encoding="utf-8")
+                    text="".join(_film(n) for n in range(1, 11))), encoding="utf-8")
 
     records = RegenCSVService(_config_path()).generate_csv(str(tmp_path), output_csv_path=None)
-    [group] = FB2CompilerService().find_groups(records, tmp_path)
+    service = FB2CompilerService()
+    [group] = service.find_groups(records, tmp_path)
 
     assert group.cleanup_only
     assert [p.name for p in group.kept_paths] == [whole]
     assert sorted(p.name for p in group.duplicate_paths) == sorted(name for name, *_ in files)
+    assert service.compute_group_suffix(group) == ("Декалогия", 1, 10)
