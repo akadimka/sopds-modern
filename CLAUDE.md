@@ -132,8 +132,11 @@ Telegram («добавьте бота администратором канал�
 2. `git merge origin/master` (не rebase)
 3. `python manage.py migrate`
 4. `python compile_messages.py`
-5. `python manage.py check`
-6. Если менялся `pyproject.toml`/`uv.lock` — `uv sync` (или `pip install`
+5. `python manage.py collectstatic --noinput` — на серверах обязательно
+   (статика раздаётся по манифесту whitenoise: без этого правки JS/CSS не
+   доходят до браузера); на локальном dev-сервере не нужен.
+6. `python manage.py check`
+7. Если менялся `pyproject.toml`/`uv.lock` — `uv sync` (или `pip install`
    недостающих пакетов вручную, если `uv` недоступен в шелле)
 
 ## Версии и выпуски
