@@ -1667,11 +1667,21 @@ class FB2CompilerService:
         # Максимальная известная позиция в группе — единственный источник
         # правды для диапазонов вида "N-финал" (баг №68 доп.), где верхняя
         # граница не числовая. Считаем ОДИН раз на весь бакет.
-        _max_known_pos = max(
-            (b.sort_key[1] for b in books
-             if b.sort_key[0] == 0 and isinstance(b.sort_key[1], int) and b.sort_key[1] > 0),
-            default=0,
-        ) or None
+        #
+        # Конец диапазона у файла на своей позиции N («Фильма 7-8» — N=7)
+        # — тоже известная позиция. Реальный случай (Акунин, «Смерть на
+        # брудершафт», 2026-11-25): «Весь цикл в одном томе» без номера
+        # получал «1-7» по позиции 7 у «7-8», и «Фильма 7-8» шёл в сборник
+        # вторым томом после цельного цикла — текст 7–8 дважды, «Октология».
+        _max_known_pos = 0
+        for b in books:
+            if b.sort_key[0] != 0 or not isinstance(b.sort_key[1], int) or b.sort_key[1] <= 0:
+                continue
+            _max_known_pos = max(_max_known_pos, b.sort_key[1])
+            lo, hi = self._precompiled_range(b, series, _group_titles)
+            if lo == b.sort_key[1] and hi > _max_known_pos:
+                _max_known_pos = hi
+        _max_known_pos = _max_known_pos or None
         ctx._group_titles = _group_titles
         ctx._max_known_pos = _max_known_pos
         ctx.books = books
