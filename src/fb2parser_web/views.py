@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -4003,12 +4004,18 @@ def inbox(request):
             u.signal_text = _inbox_signal_text(u.signals)
             u.title = u.series or (os.path.basename(u.files[0]) if len(u.files) == 1 else "")
     last = svc.journal.last_run(modes=("dry_run", "auto"))
+    if last:
+        try:
+            last["totals"] = json.loads(last.get("summary") or "{}")
+        except ValueError:
+            last["totals"] = {}
+    plan = svc.dry_run_plan()
     state = inbox_job.get()
     if state.get("done") and not state.get("running"):
         inbox_job.reset()  # итог прошлой задачи показываем один раз
     return render(request, "fb2parser/inbox.html", _ctx(
         "inbox", _("Inbox"), batches=batches, genres=_inbox_genre_choices(svc),
-        autosync=svc.cfg, last_run=last, state=state,
+        autosync=svc.cfg, last_run=last, plan=plan, state=state,
     ))
 
 

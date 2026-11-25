@@ -545,6 +545,29 @@ class AutosyncService:
             b.units.sort(key=lambda u: (-len(u.files), u.author, u.series))
         return sorted(batches.values(), key=lambda b: b.name.lower())
 
+    def dry_run_plan(self) -> List[Dict[str, Any]]:
+        """Пробный запуск: что уехало бы в библиотеку. Книги последнего
+        запуска, если он был пробным и всё ещё лежат в папке наблюдения, —
+        по порциям: [{"batch", "books", "units": [{"genre", "author",
+        "series", "books"}]}]. Спорные книги — во «Входящих» (inbox())."""
+        folder = self.cfg["watch_folder"]
+        run = self.journal.last_run(modes=(MODE_DRY_RUN, MODE_AUTO))
+        if not folder or not run or run["mode"] != MODE_DRY_RUN:
+            return []
+        root = Path(folder).resolve()
+        counts: Counter = Counter()
+        for row in self.journal.books(run["id"], OUTCOME_WOULD_MOVE):
+            if (root / row["source"]).exists():
+                counts[(row["batch"], row["genre"] or "", row["author"] or "", row["series"] or "")] += 1
+        batches: Dict[str, Dict[str, Any]] = {}
+        for (batch, genre, author, series), n in counts.items():
+            b = batches.setdefault(batch, {"batch": batch, "books": 0, "units": []})
+            b["books"] += n
+            b["units"].append({"genre": genre, "author": author, "series": series, "books": n})
+        for b in batches.values():
+            b["units"].sort(key=lambda u: (u["genre"], u["author"], u["series"]))
+        return sorted(batches.values(), key=lambda b: b["batch"].lower())
+
     def decide_all(self, batch: str, genre: str,
                    progress: Optional[Callable[[str], None]] = None) -> RunResult:
         """Один жанр всей порции (кнопка в Telegram, «Применить ко всем»)."""

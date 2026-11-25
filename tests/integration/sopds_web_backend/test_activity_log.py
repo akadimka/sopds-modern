@@ -503,6 +503,28 @@ def test_scans_autosync_and_ratings_outage_are_system_events(monkeypatch):
     assert events[1].details["totals"] == ["moved: 1", "pending: 2"]
 
 
+def test_dry_run_autosync_is_logged_once_per_result(monkeypatch):
+    """Пробный прогон с итогом — в журнале; тот же итог при следующем прогоне —
+    не повторяется; изменился — новая запись; пустой — не пишется."""
+    from types import SimpleNamespace
+
+    from opds_catalog import autosync_hooks
+    result = SimpleNamespace(status="done", mode="dry_run", moved=[], would_move=201, pending=14,
+                             kept=0, removed=0, error="")
+    monkeypatch.setattr("fb2parser_web.fb2parser_bridge.get_autosync_service",
+                        lambda: SimpleNamespace(run=lambda: result))
+    autosync_hooks.run_autosync()
+    autosync_hooks.run_autosync()                                   # тот же итог — не повторяется
+    result.would_move = 202
+    autosync_hooks.run_autosync()
+    result.would_move, result.pending = 0, 0
+    autosync_hooks.run_autosync()                                   # нечего разложить — не пишется
+    events = list(ActivityEvent.objects.order_by("id"))
+    assert [e.details["totals"] for e in events] == [
+        ["would_move: 201", "pending: 14"], ["would_move: 202", "pending: 14"]]
+    assert {e.details["mode"] for e in events} == {"dry_run"}
+
+
 def test_header_alert_counts_lockouts_and_unknown_addresses(monkeypatch):
     from django.core.cache import cache
     admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")

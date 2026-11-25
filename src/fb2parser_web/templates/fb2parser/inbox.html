@@ -14,7 +14,13 @@
                 <strong>{% if autosync.mode == 'auto' %}{% trans "Automatic" %}{% elif autosync.mode == 'dry_run' %}{% trans "Dry run" %}{% else %}{% trans "Off" %}{% endif %}</strong>
             </div>
             <div>{% trans "Watch folder:" %} <code style="overflow-wrap:anywhere;">{{ autosync.watch_folder|default:"—" }}</code></div>
-            <div>{% trans "Last run:" %} {{ last_run.finished|default:"—" }}</div>
+            <div>{% trans "Last run:" %} {{ last_run.finished|default:"—" }}
+                {% if last_run.mode == 'dry_run' %}— {% trans "dry run" %}:
+                    {% blocktrans count n=last_run.totals.would_move|default:0 %}would move {{ n }} book{% plural %}would move {{ n }} books{% endblocktrans %},
+                    {% blocktrans count n=last_run.totals.pending|default:0 %}{{ n }} waiting for a decision{% plural %}{{ n }} waiting for a decision{% endblocktrans %}
+                    {% if plan %}(<a href="#dry-run-plan">{% trans "what would be moved" %}</a>){% endif %}
+                {% endif %}
+            </div>
             {% if autosync.mode == 'off' %}
             <div style="color:#c0392b;">{% trans "Autosync is off." %} <a href="{% url 'web:settings' %}">{% trans "Settings" %}</a></div>
             {% endif %}
@@ -94,6 +100,46 @@
     </div>
 </div>
 {% endfor %}
+
+{% if plan %}
+<div class="card" id="dry-run-plan">
+    <div class="card-divider">
+        <strong>{% trans "🧪 Dry run: what would be moved to the library" %}</strong>
+    </div>
+    <div class="card-section">
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">
+            {% trans "Books the last dry run would have filed automatically. Nothing was moved: to file them, switch autosync to the automatic mode in the settings." %}
+        </p>
+        {% for b in plan %}
+        <details{% if forloop.first %} open{% endif %} style="margin-bottom:0.6rem;">
+            <summary><strong>{{ b.batch }}</strong> — {% blocktrans count n=b.books %}{{ n }} book{% plural %}{{ n }} books{% endblocktrans %}</summary>
+            <div style="overflow-x:auto;">
+            <table class="unstriped" style="font-size:0.85rem; margin-top:0.4rem;">
+                <thead>
+                    <tr>
+                        <th>{% trans "Genre" %}</th>
+                        <th>{% trans "Author" %}</th>
+                        <th>{% trans "Series" context "inbox plan column" %}</th>
+                        <th>{% trans "Books" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for u in b.units %}
+                    <tr>
+                        <td>{{ u.genre|default:"—" }}</td>
+                        <td>{{ u.author|default:"—" }}</td>
+                        <td>{{ u.series|default:"—" }}</td>
+                        <td>{{ u.books }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <script>
 function inboxSetAll(btn) {

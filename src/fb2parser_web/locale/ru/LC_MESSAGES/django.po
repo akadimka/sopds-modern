@@ -1935,19 +1935,81 @@ msgstr "Выберите одно из предложенных написани
 msgid "Genre is not in the genre list"
 msgstr "Жанр не из списка жанров"
 
-msgid "The genre tag of these books is empty, damaged or not one of your genres, so it is unclear which genre folder they belong to. They were left untouched in the source folder. Assign a genre to their folder and synchronize again."
-msgstr "Тег жанра у этих книг пустой, испорчен или не совпадает ни с одним из ваших жанров — неясно, в какую жанровую папку их класть. Они оставлены нетронутыми в исходной папке. Присвойте жанр их папке и синхронизируйте снова."
+msgid ""
+"The genre tag of these books is empty, damaged or not one of your genres, so"
+" it is unclear which genre folder they belong to. They were left untouched "
+"in the source folder. Assign a genre to their folder and synchronize again."
+msgstr ""
+"Тег жанра у этих книг пустой, испорчен или не совпадает ни с одним из ваших "
+"жанров — неясно, в какую жанровую папку их класть. Они оставлены нетронутыми"
+" в исходной папке. Присвойте жанр их папке и синхронизируйте снова."
 
 msgid "Genre in the file"
 msgstr "Жанр в файле"
 
 #, python-format
-msgid "The library is busy: «%(owner)s» on %(host)s since %(since)s. Synchronization will not start until it finishes."
-msgstr "С библиотекой сейчас работает «%(owner)s» на %(host)s с %(since)s. Синхронизация не начнётся, пока это не закончится."
+msgid ""
+"The library is busy: «%(owner)s» on %(host)s since %(since)s. "
+"Synchronization will not start until it finishes."
+msgstr ""
+"С библиотекой сейчас работает «%(owner)s» на %(host)s с %(since)s. "
+"Синхронизация не начнётся, пока это не закончится."
 
 #, python-format
-msgid "The library is busy: «%(owner)s» since %(since)s. Synchronization will not start until it finishes."
-msgstr "С библиотекой сейчас работает «%(owner)s» с %(since)s. Синхронизация не начнётся, пока это не закончится."
+msgid ""
+"The library is busy: «%(owner)s» since %(since)s. Synchronization will not "
+"start until it finishes."
+msgstr ""
+"С библиотекой сейчас работает «%(owner)s» с %(since)s. Синхронизация не "
+"начнётся, пока это не закончится."
 
-msgid "The library is on another computer. File owners and the catalog there are updated only after the owners check (library_owners_check) and the next scan on that computer."
-msgstr "Библиотека — на другом компьютере. Владельцы файлов и каталог там обновятся только после сверки владельцев (library_owners_check) и следующего сканирования на нём."
+msgid ""
+"The library is on another computer. File owners and the catalog there are "
+"updated only after the owners check (library_owners_check) and the next scan"
+" on that computer."
+msgstr ""
+"Библиотека — на другом компьютере. Владельцы файлов и каталог там обновятся "
+"только после сверки владельцев (library_owners_check) и следующего "
+"сканирования на нём."
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgid "dry run"
+msgstr "пробный запуск"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgid "what would be moved"
+msgstr "что было бы разложено"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgid "would move %(n)s book"
+msgid_plural "would move %(n)s books"
+msgstr[0] "разложил бы %(n)s книгу"
+msgstr[1] "разложил бы %(n)s книги"
+msgstr[2] "разложил бы %(n)s книг"
+msgstr[3] "разложил бы %(n)s книги"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgid "%(n)s waiting for a decision"
+msgid_plural "%(n)s waiting for a decision"
+msgstr[0] "%(n)s ждёт решения"
+msgstr[1] "%(n)s ждут решения"
+msgstr[2] "%(n)s ждут решения"
+msgstr[3] "%(n)s ждут решения"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgid "🧪 Dry run: what would be moved to the library"
+msgstr "🧪 Пробный запуск: что было бы разложено в библиотеку"
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgid ""
+"Books the last dry run would have filed automatically. Nothing was moved: to"
+" file them, switch autosync to the automatic mode in the settings."
+msgstr ""
+"Книги, которые последний пробный запуск разложил бы сам. Ничего не "
+"перенесено: чтобы разложить их, переключите автосинхронизацию в "
+"автоматический режим в настройках."
+
+#: fb2parser_web/templates/fb2parser/inbox.html
+msgctxt "inbox plan column"
+msgid "Series"
+msgstr "Серия"

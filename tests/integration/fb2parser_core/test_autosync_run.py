@@ -152,6 +152,37 @@ def test_run_is_skipped_while_manual_sync_holds_the_lock(tmp_path, monkeypatch):
     assert sure.exists()
 
 
+@pytest.mark.django_db
+def test_dry_run_plan_shows_what_would_be_moved(tmp_path, monkeypatch, client, settings):
+    """Пробный запуск показывает на странице «Входящие», что разложил бы (2026-11-25:
+    201 книга пробного запуска нигде не была видна — только 14 спорных)."""
+    from django.contrib.auth.models import User
+    from django.urls import reverse
+
+    import fb2parser_web.fb2parser_bridge as bridge
+
+    settings.STORAGES = {**settings.STORAGES,
+                         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_DRY_RUN)
+    assert svc.dry_run_plan() == []
+    svc.run()
+
+    assert svc.dry_run_plan() == [{"batch": "Иванов Иван", "books": 1, "units": [
+        {"genre": "Фантастика", "author": "Иванов Иван", "series": "Звезды", "books": 1}]}]
+    monkeypatch.setattr(bridge, "get_autosync_service", lambda: svc)
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
+    page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+    assert 'id="dry-run-plan"' in page and "Звезды" in page and "Чужая порция" in page
+
+    sure.unlink()                                        # книгу убрали из папки — в плане её нет
+    assert svc.dry_run_plan() == []
+    svc.cfg.update(mode=MODE_AUTO)                       # после боевого запуска плана нет
+    _book(watch / "Иванов Иван" / "Звезды" / "4. Звезды 4.fb2", "sf_action", "Иван", "Иванов", "Звезды", 4)
+    svc.run()
+    assert svc.dry_run_plan() == []
+    assert 'id="dry-run-plan"' not in client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+
+
 # ---------- «Входящие» (этап 3) ----------
 
 def test_inbox_lists_doubtful_book_and_decision_syncs_it(tmp_path, monkeypatch):

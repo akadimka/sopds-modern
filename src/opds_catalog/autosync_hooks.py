@@ -34,16 +34,30 @@ def run_autosync(logger: Optional[logging.Logger] = None) -> Optional[Tuple[Any,
             result.mode, result.status, len(result.moved), result.pending,
             result.kept, result.removed, f", error: {result.error}" if result.error else "",
         )
-        if result.moved or result.removed or result.error:
-            # В журнал — только прогон, который что-то сделал (или сломался):
-            # пустые прогоны идут после каждого скана и каждого изменения папки.
-            from sopds_web_backend import activity
+        from sopds_web_backend import activity
+        would_move = getattr(result, "would_move", 0)
+        totals = activity.totals({"moved": len(result.moved), "would_move": would_move, "pending": result.pending,
+                                  "kept": result.kept, "removed": result.removed})
+        # В журнал — только прогон, который что-то сделал (или сломался):
+        # пустые прогоны идут после каждого скана и каждого изменения папки.
+        # Пробный — когда есть что разложить или решить, но не повтор того же
+        # итога (папка не менялась — прогоны одинаковые).
+        dry = result.mode == "dry_run" and (would_move or result.pending)
+        if result.moved or result.removed or result.error or (dry and not _same_as_last_dry_run(totals)):
             activity.record_operation(
                 "autosync_finished", channel="system", ok=not result.error, mode=result.mode,
-                totals=activity.totals({"moved": len(result.moved), "pending": result.pending,
-                                        "kept": result.kept, "removed": result.removed}),
-                error=result.error or None)
+                totals=totals, error=result.error or None)
     return service, result
+
+
+def _same_as_last_dry_run(totals: list) -> bool:
+    """Последняя запись автосинхронизации в журнале — пробный прогон с тем же итогом."""
+    try:
+        from sopds_web_backend.models import ActivityEvent
+        last = ActivityEvent.objects.filter(action="autosync_finished").order_by("-id").first()
+    except Exception:  # noqa: BLE001 — журнал не должен ломать автосинхронизацию
+        return False
+    return bool(last and last.details.get("mode") == "dry_run" and last.details.get("totals") == totals)
 
 
 def notify_autosync(autosync: Optional[Tuple[Any, Any]], logger: Optional[logging.Logger] = None) -> Dict[str, str]:
