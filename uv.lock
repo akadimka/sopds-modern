@@ -612,7 +612,7 @@ wheels = [
 
 [[package]]
 name = "sopds-modern"
-version = "2.46.3"
+version = "2.46.4"
 source = { virtual = "." }
 dependencies = [
     { name = "apscheduler" },
