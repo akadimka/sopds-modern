@@ -831,6 +831,7 @@ def _apply_autosync_settings(sm, post):
             except ValueError:
                 pass
         values['notify_users'] = sorted(picked & allowed)
+        values['telegram_buttons'] = post.get('autosync_telegram_buttons') == 'on'
     values['telegram_proxy'] = post.get('autosync_telegram_proxy', '').strip()
     from fb2parser_core.telegram_notify import normalize_api_url
     try:

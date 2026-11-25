@@ -532,6 +532,23 @@ def test_blocked_recipient_does_not_stop_the_others(tmp_path, monkeypatch):
     assert _messages(tg, "42")
 
 
+def test_buttons_turned_off_leave_superuser_only_the_inbox_link(tmp_path, monkeypatch):
+    """Один бот на два сервера: нажатия принимает другой сервер — кнопок жанра нет
+    (основной сервер, 2026-11-25), ссылка на «Входящие» остаётся."""
+    from fb2parser_core.autosync_service import notify
+    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    _with_telegram(svc)
+    svc.cfg.update(telegram_buttons=False)
+    _detective_batch(watch)
+    tg = _FakeBotAPI()
+
+    notify(svc, svc.run(), client=tg, recipients=[("42", True)])
+
+    assert _prompt_button(tg, "Детектив") is None
+    links = [b for m in tg.markups if m for row in m["inline_keyboard"] for b in row]
+    assert links and all("url" in b and "callback_data" not in b for b in links)
+
+
 def test_linked_superuser_can_press_a_button_from_their_own_chat(tmp_path, monkeypatch):
     from fb2parser_core.autosync_service import notify
     from fb2parser_core.telegram_bot import AdminBot

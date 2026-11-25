@@ -629,7 +629,9 @@ def notify(service: "AutosyncService", result: RunResult,
     `recipients` — [(chat id, решает ли)]: суперпользователь получает кнопки
     жанра и ссылку на «Входящие», назначенный пользователь — те же сообщения
     без них (docs/autosync-notifications-plan.md). Не задано — только «chat id
-    суперпользователя» из настроек.
+    суперпользователя» из настроек. Настройка `telegram_buttons` выключена —
+    кнопок нет ни у кого (нажатия принимает бот другого сервера), ссылка на
+    «Входящие» остаётся.
 
     `include(строка журнала)` — какие новинки можно показать в канале (он
     общий для всех привязанных пользователей: только книги открытых всем
@@ -722,7 +724,8 @@ def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str]
                         chat: str, decides: bool = True) -> None:
     """Каждой НОВОЙ спорной порции — сообщение получателю; тому, кто решает, —
     с кнопками жанров (нажатие обрабатывает процесс бота, telegram_bot —
-    decide_all) и ссылкой на «Входящие», назначенному — без них."""
+    decide_all; выключаются настройкой `telegram_buttons`) и ссылкой на
+    «Входящие», назначенному — без них."""
     from .telegram_notify import TelegramError, build_batch_prompt, explain_error
 
     cfg, journal = service.cfg, service.journal
@@ -738,8 +741,10 @@ def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str]
         options = batch_genre_options(b)
         rows = []
         if decides:
-            rows = [[{"text": ("✅ " if i == 0 else "") + g, "callback_data": "d:" + journal.add_action(b.name, g)}]
-                    for i, g in enumerate(options)]
+            if cfg.get("telegram_buttons", True):
+                rows = [[{"text": ("✅ " if i == 0 else "") + g,
+                          "callback_data": "d:" + journal.add_action(b.name, g)}]
+                        for i, g in enumerate(options)]
             if base:
                 rows.append([{"text": "📥 Во «Входящие»", "url": f"{base}/fb2parser/inbox/"}])
         try:

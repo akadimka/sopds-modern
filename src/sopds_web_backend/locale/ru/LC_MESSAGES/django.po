@@ -2708,6 +2708,20 @@ msgstr ""
 "остальные — только сообщения. В списке — только учётные записи, привязавшие "
 "Telegram в профиле. Chat id суперпользователя выше тоже получает оповещения."
 
+#: sopds_web_backend/templates/sopds_settings.html
+msgid "Genre buttons in Telegram"
+msgstr "Кнопки выбора жанра в Telegram"
+
+#: sopds_web_backend/templates/sopds_settings.html
+msgid ""
+"Turn off if the same bot is used by another server that runs the bot "
+"service: button presses go to that server and do not work here. Decide on "
+"the Inbox page instead."
+msgstr ""
+"Выключите, если этого же бота использует другой сервер, на котором работает "
+"служба бота: нажатия кнопок уходят туда и здесь не срабатывают. Решения "
+"тогда — на странице «Входящие»."
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
