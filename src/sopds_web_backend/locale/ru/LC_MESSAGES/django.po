@@ -324,6 +324,7 @@ msgstr "Жанры"
 msgid "Total: %(chars_cnt)s authors."
 msgstr "Всего: %(chars_cnt)s авторов."
 
+#: sopds_web_backend/templates/sopds_catalogs.html:40
 #: sopds_web_backend/templates/sopds_selectbook.html:14
 #, python-format
 msgid "Total: %(chars_cnt)s books."

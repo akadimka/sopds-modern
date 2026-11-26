@@ -163,6 +163,24 @@ def visible_catalog_ids(user) -> Optional[set[int]]:
     return ids
 
 
+def catalog_book_counts(user) -> dict[int, int]:
+    """Число видимых книг в папке вместе со всеми вложенными — для строк
+    папок на странице «Каталоги»; папки без видимых книг в словаре нет."""
+    key = _cache_key("catalog_counts", user)
+    counts = cache.get(key)
+    if counts is None:
+        parents = dict(Catalog.objects.values_list("id", "parent_id"))
+        counts = {}
+        per_folder = (visible_books(user).order_by().values("catalog_id")
+                      .annotate(n=Count("id")).values_list("catalog_id", "n"))
+        for cat_id, n in per_folder:
+            while cat_id is not None:
+                counts[cat_id] = counts.get(cat_id, 0) + n
+                cat_id = parents.get(cat_id)
+        cache.set(key, counts, CACHE_SECONDS)
+    return counts
+
+
 def user_counters(user) -> dict[str, int]:
     """Счётчики главной страницы и OPDS — по видимым книгам; у
     суперпользователя тоже (все существующие книги), а не общий `Counter`
@@ -176,10 +194,14 @@ def user_counters(user) -> dict[str, int]:
         def with_books(model, relation):
             return model.objects.filter(Exists(books.filter(**{relation: OuterRef("pk")}))).count()
 
+        # Жанры — разделы, как на странице «Жанры» и в OPDS-списке жанров,
+        # а не записи Genre: у нескольких записей бывает один раздел.
+        genres = (Genre.objects.filter(Exists(books.filter(genres=OuterRef("pk"))))
+                  .order_by().values("section").distinct().count())
         counters = {"books": books.count(),
                     "catalogs": len(_catalogs_with_books(books)),
                     "authors": with_books(Author, "authors"),
-                    "genres": with_books(Genre, "genres"),
+                    "genres": genres,
                     "series": with_books(Series, "series")}
         cache.set(key, counters, CACHE_SECONDS)
     return counters

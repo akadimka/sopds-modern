@@ -34,16 +34,11 @@ function openBookCard(bookId) {
 <div class="cell sopdsitem">
 
 {% if b.is_catalog == 1 %}
-    <div class="sopds-cat-thumb sopds-cat-folder">
-        {% if b.cat_type == 1 or b.cat_type == 3 %}
-        <img src="{% static "images/sopds-modern-zip.svg" %}" alt="">
-        {% elif b.cat_type == 2 %}
-        <img src="{% static "images/sopds-modern-inpx.svg" %}" alt="">
-        {% else %}
-        <img src="{% static "images/sopds-modern-folder.svg" %}" alt="">
-        {% endif %}
-    </div>
-    <a href="{% url "web:catalog" %}?cat={{b.id}}">{{ b.title }}</a>
+    {# Папка — строкой, как разделы на страницах «Жанры» и «Авторы». #}
+    <a class="sopdsitem-link" href="{% url "web:catalog" %}?cat={{b.id}}">
+        <span class="sopdsitem-key">{{ b.title }}</span>
+        <span class="sopdsitem-count">{% blocktrans with chars_cnt=b.book_count %}Total: {{ chars_cnt }} books.{% endblocktrans %}</span>
+    </a>
 {% else %}
     <div class="sopds-cat-thumb" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
         <img src="{% url 'opds_catalog:thumb' b.id %}" loading="lazy" alt="">

@@ -148,6 +148,32 @@ def test_admin_counters_count_existing_books(lib):
         "books": 6, "catalogs": 7, "authors": 5, "genres": 1, "series": 6}
 
 
+def test_genre_counter_counts_sections(lib):
+    """Счётчик жанров — разделы, как на странице «Жанры»: две записи жанра
+    с одним разделом — один жанр (на главной было 19, на странице 9)."""
+    users, books = lib
+    other = Genre.objects.create(genre="космос", section="Фантастика", subsection="космос")
+    bgenre.objects.create(book=books["B"], genre=other)
+    detective = Genre.objects.create(genre="Детектив", section="Детектив", subsection="")
+    bgenre.objects.create(book=books["C"], genre=detective)
+    assert visibility.user_counters(users["boris"])["genres"] == 1
+    assert visibility.user_counters(users["admin"])["genres"] == 2
+
+
+def test_catalog_book_counts_include_subfolders(lib):
+    users, books = lib
+    root = Catalog.objects.get(cat_name="Фантастика")
+    inner = Catalog.objects.create(cat_name="Цикл", path="Фантастика\\B\\Цикл", parent=books["B"].catalog)
+    Book.objects.create(filename="B2.fb2", path=inner.path, catalog=inner, avail=2, format="fb2", docdate="",
+                        lang="ru", title="B2", search_title="B2", annotation="")
+    BookOwner.objects.create(book=Book.objects.get(title="B2"), user=users["boris"])
+    counts = visibility.catalog_book_counts(users["boris"])
+    assert counts[root.pk] == 3                                 # B, B2, P — чужие не в счёт
+    assert counts[books["B"].catalog_id] == 2
+    assert books["C"].catalog_id not in counts
+    assert visibility.catalog_book_counts(users["admin"])[root.pk] == 7   # A0 удалена — не в счёт
+
+
 def test_only_superuser_role_sees_everything(lib):
     """Всё видит роль «Суперпользователь» (is_superuser); is_staff без
     суперправ (бывший «Admin», такой роли больше нет) — как обычный

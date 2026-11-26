@@ -43,7 +43,8 @@ class TestFeeds:  # acceptance
         assert (
             _("Authors: %(authors)s.") % {"authors": 4}
         ) in response.content.decode()
-        assert (_("Genres: %(genres)s.") % {"genres": 4}) in response.content.decode()
+        # Жанры — разделы, как в списке /opds/genres/: 4 жанра фикстуры — в одном разделе.
+        assert (_("Genres: %(genres)s.") % {"genres": 1}) in response.content.decode()
         assert settings.SUBTITLE in response.content.decode()
 
     def test_catalogs_feed(self, client) -> None:

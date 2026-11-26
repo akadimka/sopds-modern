@@ -1322,13 +1322,9 @@ table th { color: var(--text) !important; border: none !important; border-width:
     display: block;
     text-decoration: none;
 }
-.sopds-stat-catalog-btn:hover .sopds-stat-card,
-.sopds-stat-clickable:hover {
+.sopds-stat-catalog-btn:hover .sopds-stat-card {
     box-shadow: var(--shadow-md) !important;
     transition: box-shadow var(--transition);
-}
-.sopds-stat-clickable {
-    cursor: pointer;
 }
 @media screen and (max-width: 39.9375em) {
     .sopds-stat-section { padding: 0.45rem 0.2rem !important; }
@@ -1358,19 +1354,6 @@ table th { color: var(--text) !important; border: none !important; border-width:
     max-height: 58px !important;
     object-fit: cover !important;
     display: block !important;
-}
-.sopds-cat-folder {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: transparent !important;
-}
-.sopds-cat-folder img {
-    width: 32px !important;
-    height: 32px !important;
-    max-width: 32px !important;
-    max-height: 32px !important;
-    object-fit: contain !important;
 }
 .sopds-cat-fmt {
     position: absolute !important;

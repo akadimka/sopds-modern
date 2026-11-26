@@ -72,7 +72,7 @@ def get_books_query(catalog: Catalog, *, user) -> QuerySet[Book, Book]:
     return visibility.restrict_books(Book.objects.filter(catalog=catalog), user)
 
 
-def _catalog_row_to_dict(row) -> dict:
+def _catalog_row_to_dict(row, book_counts: dict[int, int] | None = None) -> dict:
     return {
         "is_catalog": 1,
         "title": row.cat_name,
@@ -80,6 +80,8 @@ def _catalog_row_to_dict(row) -> dict:
         "cat_type": row.cat_type,
         "parent_id": row.parent_id,
         "prefix": "c",
+        # Книги папки вместе с вложенными — строка папки на сайте («Всего: N книг»).
+        "book_count": (book_counts or {}).get(row.id, 0),
     }
 
 
@@ -191,8 +193,9 @@ def paginated_catalog_content(
     cat_start = max(0, min(start, catalogs_count))
     cat_end = max(0, min(end, catalogs_count))
     if cat_start < cat_end:
+        book_counts = visibility.catalog_book_counts(user)
         for row in catalogs_list[cat_start:cat_end]:
-            merged.append(_catalog_row_to_dict(row))
+            merged.append(_catalog_row_to_dict(row, book_counts))
 
     book_start = max(0, min(start - catalogs_count, books_count))
     book_end = max(0, min(end - catalogs_count, books_count))

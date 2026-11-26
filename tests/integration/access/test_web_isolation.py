@@ -89,6 +89,26 @@ def test_catalog_folder(client, lib):
     assert "Секрет Бориса" in admin
 
 
+def test_catalog_folder_row_counts_visible_books(client, lib):
+    """Папка в «Каталогах» — строкой, как раздел «Жанров»: название и число
+    книг; число — только по видимым книгам."""
+    users, _, _ = lib
+    _, admin = _page(client, users["admin"], "catalog")
+    assert "Тайник Бориса" in admin and "Total: 1 books." in admin
+    LibraryShare.objects.create(owner=users["boris"], grantee=users["anna"])
+    _, anna = _page(client, users["anna"], "catalog")
+    assert "Тайник Бориса" in anna and "Total: 1 books." in anna
+
+
+def test_main_page_books_block_is_a_link(client, lib):
+    """«Книги» на главной — переход на страницу выбора, как «Авторы», а не
+    всплывающее окно."""
+    users, _, _ = lib
+    _, main = _page(client, users["anna"], "main")
+    assert f'href="{reverse("web:book")}"' in main
+    assert "BooksPickerModal" not in main
+
+
 def test_main_page_and_every_page_context(client, lib):
     users, _, _ = lib
     for _ in range(5):   # случайная книга — тоже только из видимых
