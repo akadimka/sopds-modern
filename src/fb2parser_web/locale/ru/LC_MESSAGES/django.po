@@ -2049,6 +2049,9 @@ msgstr "Удалено как дубликаты:"
 msgid "already in the library:"
 msgstr "уже были в библиотеке:"
 
+msgid "of them with other authors in the description:"
+msgstr "из них с другими авторами в описании:"
+
 #: fb2parser_web/templates/fb2parser/inbox.html
 #: fb2parser_web/templates/fb2parser/inbox_run_totals.html
 msgid "already inside a compilation:"

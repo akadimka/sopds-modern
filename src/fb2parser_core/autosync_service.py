@@ -694,6 +694,8 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
         # duplicates_deleted — все удалённые дубли, в том числе тома, уже входящие в сборник
         "dup_compilation": stats.get("compilation_deletions", 0),
         "dup_library": max(0, stats.get("duplicates_deleted", 0) - stats.get("compilation_deletions", 0)),
+        # из них — та же книга с другими авторами в описании (текст совпал)
+        "dup_other_authors": stats.get("duplicates_other_authors", 0),
         "compiled": compile_result.get("ok", 0),
         "compile_failed": compile_result.get("fail", 0),
         "compile_error": bool(compile_result.get("error")),

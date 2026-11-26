@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import sqlite3
+import zipfile
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from . import ownership_hooks
 from .fb2_utils import (
     decode_mislabeled_utf8,
+    fb2_body_text,
     long_path,
     norm_encoding,
     read_fb2_bytes,
@@ -207,6 +209,7 @@ class SynchronizationService:
             'files_moved': 0,
             'duplicates_found': 0,
             'duplicates_deleted': 0,
+            'duplicates_other_authors': 0,
             'compilation_deletions': 0,
             'folders_deleted': 0,
             'errors': 0,
@@ -934,6 +937,21 @@ class SynchronizationService:
                     # нередко совпадает, например, имя.
                     if _new_tokens < _cand_tokens or _cand_tokens < _new_tokens:
                         _matches.append(_cand)
+                if len(_matches) == 1 and self._same_text_as_library(record, _matches[0]['file_path']):
+                    # Текст книги совпадает с лежащей в библиотеке — это та же
+                    # книга, отличается только описание (авторы): дубль, а не
+                    # сверка (2026-11-26, решение пользователя: «Заступник»
+                    # Аржанова и Вольта при библиотечном «только Аржанов»).
+                    _old = _matches[0]
+                    self._log(
+                        f"  [{i+1}] ДУБЛИКАТ С ДРУГИМИ АВТОРАМИ: {record.file_path} — текст совпадает "
+                        f"с {_old['file_path']} (\"{_old['author']}\"), здесь \"{author}\""
+                    )
+                    self.stats['duplicates_found'] += 1
+                    duplicate_files_count += 1
+                    if self._delete_incoming(record):
+                        self.stats['duplicates_other_authors'] = self.stats.get('duplicates_other_authors', 0) + 1
+                    continue
                 if len(_matches) == 1:
                     _old = _matches[0]
                     self._log(
@@ -1917,6 +1935,35 @@ class SynchronizationService:
         self._log(f"Перемещение завершено: {len(moved_records)} файлов переместили")
         return moved_records
     
+    def _same_text_as_library(self, record, library_rel: str) -> bool:
+        """Текст поступающей книги совпадает с текстом книги в библиотеке
+        (fb2_body_text: без описания, тегов и картинок). Не прочиталось — False:
+        тогда решает ручная сверка."""
+        existing_path = self.library_path / Path(library_rel.replace('\\', '/'))
+        if not long_path(existing_path).exists() and existing_path.suffix.lower() == '.fb2':
+            existing_path = existing_path.with_name(existing_path.name + '.zip')  # запись БД — до сжатия
+        try:
+            incoming = fb2_body_text(read_fb2_bytes(self.last_scan_path / record.file_path))
+            existing = fb2_body_text(read_fb2_bytes(existing_path))
+        except (OSError, zipfile.BadZipFile):
+            return False
+        return bool(incoming) and incoming == existing
+
+    def _delete_incoming(self, record) -> bool:
+        """Удалить поступающий файл-дубль из исходной папки."""
+        try:
+            path = self.last_scan_path / record.file_path
+            if long_path(path).exists():
+                os.unlink(long_path(str(path)))
+                self._log("       ✓ Удален")
+                self.stats['duplicates_deleted'] = self.stats.get('duplicates_deleted', 0) + 1
+                return True
+            self._log("       ⚠️  Файл не найден для удаления")
+        except Exception as e:
+            self._log(f"       ✗ Ошибка при удалении: {str(e)}")
+            self.stats['errors'] += 1
+        return False
+
     def _fuller_than_library(self, record, dup_key) -> bool:
         """Поступающая книга больше по содержимому (без сжатия) каждой своей
         копии в библиотеке по записям БД с тем же ключом. Нет копий на диске —

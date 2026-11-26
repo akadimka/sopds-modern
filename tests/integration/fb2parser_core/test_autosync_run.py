@@ -580,7 +580,8 @@ def test_run_details_split_duplicates_and_compilation():
             {"outcome": "moved", "library_path": "Фантастика/Иванов Иван/Иванов Иван - Рассказ.fb2.zip"},
             {"outcome": "removed", "library_path": None}]
     d = run_details(known, {"duplicates_deleted": 7, "compilation_deletions": 5, "replaced": 1,
-                            "compile_result": {"ok": 3, "fail": 1}}, rows)
+                            "duplicates_other_authors": 1, "compile_result": {"ok": 3, "fail": 1}}, rows)
+    assert d["dup_other_authors"] == 1
     assert (d["series_extended"], d["series_new"], d["books_no_series"]) == (1, 1, 1)
     assert (d["dup_library"], d["dup_compilation"], d["replaced"]) == (2, 5, 1)
     assert (d["compiled"], d["compile_failed"], d["authors_new"]) == (3, 1, [])

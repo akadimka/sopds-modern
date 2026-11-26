@@ -16,7 +16,7 @@
     {% if r.s.replaced %}<li>♻ {% trans "Replaced with fuller versions:" %} {{ r.s.replaced }}</li>{% endif %}
     <li>🗑 {% trans "Removed as duplicates:" %} <strong>{{ r.s.removed|default:0 }}</strong>
         {% if r.has_details and r.s.removed %}<span style="color:var(--text-muted);">
-            ({% trans "already in the library:" %} {{ r.s.dup_library }}, {% trans "already inside a compilation:" %} {{ r.s.dup_compilation }})</span>{% endif %}
+            ({% trans "already in the library:" %} {{ r.s.dup_library }}{% if r.s.dup_other_authors %} — {% trans "of them with other authors in the description:" %} {{ r.s.dup_other_authors }}{% endif %}, {% trans "already inside a compilation:" %} {{ r.s.dup_compilation }})</span>{% endif %}
     </li>
     {% if r.has_details and r.s.compiled or r.s.compile_failed or r.s.compile_error %}
     <li>📦 {% trans "Compilation:" %} {% trans "compilations built:" %} {{ r.s.compiled|default:0 }}{% if r.s.compile_failed %}, {% trans "failed:" %} {{ r.s.compile_failed }}{% endif %}{% if r.s.compile_error %} — <span style="color:#c0392b;">{% trans "compilation crashed, it will be redone on the next run" %}</span>{% endif %}</li>
