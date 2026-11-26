@@ -119,9 +119,6 @@ class SettingsManager:
         # кому слать оповещения автосинхронизации: id учётных записей с привязанным
         # Telegram; None — все суперпользователи (docs/autosync-notifications-plan.md)
         "notify_users": None,
-        # кнопки выбора жанра в сообщениях о спорных порциях; выключают, когда
-        # нажатия принимает не этот сервер (один бот на два сервера)
-        "telegram_buttons": True,
     }
 
     def get_autosync_settings(self) -> dict:

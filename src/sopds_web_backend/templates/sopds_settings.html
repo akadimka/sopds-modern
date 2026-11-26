@@ -482,13 +482,7 @@
         {% empty %}
         <div class="s-hint">{% trans "Nobody has linked Telegram to the library bot yet — link it in the profile first." %}</div>
         {% endfor %}
-        <div class="s-hint">{% trans "The library bot sends them a private message with the run results and the batches waiting for a decision. Superusers also get the genre buttons and the Inbox link, other users only the messages. Only accounts that linked Telegram in their profile are listed. The superuser chat id above gets the notifications too." %}</div>
-    </div>
-
-    <div class="s-field">
-        <label class="s-check"><input type="checkbox" name="autosync_telegram_buttons"{% if autosync.telegram_buttons %} checked{% endif %}>
-            <span>{% trans "Genre buttons in Telegram" %}</span></label>
-        <div class="s-hint">{% trans "Turn off if the same bot is used by another server that runs the bot service: button presses go to that server and do not work here. Decide on the Inbox page instead." %}</div>
+        <div class="s-hint">{% trans "The library bot sends them one private message with the run results and the batches waiting for a decision. Superusers also get the Inbox link. Only accounts that linked Telegram in their profile are listed. The superuser chat id above gets the notifications too." %}</div>
     </div>
     {% endif %}
 

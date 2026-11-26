@@ -291,7 +291,7 @@ def test_notify_digest_once_and_admin_only_on_changes(tmp_path, monkeypatch):
 
     sent = notify(svc, svc.run(), client=tg)
 
-    assert sent == {"channel": "ok", "admin": "ok", "prompts": "ok"}
+    assert sent == {"channel": "ok", "admin": "ok"}
     channel = [t for c, t in tg.sent if c == "@news"]
     admin = [t for c, t in tg.sent if c == "42"]
     assert len(channel) == 1 and "Иванов Иван" in channel[0] and "Звезды" in channel[0]
@@ -372,32 +372,28 @@ def _detective_batch(watch):
                  "Загадка", 1)
 
 
-def _prompt_button(tg, genre):
-    for markup in tg.markups:
-        for row in (markup or {}).get("inline_keyboard", []):
-            for button in row:
-                if button["text"].endswith(genre) and "callback_data" in button:
-                    return button["callback_data"]
-    return None
+def _button_data(svc, batch, genre):
+    """Кнопка под сообщением, отправленным до 2026-11-26: новых сообщений с
+    кнопками нет, но нажатия под старыми бот обрабатывает."""
+    return "d:" + svc.journal.add_action(batch, genre)
 
 
-def test_prompt_with_genre_buttons_sent_once_per_batch(tmp_path, monkeypatch):
+def test_recipients_get_only_the_summary_without_per_batch_messages(tmp_path, monkeypatch):
+    """2026-11-26: по сообщению с кнопками на каждую порцию — слишком много;
+    получатель получает одно обобщённое сообщение со списком порций."""
     from fb2parser_core.autosync_service import notify
     svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
     _with_telegram(svc)
     _detective_batch(watch)
     tg = _FakeBotAPI()
 
-    notify(svc, svc.run(), client=tg)
+    sent = notify(svc, svc.run(), client=tg)
 
-    prompts = [t for (c, t) in tg.sent if c == "42" and "Ждёт решения" in t]
-    assert any("Новая порция" in t for t in prompts)
-    assert _prompt_button(tg, "Детектив", ).startswith("d:")
-    assert any("Во «Входящие»" in b["text"] for m in tg.markups if m for row in m["inline_keyboard"] for b in row)
-
-    tg2 = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg2)
-    assert not [t for (c, t) in tg2.sent if "Ждёт решения" in t]  # уже спрашивали
+    admin = [(t, m) for (c, t), m in zip(tg.sent, tg.markups) if c == "42"]
+    assert len(admin) == 1 and sent == {"channel": "ok", "admin": "ok"}
+    text, markup = admin[0]
+    assert "Ждут решения" in text and "Новая порция" in text and markup is None
+    assert not [t for (c, t) in tg.sent if "Ждёт решения" in t]
 
 
 def test_admin_button_press_syncs_whole_batch(tmp_path, monkeypatch):
@@ -407,8 +403,8 @@ def test_admin_button_press_syncs_whole_batch(tmp_path, monkeypatch):
     _with_telegram(svc)
     book = _detective_batch(watch)
     tg = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg)
-    data = _prompt_button(tg, "Детектив")
+    svc.run()
+    data = _button_data(svc, "Новая порция", "Детектив")
 
     bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
     bot.on_callback(svc, tg, {"id": "cb1", "from": {"id": 42}, "data": data,
@@ -427,8 +423,8 @@ def test_button_press_from_stranger_or_stale_key_does_nothing(tmp_path, monkeypa
     _with_telegram(svc)
     book = _detective_batch(watch)
     tg = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg)
-    data = _prompt_button(tg, "Детектив")
+    svc.run()
+    data = _button_data(svc, "Новая порция", "Детектив")
     bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
 
     bot.on_callback(svc, tg, {"id": "1", "from": {"id": 999}, "data": data, "message": {}})
@@ -504,8 +500,7 @@ def test_designated_recipient_gets_same_messages_without_buttons_and_inbox_link(
     assert any("Ждут решения" in t and "/fb2parser/inbox/" in t for t, _m in boss)
     assert any("Ждут решения" in t for t, _m in helper)
     assert not any("/fb2parser/inbox/" in t for t, _m in helper)                       # без ссылки
-    assert any(m and m.get("inline_keyboard") for t, m in boss if "Ждёт решения" in t)     # кнопки
-    assert all(m is None for t, m in helper)                                            # без кнопок
+    assert all(m is None for t, m in boss + helper)                                     # без кнопок
 
 
 def test_each_recipient_is_told_once_and_a_new_one_is_not_left_out(tmp_path, monkeypatch):
@@ -519,7 +514,7 @@ def test_each_recipient_is_told_once_and_a_new_one_is_not_left_out(tmp_path, mon
     notify(svc, svc.run(), client=tg, recipients=[("42", True), ("77", False), ("88", False)])
 
     assert {c for c, _t in tg.sent} == {"88"}            # старым — не повторять, новому — всё, что ждёт
-    assert any("Ждёт решения" in t for t, _m in _messages(tg, "88"))
+    assert any("Ждут решения" in t for t, _m in _messages(tg, "88"))
 
 
 def test_blocked_recipient_does_not_stop_the_others(tmp_path, monkeypatch):
@@ -671,23 +666,6 @@ def test_batch_progress_is_shown_next_to_its_title(tmp_path, monkeypatch, client
         views.inbox_job.reset()
 
 
-def test_buttons_turned_off_leave_superuser_only_the_inbox_link(tmp_path, monkeypatch):
-    """Один бот на два сервера: нажатия принимает другой сервер — кнопок жанра нет
-    (основной сервер, 2026-11-25), ссылка на «Входящие» остаётся."""
-    from fb2parser_core.autosync_service import notify
-    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
-    _with_telegram(svc)
-    svc.cfg.update(telegram_buttons=False)
-    _detective_batch(watch)
-    tg = _FakeBotAPI()
-
-    notify(svc, svc.run(), client=tg, recipients=[("42", True)])
-
-    assert _prompt_button(tg, "Детектив") is None
-    links = [b for m in tg.markups if m for row in m["inline_keyboard"] for b in row]
-    assert links and all("url" in b and "callback_data" not in b for b in links)
-
-
 def test_linked_superuser_can_press_a_button_from_their_own_chat(tmp_path, monkeypatch):
     from fb2parser_core.autosync_service import notify
     from fb2parser_core.telegram_bot import AdminBot
@@ -695,8 +673,8 @@ def test_linked_superuser_can_press_a_button_from_their_own_chat(tmp_path, monke
     _with_telegram(svc)
     book = _detective_batch(watch)
     tg = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg, recipients=[("55", True)])
-    data = _prompt_button(tg, "Детектив")
+    svc.run()
+    data = _button_data(svc, "Новая порция", "Детектив")
     bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor(),
                    can_decide=lambda tg_id: tg_id == 55)
 

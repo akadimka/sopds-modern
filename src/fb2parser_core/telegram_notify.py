@@ -317,27 +317,6 @@ def build_admin_report(summary: Dict[str, Any], pending: List[Dict[str, Any]], i
     return "\n".join(lines)
 
 
-PROMPT_UNITS = 8
-
-
-def build_batch_prompt(batch, options: List[str]) -> str:
-    """Сообщение админу о спорной порции (кнопки жанров — под ним).
-
-    batch — InboxBatch (name, books, units с author/series/files)."""
-    lines = [f"📥 <b>Ждёт решения:</b> {_e(batch.name)} — {batch.books} кн."]
-    for u in batch.units[:PROMPT_UNITS]:
-        who = _e(u.author or "—") + (f" / «{_e(u.series)}»" if u.series else "")
-        lines.append(f"• {who}: {len(u.files)} кн.")
-    if len(batch.units) > PROMPT_UNITS:
-        lines.append(f"… и ещё {len(batch.units) - PROMPT_UNITS}")
-    if options:
-        lines += ["", "Выберите жанр — он будет назначен <b>всей порции</b>, книги уйдут в библиотеку. "
-                      "Разные жанры для разных книг — во «Входящих»."]
-    else:
-        lines += ["", "Подсказки нет — выберите жанр во «Входящих»."]
-    return "\n".join(lines)
-
-
 def client_for(cfg: Dict[str, Any], timeout: float = 20.0) -> "TelegramClient":
     """Клиент по разделу настроек `autosync`: токен, прокси, адрес Bot API."""
     return TelegramClient(cfg.get("telegram_token", ""), cfg.get("telegram_proxy", ""), timeout=timeout,

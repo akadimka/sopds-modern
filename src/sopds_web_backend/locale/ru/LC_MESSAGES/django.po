@@ -2667,30 +2667,15 @@ msgstr ""
 
 #: sopds_web_backend/templates/sopds_settings.html
 msgid ""
-"The library bot sends them a private message with the run results and the "
-"batches waiting for a decision. Superusers also get the genre buttons and "
-"the Inbox link, other users only the messages. Only accounts that linked "
-"Telegram in their profile are listed. The superuser chat id above gets the "
-"notifications too."
+"The library bot sends them one private message with the run results and the "
+"batches waiting for a decision. Superusers also get the Inbox link. Only "
+"accounts that linked Telegram in their profile are listed. The superuser "
+"chat id above gets the notifications too."
 msgstr ""
-"Библиотечный бот присылает им в личку итог запуска и порции, ждущие решения."
-" Суперпользователи получают ещё кнопки выбора жанра и ссылку на «Входящие», "
-"остальные — только сообщения. В списке — только учётные записи, привязавшие "
-"Telegram в профиле. Chat id суперпользователя выше тоже получает оповещения."
-
-#: sopds_web_backend/templates/sopds_settings.html
-msgid "Genre buttons in Telegram"
-msgstr "Кнопки выбора жанра в Telegram"
-
-#: sopds_web_backend/templates/sopds_settings.html
-msgid ""
-"Turn off if the same bot is used by another server that runs the bot "
-"service: button presses go to that server and do not work here. Decide on "
-"the Inbox page instead."
-msgstr ""
-"Выключите, если этого же бота использует другой сервер, на котором работает "
-"служба бота: нажатия кнопок уходят туда и здесь не срабатывают. Решения "
-"тогда — на странице «Входящие»."
+"Библиотечный бот присылает им в личку одно сообщение: итог запуска и порции, "
+"ждущие решения. Суперпользователям — ещё ссылка на «Входящие». В списке — "
+"только учётные записи, привязавшие Telegram в профиле. Chat id "
+"суперпользователя выше тоже получает оповещения."
 
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
