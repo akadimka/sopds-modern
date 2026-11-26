@@ -2,6 +2,8 @@
 поиск (в т.ч. полка, дубли, книга по id, крошки автора и серии), подсказки,
 карточка книги, папки, главная страница и данные на каждой странице
 (счётчики, случайная книга, полка) — только видимые книги."""
+import re
+
 import pytest
 from django.urls import reverse
 
@@ -94,10 +96,10 @@ def test_catalog_folder_row_counts_visible_books(client, lib):
     книг; число — только по видимым книгам."""
     users, _, _ = lib
     _, admin = _page(client, users["admin"], "catalog")
-    assert "Тайник Бориса" in admin and "Total: 1 books." in admin
+    assert "Тайник Бориса" in admin and '<span class="sopdsitem-count">(1)</span>' in admin
     LibraryShare.objects.create(owner=users["boris"], grantee=users["anna"])
     _, anna = _page(client, users["anna"], "catalog")
-    assert "Тайник Бориса" in anna and "Total: 1 books." in anna
+    assert "Тайник Бориса" in anna and '<span class="sopdsitem-count">(1)</span>' in anna
 
 
 def test_main_page_books_block_is_a_link(client, lib):
@@ -217,3 +219,29 @@ def test_offline_page_lists_saved_books_without_server_data(client):
     assert page.status_code == 200
     html = page.content.decode("utf-8")
     assert 'id="offline-books"' in html and "sopds_offline_books" in html
+
+
+def test_genre_section_without_subsections_opens_books(client, lib):
+    """Жанр по папке библиотеки (поджанра нет): «Жанры» → раздел — сразу
+    список книг, а не страница из одной безымянной строки с числом книг;
+    в крошках — без пустого звена."""
+    from opds_catalog.models import Genre, bgenre
+    users, books, _ = lib
+    folder_genre = Genre.objects.create(genre="Без жанра", section="Без жанра", subsection="")
+    bgenre.objects.filter(book=books["anna"]).update(genre=folder_genre)
+    client.force_login(users["anna"])
+    _, genres = _page(client, users["anna"], "genre")
+    assert re.search(r'Без жанра</span>\s*<span class="sopdsitem-count">\(1\)</span>', genres)
+    response = client.get(reverse("web:genre"), {"section": folder_genre.pk})
+    assert response.status_code == 302 and f"searchterms={folder_genre.pk}" in response.url
+    books_page = client.get(response.url)
+    assert "Дневник Анны" in books_page.content.decode()
+    assert [c["label"] for c in books_page.context["breadcrumbs"]][-2:] == ["Genres", "Без жанра"]
+
+
+def test_genre_section_with_subsections_lists_them(client, lib):
+    users, _, _ = lib
+    from opds_catalog.models import Genre
+    section_id = Genre.objects.get(genre="sf").pk
+    _, html = _page(client, users["admin"], "genre", section=section_id)
+    assert '<span class="sopdsitem-key">Космос</span>' in html

@@ -9,12 +9,12 @@
     {% if not parent_id %}
     <a class="sopdsitem-link" href="{% url "web:genre" %}?section={{g.section_id}}">
         <span class="sopdsitem-key">{{ g.section }}</span>
-        <span class="sopdsitem-count">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
+        <span class="sopdsitem-count">({{ g.num_book }})</span>
     </a>
     {% else %}
     <a class="sopdsitem-link" href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">
-        <span class="sopdsitem-key">{{ g.name }}</span>
-        <span class="sopdsitem-count">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
+        <span class="sopdsitem-key">{{ g.subsection|default:g.genre }}</span>
+        <span class="sopdsitem-count">({{ g.num_book }})</span>
     </a>
     {% endif %}
 </div>

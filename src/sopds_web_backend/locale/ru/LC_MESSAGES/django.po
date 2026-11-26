@@ -41,11 +41,6 @@ msgstr "Выход"
 msgid "Home"
 msgstr "Главная"
 
-#: sopds_web_backend/templates/sopds_authors.html:7
-#, python-format
-msgid "Total: %(a_book_count)s books."
-msgstr "Всего: %(a_book_count)s книг."
-
 #: sopds_web_backend/templates/sopds_authors.html:15
 #: sopds_web_backend/templates/sopds_books.html:144
 #: sopds_web_backend/templates/sopds_catalogs.html:39
@@ -318,32 +313,6 @@ msgstr "Авторы"
 #: sopds_web_backend/views.py:618 sopds_web_backend/views.py:628
 msgid "Genres"
 msgstr "Жанры"
-
-#: sopds_web_backend/templates/sopds_selectauthor.html:14
-#, python-format
-msgid "Total: %(chars_cnt)s authors."
-msgstr "Всего: %(chars_cnt)s авторов."
-
-#: sopds_web_backend/templates/sopds_catalogs.html:40
-#: sopds_web_backend/templates/sopds_selectbook.html:14
-#, python-format
-msgid "Total: %(chars_cnt)s books."
-msgstr "Всего: %(chars_cnt)s книг."
-
-#: sopds_web_backend/templates/sopds_selectgenres.html:14
-#, python-format
-msgid "Total: %(g_num_book)s books."
-msgstr "Всего: %(g_num_book)s книг."
-
-#: sopds_web_backend/templates/sopds_selectseries.html:14
-#, python-format
-msgid "Total: %(chars_cnt)s series."
-msgstr "Всего: %(chars_cnt)s серий."
-
-#: sopds_web_backend/templates/sopds_series.html:7
-#, python-format
-msgid "Total: %(s_book_count)s books."
-msgstr "Всего: %(s_book_count)s книг."
 
 #: sopds_web_backend/templates/sopds_top.html:19
 #: sopds_web_backend/views.py:708

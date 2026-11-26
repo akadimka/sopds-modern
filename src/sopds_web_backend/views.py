@@ -219,7 +219,9 @@ def SearchBooksView(request):
                 section = genre.section
                 subsection = genre.subsection
                 crumbs = [genres_root, {"label": section, "url": ""}]
-                if subsection.lower() != section.lower():
+                if subsection.strip() and subsection.lower() != section.lower():
+                    # Раздел — ссылкой назад к его поджанрам.
+                    crumbs[1]["url"] = f"{genre_url}?section={genre.id}"
                     crumbs.append({"label": subsection, "url": ""})
                 args["breadcrumbs"] = crumbs
             except Exception:
@@ -601,9 +603,10 @@ def GenresView(request):
     else:
         section = genre_services.get_genre_section(section_id)
         items = list(genre_services.get_genre_details(section_id, user=request.user))
-        # If the section has only one generic subsection (subsection == section name),
-        # skip the redundant intermediate page and go straight to the books list.
-        if len(items) == 1 and items[0]["subsection"].lower() == section.lower():
+        # Раздел с одним поджанром, который ничего не уточняет (пустой — жанр по
+        # папке библиотеки, — или совпадает с разделом), — сразу список книг,
+        # без промежуточной страницы из одной строки.
+        if len(items) == 1 and items[0]["subsection"].strip().lower() in ("", section.lower()):
             return redirect(
                 reverse("web:searchbooks") + f"?searchtype=g&searchterms={items[0]['id']}"
             )

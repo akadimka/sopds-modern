@@ -8,7 +8,7 @@
      hx-swap="outerHTML">
 {%  for a in authors %}
 <div class="cell sopdsitem">
-		<a href="{% url "web:searchbooks" %}?searchtype=a&searchterms={{a.id}}"><b>{{ a.full_name }}</b></a> <span style="font-size:80%;">{% blocktrans with a_book_count=a.book_count %}Total: {{ a_book_count }} books.{% endblocktrans %}</span>
+		<a href="{% url "web:searchbooks" %}?searchtype=a&searchterms={{a.id}}"><b>{{ a.full_name }}</b></a> <span style="font-size:80%;">({{ a.book_count }})</span>
 </div>
 {% endfor %}
 

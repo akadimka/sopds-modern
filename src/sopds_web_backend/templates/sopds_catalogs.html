@@ -37,7 +37,7 @@ function openBookCard(bookId) {
     {# Папка — строкой, как разделы на страницах «Жанры» и «Авторы». #}
     <a class="sopdsitem-link" href="{% url "web:catalog" %}?cat={{b.id}}">
         <span class="sopdsitem-key">{{ b.title }}</span>
-        <span class="sopdsitem-count">{% blocktrans with chars_cnt=b.book_count %}Total: {{ chars_cnt }} books.{% endblocktrans %}</span>
+        <span class="sopdsitem-count">({{ b.book_count }})</span>
     </a>
 {% else %}
     <div class="sopds-cat-thumb" onclick="openBookCard({{ b.id }})" style="cursor:pointer;">
