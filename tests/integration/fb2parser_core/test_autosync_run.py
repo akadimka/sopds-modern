@@ -243,6 +243,8 @@ def test_inbox_page_and_decide_view(tmp_path, monkeypatch, client, settings):
     page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
     unit = svc.inbox()[0].units[0]
     assert "Чужая порция" in page and f'name="unit_{unit.uid}"' in page
+    assert unit.codes == ["unknown_code"]                    # что сказала сама книга
+    assert "<code>unknown_code</code>" in page
 
     empty = client.post(reverse("fb2parser:inbox_decide"), {"batch": "Чужая порция"}).content.decode("utf-8")
     assert "callout alert" in empty and doubtful.exists()
@@ -570,6 +572,22 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
     assert 'id="autosync-results"' in page and "Чужая порция" in page and "Петров Петр" in page
     assert "Earlier runs" in page                        # предыдущий запуск — в таблице ниже
+
+
+def test_inbox_explains_why_a_confident_genre_was_not_filed():
+    """«93% Фантастика, а не разложено — почему?» (2026-11-26): подробная
+    причина под короткой."""
+    from fb2parser_web.views import _inbox_blocker_detail
+    u = SimpleNamespace(blocker="no_anchor", genre="Фантастика", share=0.93, codes=["other"],
+                        signals={"batch:Фантастика": 5.9, "codes:Фантастика": 3.3, "codes:Современная проза": 0.7})
+    text = str(_inbox_blocker_detail(u))
+    assert "Фантастика 93%" in text and "(other)" in text and "nothing to rely on" in text
+    u.codes = []
+    assert "has no genre codes" in str(_inbox_blocker_detail(u))
+    u.blocker = "low_share"
+    assert str(_inbox_blocker_detail(u)) == "The votes are split: Фантастика 93%, Современная проза 7%."
+    u.blocker = "sync_kept"
+    assert _inbox_blocker_detail(u) == ""
 
 
 def test_run_details_split_duplicates_and_compilation():

@@ -3984,6 +3984,39 @@ def _inbox_genre_choices(svc):
     return names
 
 
+def _inbox_blocker_detail(u):
+    """Почему не решено автоматически — подробно, для строки «Входящих»
+    (2026-11-26: «93% Фантастика, а не разложено — почему?»)."""
+    totals = {}
+    for key, w in (u.signals or {}).items():
+        genre = key.partition(":")[2]
+        totals[genre] = totals.get(genre, 0.0) + w
+    codes = ", ".join(u.codes or [])
+    if u.blocker == "no_anchor":
+        if codes:
+            return _("%(genre)s %(share)s%%, but there is nothing to rely on: no series of this author "
+                     "in the library, no known publisher series, and the genre codes of the book "
+                     "(%(codes)s) do not reliably mean one genre.") % {
+                "genre": u.genre, "share": round((u.share or 0) * 100), "codes": codes}
+        return _("%(genre)s %(share)s%%, but there is nothing to rely on: no series of this author "
+                 "in the library, no known publisher series, and the book has no genre codes.") % {
+            "genre": u.genre, "share": round((u.share or 0) * 100)}
+    if u.blocker == "low_share" and totals:
+        whole = sum(totals.values()) or 1.0
+        split = ", ".join(f"{g} {round(w / whole * 100)}%"
+                          for g, w in sorted(totals.items(), key=lambda kv: -kv[1])[:3])
+        return _("The votes are split: %(split)s.") % {"split": split}
+    if u.blocker == "low_score" and totals:
+        return _("Even the leader has too few votes: %(genre)s — %(score)s.") % {
+            "genre": u.genre, "score": f"{max(totals.values()):.1f}"}
+    if u.blocker == "no_signal":
+        if codes:
+            return _("The genre codes of the book (%(codes)s) are not known to the library yet, "
+                     "and neither its series nor its author is in the library.") % {"codes": codes}
+        return _("The book has no genre codes, and neither its series nor its author is in the library.")
+    return ""
+
+
 def _inbox_signal_text(signals):
     shown = sorted(((w, k) for k, w in signals.items() if w >= 0.5), reverse=True)[:3]
     parts = []
@@ -4021,6 +4054,7 @@ def inbox(request):
     for b in batches:
         for u in b.units:
             u.blocker_text = _INBOX_BLOCKERS.get(u.blocker, u.blocker)
+            u.blocker_detail = _inbox_blocker_detail(u)
             u.signal_text = _inbox_signal_text(u.signals)
             u.title = u.series or (os.path.basename(u.files[0]) if len(u.files) == 1 else "")
     last = svc.journal.last_run(modes=("dry_run", "auto"))

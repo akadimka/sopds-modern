@@ -244,6 +244,9 @@ class InboxUnit:
     blocker: str
     signals: Dict[str, float]
     files: List[str] = field(default_factory=list)
+    # коды <genre> из файлов единицы (чаще встречающиеся — первыми): видно, что
+    # сказала сама книга, прежде чем решала память библиотеки
+    codes: List[str] = field(default_factory=list)
 
     @property
     def uid(self) -> str:
@@ -260,6 +263,17 @@ class InboxBatch:
     @property
     def books(self) -> int:
         return sum(len(u.files) for u in self.units)
+
+
+def _file_codes(root: Path, files: List[str]) -> List[str]:
+    """Коды жанров из заголовков файлов (не прочитался — пропускаем)."""
+    seen: Counter = Counter()
+    for rel in files:
+        try:
+            seen.update(dict.fromkeys(read_evidence(root / rel).codes, 1))
+        except Exception:
+            continue
+    return [c for c, _n in seen.most_common()]
 
 
 def _signals_json(d: UnitDecision) -> Dict[str, float]:
@@ -569,6 +583,7 @@ class AutosyncService:
         batches: Dict[str, InboxBatch] = {}
         for unit in units.values():
             unit.files.sort()
+            unit.codes = _file_codes(root, unit.files)
             batches.setdefault(unit.batch, InboxBatch(unit.batch)).units.append(unit)
         for b in batches.values():
             b.units.sort(key=lambda u: (-len(u.files), u.author, u.series))
