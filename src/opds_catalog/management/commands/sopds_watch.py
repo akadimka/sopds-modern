@@ -106,7 +106,11 @@ class LibraryDirtyTracker:
         # Общая блокировка в корне библиотеки обновляется раз в минуту, пока
         # идёт синхронизация или чистка: это не книга — иначе корень библиотеки
         # был бы «грязным» каждую минуту, а очередь никогда не утихала бы.
-        if not is_directory and os.path.basename(path) == LIBRARY_LOCK_NAME:
+        # Обновляется она через временный «.sopds-sync.lock.<pid>.tmp» и
+        # переименование — его тоже пропускаем (2026-11-26: корень пересканировался
+        # каждые ~2 минуты синхронизации, 12 тыс. транзакций подряд, и запись
+        # владельцев и рейтингов падала с «database is locked»).
+        if not is_directory and os.path.basename(path).startswith(LIBRARY_LOCK_NAME):
             return
         d = path if is_directory else os.path.dirname(path)
         with self._lock:
@@ -131,6 +135,12 @@ def _make_event_handler(tracker: LibraryDirtyTracker):
             tracker.mark(event.src_path, event.is_directory)
 
         def on_modified(self, event):
+            # «Изменилась папка» приходит вместе с событиями о том, что в ней
+            # создано/удалено/переименовано, — те и так помечают нужное. Сама по
+            # себе она пересканировала бы папку целиком (новая папка автора —
+            # вся «Фантастика», файл блокировки — вся библиотека).
+            if event.is_directory:
+                return
             tracker.mark(event.src_path, event.is_directory)
 
         def on_deleted(self, event):

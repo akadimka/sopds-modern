@@ -146,3 +146,38 @@ class TestOperations:
         ownership.release("b.fb2", file_exists=False)
         assert list(LibraryOwnershipLog.objects.order_by("id").values_list("action", "rel_path", "target_rel_path")) == [
             ("assign", "a.fb2", ""), ("transfer", "a.fb2", "b.fb2"), ("release", "b.fb2", "")]
+
+
+def test_hooks_retry_when_the_database_is_locked(monkeypatch):
+    """2026-11-26: запись владельцев падала с «database is locked», пока
+    sopds_watch пересканировал библиотеку, — теперь повторяется."""
+    from django.db import OperationalError
+
+    hooks = ownership.LibraryOwnershipHooks()
+    monkeypatch.setattr(ownership.time, "sleep", lambda _s: None)
+    calls = []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) < 3:
+            raise OperationalError("database is locked")
+        return "ok"
+
+    assert hooks._safe("assign", flaky) == "ok" and len(calls) == 3
+
+    calls.clear()
+
+    def always_locked():
+        calls.append(1)
+        raise OperationalError("database is locked")
+
+    assert hooks._safe("assign", always_locked) is None
+    assert len(calls) == len(hooks.LOCKED_RETRY_DELAYS) + 1
+
+    calls.clear()
+
+    def other_error():
+        calls.append(1)
+        raise OperationalError("no such table")
+
+    assert hooks._safe("assign", other_error) is None and len(calls) == 1   # не «занято» — не повторяем
