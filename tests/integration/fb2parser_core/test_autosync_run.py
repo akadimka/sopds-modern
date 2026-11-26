@@ -552,7 +552,7 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     d = result.details
     assert (d["series_extended"], d["books_extended"], d["series_new"], d["authors_new"]) == (1, 1, 0, [])
     assert d["series"] == [{"author": "Иванов Иван", "series": "Звезды", "books": 1, "state": "extended",
-                            "new_author": False}]
+                            "new_author": False, "new_names": []}]
     assert d["compiled"] == 2
     runs = svc.journal.recent_runs()
     assert [r["mode"] for r in runs] == [MODE_AUTO] and runs[0]["summary"]["series_extended"] == 1
@@ -584,6 +584,69 @@ def test_run_details_split_duplicates_and_compilation():
     assert (d["series_extended"], d["series_new"], d["books_no_series"]) == (1, 1, 1)
     assert (d["dup_library"], d["dup_compilation"], d["replaced"]) == (2, 5, 1)
     assert (d["compiled"], d["compile_failed"], d["authors_new"]) == (3, 1, [])
+
+
+def test_new_authors_are_counted_by_name_not_by_coauthor_folder():
+    """Папка соавторов «Абрамов Андрей, Карелин Сергей»: новый — только Абрамов,
+    Карелин уже был в библиотеке (на основном сервере 2026-11-26 «новыми
+    авторами» шли пары соавторов, Карелин — восемь раз)."""
+    from fb2parser_core.autosync_service import run_details
+    known = (set(), {"Карелин Сергей", "Иванов Иван, Карелин Сергей"})
+    rows = [{"outcome": "moved", "library_path": "Фантастика/Абрамов Андрей, Карелин Сергей/Цикл/a.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Карелин Сергей, Фарг Вадим/Цикл 2/b.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Иванов Иван/c.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Абрамов Андрей/d.fb2.zip"}]
+    d = run_details(known, {}, rows)
+    assert d["authors_new"] == ["Абрамов Андрей", "Фарг Вадим"]
+    flags = {s["author"]: s["new_names"] for s in d["series"]}
+    assert flags["Иванов Иван"] == [] and flags["Карелин Сергей, Фарг Вадим"] == ["Фарг Вадим"]
+
+
+@pytest.mark.django_db
+def test_batch_progress_is_shown_next_to_its_title(tmp_path, monkeypatch, client, settings):
+    """Прогресс решения по порции — рядом с её заголовком (порция может быть
+    внизу страницы), общий статус наверху обновляется вместе с ним."""
+    from django.contrib.auth.models import User
+    from django.urls import reverse
+
+    import fb2parser_web.fb2parser_bridge as bridge
+    import fb2parser_web.views as views
+
+    settings.STORAGES = {**settings.STORAGES,
+                         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    svc.run()
+    monkeypatch.setattr(bridge, "get_autosync_service", lambda: svc)
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
+    unit = svc.inbox()[0].units[0]
+
+    page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+    assert 'id="inbox-status-1"' in page and 'hx-target="#inbox-status-1"' in page
+    assert 'name="slot" value="1"' in page
+
+    monkeypatch.setattr(views, "threading", SimpleNamespace(Thread=lambda **_k: SimpleNamespace(start=lambda: None)))
+    try:
+        started = client.post(reverse("fb2parser:inbox_decide"),
+                              {"batch": "Чужая порция", "slot": "1", f"unit_{unit.uid}": "Детектив"}).content.decode()
+        assert 'id="inbox-status-1"' in started and "?slot=1" in started      # опрашивает сам себя
+        assert 'id="inbox-status" hx-swap-oob="true"' in started             # и обновляет общий наверху
+        assert "Чужая порция" in started
+
+        views.inbox_job.update(current="Синхронизация 1 порций...")
+        polled = client.get(reverse("fb2parser:inbox_status") + "?slot=1").content.decode()
+        assert "Синхронизация 1 порций" in polled and 'id="inbox-status-1"' in polled
+
+        again = client.post(reverse("fb2parser:inbox_decide"),
+                            {"batch": "Чужая порция", "slot": "1", f"unit_{unit.uid}": "Детектив"}).content.decode()
+        assert "?slot=1" in again                                            # повторное нажатие — тот же прогресс
+
+        reloaded = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+        assert "?slot=1" in reloaded                                         # после перезагрузки — у порции
+        top = reloaded.split('id="inbox-status"', 1)[1].split(">", 1)[0]
+        assert "hx-trigger" not in top                                       # опрашивает один — статус порции
+    finally:
+        views.inbox_job.finish()
+        views.inbox_job.reset()
 
 
 def test_buttons_turned_off_leave_superuser_only_the_inbox_link(tmp_path, monkeypatch):

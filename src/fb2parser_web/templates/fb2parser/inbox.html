@@ -34,7 +34,7 @@
     </div>
 </div>
 
-{% include "fb2parser/inbox_status.html" %}
+{% if batch_polls %}{% include "fb2parser/inbox_status.html" with poll=False %}{% else %}{% include "fb2parser/inbox_status.html" %}{% endif %}
 
 {% if runs %}
 {% with r=runs.0 %}
@@ -117,11 +117,13 @@
 <div class="card">
     <div class="card-divider">
         <strong>{{ b.name }}</strong>&nbsp;—&nbsp;{% blocktrans count n=b.books %}{{ n }} book{% plural %}{{ n }} books{% endblocktrans %}
+        &nbsp;{% if batch_polls and state.batch == b.name %}{% include "fb2parser/inbox_status.html" with slot=forloop.counter|stringformat:"d" %}{% else %}<span id="inbox-status-{{ forloop.counter }}"></span>{% endif %}
     </div>
     <div class="card-section">
-        <form hx-post="{% url 'fb2parser:inbox_decide' %}" hx-target="#inbox-status" hx-swap="outerHTML">
+        <form hx-post="{% url 'fb2parser:inbox_decide' %}" hx-target="#inbox-status-{{ forloop.counter }}" hx-swap="outerHTML">
             {% csrf_token %}
             <input type="hidden" name="batch" value="{{ b.name }}">
+            <input type="hidden" name="slot" value="{{ forloop.counter }}">
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
                 <span>{% trans "For every row:" %}</span>
                 <select class="inbox-all" style="max-width:20rem; margin:0;">
