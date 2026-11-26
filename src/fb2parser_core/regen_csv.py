@@ -1665,6 +1665,19 @@ class RegenCSVService:
             _log.info(f"[POST-CHECK] Linked {_count} base-arc books into named series")
             self.logger.log(f"[OK] POST-CHECK: Linked {_count} base-arc books into named series")
 
+    @staticmethod
+    def _names_book_author(text: str, author: str) -> bool:
+        """В `text` есть фамилия автора книги, в любом падеже («Бушкова»
+        при «Бушков Александр»). Фамилия — первое слово каждого автора
+        (формат «Фамилия Имя»), не короче 4 букв."""
+        words = re.findall(r'\w+', (text or '').lower().replace('ё', 'е'))
+        for name in (author or '').split(','):
+            parts = name.split()
+            surname = parts[0].lower().replace('ё', 'е') if parts else ''
+            if len(surname) >= 4 and any(w.startswith(surname) for w in words):
+                return True
+        return False
+
     def _postcheck_clear_universe_keyword_series(self) -> None:
         """Очищает серию, если это голое название франшизы/поджанра-вселенной
         (`series_universe_keywords` в app_settings.json), не подтверждённое
@@ -1745,6 +1758,11 @@ class RegenCSVService:
                 _arc_from_meta = _ms
             _arc_norm = self._norm_for_series_cmp(_arc_from_meta)
             if not _arc_norm or (_kw_hit and _arc_norm == _kw_hit):
+                continue
+            # «Рассказы Александра Бушкова» минус франшиза «Рассказы» —
+            # «Александра Бушкова»: имя автора, а не дуга. 19 рассказов
+            # Бушкова получали эту серию (Test1, 2026-11-26).
+            if _kw_hit and self._names_book_author(_arc_from_meta, _r.proposed_author):
                 continue
             _author_norm = self._norm_for_series_cmp(_r.proposed_author or '')
             _key = (_author_norm, _arc_norm)

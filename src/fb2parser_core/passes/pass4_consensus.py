@@ -37,6 +37,9 @@ class Pass4Consensus:
     - empty string: Only undetermined files get new consensus
     """
 
+    # Больше соавторов в метаданных — сборник/журнал: автор остаётся из папки.
+    MAX_METADATA_COAUTHORS = 3
+
     # Служебные слова, которыми кончается обрывок названия («Назад в»),
     # а не подсерия («Чернильный маг») — см. _dotted_series_to_subseries.
     _SERIES_FRAGMENT_TAIL_WORDS = frozenset(
@@ -1900,6 +1903,12 @@ class Pass4Consensus:
                 if key not in _seen:
                     _seen.add(key)
                     _uniq.append(a)
+            # Четыре и больше авторов — сборник или журнал, а не соавторство
+            # (решение пользователя 2026-11-26): «Бушков Александр\Сборники\
+            # Румбы фантастики. 1988 год. Том I» с 13 авторами в метаданных
+            # получал автором их всех. Автор остаётся из папки.
+            if len(_uniq) > self.MAX_METADATA_COAUTHORS:
+                return None
             return _uniq if len(_uniq) >= 2 else None
 
         _folder_author_widened = 0
