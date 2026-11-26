@@ -686,6 +686,20 @@ class SynchronizationService:
                  and (genre_dir / d / series).is_dir()]
         return found[0] if len(found) == 1 else author
 
+    def _existing_child_variant(self, parent: Path, name: str) -> str:
+        """Имя уже существующей подпапки `parent`, совпадающей с `name` без
+        учёта регистра и «ё», иначе `name`. Точное совпадение — сразу `name`;
+        несколько вариантов — не решаем (`name`). Linux различает регистр, и
+        «Тайный город» ложился рядом с «Тайный Город» отдельной серией."""
+        try:
+            if (parent / name).is_dir() or not parent.is_dir():
+                return name
+            key = self._norm_text(name)
+            found = [d.name for d in parent.iterdir() if d.is_dir() and self._norm_text(d.name) == key]
+        except OSError:
+            return name
+        return found[0] if len(found) == 1 else name
+
     @staticmethod
     def _word_set_key(name: str) -> str:
         return ' '.join(sorted(re.findall(r'\w+', (name or '').lower().replace('ё', 'е'))))
@@ -1065,8 +1079,8 @@ class SynchronizationService:
             author_dir = self._existing_author_variant(genre, author)
             folder = Path(library) / genre / author_dir
             if display_root:
-                folder = folder / display_root
-            folder = folder / series
+                folder = folder / self._existing_child_variant(folder, display_root)
+            folder = folder / self._existing_child_variant(folder, series)
             if not folder.is_dir():
                 continue
             books = sum(1 for p in folder.rglob('*') if is_book_file(p.name) and p.is_file())
@@ -1795,14 +1809,13 @@ class SynchronizationService:
             try:
                 genre, author, display_root, series, subseries = folder_structure[record.file_path]
 
-                # Build target path
+                # Build target path. Папка обёртки/серии/подсерии, которая уже
+                # есть с другим регистром или «ё» («Тайный Город» при входящем
+                # «Тайный город», 2026-11-26), — она же, а не соседняя новая.
                 target_dir = self.library_path / genre / author
-                if display_root:
-                    target_dir = target_dir / display_root
-                if series:
-                    target_dir = target_dir / series
-                if subseries:
-                    target_dir = target_dir / subseries
+                for _part in (display_root, series, subseries):
+                    if _part:
+                        target_dir = target_dir / self._existing_child_variant(target_dir, _part)
 
                 # Path traversal guard: ensure target stays inside library_path
                 if not is_within(target_dir, self.library_path):
