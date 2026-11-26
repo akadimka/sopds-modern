@@ -196,12 +196,23 @@ class OutageDetector:
     ошибок подряд набралось OUTAGE_STREAK (главная жива, но поиск лежит).
     При сбое фетчер не записывает ошибку книге, а делает долгую паузу
     и повторяет ту же книгу.
+
+    `probe_url` — простой поисковый запрос, который на живом сайте отвечает
+    200. Серия ошибок при ответившем пробном поиске — ошибки самих книг, а не
+    сбой: ошибка пишется книге, счёт начинается заново. Реальный случай
+    (litmarket.ru, 2026-11-25): после перезапуска фетчер подряд повторял
+    книги с прошлыми ошибками — поиск litmarket стабильно отвечает 500 на
+    некоторые запросы («Этика. О Боге, человеке и его счастье») — набрал
+    10 ошибок и 13 часов «ждал окончания сбоя» на одной книге: счёт
+    сбрасывала только удача, а у той же книги удачи не бывает.
     """
 
-    def __init__(self, root_url: str, user_agent: str, streak: int = OUTAGE_STREAK):
+    def __init__(self, root_url: str, user_agent: str, streak: int = OUTAGE_STREAK,
+                 probe_url: str = ""):
         self.root_url = root_url
         self.user_agent = user_agent
         self.streak = streak
+        self.probe_url = probe_url
         self.errors_in_row = 0
 
     def is_outage(self, error: bool) -> bool:
@@ -209,7 +220,12 @@ class OutageDetector:
             self.errors_in_row = 0
             return False
         self.errors_in_row += 1
-        return self.errors_in_row >= self.streak or site_is_down(self.root_url, self.user_agent)
+        if self.errors_in_row < self.streak:
+            return site_is_down(self.root_url, self.user_agent)
+        if self.probe_url and not site_is_down(self.probe_url, self.user_agent):
+            self.errors_in_row = 0
+            return False
+        return True
 
 
 def pause_for_outage(source: str, book, log) -> None:

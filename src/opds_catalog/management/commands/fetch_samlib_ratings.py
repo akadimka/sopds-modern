@@ -50,6 +50,8 @@ class Command(BaseCommand):
     _SLEEP_MIN = 15
     _SLEEP_MAX = 30
     _ROOT_URL = "http://samlib.ru/"  # проверка «сайт лежит?» (баг №167)
+    # Пробный поиск: отвечает — серия ошибок не сбой сайта, а ошибки книг.
+    _PROBE_URL = "http://samlib.ru/cgi-bin/seek?FIND=%CB%E5%EA%E0%F0%FC&PLACE=index&JANR=0&TYPE=0"
     _SLEEP_IDLE = 86400    # 24 часа когда всё обработано
 
     def handle(self, *args, **options):
@@ -158,7 +160,7 @@ class Command(BaseCommand):
     def _outage(self):
         from opds_catalog.ratings_fetchers import OutageDetector
         if not hasattr(self, "_outage_detector"):
-            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA)
+            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA, probe_url=self._PROBE_URL)
         return self._outage_detector
 
     def _fetch_by_series(self, book):

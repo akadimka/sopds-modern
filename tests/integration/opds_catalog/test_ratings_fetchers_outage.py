@@ -157,3 +157,71 @@ def test_errored_books_are_retried_after_a_day(module, fetch_method, error, mode
 
     new = _make_book(catalog, "e")
     assert next_book_to_fetch(rel, stale_days) == new             # книга без результата — первой
+
+
+# --- серия ошибок при живом пробном поиске (2026-11-26) ---------------------------
+# litmarket.ru: после перезапуска фетчер подряд повторял книги с прошлыми
+# ошибками (поиск отвечает 500 на некоторые запросы), набрал 10 ошибок и
+# 13 часов «ждал окончания сбоя» на одной книге — счёт сбрасывала только
+# удача, а у той же книги её не бывает.
+
+def test_streak_with_working_probe_search_is_not_an_outage(monkeypatch):
+    monkeypatch.setattr(ratings_fetchers, "site_is_down", lambda url, ua: False)
+    detector = OutageDetector("https://x/", "ua", streak=3, probe_url="https://x/search?q=a")
+    assert [detector.is_outage(True) for _ in range(7)] == [False] * 7
+
+
+def test_streak_with_failing_probe_search_is_an_outage(monkeypatch):
+    monkeypatch.setattr(ratings_fetchers, "site_is_down", lambda url, ua: "search" in url)
+    detector = OutageDetector("https://x/", "ua", streak=3, probe_url="https://x/search?q=a")
+    assert [detector.is_outage(True) for _ in range(4)] == [False, False, True, True]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("module, fetch_method, error, model, rel, stale_days", _FETCHERS)
+def test_fetcher_does_not_get_stuck_on_a_failing_book(module, fetch_method, error, model, rel, stale_days,
+                                                      monkeypatch, catalog):
+    probes = []
+    monkeypatch.setattr(ratings_fetchers, "site_is_down", lambda url, ua: probes.append(url) or False)
+    cmd = _command(module, fetch_method, error, monkeypatch)
+    books = [_make_book(catalog, f"b{i}") for i in range(ratings_fetchers.OUTAGE_STREAK + 2)]
+
+    assert [_process(cmd, module, b)[0] for b in books] == [200] * len(books)
+    assert model.objects.filter(fetch_error=True).count() == len(books)
+    assert cmd._PROBE_URL in probes
+
+
+@pytest.mark.parametrize("title, short", [
+    ("Второй шанс для Лекаря (Тетралогия)", "Второй шанс для Лекаря"),
+    ("Этика. О Боге, человеке и его счастье", "Этика"),
+    ("Русский в Англии: Самоучитель по беллетристике", "Русский в Англии"),
+    ("Мир - война", "Мир"),
+    ("Лекарь", None),
+    ("(Не)идеальная пара", None),
+])
+def test_litmarket_short_title(title, short):
+    from opds_catalog.management.commands.fetch_litmarket_ratings import _short_title
+    assert _short_title(title) == short
+
+
+def test_litmarket_retries_short_title_after_500(monkeypatch):
+    from opds_catalog.management.commands.fetch_litmarket_ratings import Command
+    cmd = Command()
+    queries = []
+
+    def fake_fetch(url):
+        import urllib.parse
+        q = urllib.parse.unquote(url.split("query=", 1)[1])
+        queries.append(q)
+        if q != "Второй шанс для Лекаря":
+            return "", 500
+        return ('<div class="item" data-book-id="1"><div class="card-author">'
+                '<a href="/a">Аржанов Алексей</a></div><div class="card-name">'
+                '<a href="/books/vtoroy-shans">Второй шанс для Лекаря</a></div>'
+                '<span class="rating-sticker"><i></i> 42</span></div>'), 200
+
+    monkeypatch.setattr(cmd, "_fetch", fake_fetch)
+    likes, _reads, url, error = cmd._fetch_rating("Аржанов Алексей", "Второй шанс для Лекаря (Тетралогия)")
+    assert queries == ["Аржанов Алексей Второй шанс для Лекаря (Тетралогия)",
+                       "Второй шанс для Лекаря (Тетралогия)", "Второй шанс для Лекаря"]
+    assert (likes, url, error) == (42, "/books/vtoroy-shans", False)

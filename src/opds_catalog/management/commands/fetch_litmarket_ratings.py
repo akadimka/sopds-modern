@@ -31,6 +31,22 @@ _LIKES_RE = re.compile(r'rating-sticker">\s*<i[^>]*></i>\s*(\d+)')
 _VIEWS_RE = re.compile(r'views-sticker">\s*<i[^>]*></i>\s*([\d.,]+)\s*([kKmM]?)')
 
 
+_TITLE_CUT_RE = re.compile(r'\s*(?:[.:;(\[«]|\s[-–—]\s)')
+
+
+def _short_title(title):
+    """Начало названия — до первой точки, двоеточия, скобки или тире; None,
+    если короче не стало. Поиск litmarket.ru отвечает 500 и на одно название
+    у части книг («Второй шанс для Лекаря (Тетралогия)», «Этика. О Боге,
+    человеке и его счастье», проверено 2026-11-26), а на его начало —
+    нормально («Второй шанс для Лекаря», «Этика»)."""
+    m = _TITLE_CUT_RE.search(title or '')
+    if not m:
+        return None
+    short = title[:m.start()].strip()
+    return short if short and short != title.strip() else None
+
+
 def _parse_approx_count(num_str, suffix):
     try:
         value = float(num_str.replace(',', '.'))
@@ -55,6 +71,8 @@ class Command(BaseCommand):
     _SLEEP_MIN = 15
     _SLEEP_MAX = 30
     _ROOT_URL = "https://litmarket.ru/"  # проверка «сайт лежит?» (баг №167)
+    # Пробный поиск: отвечает — серия ошибок не сбой сайта, а ошибки книг.
+    _PROBE_URL = "https://litmarket.ru/search?type=book&query=%D0%9B%D0%B5%D0%BA%D0%B0%D1%80%D1%8C"
     _SLEEP_IDLE = 86400
     _MATCH_THRESHOLD = 0.6  # минимальное сходство (автор+название), чтобы принять результат поиска
 
@@ -151,7 +169,7 @@ class Command(BaseCommand):
     def _outage(self):
         from opds_catalog.ratings_fetchers import OutageDetector
         if not hasattr(self, "_outage_detector"):
-            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA)
+            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA, probe_url=self._PROBE_URL)
         return self._outage_detector
 
     def _fetch_rating(self, author_name, title):
@@ -176,9 +194,17 @@ class Command(BaseCommand):
             self.stdout.write(f"  Ошибка: {exc}")
             return None, None, search_url, True
 
-        if status == 500 and author_name:
-            search_url = "https://litmarket.ru/search?type=book&query=" + urllib.parse.quote(title)
-            self.stdout.write(f"  HTTP 500 — повтор без автора: GET {search_url}")
+        retries = []
+        if author_name:
+            retries.append(("без автора", title))
+        short = _short_title(title)
+        if short:
+            retries.append(("по началу названия", short))
+        for label, retry_query in retries:
+            if status != 500:
+                break
+            search_url = "https://litmarket.ru/search?type=book&query=" + urllib.parse.quote(retry_query)
+            self.stdout.write(f"  HTTP 500 — повтор {label}: GET {search_url}")
             try:
                 html, status = self._fetch(search_url)
             except Exception as exc:

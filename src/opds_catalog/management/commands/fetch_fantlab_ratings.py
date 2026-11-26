@@ -44,6 +44,8 @@ class Command(BaseCommand):
     _SLEEP_MIN = 15
     _SLEEP_MAX = 30
     _ROOT_URL = "https://fantlab.ru/"  # проверка «сайт лежит?» (баг №167)
+    # Пробный поиск: отвечает — серия ошибок не сбой сайта, а ошибки книг.
+    _PROBE_URL = "https://fantlab.ru/searchmain?searchstr=%D0%9F%D0%B8%D0%BA%D0%BD%D0%B8%D0%BA"
     _SLEEP_IDLE = 86400
     _MATCH_THRESHOLD = 0.6  # минимальное сходство (автор+название), чтобы принять результат поиска
 
@@ -140,7 +142,7 @@ class Command(BaseCommand):
     def _outage(self):
         from opds_catalog.ratings_fetchers import OutageDetector
         if not hasattr(self, "_outage_detector"):
-            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA)
+            self._outage_detector = OutageDetector(self._ROOT_URL, self._UA, probe_url=self._PROBE_URL)
         return self._outage_detector
 
     def _fetch_rating(self, author_name, title):
