@@ -9,6 +9,7 @@
             {% if r.s.series_extended %}<li>{% blocktrans count n=r.s.series_extended with books=r.s.books_extended %}added to existing series: {{ n }} series (+{{ books }} books){% plural %}added to existing series: {{ n }} series (+{{ books }} books){% endblocktrans %}</li>{% endif %}
             {% if r.s.series_new %}<li>{% blocktrans count n=r.s.series_new with books=r.s.books_new_series %}new series: {{ n }} ({{ books }} books){% plural %}new series: {{ n }} ({{ books }} books){% endblocktrans %}</li>{% endif %}
             {% if r.s.books_no_series %}<li>{% trans "books outside series:" %} {{ r.s.books_no_series }}</li>{% endif %}
+            {% if r.s.moved_present is not None %}<li style="color:var(--text-muted);">{% blocktrans with single=r.s.moved_present comp=r.in_compilations %}after the compilation: {{ single }} remained as separate books, {{ comp }} went into compilations (new, updated or already existing){% endblocktrans %}</li>{% endif %}
             {% if r.s.authors_new %}<li>{% trans "new authors:" %} {{ r.s.authors_new|length }} — {{ r.s.authors_new|join:", " }}</li>{% endif %}
         </ul>
         {% endif %}
@@ -19,7 +20,7 @@
             ({% trans "already in the library:" %} {{ r.s.dup_library }}{% if r.s.dup_other_authors %} — {% trans "of them with other authors in the description:" %} {{ r.s.dup_other_authors }}{% endif %}, {% trans "already inside a compilation:" %} {{ r.s.dup_compilation }})</span>{% endif %}
     </li>
     {% if r.has_details and r.s.compiled or r.s.compile_failed or r.s.compile_error %}
-    <li>📦 {% trans "Compilation:" %} {% trans "compilations built:" %} {{ r.s.compiled|default:0 }}{% if r.s.compile_failed %}, {% trans "failed:" %} {{ r.s.compile_failed }}{% endif %}{% if r.s.compile_error %} — <span style="color:#c0392b;">{% trans "compilation crashed, it will be redone on the next run" %}</span>{% endif %}</li>
+    <li>📦 {% trans "Compilation:" %} {% trans "compilations built or updated:" %} {{ r.s.compiled|default:0 }}{% if r.s.compile_failed %}, {% trans "failed:" %} {{ r.s.compile_failed }}{% endif %}{% if r.s.compile_error %} — <span style="color:#c0392b;">{% trans "compilation crashed, it will be redone on the next run" %}</span>{% endif %}</li>
     {% endif %}
     {% if r.s.kept %}<li>⏸ {% trans "Left in the watch folder by the synchronization:" %} {{ r.s.kept }}</li>{% endif %}
     {% if r.reconciliation %}<li>⚠ {% trans "Author check needed:" %} {{ r.reconciliation }}</li>{% endif %}

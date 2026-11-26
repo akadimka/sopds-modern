@@ -4035,6 +4035,8 @@ def _inbox_run_view(run):
             "reconciliation": len(notes.get("reconciliation_notes") or []),
             "genre_conflicts": len(notes.get("genre_conflict_notes") or []),
             "unknown_genres": len(notes.get("unknown_genre_notes") or [])}
+    if s.get("moved_present") is not None:   # с v2.52.001: что стало с перенесёнными после компиляции
+        view["in_compilations"] = max(0, (s.get("moved") or 0) - s["moved_present"])
     try:
         started = datetime.fromisoformat(run["started"])
         finished = datetime.fromisoformat(run["finished"]) if run.get("finished") else None

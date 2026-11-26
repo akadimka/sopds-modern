@@ -547,7 +547,8 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     settings.STORAGES = {**settings.STORAGES,
                          "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
     svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
-    svc._compile_fn = lambda *_a, **_k: {"ok": 2, "fail": 0}
+    # ok — все обработанные группы, built — где сборник собран или обновлён (2026-11-26)
+    svc._compile_fn = lambda *_a, **_k: {"ok": 5, "fail": 0, "built": 2}
 
     result = svc.run()
 
@@ -556,6 +557,7 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     assert d["series"] == [{"author": "Иванов Иван", "series": "Звезды", "books": 1, "state": "extended",
                             "new_author": False, "new_names": []}]
     assert d["compiled"] == 2
+    assert d["moved_present"] == 1                       # перенесённая книга осталась отдельной
     runs = svc.journal.recent_runs()
     assert [r["mode"] for r in runs] == [MODE_AUTO] and runs[0]["summary"]["series_extended"] == 1
 
@@ -572,6 +574,7 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
     assert 'id="autosync-results"' in page and "Чужая порция" in page and "Петров Петр" in page
     assert "Earlier runs" in page                        # предыдущий запуск — в таблице ниже
+    assert "remained as separate books" in page and "compilations built or updated:" in page
 
 
 def test_inbox_explains_why_a_confident_genre_was_not_filed():

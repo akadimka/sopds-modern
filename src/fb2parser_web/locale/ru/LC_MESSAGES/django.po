@@ -2233,3 +2233,10 @@ msgstr "коды жанра в книге:"
 msgctxt "genre codes"
 msgid "none"
 msgstr "нет"
+
+msgid "compilations built or updated:"
+msgstr "собрано или обновлено сборников:"
+
+#, python-format
+msgid "after the compilation: %(single)s remained as separate books, %(comp)s went into compilations (new, updated or already existing)"
+msgstr "после компиляции: отдельными книгами осталось %(single)s, в сборники (новые, обновлённые или уже имевшиеся) вошло %(comp)s"

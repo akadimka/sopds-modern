@@ -77,19 +77,25 @@ def auto_compile_library(
             группа компилируется целиком или не трогается.
 
     Returns:
-        dict с ключами ok (int), fail (int).
+        dict с ключами ok (int), fail (int), built (int). ok — обработанные
+        группы, в том числе те, где только убраны тома, уже входящие в сборник,
+        или компилировать было нечего; built — где сборник собран или обновлён
+        (2026-11-26: «собрано 228» при ~35 новых файлах).
     """
     compiler, groups = find_library_groups(library_path, config_path, filter_paths, progress_callback)
     lib_path = Path(library_path)
 
     ok_cnt = 0
     fail_cnt = 0
+    built_cnt = 0   # группы, где сборник действительно собран/обновлён (а не только убраны дубли)
     for i, g in enumerate(groups):
         if progress_callback:
             progress_callback(i, len(groups), f"Компиляция: {g.author} — {g.series}")
         result = compiler.compile_group(g, None, delete_sources=True, genre_override=group_genre(g, lib_path))
         if result.success:
             ok_cnt += 1
+            if result.books_compiled:
+                built_cnt += 1
         else:
             fail_cnt += 1
         if on_group:
@@ -98,4 +104,4 @@ def auto_compile_library(
             on_group(g.author, compiler._series_to_display(
                 compiler._group_series_for_naming(g)), result.success)
 
-    return {'ok': ok_cnt, 'fail': fail_cnt}
+    return {'ok': ok_cnt, 'fail': fail_cnt, 'built': built_cnt}

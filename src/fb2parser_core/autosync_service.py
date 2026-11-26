@@ -528,6 +528,12 @@ class AutosyncService:
                 stats["compile_result"] = {"error": True}
             else:
                 pending.discard(touched)
+        # Сколько перенесённых книг осталось отдельными файлами: остальные вошли
+        # в сборники (новые, обновлённые или уже лежавшие) или удалены как уже
+        # входящие в них.
+        lib = Path(sync.library_path)
+        stats["moved_present"] = sum(1 for m in stats.get("moved_books") or []
+                                     if m.get("path") and (lib / m["path"]).exists())
         return stats, failed
 
     @staticmethod
@@ -711,7 +717,8 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
         "dup_library": max(0, stats.get("duplicates_deleted", 0) - stats.get("compilation_deletions", 0)),
         # из них — та же книга с другими авторами в описании (текст совпал)
         "dup_other_authors": stats.get("duplicates_other_authors", 0),
-        "compiled": compile_result.get("ok", 0),
+        "compiled": compile_result.get("built", compile_result.get("ok", 0)),
+        "moved_present": stats.get("moved_present"),
         "compile_failed": compile_result.get("fail", 0),
         "compile_error": bool(compile_result.get("error")),
     }
