@@ -652,6 +652,11 @@ class AutosyncService:
         return result
 
 
+def _author_names(author: str) -> List[str]:
+    """Имена из папки автора: у соавторов они через запятую."""
+    return [x.strip() for x in (author or "").split(",") if x.strip()]
+
+
 def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Итоги запуска для страницы «Входящие» (docs/watch-folder-autosync-design.md):
     по каждой серии, куда легли книги, — дополнена ли (серия уже была в
@@ -659,6 +664,8 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
     версиями, дубли, автокомпиляция. known — known_series_and_authors() до
     синхронизации."""
     series_known, authors_known = known
+    # папка соавторов — «Абрамов Андрей, Карелин Сергей»: новизна — по каждому имени
+    names_known = {n for a in authors_known for n in _author_names(a)}
     groups: Counter = Counter()
     for r in rows:
         if r.get("outcome") == OUTCOME_MOVED and r.get("library_path"):
@@ -667,8 +674,9 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
     series = []
     for (author, skey), n in sorted(groups.items(), key=lambda kv: (kv[0][0].lower(), kv[0][1].lower())):
         state = "none" if not skey else ("extended" if (author, skey) in series_known else "new")
+        new_names = [x for x in _author_names(author) if x not in names_known]
         series.append({"author": author, "series": skey.replace(_SEP, " / "), "books": n, "state": state,
-                       "new_author": author not in authors_known})
+                       "new_author": bool(new_names), "new_names": new_names})
     compile_result = stats.get("compile_result") or {}
 
     def total(state):
@@ -681,7 +689,7 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
         "series_new": sum(1 for s in series if s["state"] == "new"),
         "books_new_series": total("new"),
         "books_no_series": total("none"),
-        "authors_new": sorted({s["author"] for s in series if s["new_author"]}),
+        "authors_new": sorted({x for s in series for x in s["new_names"]}, key=str.lower),
         "replaced": stats.get("replaced", 0),
         # duplicates_deleted — все удалённые дубли, в том числе тома, уже входящие в сборник
         "dup_compilation": stats.get("compilation_deletions", 0),
