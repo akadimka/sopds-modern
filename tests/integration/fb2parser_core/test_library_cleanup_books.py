@@ -12,7 +12,10 @@ import zipfile
 
 import pytest
 
-from tests.integration.fb2parser_core.test_library_cleanup import _run, lib  # noqa: F401 — фикстура
+from tests.integration.fb2parser_core.test_library_cleanup import (  # noqa: F401 — фикстура
+    _run,
+    lib,
+)
 
 pytestmark = pytest.mark.django_db
 

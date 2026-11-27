@@ -122,7 +122,10 @@ def test_watcher_ignores_lock_heartbeat_temp_file_and_folder_modified_events(tmp
     синхронизации пересканировал всю библиотеку (12 тыс. транзакций подряд)."""
     from types import SimpleNamespace
 
-    from opds_catalog.management.commands.sopds_watch import LibraryDirtyTracker, _make_event_handler
+    from opds_catalog.management.commands.sopds_watch import (
+        LibraryDirtyTracker,
+        _make_event_handler,
+    )
 
     tracker = LibraryDirtyTracker()
     tracker.mark(str(tmp_path / f"{sl.LIBRARY_LOCK_NAME}.1234.tmp"), is_directory=False)

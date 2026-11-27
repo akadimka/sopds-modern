@@ -11,7 +11,11 @@ from pathlib import Path
 
 import pytest
 
-from fb2parser_core.fb2_compiler import CompilationBook, CompilationGroup, FB2CompilerService
+from fb2parser_core.fb2_compiler import (
+    CompilationBook,
+    CompilationGroup,
+    FB2CompilerService,
+)
 from fb2parser_core.passes.pass1_read_files import BookRecord
 
 TITLES = {1: "Первый", 2: "Второй"}

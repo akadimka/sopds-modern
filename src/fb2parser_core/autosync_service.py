@@ -22,7 +22,13 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .genre_voting import BookEvidence, GenreVoter, UnitDecision
-from .library_memory import _SEP, LibraryMemory, is_book_file, parse_library_path, read_evidence
+from .library_memory import (
+    _SEP,
+    LibraryMemory,
+    is_book_file,
+    parse_library_path,
+    read_evidence,
+)
 from .pending_compile import PendingCompile
 from .settings_manager import SettingsManager
 from .sync_lock import SyncBusy, sync_lock
