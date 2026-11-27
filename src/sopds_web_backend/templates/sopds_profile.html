@@ -14,6 +14,11 @@
 <div class="callout success" style="margin-bottom:1rem; padding:0.6rem 1rem; border-radius:6px;">
   ✓ {% trans "Password changed." %}
 </div>
+{% if tg_kept %}
+<div class="callout warning" style="margin-bottom:1rem; padding:0.6rem 1rem; border-radius:6px;">
+  {% blocktrans with name=tg_link.telegram_name %}Telegram {{ name }} stays linked: it is the only way your sign-in code reaches you. Make sure this Telegram is yours. To unlink it, first connect an authenticator app.{% endblocktrans %}
+</div>
+{% endif %}
 {% endif %}
 
 <!-- ── Профиль ────────────────────────────────────────────────── -->
@@ -296,6 +301,9 @@
   <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">{% trans "The library's Telegram bot is not set up yet." %}</p>
   {% elif tg_link and tg_link.linked %}
   <p style="margin-bottom:0.5rem;">{% blocktrans with name=tg_link.telegram_name %}Linked to {{ name }}.{% endblocktrans %}</p>
+  {% if tg_only_channel %}
+  <p class="s-hint" style="margin-bottom:0.6rem;">{% trans "Changing the password unlinks Telegram — but not this one: it is the only way your sign-in code reaches you. Connect an authenticator app to change that." %}</p>
+  {% endif %}
   <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:0.8rem;">
     {% trans "In the bot you can search for books and download them; new books are announced in the library channel (the bot sent you the link to join it)." %}
   </p>

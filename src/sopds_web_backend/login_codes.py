@@ -128,6 +128,21 @@ def channels(user, cfg=None) -> List[str]:
     return result
 
 
+def telegram_is_only_channel(user) -> bool:
+    """Привязанный Telegram — единственный путь кода входа этого пользователя:
+    второй шаг — Telegram-код, приложения нет, чат суперпользователя из
+    настроек не задан (или это тот же Telegram). Отвязать его — закрыть себе
+    вход. От токена бота не зависит: токен могут убрать и вернуть."""
+    from .models import TelegramLink
+    if method_for(user) != METHOD_TELEGRAM:
+        return False
+    link = TelegramLink.objects.filter(user=user, telegram_id__isnull=False).first()
+    if link is None:
+        return False
+    admin_chat = (_settings().get("telegram_admin_chat") or "").strip()
+    return admin_chat in ("", str(link.telegram_id))
+
+
 def _deliver(user, code: str, ip: str) -> int:
     """Отправить код по всем каналам. Сколько каналов приняли сообщение."""
     from fb2parser_core.telegram_notify import TelegramError, client_for

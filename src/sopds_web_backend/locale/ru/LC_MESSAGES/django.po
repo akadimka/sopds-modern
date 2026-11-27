@@ -2719,3 +2719,12 @@ msgstr "Нужен, чтобы выключить одну из этих защ�
 #: sopds_web_backend/templates/sopds_settings.html
 msgid "Needed to change the bot token, the superuser chat id or the Bot API address: superusers' sign-in codes go there."
 msgstr "Нужен, чтобы сменить токен бота, чат суперпользователя или адрес Bot API: туда уходят коды входа суперпользователей."
+
+#: sopds_web_backend/templates/sopds_profile.html
+#, python-format
+msgid "Telegram %(name)s stays linked: it is the only way your sign-in code reaches you. Make sure this Telegram is yours. To unlink it, first connect an authenticator app."
+msgstr "Telegram %(name)s остался привязан: только через него к вам приходит код входа. Проверьте, что это ваш Telegram. Чтобы отвязать его, сначала подключите приложение-аутентификатор."
+
+#: sopds_web_backend/templates/sopds_profile.html
+msgid "Changing the password unlinks Telegram — but not this one: it is the only way your sign-in code reaches you. Connect an authenticator app to change that."
+msgstr "Смена пароля отвязывает Telegram — но не этот: только через него к вам приходит код входа. Чтобы это изменить, подключите приложение-аутентификатор."

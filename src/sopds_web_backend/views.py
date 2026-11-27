@@ -1929,6 +1929,7 @@ def user_profile(request):
     errors = {}
     success = None
     opds_new_password = ""
+    tg_kept = False
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -1964,7 +1965,7 @@ def user_profile(request):
                     user.save()
                     update_session_auth_hash(request, user)
                     activity.record(request, "password_changed")
-                    _after_password_change(request, user)
+                    tg_kept = _after_password_change(request, user)
                     from .password_rules import set_must_change
                     set_must_change(user, False)
                     success = "password"
@@ -2106,6 +2107,8 @@ def user_profile(request):
         "my_reviews": _review_books(list(user.reviews.all()[:100])),
         "second_factor": login_codes.method_for(user) is not None,
         "password_rules": _rules_text(user),
+        "tg_kept": tg_kept,
+        "tg_only_channel": login_codes.telegram_is_only_channel(user),
     })
 
 
@@ -2159,16 +2162,30 @@ _PASSWORD_CONFIRMED_ACTIONS = {"opds_new": "opds", "tg_code": "telegram", "tg_un
 
 
 def _after_password_change(request, user):
-    """Смена пароля закрывает и другие пути входа: пароль для читалок и
-    устройства, кроме текущего браузера (сессии браузеров завершает сам
-    Django — в них хеш пароля). Telegram остаётся: привязку видно в профиле."""
-    from . import activity, devices
-    from .models import UserDevice
+    """Смена пароля закрывает и другие пути входа: пароль для читалок,
+    привязку Telegram и устройства, кроме текущего браузера (сессии браузеров
+    завершает сам Django — в них хеш пароля).
+
+    Telegram остаётся, только если он — единственный канал кода входа
+    суперпользователя (login_codes.telegram_is_only_channel): отвязка закрыла
+    бы вход ему самому. Тогда True — профиль предупреждает об этом."""
+    from . import activity, devices, login_codes
+    from .models import TelegramLink, UserDevice
     from .opds_passwords import revoke
+    from .telegram_users import unlink
     if revoke(user):
         activity.record(request, "opds_password_revoked", user=user, actor=request.user, reason="password_change")
     keep = devices.current_device(request, user) if request.user.pk == user.pk else None
     UserDevice.objects.filter(user=user).exclude(pk=keep.pk if keep is not None else None).delete()
+    link = TelegramLink.objects.filter(user=user).first()
+    if link is None or not link.linked:
+        return False
+    if login_codes.telegram_is_only_channel(user):
+        return True
+    activity.record(request, "telegram_unlinked", user=user, actor=request.user,
+                    telegram_name=link.telegram_name, reason="password_change")
+    unlink(link)
+    return False
 
 
 def _profile_devices_context(request, user):

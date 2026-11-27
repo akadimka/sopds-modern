@@ -4,8 +4,9 @@
 - долговременный доступ — пароль для читалок, привязка Telegram, приложение
   второго фактора — только с паролем: украденной сессии мало, чтобы
   закрепиться в аккаунте;
-- смена пароля (своя и суперпользователем) отзывает пароль для читалок и
-  удаляет устройства, кроме текущего браузера;
+- смена пароля (своя и суперпользователем) отзывает пароль для читалок,
+  отвязывает Telegram (кроме единственного канала кода входа
+  суперпользователя) и удаляет устройства, кроме текущего браузера;
 - неверные коды второго фактора считаются на весь аккаунт: повторные входы
   с верным паролем не дают перебирать код;
 - fb2parser и /admin/ — только суперпользователь (одного is_staff мало).
@@ -107,6 +108,83 @@ def test_superuser_changing_own_password_stays_signed_in():
 def _with_app(user):
     from django.utils import timezone
     return TotpDevice.objects.create(user=user, secret=totp.new_secret(), confirmed=True, created=timezone.now())
+
+
+@pytest.fixture
+def kicked(monkeypatch):
+    """Удаления из канала при отвязке — без сети."""
+    calls = []
+    monkeypatch.setattr(tu, "kick_from_channel", lambda tg_id: calls.append(tg_id) or True)
+    return calls
+
+
+def test_password_change_unlinks_telegram(kicked):
+    """Злоумышленник с паролем привязал свой Telegram — смена пароля его
+    отвязывает (иначе бот так и выдавал бы ему книги владельца)."""
+    from sopds_web_backend.models import ActivityEvent
+    user = User.objects.create_user("reader", password=PASSWORD)
+    TelegramLink.objects.create(user=user, telegram_id=777, telegram_name="@intruder")
+    client = Client()
+    _login(client, user)
+    new = "Zq8!wErT5yUi"
+    page = _profile(client, action="password", old_password=PASSWORD, new_password=new, confirm_password=new)
+    assert TelegramLink.objects.get(user=user).telegram_id is None
+    assert kicked == [777]
+    assert "stays linked" not in page
+    event = ActivityEvent.objects.get(action="telegram_unlinked", user=user)
+    assert event.details.get("reason") == "password_change"
+
+
+def test_superuser_password_reset_unlinks_users_telegram(kicked):
+    user = User.objects.create_user("reader", password=PASSWORD)
+    TelegramLink.objects.create(user=user, telegram_id=777, telegram_name="@intruder")
+    root = Client()
+    root.force_login(User.objects.create_superuser("root", password=PASSWORD))
+    root.post(reverse("web:user_edit", args=(user.pk,)), {"role": "user", "password": "Zq8!wErT5yUi"})
+    assert TelegramLink.objects.get(user=user).telegram_id is None
+
+
+def test_password_change_keeps_telegram_that_is_the_only_sign_in_code_channel(env, kicked):
+    """Telegram-код — единственный второй шаг суперпользователя: отвязка
+    закрыла бы вход ему самому. Привязка остаётся, профиль предупреждает."""
+    env.update(admin_login_code=True, telegram_token="t")
+    boss = User.objects.create_superuser("boss", password=SUPER_PASSWORD)
+    TelegramLink.objects.create(user=boss, telegram_id=555, telegram_name="@boss_tg")
+    client = Client()
+    client.force_login(boss)
+    new = "Boss-New-Password-1!"
+    page = _profile(client, action="password", old_password=SUPER_PASSWORD, new_password=new, confirm_password=new)
+    assert TelegramLink.objects.get(user=boss).telegram_id == 555
+    assert kicked == []
+    assert "stays linked" in page and "@boss_tg" in page
+
+
+@pytest.mark.parametrize("other_way", ["app", "admin_chat"])
+def test_password_change_unlinks_superuser_telegram_when_codes_have_another_way(env, kicked, other_way):
+    env.update(admin_login_code=True, telegram_token="t")
+    boss = User.objects.create_superuser("boss", password=SUPER_PASSWORD)
+    TelegramLink.objects.create(user=boss, telegram_id=555, telegram_name="@boss_tg")
+    if other_way == "app":
+        _with_app(boss)
+    else:
+        env["telegram_admin_chat"] = "999"
+    assert not lc.telegram_is_only_channel(boss)
+    client = Client()
+    client.force_login(boss)
+    new = "Boss-New-Password-1!"
+    _profile(client, action="password", old_password=SUPER_PASSWORD, new_password=new, confirm_password=new)
+    assert TelegramLink.objects.get(user=boss).telegram_id is None
+    assert kicked == [555]
+
+
+def test_only_channel_does_not_depend_on_bot_token(env):
+    """Токен убрали на время — отвязка всё равно закрыла бы вход, когда его вернут."""
+    env.update(admin_login_code=True, telegram_token="", telegram_admin_chat="555")
+    boss = User.objects.create_superuser("boss", password=SUPER_PASSWORD)
+    TelegramLink.objects.create(user=boss, telegram_id=555, telegram_name="@boss_tg")
+    assert lc.telegram_is_only_channel(boss)             # чат из настроек — тот же Telegram
+    env["admin_login_code"] = False
+    assert not lc.telegram_is_only_channel(boss)         # второго шага нет — отвязывать можно
 
 
 def test_wrong_codes_counted_per_account_across_sign_ins():
