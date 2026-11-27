@@ -155,3 +155,60 @@ class TestLooseAuthorMatchAvoidsSilentDuplication:
         assert reconciliation_notes == []
         assert folder_structure == {}
         assert not incoming.exists()
+
+
+def _fb2(authors, body, encoding="utf-8"):
+    names = "".join(f"<author><first-name>{f}</first-name><last-name>{l}</last-name></author>" for f, l in authors)
+    return (f'<?xml version="1.0" encoding="{encoding}"?>\n<FictionBook><description><title-info>{names}'
+            f'<book-title>Заступник</book-title></title-info></description>'
+            f'<body><section><p>{body}</p></section></body>'
+            f'<binary id="c.jpg">QUJD</binary></FictionBook>').encode(encoding)
+
+
+class TestSameTextWithOtherAuthorsIsADuplicate:
+    """2026-11-26, основной сервер: «Заступник. Проклятье Дайкоку» во входящих —
+    Аржанов и Вольт, в библиотеке — только Аржанов; текст совпадает полностью.
+    Раньше — вечная «сверка автора», файл не уходил из папки наблюдения;
+    решение пользователя: такие файлы — дубли."""
+
+    LIB = "Фантастика/Аржанов Алексей/Золотой Дракон Якудзы/Аржанов Алексей - Заступник т. 1.fb2"
+
+    def _setup(self, tmp_path, incoming_body):
+        import zipfile
+        service = _make_service(tmp_path, existing_rows=[
+            ("Аржанов Алексей", "Золотой Дракон Якудзы", "", "Заступник", self.LIB),
+        ])
+        lib_file = service.library_path / (self.LIB + ".zip")      # в БД — путь до сжатия
+        lib_file.parent.mkdir(parents=True)
+        with zipfile.ZipFile(lib_file, "w") as z:
+            z.writestr("book.fb2", _fb2([("Алексей", "Аржанов")], "Глава 1. Япония.  Кобе."))
+        incoming = service.last_scan_path / "Аржанов Алексей" / "1. Заступник.fb2"
+        incoming.parent.mkdir(parents=True)
+        incoming.write_bytes(_fb2([("Александр", "Вольт"), ("Алексей", "Аржанов")], incoming_body, "windows-1251"))
+        rec = _rec("Аржанов Алексей/1. Заступник.fb2", "Аржанов Алексей, Вольт Александр",
+                   "Золотой Дракон Якудзы", "Заступник")
+        return service, incoming, rec
+
+    def test_same_text_is_deleted_as_duplicate(self, tmp_path):
+        service, incoming, rec = self._setup(tmp_path, "Глава 1.\nЯпония. Кобе.")
+
+        folder_structure, reconciliation_notes = service._build_folder_structure([rec], None)
+
+        assert folder_structure == {} and reconciliation_notes == []
+        assert not incoming.exists()
+        assert service.stats["duplicates_other_authors"] == 1 and service.stats["duplicates_deleted"] == 1
+
+    def test_different_text_still_needs_reconciliation(self, tmp_path):
+        service, incoming, rec = self._setup(tmp_path, "Глава 1. Япония. Осака.")
+
+        folder_structure, reconciliation_notes = service._build_folder_structure([rec], None)
+
+        assert folder_structure == {} and len(reconciliation_notes) == 1
+        assert incoming.exists()
+
+
+def test_body_text_ignores_description_markup_and_encoding():
+    from fb2parser_core.fb2_utils import fb2_body_text
+    a = fb2_body_text(_fb2([("Алексей", "Аржанов")], "Текст &amp; <emphasis>ещё</emphasis>"))
+    b = fb2_body_text(_fb2([("Александр", "Вольт")], "Текст  &  ещё", "windows-1251"))
+    assert a == b == "Текст & ещё"

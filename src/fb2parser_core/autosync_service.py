@@ -244,6 +244,9 @@ class InboxUnit:
     blocker: str
     signals: Dict[str, float]
     files: List[str] = field(default_factory=list)
+    # коды <genre> из файлов единицы (чаще встречающиеся — первыми): видно, что
+    # сказала сама книга, прежде чем решала память библиотеки
+    codes: List[str] = field(default_factory=list)
 
     @property
     def uid(self) -> str:
@@ -260,6 +263,17 @@ class InboxBatch:
     @property
     def books(self) -> int:
         return sum(len(u.files) for u in self.units)
+
+
+def _file_codes(root: Path, files: List[str]) -> List[str]:
+    """Коды жанров из заголовков файлов (не прочитался — пропускаем)."""
+    seen: Counter = Counter()
+    for rel in files:
+        try:
+            seen.update(dict.fromkeys(read_evidence(root / rel).codes, 1))
+        except Exception:
+            continue
+    return [c for c, _n in seen.most_common()]
 
 
 def _signals_json(d: UnitDecision) -> Dict[str, float]:
@@ -514,6 +528,12 @@ class AutosyncService:
                 stats["compile_result"] = {"error": True}
             else:
                 pending.discard(touched)
+        # Сколько перенесённых книг осталось отдельными файлами: остальные вошли
+        # в сборники (новые, обновлённые или уже лежавшие) или удалены как уже
+        # входящие в них.
+        lib = Path(sync.library_path)
+        stats["moved_present"] = sum(1 for m in stats.get("moved_books") or []
+                                     if m.get("path") and (lib / m["path"]).exists())
         return stats, failed
 
     @staticmethod
@@ -569,6 +589,7 @@ class AutosyncService:
         batches: Dict[str, InboxBatch] = {}
         for unit in units.values():
             unit.files.sort()
+            unit.codes = _file_codes(root, unit.files)
             batches.setdefault(unit.batch, InboxBatch(unit.batch)).units.append(unit)
         for b in batches.values():
             b.units.sort(key=lambda u: (-len(u.files), u.author, u.series))
@@ -652,6 +673,11 @@ class AutosyncService:
         return result
 
 
+def _author_names(author: str) -> List[str]:
+    """Имена из папки автора: у соавторов они через запятую."""
+    return [x.strip() for x in (author or "").split(",") if x.strip()]
+
+
 def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Итоги запуска для страницы «Входящие» (docs/watch-folder-autosync-design.md):
     по каждой серии, куда легли книги, — дополнена ли (серия уже была в
@@ -659,6 +685,8 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
     версиями, дубли, автокомпиляция. known — known_series_and_authors() до
     синхронизации."""
     series_known, authors_known = known
+    # папка соавторов — «Абрамов Андрей, Карелин Сергей»: новизна — по каждому имени
+    names_known = {n for a in authors_known for n in _author_names(a)}
     groups: Counter = Counter()
     for r in rows:
         if r.get("outcome") == OUTCOME_MOVED and r.get("library_path"):
@@ -667,8 +695,9 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
     series = []
     for (author, skey), n in sorted(groups.items(), key=lambda kv: (kv[0][0].lower(), kv[0][1].lower())):
         state = "none" if not skey else ("extended" if (author, skey) in series_known else "new")
+        new_names = [x for x in _author_names(author) if x not in names_known]
         series.append({"author": author, "series": skey.replace(_SEP, " / "), "books": n, "state": state,
-                       "new_author": author not in authors_known})
+                       "new_author": bool(new_names), "new_names": new_names})
     compile_result = stats.get("compile_result") or {}
 
     def total(state):
@@ -681,12 +710,15 @@ def run_details(known: tuple, stats: Dict[str, Any], rows: List[Dict[str, Any]])
         "series_new": sum(1 for s in series if s["state"] == "new"),
         "books_new_series": total("new"),
         "books_no_series": total("none"),
-        "authors_new": sorted({s["author"] for s in series if s["new_author"]}),
+        "authors_new": sorted({x for s in series for x in s["new_names"]}, key=str.lower),
         "replaced": stats.get("replaced", 0),
         # duplicates_deleted — все удалённые дубли, в том числе тома, уже входящие в сборник
         "dup_compilation": stats.get("compilation_deletions", 0),
         "dup_library": max(0, stats.get("duplicates_deleted", 0) - stats.get("compilation_deletions", 0)),
-        "compiled": compile_result.get("ok", 0),
+        # из них — та же книга с другими авторами в описании (текст совпал)
+        "dup_other_authors": stats.get("duplicates_other_authors", 0),
+        "compiled": compile_result.get("built", compile_result.get("ok", 0)),
+        "moved_present": stats.get("moved_present"),
         "compile_failed": compile_result.get("fail", 0),
         "compile_error": bool(compile_result.get("error")),
     }
@@ -697,15 +729,16 @@ def notify(service: "AutosyncService", result: RunResult,
            client=None, include: Optional[Callable[[Dict[str, Any]], bool]] = None,
            recipients: Optional[List[tuple]] = None) -> Dict[str, str]:
     """Telegram после планового запуска (и скана библиотеки): новинки — в
-    канал, итог и спорные порции — получателям. Ошибки Telegram не
-    пробрасываются: их видно в логе и в возвращаемом {адресат: "ok" | причина}.
+    канал, получателям — одно обобщённое сообщение: итог запуска и список
+    порций, ждущих решения. Отдельных сообщений по порциям нет (2026-11-26:
+    по сообщению с кнопками на каждую порцию — слишком много). Ошибки
+    Telegram не пробрасываются: их видно в логе и в возвращаемом
+    {адресат: "ok" | причина}.
 
-    `recipients` — [(chat id, решает ли)]: суперпользователь получает кнопки
-    жанра и ссылку на «Входящие», назначенный пользователь — те же сообщения
-    без них (docs/autosync-notifications-plan.md). Не задано — только «chat id
-    суперпользователя» из настроек. Настройка `telegram_buttons` выключена —
-    кнопок нет ни у кого (нажатия принимает бот другого сервера), ссылка на
-    «Входящие» остаётся.
+    `recipients` — [(chat id, решает ли)]: суперпользователь получает ссылку
+    на «Входящие», назначенный пользователь — то же сообщение без неё
+    (docs/autosync-notifications-plan.md). Не задано — только «chat id
+    суперпользователя» из настроек.
 
     `include(строка журнала)` — какие новинки можно показать в канале (он
     общий для всех привязанных пользователей: только книги открытых всем
@@ -765,74 +798,13 @@ def notify(service: "AutosyncService", result: RunResult,
                 except TelegramError as e:
                     sent[f"admin{key}"] = explain_error(e)
                     _log.warning("autosync: отчёт %s не отправлен: %s", chat, e.description)
-            _send_batch_prompts(service, client, sent, chat, decides)
     return sent
-
-
-MAX_PROMPTS = 10   # сообщений с кнопками за один запуск
-ALTERNATIVES = 3   # жанров-альтернатив под подсказкой
-
-
-def batch_genre_options(batch: InboxBatch) -> List[str]:
-    """Подсказка порции (жанр большинства её книг) и альтернативы из сигналов."""
-    votes: Counter = Counter()
-    for u in batch.units:
-        if u.genre:
-            votes[u.genre] += len(u.files)
-    weights: Counter = Counter()
-    for u in batch.units:
-        for key, w in (u.signals or {}).items():
-            weights[key.partition(":")[2]] += w * len(u.files)
-    options = [g for g, _n in votes.most_common(1)]
-    options += [g for g, _w in weights.most_common() if g and g not in options][:ALTERNATIVES]
-    return options
 
 
 def _recipient_key(cfg: Dict[str, Any], chat: str) -> str:
     """Суффикс отметок «уже сказано» получателя: у «chat id суперпользователя»
     — прежние ключи (без суффикса), чтобы после обновления не было повторов."""
     return "" if chat == str(cfg["telegram_admin_chat"]).strip() else f":{chat}"
-
-
-def _send_batch_prompts(service: "AutosyncService", client, sent: Dict[str, str],
-                        chat: str, decides: bool = True) -> None:
-    """Каждой НОВОЙ спорной порции — сообщение получателю; тому, кто решает, —
-    с кнопками жанров (нажатие обрабатывает процесс бота, telegram_bot —
-    decide_all; выключаются настройкой `telegram_buttons`) и ссылкой на
-    «Входящие», назначенному — без них."""
-    from .telegram_notify import TelegramError, build_batch_prompt, explain_error
-
-    cfg, journal = service.cfg, service.journal
-    key = _recipient_key(cfg, chat)
-    batches = service.inbox()
-    prompted = set(json.loads(journal.get_state(f"tg_prompted{key}") or "[]"))
-    current = {b.name for b in batches}
-    base = (cfg["public_url"] or "").rstrip("/")
-    count = 0
-    for b in batches:
-        if b.name in prompted or count >= MAX_PROMPTS:
-            continue
-        options = batch_genre_options(b)
-        rows = []
-        if decides:
-            if cfg.get("telegram_buttons", True):
-                rows = [[{"text": ("✅ " if i == 0 else "") + g,
-                          "callback_data": "d:" + journal.add_action(b.name, g)}]
-                        for i, g in enumerate(options)]
-            if base:
-                rows.append([{"text": "📥 Во «Входящие»", "url": f"{base}/fb2parser/inbox/"}])
-        try:
-            client.send_message(chat, build_batch_prompt(b, options),
-                                reply_markup={"inline_keyboard": rows} if rows else None)
-        except TelegramError as e:
-            sent[f"prompts{key}"] = explain_error(e)
-            break
-        prompted.add(b.name)
-        count += 1
-    if count:
-        sent[f"prompts{key}"] = sent.get(f"prompts{key}", "ok")
-    # забываем решённые порции — если такая папка придёт снова, спросим снова
-    journal.set_state(f"tg_prompted{key}", json.dumps(sorted(prompted & current), ensure_ascii=False))
 
 
 class _LogAdapter:

@@ -243,6 +243,8 @@ def test_inbox_page_and_decide_view(tmp_path, monkeypatch, client, settings):
     page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
     unit = svc.inbox()[0].units[0]
     assert "Чужая порция" in page and f'name="unit_{unit.uid}"' in page
+    assert unit.codes == ["unknown_code"]                    # что сказала сама книга
+    assert "<code>unknown_code</code>" in page
 
     empty = client.post(reverse("fb2parser:inbox_decide"), {"batch": "Чужая порция"}).content.decode("utf-8")
     assert "callout alert" in empty and doubtful.exists()
@@ -289,7 +291,7 @@ def test_notify_digest_once_and_admin_only_on_changes(tmp_path, monkeypatch):
 
     sent = notify(svc, svc.run(), client=tg)
 
-    assert sent == {"channel": "ok", "admin": "ok", "prompts": "ok"}
+    assert sent == {"channel": "ok", "admin": "ok"}
     channel = [t for c, t in tg.sent if c == "@news"]
     admin = [t for c, t in tg.sent if c == "42"]
     assert len(channel) == 1 and "Иванов Иван" in channel[0] and "Звезды" in channel[0]
@@ -370,32 +372,28 @@ def _detective_batch(watch):
                  "Загадка", 1)
 
 
-def _prompt_button(tg, genre):
-    for markup in tg.markups:
-        for row in (markup or {}).get("inline_keyboard", []):
-            for button in row:
-                if button["text"].endswith(genre) and "callback_data" in button:
-                    return button["callback_data"]
-    return None
+def _button_data(svc, batch, genre):
+    """Кнопка под сообщением, отправленным до 2026-11-26: новых сообщений с
+    кнопками нет, но нажатия под старыми бот обрабатывает."""
+    return "d:" + svc.journal.add_action(batch, genre)
 
 
-def test_prompt_with_genre_buttons_sent_once_per_batch(tmp_path, monkeypatch):
+def test_recipients_get_only_the_summary_without_per_batch_messages(tmp_path, monkeypatch):
+    """2026-11-26: по сообщению с кнопками на каждую порцию — слишком много;
+    получатель получает одно обобщённое сообщение со списком порций."""
     from fb2parser_core.autosync_service import notify
     svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
     _with_telegram(svc)
     _detective_batch(watch)
     tg = _FakeBotAPI()
 
-    notify(svc, svc.run(), client=tg)
+    sent = notify(svc, svc.run(), client=tg)
 
-    prompts = [t for (c, t) in tg.sent if c == "42" and "Ждёт решения" in t]
-    assert any("Новая порция" in t for t in prompts)
-    assert _prompt_button(tg, "Детектив", ).startswith("d:")
-    assert any("Во «Входящие»" in b["text"] for m in tg.markups if m for row in m["inline_keyboard"] for b in row)
-
-    tg2 = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg2)
-    assert not [t for (c, t) in tg2.sent if "Ждёт решения" in t]  # уже спрашивали
+    admin = [(t, m) for (c, t), m in zip(tg.sent, tg.markups) if c == "42"]
+    assert len(admin) == 1 and sent == {"channel": "ok", "admin": "ok"}
+    text, markup = admin[0]
+    assert "Ждут решения" in text and "Новая порция" in text and markup is None
+    assert not [t for (c, t) in tg.sent if "Ждёт решения" in t]
 
 
 def test_admin_button_press_syncs_whole_batch(tmp_path, monkeypatch):
@@ -405,8 +403,8 @@ def test_admin_button_press_syncs_whole_batch(tmp_path, monkeypatch):
     _with_telegram(svc)
     book = _detective_batch(watch)
     tg = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg)
-    data = _prompt_button(tg, "Детектив")
+    svc.run()
+    data = _button_data(svc, "Новая порция", "Детектив")
 
     bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
     bot.on_callback(svc, tg, {"id": "cb1", "from": {"id": 42}, "data": data,
@@ -425,8 +423,8 @@ def test_button_press_from_stranger_or_stale_key_does_nothing(tmp_path, monkeypa
     _with_telegram(svc)
     book = _detective_batch(watch)
     tg = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg)
-    data = _prompt_button(tg, "Детектив")
+    svc.run()
+    data = _button_data(svc, "Новая порция", "Детектив")
     bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor())
 
     bot.on_callback(svc, tg, {"id": "1", "from": {"id": 999}, "data": data, "message": {}})
@@ -502,8 +500,7 @@ def test_designated_recipient_gets_same_messages_without_buttons_and_inbox_link(
     assert any("Ждут решения" in t and "/fb2parser/inbox/" in t for t, _m in boss)
     assert any("Ждут решения" in t for t, _m in helper)
     assert not any("/fb2parser/inbox/" in t for t, _m in helper)                       # без ссылки
-    assert any(m and m.get("inline_keyboard") for t, m in boss if "Ждёт решения" in t)     # кнопки
-    assert all(m is None for t, m in helper)                                            # без кнопок
+    assert all(m is None for t, m in boss + helper)                                     # без кнопок
 
 
 def test_each_recipient_is_told_once_and_a_new_one_is_not_left_out(tmp_path, monkeypatch):
@@ -517,7 +514,7 @@ def test_each_recipient_is_told_once_and_a_new_one_is_not_left_out(tmp_path, mon
     notify(svc, svc.run(), client=tg, recipients=[("42", True), ("77", False), ("88", False)])
 
     assert {c for c, _t in tg.sent} == {"88"}            # старым — не повторять, новому — всё, что ждёт
-    assert any("Ждёт решения" in t for t, _m in _messages(tg, "88"))
+    assert any("Ждут решения" in t for t, _m in _messages(tg, "88"))
 
 
 def test_blocked_recipient_does_not_stop_the_others(tmp_path, monkeypatch):
@@ -545,15 +542,17 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     settings.STORAGES = {**settings.STORAGES,
                          "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
     svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
-    svc._compile_fn = lambda *_a, **_k: {"ok": 2, "fail": 0}
+    # ok — все обработанные группы, built — где сборник собран или обновлён (2026-11-26)
+    svc._compile_fn = lambda *_a, **_k: {"ok": 5, "fail": 0, "built": 2}
 
     result = svc.run()
 
     d = result.details
     assert (d["series_extended"], d["books_extended"], d["series_new"], d["authors_new"]) == (1, 1, 0, [])
     assert d["series"] == [{"author": "Иванов Иван", "series": "Звезды", "books": 1, "state": "extended",
-                            "new_author": False}]
+                            "new_author": False, "new_names": []}]
     assert d["compiled"] == 2
+    assert d["moved_present"] == 1                       # перенесённая книга осталась отдельной
     runs = svc.journal.recent_runs()
     assert [r["mode"] for r in runs] == [MODE_AUTO] and runs[0]["summary"]["series_extended"] == 1
 
@@ -570,6 +569,23 @@ def test_results_of_runs_and_decisions_are_shown_on_the_inbox_page(tmp_path, mon
     page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
     assert 'id="autosync-results"' in page and "Чужая порция" in page and "Петров Петр" in page
     assert "Earlier runs" in page                        # предыдущий запуск — в таблице ниже
+    assert "remained as separate books" in page and "compilations built or updated:" in page
+
+
+def test_inbox_explains_why_a_confident_genre_was_not_filed():
+    """«93% Фантастика, а не разложено — почему?» (2026-11-26): подробная
+    причина под короткой."""
+    from fb2parser_web.views import _inbox_blocker_detail
+    u = SimpleNamespace(blocker="no_anchor", genre="Фантастика", share=0.93, codes=["other"],
+                        signals={"batch:Фантастика": 5.9, "codes:Фантастика": 3.3, "codes:Современная проза": 0.7})
+    text = str(_inbox_blocker_detail(u))
+    assert "Фантастика 93%" in text and "(other)" in text and "nothing to rely on" in text
+    u.codes = []
+    assert "has no genre codes" in str(_inbox_blocker_detail(u))
+    u.blocker = "low_share"
+    assert str(_inbox_blocker_detail(u)) == "The votes are split: Фантастика 93%, Современная проза 7%."
+    u.blocker = "sync_kept"
+    assert _inbox_blocker_detail(u) == ""
 
 
 def test_run_details_split_duplicates_and_compilation():
@@ -580,27 +596,74 @@ def test_run_details_split_duplicates_and_compilation():
             {"outcome": "moved", "library_path": "Фантастика/Иванов Иван/Иванов Иван - Рассказ.fb2.zip"},
             {"outcome": "removed", "library_path": None}]
     d = run_details(known, {"duplicates_deleted": 7, "compilation_deletions": 5, "replaced": 1,
-                            "compile_result": {"ok": 3, "fail": 1}}, rows)
+                            "duplicates_other_authors": 1, "compile_result": {"ok": 3, "fail": 1}}, rows)
+    assert d["dup_other_authors"] == 1
     assert (d["series_extended"], d["series_new"], d["books_no_series"]) == (1, 1, 1)
     assert (d["dup_library"], d["dup_compilation"], d["replaced"]) == (2, 5, 1)
     assert (d["compiled"], d["compile_failed"], d["authors_new"]) == (3, 1, [])
 
 
-def test_buttons_turned_off_leave_superuser_only_the_inbox_link(tmp_path, monkeypatch):
-    """Один бот на два сервера: нажатия принимает другой сервер — кнопок жанра нет
-    (основной сервер, 2026-11-25), ссылка на «Входящие» остаётся."""
-    from fb2parser_core.autosync_service import notify
-    svc, lib, watch, *_rest = _setup(tmp_path, monkeypatch, MODE_AUTO)
-    _with_telegram(svc)
-    svc.cfg.update(telegram_buttons=False)
-    _detective_batch(watch)
-    tg = _FakeBotAPI()
+def test_new_authors_are_counted_by_name_not_by_coauthor_folder():
+    """Папка соавторов «Абрамов Андрей, Карелин Сергей»: новый — только Абрамов,
+    Карелин уже был в библиотеке (на основном сервере 2026-11-26 «новыми
+    авторами» шли пары соавторов, Карелин — восемь раз)."""
+    from fb2parser_core.autosync_service import run_details
+    known = (set(), {"Карелин Сергей", "Иванов Иван, Карелин Сергей"})
+    rows = [{"outcome": "moved", "library_path": "Фантастика/Абрамов Андрей, Карелин Сергей/Цикл/a.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Карелин Сергей, Фарг Вадим/Цикл 2/b.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Иванов Иван/c.fb2.zip"},
+            {"outcome": "moved", "library_path": "Фантастика/Абрамов Андрей/d.fb2.zip"}]
+    d = run_details(known, {}, rows)
+    assert d["authors_new"] == ["Абрамов Андрей", "Фарг Вадим"]
+    flags = {s["author"]: s["new_names"] for s in d["series"]}
+    assert flags["Иванов Иван"] == [] and flags["Карелин Сергей, Фарг Вадим"] == ["Фарг Вадим"]
 
-    notify(svc, svc.run(), client=tg, recipients=[("42", True)])
 
-    assert _prompt_button(tg, "Детектив") is None
-    links = [b for m in tg.markups if m for row in m["inline_keyboard"] for b in row]
-    assert links and all("url" in b and "callback_data" not in b for b in links)
+@pytest.mark.django_db
+def test_batch_progress_is_shown_next_to_its_title(tmp_path, monkeypatch, client, settings):
+    """Прогресс решения по порции — рядом с её заголовком (порция может быть
+    внизу страницы), общий статус наверху обновляется вместе с ним."""
+    from django.contrib.auth.models import User
+    from django.urls import reverse
+
+    import fb2parser_web.fb2parser_bridge as bridge
+    import fb2parser_web.views as views
+
+    settings.STORAGES = {**settings.STORAGES,
+                         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}
+    svc, lib, watch, sure, doubtful, _compiled = _setup(tmp_path, monkeypatch, MODE_AUTO)
+    svc.run()
+    monkeypatch.setattr(bridge, "get_autosync_service", lambda: svc)
+    client.force_login(User.objects.create_superuser("staff", password="Kx7#vQ2!mLp9"))
+    unit = svc.inbox()[0].units[0]
+
+    page = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+    assert 'id="inbox-status-1"' in page and 'hx-target="#inbox-status-1"' in page
+    assert 'name="slot" value="1"' in page
+
+    monkeypatch.setattr(views, "threading", SimpleNamespace(Thread=lambda **_k: SimpleNamespace(start=lambda: None)))
+    try:
+        started = client.post(reverse("fb2parser:inbox_decide"),
+                              {"batch": "Чужая порция", "slot": "1", f"unit_{unit.uid}": "Детектив"}).content.decode()
+        assert 'id="inbox-status-1"' in started and "?slot=1" in started      # опрашивает сам себя
+        assert 'id="inbox-status" hx-swap-oob="true"' in started             # и обновляет общий наверху
+        assert "Чужая порция" in started
+
+        views.inbox_job.update(current="Синхронизация 1 порций...")
+        polled = client.get(reverse("fb2parser:inbox_status") + "?slot=1").content.decode()
+        assert "Синхронизация 1 порций" in polled and 'id="inbox-status-1"' in polled
+
+        again = client.post(reverse("fb2parser:inbox_decide"),
+                            {"batch": "Чужая порция", "slot": "1", f"unit_{unit.uid}": "Детектив"}).content.decode()
+        assert "?slot=1" in again                                            # повторное нажатие — тот же прогресс
+
+        reloaded = client.get(reverse("fb2parser:inbox")).content.decode("utf-8")
+        assert "?slot=1" in reloaded                                         # после перезагрузки — у порции
+        top = reloaded.split('id="inbox-status"', 1)[1].split(">", 1)[0]
+        assert "hx-trigger" not in top                                       # опрашивает один — статус порции
+    finally:
+        views.inbox_job.finish()
+        views.inbox_job.reset()
 
 
 def test_linked_superuser_can_press_a_button_from_their_own_chat(tmp_path, monkeypatch):
@@ -610,8 +673,8 @@ def test_linked_superuser_can_press_a_button_from_their_own_chat(tmp_path, monke
     _with_telegram(svc)
     book = _detective_batch(watch)
     tg = _FakeBotAPI()
-    notify(svc, svc.run(), client=tg, recipients=[("55", True)])
-    data = _prompt_button(tg, "Детектив")
+    svc.run()
+    data = _button_data(svc, "Новая порция", "Детектив")
     bot = AdminBot(lambda: svc, client_factory=lambda cfg: tg, executor=_SyncExecutor(),
                    can_decide=lambda tg_id: tg_id == 55)
 

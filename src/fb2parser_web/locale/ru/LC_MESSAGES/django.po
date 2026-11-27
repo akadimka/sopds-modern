@@ -2049,6 +2049,9 @@ msgstr "Удалено как дубликаты:"
 msgid "already in the library:"
 msgstr "уже были в библиотеке:"
 
+msgid "of them with other authors in the description:"
+msgstr "из них с другими авторами в описании:"
+
 #: fb2parser_web/templates/fb2parser/inbox.html
 #: fb2parser_web/templates/fb2parser/inbox_run_totals.html
 msgid "already inside a compilation:"
@@ -2200,3 +2203,40 @@ msgstr[3] "По авторам и сериям (%(n)s)"
 msgctxt "inbox runs column"
 msgid "Added"
 msgstr "Добавлено"
+
+#, python-format
+msgid "%(genre)s %(share)s%%, but there is nothing to rely on: no series of this author in the library, no known publisher series, and the genre codes of the book (%(codes)s) do not reliably mean one genre."
+msgstr "%(genre)s %(share)s%%, но опереться не на что: серии этого автора в библиотеке нет, известной издательской серии нет, а коды жанра в книге (%(codes)s) не указывают надёжно на один жанр."
+
+#, python-format
+msgid "%(genre)s %(share)s%%, but there is nothing to rely on: no series of this author in the library, no known publisher series, and the book has no genre codes."
+msgstr "%(genre)s %(share)s%%, но опереться не на что: серии этого автора в библиотеке нет, известной издательской серии нет, а кодов жанра в книге нет."
+
+#, python-format
+msgid "The votes are split: %(split)s."
+msgstr "Голоса разделились: %(split)s."
+
+#, python-format
+msgid "Even the leader has too few votes: %(genre)s — %(score)s."
+msgstr "Даже у лидера слишком мало голосов: %(genre)s — %(score)s."
+
+#, python-format
+msgid "The genre codes of the book (%(codes)s) are not known to the library yet, and neither its series nor its author is in the library."
+msgstr "Коды жанра в книге (%(codes)s) библиотеке пока не знакомы, а ни серии, ни автора в библиотеке нет."
+
+msgid "The book has no genre codes, and neither its series nor its author is in the library."
+msgstr "В книге нет кодов жанра, а ни серии, ни автора в библиотеке нет."
+
+msgid "genre codes in the book:"
+msgstr "коды жанра в книге:"
+
+msgctxt "genre codes"
+msgid "none"
+msgstr "нет"
+
+msgid "compilations built or updated:"
+msgstr "собрано или обновлено сборников:"
+
+#, python-format
+msgid "after the compilation: %(single)s remained as separate books, %(comp)s went into compilations (new, updated or already existing)"
+msgstr "после компиляции: отдельными книгами осталось %(single)s, в сборники (новые, обновлённые или уже имевшиеся) вошло %(comp)s"

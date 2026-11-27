@@ -259,3 +259,32 @@ def has_fb2_files(directory: Path) -> bool:
     for _ in directory.rglob('*.fb2.zip'):
         return True
     return False
+
+
+_DECLARED_ENCODING_RE = re.compile(rb'<\?xml[^>]*encoding\s*=\s*["\']([^"\']+)["\']')
+_BINARY_RE = re.compile(r'<binary\b.*?</binary>', re.S | re.I)
+_TAG_RE = re.compile(r'<[^>]+>')
+_SPACE_RE = re.compile(r'\s+')
+
+
+def fb2_body_text(raw: bytes) -> str:
+    """Текст книги без описания: всё от первого <body> — теги, картинки
+    (<binary>) и разница в пробелах убраны, сущности раскрыты. Два файла с
+    одинаковым текстом — одна книга, даже если в описании (<description>)
+    разные авторы, даты или жанры (2026-11-26: «Заступник» Аржанова — в
+    библиотеке один автор, во входящих он и Вольт)."""
+    import html
+
+    m = _DECLARED_ENCODING_RE.search(raw[:200])
+    declared = m.group(1).decode('ascii', 'replace') if m else 'utf-8'
+    text = decode_mislabeled_utf8(raw, declared)
+    if text is None:
+        try:
+            text = raw.decode(declared, errors='replace')
+        except LookupError:
+            text = raw.decode('utf-8', errors='replace')
+    start = text.find('<body')
+    if start < 0:
+        return ''
+    body = _BINARY_RE.sub(' ', text[start:])
+    return _SPACE_RE.sub(' ', html.unescape(_TAG_RE.sub(' ', body))).strip()

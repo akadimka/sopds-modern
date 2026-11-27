@@ -1,19 +1,41 @@
-{% load i18n %}
+{% load i18n %}{% comment %}
+Статус задачи «Входящих». slot пуст — общий статус наверху страницы
+(#inbox-status); slot задан — компактный статус рядом с заголовком порции
+(#inbox-status-<slot>): он опрашивает сервер сам и заодно обновляет общий
+(top_oob). poll=False — не опрашивать (общий статус, пока опрашивает порция).
+{% endcomment %}
+{% if slot %}
+<span id="inbox-status-{{ slot }}" class="inbox-batch-status" style="font-size:0.85rem; font-weight:normal; overflow-wrap:anywhere;"
+      {% if state.running %}hx-get="{% url 'fb2parser:inbox_status' %}?slot={{ slot }}" hx-trigger="every 2s" hx-target="this" hx-swap="outerHTML"{% endif %}>
+    {% if state.running %}
+        {% if state.kind == 'run' %}{% trans "⏳ Processing the watch folder..." %}{% else %}{% trans "⏳ Synchronizing the batch..." %}{% endif %}
+        {% if state.current %}<span style="color:var(--text-muted);">— {{ state.current }}</span>{% endif %}
+    {% elif state.done %}
+        {% if state.status == 'error' %}<span style="color:#c0392b;">❌ {{ state.error }}</span>
+        {% elif state.status == 'busy' %}<span style="color:#e67e22;">{% trans "Another synchronization is running right now — try again in a few minutes." %}</span>
+        {% elif state.status == 'off' %}<span style="color:#e67e22;">{% trans "Autosync is off — choose a mode in the settings." %}</span>
+        {% else %}✅ {% blocktrans with moved=state.moved pending=state.pending kept=state.kept removed=state.removed %}Done: moved {{ moved }}, waiting for a decision {{ pending }}, kept by the synchronization {{ kept }}, removed as duplicates {{ removed }}.{% endblocktrans %}
+            <a href="{% url 'fb2parser:inbox' %}">{% trans "Refresh the page" %}</a>{% endif %}
+    {% endif %}
+</span>
+{% if top_oob %}{% include "fb2parser/inbox_status.html" with slot="" poll=False oob=True %}{% endif %}
+{% else %}
 {% if state.running %}
-<div id="inbox-status"
-     hx-get="{% url 'fb2parser:inbox_status' %}"
+<div id="inbox-status"{% if oob %} hx-swap-oob="true"{% endif %}
+     {% if poll is not False %}hx-get="{% url 'fb2parser:inbox_status' %}"
      hx-trigger="every 2s"
      hx-target="#inbox-status"
-     hx-swap="outerHTML">
+     hx-swap="outerHTML"{% endif %}>
     <div class="callout primary">
         <strong>{% if state.kind == 'run' %}{% trans "⏳ Processing the watch folder..." %}{% else %}{% trans "⏳ Synchronizing the batch..." %}{% endif %}</strong>
+        {% if state.kind == 'decide' and state.batch %}<strong>«{{ state.batch }}»</strong>{% endif %}
         {% if state.current %}
         <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; overflow-wrap:anywhere;">{{ state.current }}</div>
         {% endif %}
     </div>
 </div>
 {% elif state.done %}
-<div id="inbox-status">
+<div id="inbox-status"{% if oob %} hx-swap-oob="true"{% endif %}>
     {% if state.status == 'error' %}
     <div class="callout alert">❌ {{ state.error }}</div>
     {% elif state.status == 'busy' %}
@@ -28,5 +50,6 @@
     {% endif %}
 </div>
 {% else %}
-<div id="inbox-status"></div>
+<div id="inbox-status"{% if oob %} hx-swap-oob="true"{% endif %}></div>
+{% endif %}
 {% endif %}

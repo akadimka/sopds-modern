@@ -114,3 +114,24 @@ def test_watcher_ignores_the_library_lock(tmp_path):
     assert tracker.take_ready(0) is None
     tracker.mark(str(tmp_path / "Фантастика" / "книга.fb2.zip"), is_directory=False)
     assert tracker.take_ready(0) == {str(tmp_path / "Фантастика")}
+
+
+def test_watcher_ignores_lock_heartbeat_temp_file_and_folder_modified_events(tmp_path):
+    """2026-11-26: обновление блокировки (временный файл + переименование) и
+    «изменилась папка» помечали корень библиотеки — sopds_watch каждые ~2 минуты
+    синхронизации пересканировал всю библиотеку (12 тыс. транзакций подряд)."""
+    from types import SimpleNamespace
+
+    from opds_catalog.management.commands.sopds_watch import LibraryDirtyTracker, _make_event_handler
+
+    tracker = LibraryDirtyTracker()
+    tracker.mark(str(tmp_path / f"{sl.LIBRARY_LOCK_NAME}.1234.tmp"), is_directory=False)
+    handler = _make_event_handler(tracker)
+    handler.on_moved(SimpleNamespace(src_path=str(tmp_path / f"{sl.LIBRARY_LOCK_NAME}.1234.tmp"),
+                                     dest_path=str(tmp_path / sl.LIBRARY_LOCK_NAME), is_directory=False))
+    handler.on_modified(SimpleNamespace(src_path=str(tmp_path), is_directory=True))
+    assert tracker.take_ready(0) is None
+
+    handler.on_modified(SimpleNamespace(src_path=str(tmp_path / "Фантастика" / "книга.fb2.zip"), is_directory=False))
+    handler.on_created(SimpleNamespace(src_path=str(tmp_path / "Фантастика" / "Новый автор"), is_directory=True))
+    assert tracker.take_ready(0) == {str(tmp_path / "Фантастика"), str(tmp_path / "Фантастика" / "Новый автор")}

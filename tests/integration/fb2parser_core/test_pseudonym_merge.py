@@ -70,5 +70,8 @@ def test_merged_pseudonym_meets_the_compilation_on_sync(tmp_path, settings_dir):
     _merge(settings_dir, {"Leach23": "Михалек Дмитрий", "Дмитрий Михалек": "Михалек Дмитрий"})
     records = RegenCSVService(config).generate_csv(str(library), output_csv_path=None)
     assert {r.proposed_author for r in records} == {"Михалек Дмитрий"}   # сюда синхронизация и положит книгу
-    auto_compile_library(str(library), config_path=config, filter_paths={str(alias_dir), str(real_dir)})
+    res = auto_compile_library(str(library), config_path=config, filter_paths={str(alias_dir), str(real_dir)})
     assert ours.exists() and not part.exists()
+    # часть только удалена как уже входящая в сборник — группа обработана, но
+    # сборник не собирался (2026-11-26: «собрано 228» при ~35 новых файлах)
+    assert res["ok"] >= 1 and res["built"] == 0

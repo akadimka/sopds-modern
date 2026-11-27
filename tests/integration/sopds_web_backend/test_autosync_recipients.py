@@ -78,9 +78,6 @@ def test_settings_page_lists_linked_accounts_and_saves_the_choice(client, tmp_pa
                                           "autosync_notify_users": [str(anna.pk), "999999", "x"]})
     saved = json.loads(config.read_text(encoding="utf-8"))["autosync"]
     assert saved["notify_users"] == [anna.pk]                 # чужие и несуществующие id отброшены
-    assert saved["telegram_buttons"] is False                 # галочка не стояла — кнопки выключены
-
-    assert 'name="autosync_telegram_buttons">' in client.get(reverse("web:settings")).content.decode("utf-8")
-    client.post(reverse("web:settings"), {"language": "ru-RU", "maxitems": "20", "fb2toepub": "", "temp_dir": "",
-                                          "autosync_notify_users_form": "1", "autosync_telegram_buttons": "on"})
-    assert json.loads(config.read_text(encoding="utf-8"))["autosync"]["telegram_buttons"] is True
+    # сообщений по порциям с кнопками жанра больше нет (2026-11-26) — и настройки тоже
+    assert "telegram_buttons" not in saved
+    assert "autosync_telegram_buttons" not in client.get(reverse("web:settings")).content.decode("utf-8")

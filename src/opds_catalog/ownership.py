@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 import os
 import posixpath
+import time
 import unicodedata
 from pathlib import Path
 from typing import Iterable, Optional
@@ -340,12 +341,27 @@ class LibraryOwnershipHooks:
         except ValueError:
             return None
 
+    # Паузы перед повторами, если база занята дольше таймаута SQLite (30 с):
+    # 2026-11-26 запись владельцев 9 раз падала с «database is locked», пока
+    # sopds_watch пересканировал библиотеку тысячами транзакций подряд.
+    LOCKED_RETRY_DELAYS = (2, 5, 15, 30)
+
     def _safe(self, what, fn, *args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except Exception:  # noqa: BLE001 — см. докстринг класса
-            _logger.exception("ownership: %s failed for %s", what, args)
-            return None
+        from django.db import OperationalError
+
+        for delay in (*self.LOCKED_RETRY_DELAYS, None):
+            try:
+                return fn(*args, **kwargs)
+            except OperationalError as exc:
+                if delay is None or "locked" not in str(exc).lower():
+                    _logger.exception("ownership: %s failed for %s", what, args)
+                    return None
+                _logger.warning("ownership: %s — база занята, повтор через %s с", what, delay)
+                time.sleep(delay)
+            except Exception:  # noqa: BLE001 — см. докстринг класса
+                _logger.exception("ownership: %s failed for %s", what, args)
+                return None
+        return None
 
     def assign(self, path) -> None:
         rel = self._rel(path)

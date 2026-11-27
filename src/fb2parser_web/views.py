@@ -3949,7 +3949,7 @@ def settings_conv_op(request):
 # ═══════════════════════════════════════════════════════════════════════════
 
 inbox_job = JobState("fb2parser:inbox", {
-    "running": False, "done": False, "kind": "", "current": "", "log": [],
+    "running": False, "done": False, "kind": "", "batch": "", "current": "", "log": [],
     "status": "", "error": "", "mode": "", "moved": 0, "pending": 0, "kept": 0, "removed": 0,
 })
 
@@ -3984,6 +3984,39 @@ def _inbox_genre_choices(svc):
     return names
 
 
+def _inbox_blocker_detail(u):
+    """Почему не решено автоматически — подробно, для строки «Входящих»
+    (2026-11-26: «93% Фантастика, а не разложено — почему?»)."""
+    totals = {}
+    for key, w in (u.signals or {}).items():
+        genre = key.partition(":")[2]
+        totals[genre] = totals.get(genre, 0.0) + w
+    codes = ", ".join(u.codes or [])
+    if u.blocker == "no_anchor":
+        if codes:
+            return _("%(genre)s %(share)s%%, but there is nothing to rely on: no series of this author "
+                     "in the library, no known publisher series, and the genre codes of the book "
+                     "(%(codes)s) do not reliably mean one genre.") % {
+                "genre": u.genre, "share": round((u.share or 0) * 100), "codes": codes}
+        return _("%(genre)s %(share)s%%, but there is nothing to rely on: no series of this author "
+                 "in the library, no known publisher series, and the book has no genre codes.") % {
+            "genre": u.genre, "share": round((u.share or 0) * 100)}
+    if u.blocker == "low_share" and totals:
+        whole = sum(totals.values()) or 1.0
+        split = ", ".join(f"{g} {round(w / whole * 100)}%"
+                          for g, w in sorted(totals.items(), key=lambda kv: -kv[1])[:3])
+        return _("The votes are split: %(split)s.") % {"split": split}
+    if u.blocker == "low_score" and totals:
+        return _("Even the leader has too few votes: %(genre)s — %(score)s.") % {
+            "genre": u.genre, "score": f"{max(totals.values()):.1f}"}
+    if u.blocker == "no_signal":
+        if codes:
+            return _("The genre codes of the book (%(codes)s) are not known to the library yet, "
+                     "and neither its series nor its author is in the library.") % {"codes": codes}
+        return _("The book has no genre codes, and neither its series nor its author is in the library.")
+    return ""
+
+
 def _inbox_signal_text(signals):
     shown = sorted(((w, k) for k, w in signals.items() if w >= 0.5), reverse=True)[:3]
     parts = []
@@ -4002,6 +4035,8 @@ def _inbox_run_view(run):
             "reconciliation": len(notes.get("reconciliation_notes") or []),
             "genre_conflicts": len(notes.get("genre_conflict_notes") or []),
             "unknown_genres": len(notes.get("unknown_genre_notes") or [])}
+    if s.get("moved_present") is not None:   # с v2.52.001: что стало с перенесёнными после компиляции
+        view["in_compilations"] = max(0, (s.get("moved") or 0) - s["moved_present"])
     try:
         started = datetime.fromisoformat(run["started"])
         finished = datetime.fromisoformat(run["finished"]) if run.get("finished") else None
@@ -4021,6 +4056,7 @@ def inbox(request):
     for b in batches:
         for u in b.units:
             u.blocker_text = _INBOX_BLOCKERS.get(u.blocker, u.blocker)
+            u.blocker_detail = _inbox_blocker_detail(u)
             u.signal_text = _inbox_signal_text(u.signals)
             u.title = u.series or (os.path.basename(u.files[0]) if len(u.files) == 1 else "")
     last = svc.journal.last_run(modes=("dry_run", "auto"))
@@ -4034,9 +4070,14 @@ def inbox(request):
     state = inbox_job.get()
     if state.get("done") and not state.get("running"):
         inbox_job.reset()  # итог прошлой задачи показываем один раз
+    # идёт решение по порции, которая есть на странице, — прогресс опрашивает её статус
+    # (рядом с заголовком), общий наверху обновляется вместе с ним
+    batch_polls = bool(state.get("running") and state.get("kind") == "decide"
+                       and any(b.name == state.get("batch") for b in batches))
     return render(request, "fb2parser/inbox.html", _ctx(
         "inbox", _("Inbox"), batches=batches, genres=_inbox_genre_choices(svc),
         autosync=svc.cfg, last_run=last, plan=plan, runs=runs, state=state,
+        batch_polls=batch_polls,
     ))
 
 
@@ -4064,8 +4105,12 @@ def _run_inbox_thread(kind, batch=None, choices=None):
         inbox_job.finish()
 
 
-def _render_inbox_status(state):
-    return _render_job("fb2parser/inbox_status.html", state)
+def _render_inbox_status(state, slot=""):
+    """Статус задачи «Входящих»: общий (наверху) или порции slot — рядом с её
+    заголовком, вместе с общим (hx-swap-oob), чтобы прогресс был виден у
+    порции внизу страницы и наверху."""
+    slot = slot if str(slot).isdigit() else ""
+    return _render_job("fb2parser/inbox_status.html", state, slot=slot, top_oob=bool(slot))
 
 
 @superuser_required
@@ -4083,15 +4128,22 @@ def inbox_run(request):
 def inbox_decide(request):
     """Решение по порции: жанр каждой выбранной единицы → синхронизация."""
     batch = request.POST.get("batch", "")
+    slot = request.POST.get("slot", "")
     choices = {k[len("unit_"):]: v.strip() for k, v in request.POST.items() if k.startswith("unit_") and v.strip()}
     if not batch or not choices:
-        return _render_inbox_status({"done": True, "status": "error", "error": _("Choose a genre for at least one book.")})
-    if not inbox_job.try_start(kind="decide", current=batch):
-        return _render_inbox_status(inbox_job.get())
+        return _render_job("fb2parser/inbox_status.html", {
+            "done": True, "status": "error", "error": _("Choose a genre for at least one book.")},
+            slot=slot if slot.isdigit() else "")
+    if not inbox_job.try_start(kind="decide", batch=batch, current=batch):
+        running = inbox_job.get()
+        if running.get("running") and running.get("kind") == "decide" and running.get("batch") == batch:
+            return _render_inbox_status(running, slot)  # повторное нажатие — прогресс той же порции
+        return _render_job("fb2parser/inbox_status.html", {"done": True, "status": "busy"},
+                           slot=slot if slot.isdigit() else "")
     threading.Thread(target=_run_inbox_thread, args=("decide", batch, choices), daemon=True).start()
-    return _render_inbox_status(inbox_job.get())
+    return _render_inbox_status(inbox_job.get(), slot)
 
 
 @superuser_required
 def inbox_status(request):
-    return _render_inbox_status(inbox_job.get())
+    return _render_inbox_status(inbox_job.get(), request.GET.get("slot", ""))
