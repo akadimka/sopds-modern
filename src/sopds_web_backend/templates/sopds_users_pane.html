@@ -146,8 +146,16 @@
   <!-- Создание нового пользователя -->
   <div class="s-section-title">{% trans "Create new user" %}</div>
   <div style="max-width:560px; margin-bottom:1.5rem;">
-  <form method="post" action="{% url 'web:user_create' %}">
+  {% comment %}
+  «Ваш пароль» — вне формы: логин + «текущий пароль» в одной форме браузер
+  принимает за форму входа и подставляет сохранённые логин и пароль.
+  Значение копируется в скрытое поле при отправке; поле видно только при
+  роли «Суперпользователь» (нужно только ей, views.user_create).
+  {% endcomment %}
+  <form method="post" action="{% url 'web:user_create' %}" id="user-create-form"
+        onsubmit="this.confirm_password.value = document.getElementById('user-create-confirm-pw').value;">
     {% csrf_token %}
+    <input type="hidden" name="confirm_password" value="">
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-bottom:0.6rem;">
       <label style="margin:0;">
         <span style="font-size:0.82rem; color:var(--text-muted);">{% trans "Username" %}</span>
@@ -166,19 +174,30 @@
     <div style="display:flex; align-items:center; gap:1rem;">
       <label style="margin:0; font-size:0.82rem; color:var(--text-muted);">{% trans "Role" %}:</label>
       <label style="margin:0; display:flex; align-items:center; gap:0.4rem; font-size:0.9rem; cursor:pointer;">
-        <input type="radio" name="role" value="user" checked style="margin:0; vertical-align:middle;"> {% trans "User" %}
+        <input type="radio" name="role" value="user" checked style="margin:0; vertical-align:middle;"
+               onchange="document.getElementById('user-create-confirm').style.display = 'none';"> {% trans "User" %}
       </label>
       <label style="margin:0; display:flex; align-items:center; gap:0.4rem; font-size:0.9rem; cursor:pointer;">
-        <input type="radio" name="role" value="superuser" style="margin:0; vertical-align:middle;"> {% trans "Superuser" %}
+        <input type="radio" name="role" value="superuser" style="margin:0; vertical-align:middle;"
+               onchange="document.getElementById('user-create-confirm').style.display = '';"> {% trans "Superuser" %}
       </label>
     </div>
+  </form>
+  <div id="user-create-confirm" style="display:none;">
     <label style="margin:0.6rem 0 0; max-width:280px;">
       <span style="font-size:0.82rem; color:var(--text-muted);">{% trans "Your password" %}</span>
-      <input type="password" name="confirm_password" autocomplete="current-password" style="margin:0;">
+      <input type="password" id="user-create-confirm-pw" autocomplete="current-password" style="margin:0;">
     </label>
     <div class="s-hint">{% trans "Needed to create a superuser." %}</div>
-    <button type="submit" class="button" style="margin:0;">{% trans "Create" %}</button>
-  </form>
+  </div>
+  <button type="submit" form="user-create-form" class="button" style="margin:0.6rem 0 0;">{% trans "Create" %}</button>
+  <script>
+    // Браузер мог восстановить выбранную роль (назад/обновить) — поле по ней.
+    (function () {
+      var su = document.querySelector('#user-create-form input[name="role"][value="superuser"]');
+      if (su && su.checked) document.getElementById('user-create-confirm').style.display = '';
+    })();
+  </script>
   </div>
 
   <!-- Настройки пользователей: устройства по умолчанию, безопасность входа -->

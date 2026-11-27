@@ -335,6 +335,20 @@ def test_superuser_own_password_from_users_table_needs_current_password():
     assert boss.check_password("Hijack-Password-999!")
 
 
+def test_create_user_form_does_not_look_like_a_sign_in_form():
+    """Логин + «текущий пароль» в одной форме — браузер принимает её за вход и
+    подставляет сохранённые логин и пароль суперпользователя. «Ваш пароль»
+    — вне формы (копируется в скрытое поле при отправке)."""
+    import re
+    _boss, client = _superuser_client()
+    page = client.get(reverse("web:users_list")).content.decode("utf-8")
+    form = re.search(r'<form[^>]*id="user-create-form".*?</form>', page, re.S).group(0)
+    assert 'name="username"' in form
+    assert "current-password" not in form
+    assert re.search(r'<input type="hidden" name="confirm_password"', form)
+    assert 'id="user-create-confirm-pw"' in page and 'form="user-create-form"' in page
+
+
 def test_new_superuser_and_promotion_need_password():
     _boss, client = _superuser_client()
     client.post(reverse("web:user_create"), {"username": "back", "password": "Back-Door-Pass-1!", "role": "superuser"})
