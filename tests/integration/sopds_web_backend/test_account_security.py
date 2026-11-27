@@ -162,3 +162,167 @@ def test_staff_flag_alone_opens_neither_fb2parser_nor_admin():
     root.force_login(User.objects.create_superuser("root", password=PASSWORD))
     assert root.get(reverse("fb2parser:dashboard")).status_code == 200
     assert root.get("/admin/").status_code == 200
+
+
+def _reader_request(client, user, password):
+    import base64
+    token = base64.b64encode(f"{user.username}:{password}".encode()).decode()
+    return client.get(reverse("opds:main"), HTTP_AUTHORIZATION=f"Basic {token}")
+
+
+def test_own_sign_in_does_not_reset_guessing_of_another_password(override_config):
+    """Подбор пароля суперпользователя: попытки чередуются с успешным входом
+    в свою учётную запись (сайт или читалка) с того же IP. Раньше счётчик
+    axes был по одному IP и обнулялся этим входом — подбор без предела."""
+    victim = User.objects.create_superuser("boss", password="Boss-Password-123!")
+    me = User.objects.create_user("mallory", password=PASSWORD)
+    ip = {"REMOTE_ADDR": "10.9.9.9"}
+    with override_config(SOPDS_AUTH=True):
+        for round_ in range(2):
+            for i in range(3):
+                Client(**ip).post(reverse("web:login"), {"username": "boss", "password": f"bad{round_}{i}"})
+            assert _login(Client(**ip), me).status_code == 302
+            _reader_request(Client(**ip), me, PASSWORD)
+    # 6 неверных попыток — пара «boss + IP» заблокирована, верный пароль не пускает.
+    assert _login(Client(**ip), victim, "Boss-Password-123!").status_code != 302
+    # С другого адреса владелец входит (блокировка — по паре, не по имени).
+    assert _login(Client(REMOTE_ADDR="10.1.1.1"), victim, "Boss-Password-123!").status_code == 302
+    # Свой вход атакующего не заблокирован.
+    assert _login(Client(**ip), me).status_code == 302
+
+
+def test_guessing_counted_regardless_of_username_case():
+    victim = User.objects.create_superuser("boss", password="Boss-Password-123!")
+    ip = {"REMOTE_ADDR": "10.9.9.8"}
+    for i, name in enumerate(["boss", "Boss", "BOSS", " boss", "bOSS", "BosS"]):
+        Client(**ip).post(reverse("web:login"), {"username": name, "password": f"bad{i}"})
+    assert _login(Client(**ip), victim, "Boss-Password-123!").status_code != 302
+
+
+def test_password_confirmation_is_rate_limited_per_account():
+    """Подтверждение паролем внутри сессии (axes его не считает): после
+    PASSWORD_MAX_FAILURES неверных — час не принимается и верный пароль, и
+    счётчик общий для всех таких проверок учётной записи."""
+    from sopds_web_backend.password_rules import PASSWORD_MAX_FAILURES
+    user = User.objects.create_user("anna", password=PASSWORD)
+    client = Client()
+    _login(client, user)
+    for i in range(PASSWORD_MAX_FAILURES - 1):
+        _profile(client, action="opds_new", confirm_password=f"guess{i}")
+    _profile(client, action="delete", confirm_password="guess-last")       # другая проверка — тот же счётчик
+    html = _profile(client, action="opds_new", confirm_password=PASSWORD)
+    assert not OpdsPassword.objects.filter(user=user).exists()
+    assert "Too many wrong passwords" in html
+    _profile(client, action="password", old_password=PASSWORD,
+             new_password="Nw8#pLq2!zXc", confirm_password="Nw8#pLq2!zXc")
+    user.refresh_from_db()
+    assert user.check_password(PASSWORD)
+
+
+def test_right_password_clears_the_counter():
+    from sopds_web_backend.password_rules import PASSWORD_MAX_FAILURES
+    user = User.objects.create_user("anna", password=PASSWORD)
+    client = Client()
+    _login(client, user)
+    for round_ in range(2):
+        for i in range(PASSWORD_MAX_FAILURES - 1):
+            _profile(client, action="opds_new", confirm_password=f"guess{round_}{i}")
+        _profile(client, action="opds_new", confirm_password=PASSWORD)
+    assert OpdsPassword.objects.filter(user=user).exists()
+
+
+SUPER_PASSWORD = "Boss-Password-123!"
+
+
+def _superuser_client():
+    boss = User.objects.create_superuser("boss", password=SUPER_PASSWORD)
+    client = Client()
+    client.force_login(boss)
+    return boss, client
+
+
+def test_superuser_own_password_from_users_table_needs_current_password():
+    """Украденная сессия суперпользователя не меняет ему пароль из таблицы
+    пользователей (владелец бы потерял доступ, а атакующий — остался)."""
+    boss, client = _superuser_client()
+    url = reverse("web:user_edit", args=[boss.pk])
+    for confirm in ("", "wrong"):
+        response = client.post(url, {"role": "superuser", "password": "Hijack-Password-999!",
+                                     "confirm_password": confirm})
+        assert response.status_code == 422
+    boss.refresh_from_db()
+    assert boss.check_password(SUPER_PASSWORD)
+    client.post(url, {"role": "superuser", "password": "Hijack-Password-999!", "confirm_password": SUPER_PASSWORD})
+    boss.refresh_from_db()
+    assert boss.check_password("Hijack-Password-999!")
+
+
+def test_new_superuser_and_promotion_need_password():
+    _boss, client = _superuser_client()
+    client.post(reverse("web:user_create"), {"username": "back", "password": "Back-Door-Pass-1!", "role": "superuser"})
+    assert not User.objects.filter(username="back").exists()
+    client.post(reverse("web:user_create"), {"username": "anna", "password": PASSWORD, "role": "user"})
+    anna = User.objects.get(username="anna")                         # обычный пользователь — без пароля
+    client.post(reverse("web:user_edit", args=[anna.pk]), {"role": "superuser"})
+    anna.refresh_from_db()
+    assert not anna.is_superuser
+    client.post(reverse("web:user_edit", args=[anna.pk]), {"role": "user", "password": "Anna-New-Pw1!"})
+    anna.refresh_from_db()
+    assert anna.check_password("Anna-New-Pw1!")                      # пароль обычного — как раньше
+
+
+def test_turning_off_the_second_factor_needs_password(monkeypatch, tmp_path):
+    from fb2parser_core.settings_manager import SettingsManager
+    from sopds_web_backend import views
+    config = tmp_path / "config.json"
+    config.write_text('{"autosync": {"admin_login_code": true}}', encoding="utf-8")
+    monkeypatch.setattr(views, "_site_config_path", lambda: str(config))
+    _boss, client = _superuser_client()
+    client.post(reverse("web:users_settings"), {"devices_per_user": "0"})
+    assert SettingsManager(str(config)).get_autosync_settings()["admin_login_code"] is True
+    client.post(reverse("web:users_settings"), {"devices_per_user": "0", "confirm_password": SUPER_PASSWORD})
+    assert SettingsManager(str(config)).get_autosync_settings()["admin_login_code"] is False
+
+
+def test_superuser_chat_for_sign_in_codes_needs_password(monkeypatch, tmp_path):
+    from fb2parser_core.settings_manager import SettingsManager
+    from sopds_web_backend import views
+    config = tmp_path / "config.json"
+    config.write_text('{"autosync": {"telegram_admin_chat": "111"}}', encoding="utf-8")
+    monkeypatch.setattr(views, "_site_config_path", lambda: str(config))
+    _boss, client = _superuser_client()
+    form = {"tab": "telegram", "autosync_telegram_admin_chat": "999", "autosync_telegram_channel": ""}
+    client.post(reverse("web:settings"), form)
+    assert SettingsManager(str(config)).get_autosync_settings()["telegram_admin_chat"] == "111"
+    client.post(reverse("web:settings"), {**form, "confirm_password": SUPER_PASSWORD})
+    assert SettingsManager(str(config)).get_autosync_settings()["telegram_admin_chat"] == "999"
+
+
+def test_admin_cannot_change_passwords_roles_or_add_users():
+    """/admin/ обходил правила сайта: смена пароля без отзыва паролей для
+    читалок и без временного пароля, роль одним флагом, новый пользователь
+    без обязательной смены пароля."""
+    boss, client = _superuser_client()
+    anna = User.objects.create_user("anna", password=PASSWORD)
+    response = client.post(reverse("admin:auth_user_password_change", args=[anna.pk]),
+                           {"password1": "Admin-Set-Pw1!", "password2": "Admin-Set-Pw1!"})
+    assert response.status_code == 302 and response["Location"] == reverse("web:users_list")
+    anna.refresh_from_db()
+    assert anna.check_password(PASSWORD)
+    assert client.get("/admin/password_change/").status_code == 302
+    assert client.get(reverse("admin:auth_user_add")).status_code == 403
+    change = client.get(reverse("admin:auth_user_change", args=[anna.pk])).content.decode()
+    assert 'name="is_superuser"' not in change and 'name="is_staff"' not in change
+
+
+def test_telegram_link_code_guessing_is_limited_per_telegram_account():
+    """Код привязки — 8 символов, живёт сутки; без счётчика бот проверял
+    сколько угодно кодов с одного Telegram (верный — чужой аккаунт в боте)."""
+    user = User.objects.create_user("anna", password=PASSWORD)
+    code = tu.new_link_code(user).code
+    attacker = {"id": 666, "first_name": "M"}
+    for i in range(tu.LINK_MAX_FAILURES):
+        assert tu.link_by_code(f"WRONG{i:03d}", attacker) == (None, tu.ERR_BAD_CODE)
+    assert tu.link_by_code(code, attacker) == (None, tu.ERR_TOO_MANY)
+    link, error = tu.link_by_code(code, {"id": 777, "first_name": "A"})   # с другого Telegram — как раньше
+    assert link is not None and link.telegram_id == 777

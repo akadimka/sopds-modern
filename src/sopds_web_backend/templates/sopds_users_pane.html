@@ -29,6 +29,13 @@
 
   <div class="s-section-title">{% trans "User management" %}</div>
 
+  {# Пароль, роль суперпользователя и свой пароль — только с паролем того, кто меняет (views._security_confirm_error). #}
+  <div class="s-field" style="max-width:420px;">
+    <label for="users-confirm-pw">{% trans "Your password" %}</label>
+    <input type="password" id="users-confirm-pw" autocomplete="current-password" style="margin:0;">
+    <div class="s-hint">{% trans "Needed to change a superuser's password or role, including your own." %}</div>
+  </div>
+
   <!-- Таблица пользователей -->
   <table class="sp-users" style="width:100%; margin-bottom:1.5rem;">
     <thead>
@@ -113,8 +120,10 @@
         </td>
         <td>
           <div class="sp-user-actions">
-          <form method="post" action="{% url 'web:user_edit' u.pk %}" id="user-edit-{{ u.pk }}">
+          <form method="post" action="{% url 'web:user_edit' u.pk %}" id="user-edit-{{ u.pk }}"
+                onsubmit="this.confirm_password.value = document.getElementById('users-confirm-pw').value;">
             {% csrf_token %}
+            <input type="hidden" name="confirm_password" value="">
             <button type="submit" class="button small">{% trans "Save" %}</button>
           </form>
           <!-- Удалить (нельзя удалить себя) -->
@@ -162,8 +171,13 @@
       <label style="margin:0; display:flex; align-items:center; gap:0.4rem; font-size:0.9rem; cursor:pointer;">
         <input type="radio" name="role" value="superuser" style="margin:0; vertical-align:middle;"> {% trans "Superuser" %}
       </label>
-      <button type="submit" class="button" style="margin:0;">{% trans "Create" %}</button>
     </div>
+    <label style="margin:0.6rem 0 0; max-width:280px;">
+      <span style="font-size:0.82rem; color:var(--text-muted);">{% trans "Your password" %}</span>
+      <input type="password" name="confirm_password" autocomplete="current-password" style="margin:0;">
+    </label>
+    <div class="s-hint">{% trans "Needed to create a superuser." %}</div>
+    <button type="submit" class="button" style="margin:0;">{% trans "Create" %}</button>
   </form>
   </div>
 
@@ -195,6 +209,12 @@
             <span>{% trans "Readers (OPDS) sign in only with reader passwords" %}</span>
         </label>
         <div class="s-hint">{% trans "Reader apps store the password and send it with every request. A reader password (created in the profile) works only for the OPDS catalog, not for the site. With this option the site password is no longer accepted in reader apps." %}</div>
+    </div>
+
+    <div class="s-field" style="max-width:420px;">
+        <label>{% trans "Your password" %}</label>
+        <input type="password" name="confirm_password" autocomplete="current-password">
+        <div class="s-hint">{% trans "Needed to turn off one of these protections." %}</div>
     </div>
 
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>

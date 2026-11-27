@@ -245,3 +245,22 @@ def test_genre_section_with_subsections_lists_them(client, lib):
     section_id = Genre.objects.get(genre="sf").pk
     _, html = _page(client, users["admin"], "genre", section=section_id)
     assert '<span class="sopdsitem-key">Космос</span>' in html
+
+
+def test_foreign_genre_by_id_reveals_nothing(client, lib):
+    """Раздел жанра — имя верхней папки библиотеки или тег из книги. Номер
+    чужого раздела (в нём только книги закрытой чужой библиотеки) — 404 и на
+    сайте, и в OPDS, его имени нет и в крошках поиска; несуществующий
+    номер — тоже 404, а не 500."""
+    from opds_catalog.models import Genre, bgenre
+    users, books, _ = lib
+    secret = Genre.objects.create(genre="Тайный раздел Бориса", section="Тайный раздел Бориса", subsection="")
+    bgenre.objects.filter(book=books["boris"]).update(genre=secret)
+    client.force_login(users["anna"])
+    assert client.get(reverse("web:genre"), {"section": secret.pk}).status_code == 404
+    assert client.get(reverse("web:genre"), {"section": 10 ** 6}).status_code == 404
+    _, html = _page(client, users["anna"], "searchbooks", searchtype="g", searchterms=secret.pk)
+    assert "Тайный раздел" not in html
+    assert client.get(reverse("opds:genres", kwargs={"section": secret.pk})).status_code in (401, 404)
+    client.force_login(users["admin"])
+    assert client.get(reverse("web:genre"), {"section": secret.pk}).status_code in (200, 302)

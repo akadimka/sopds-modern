@@ -45,12 +45,13 @@ def test_only_superuser_manages_users(client, superuser, flags):
 
 
 def test_role_superuser_sets_both_flags(super_client):
-    super_client.post(reverse("web:user_create"), {"username": "boss", "password": _STRONG, "role": "superuser"})
+    super_client.post(reverse("web:user_create"), {"username": "boss", "password": _STRONG, "role": "superuser",
+                                                   "confirm_password": _STRONG})
     super_client.post(reverse("web:user_create"), {"username": "reader", "password": _STRONG, "role": "user"})
     boss, reader = User.objects.get(username="boss"), User.objects.get(username="reader")
     assert (boss.is_superuser, boss.is_staff) == (True, True)
     assert (reader.is_superuser, reader.is_staff) == (False, False)
-    super_client.post(reverse("web:user_edit", args=[boss.pk]), {"role": "user"})
+    super_client.post(reverse("web:user_edit", args=[boss.pk]), {"role": "user", "confirm_password": _STRONG})
     boss.refresh_from_db()
     assert (boss.is_superuser, boss.is_staff) == (False, False)
 
@@ -58,7 +59,7 @@ def test_role_superuser_sets_both_flags(super_client):
 def test_superuser_manages_other_superuser(super_client):
     other = User.objects.create_superuser("root2", password=_STRONG)
     response = super_client.post(reverse("web:user_edit", args=[other.pk]),
-                                 {"role": "superuser", "password": "Other#Pass123"})
+                                 {"role": "superuser", "password": "Other#Pass123", "confirm_password": _STRONG})
     assert response.status_code == 302
     other.refresh_from_db()
     assert other.check_password("Other#Pass123") and other.is_superuser

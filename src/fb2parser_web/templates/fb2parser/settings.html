@@ -101,7 +101,7 @@
     <tr data-from="{{ from_val }}">
         <td style="font-family:var(--font-mono);">{{ from_val }}</td>
         <td style="font-family:var(--font-mono);">{{ to_val }}</td>
-        <td><button onclick="cvDelete('{{ from_val|escapejs }}')" title="{% trans 'Delete' %}"
+        <td><button data-val="{{ from_val }}" onclick="cvDelete(this.dataset.val)" title="{% trans 'Delete' %}"
                     style="background:none;border:none;cursor:pointer;color:var(--status-error);font-size:1rem;padding:0 0.3rem;">✕</button></td>
     </tr>
     {% empty %}
@@ -147,15 +147,22 @@ var _t = {
         {% for key, desc in lists_meta %}'{{ key }}': '{{ desc|escapejs }}',{% endfor %}
     };
 
+    // Значения (фамилии из «Дублей серий» — из названий книг) — только
+    // экранированными и через data-val: внутри onclick-строки кавычка из
+    // значения выполняла бы код в сессии суперпользователя.
+    function _escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
     function slRender(key) {
         var items = _listsData[key] || [];
         var el = document.getElementById('sl-list');
         if (!items.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:0.5rem;">'+_t.listEmpty+'</div>'; return; }
         el.innerHTML = items.map(function(v) {
-            var esc = v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-            var escJ = v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            var esc = _escHtml(v);
             return '<div class="sl-item"><span title="'+esc+'">'+esc+'</span>'
-                 + '<button onclick="slDelete(\''+escJ+'\')">✕</button></div>';
+                 + '<button data-val="'+esc+'" onclick="slDelete(this.dataset.val)">✕</button></div>';
         }).join('');
     }
 
@@ -228,13 +235,12 @@ var _t = {
             return;
         }
         tbody.innerHTML = keys.map(function(k) {
-            var escK = k.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-            var escV = convs[k].replace(/&/g,'&amp;').replace(/</g,'&lt;');
-            var escJ = k.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            var escK = _escHtml(k);
+            var escV = _escHtml(convs[k]);
             return '<tr data-from="'+escK+'">'
                  + '<td style="font-family:var(--font-mono);">'+escK+'</td>'
                  + '<td style="font-family:var(--font-mono);">'+escV+'</td>'
-                 + '<td><button onclick="cvDelete(\''+escJ+'\')" style="background:none;border:none;cursor:pointer;color:var(--status-error);font-size:1rem;padding:0 0.3rem;">✕</button></td>'
+                 + '<td><button data-val="'+escK+'" onclick="cvDelete(this.dataset.val)" style="background:none;border:none;cursor:pointer;color:var(--status-error);font-size:1rem;padding:0 0.3rem;">✕</button></td>'
                  + '</tr>';
         }).join('');
     }

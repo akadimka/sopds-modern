@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import zipfile
 from io import BytesIO
 from typing import Any
@@ -41,11 +42,19 @@ def get_lang_name(lang: str) -> str:
     return lang
 
 
+_NAME_UNSAFE_RE = re.compile(r'["\x00-\x1f\x7f]')
+
+
 def getFileName(book: Book) -> str:
-    """Формирует название файла для скачивания."""
-    if config.SOPDS_TITLE_AS_FILENAME:
-        return book.title + "." + book.format
-    return book.filename
+    """Имя файла для скачивания — только имя, без каталогов. Название книги
+    (SOPDS_TITLE_AS_FILENAME) — из FB2, имя книги из архива — сырое имя записи
+    ZIP: «../../x» или «..\\x» в них попадало бы в zip-архив, который отдаётся
+    читалке (наивная распаковка — запись выше целевой папки), и в заголовок
+    Content-Disposition (кавычка ломала filename="…")."""
+    name = f"{book.title}.{book.format}" if config.SOPDS_TITLE_AS_FILENAME else (book.filename or "")
+    name = re.split(r"[\\/]", name)[-1]
+    name = _NAME_UNSAFE_RE.sub("_", name).strip(" .")
+    return name or f"book{book.id}.{book.format}"
 
 
 def get_fs_book_path(book: Book) -> str:

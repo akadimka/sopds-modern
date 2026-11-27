@@ -47,6 +47,16 @@ def case_conflicts() -> List[List[str]]:
     return [names for names in groups.values() if len(names) > 1]
 
 
+def axes_username(request, credentials=None) -> str:
+    """Имя для счётчика неудачных входов (django-axes) — без учёта регистра и
+    пробелов по краям, как его ищет `CaseInsensitiveModelBackend`."""
+    if credentials:
+        name = credentials.get("username")
+    else:
+        name = getattr(request, "POST", {}).get("username")
+    return _key(name or "")
+
+
 class CaseInsensitiveModelBackend(ModelBackend):
     """ModelBackend, который находит пользователя без учёта регистра имени.
 

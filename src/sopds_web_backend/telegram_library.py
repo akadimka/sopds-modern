@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 
 from .telegram_users import (
     ERR_TAKEN,
+    ERR_TOO_MANY,
     channel_join_link,
     handle_join_request,
     link_by_code,
@@ -154,6 +155,7 @@ class LibraryHandler:
             client.send_message(chat_id, (
                 "Этот Telegram уже привязан к другому аккаунту библиотеки — отвяжите его там "
                 "или обратитесь к суперпользователю." if error == ERR_TAKEN else
+                "Слишком много неверных кодов — попробуйте через час." if error == ERR_TOO_MANY else
                 "Код не подошёл или устарел — получите новый в профиле на сайте библиотеки."))
             return
         lines = [f"✅ Готово: Telegram привязан к аккаунту «{_e(link.user.username)}»."]

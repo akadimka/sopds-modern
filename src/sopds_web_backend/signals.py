@@ -3,7 +3,7 @@
 (sopds_web_backend/telegram_users.py)."""
 from django.contrib.auth.models import User
 from django.contrib.auth.signals import user_logged_out
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
 from .models import TelegramLink, UserProfile
@@ -81,3 +81,51 @@ def leave_online_list(sender, request, user, **kwargs):
     if user is not None:
         from . import online
         online.forget(user.pk, "web")
+
+
+# ── Кэш видимости (opds_catalog/visibility.py) ─────────────────────────────
+# Папки, счётчики и число книг в папках кэшируются на пользователя на 5 минут.
+# Изменение, после которого человек видит другие книги, сбрасывает кэш сразу:
+# иначе заблокированный владелец или закрытая библиотека ещё 5 минут были бы
+# видны в именах папок и числах. Владение файлами сбрасывает его само
+# (opds_catalog/ownership.py).
+def _remember_visibility_fields(sender, instance, raw=False, **kwargs):
+    if raw or instance.pk is None:
+        instance._visibility_before = None
+        return
+    fields = ("is_active", "is_superuser") if sender is User else ("library_public",)
+    update_fields = kwargs.get("update_fields")
+    if update_fields is not None and not set(fields) & set(update_fields):
+        instance._visibility_before = None          # например, last_login при каждом входе
+        return
+    instance._visibility_before = sender.objects.filter(pk=instance.pk).values(*fields).first()
+
+
+def _invalidate_if_visibility_changed(sender, instance, created=False, raw=False, **kwargs):
+    if raw or created:
+        return
+    before = getattr(instance, "_visibility_before", None)
+    if before is not None and any(getattr(instance, f) != v for f, v in before.items()):
+        from opds_catalog import visibility
+        visibility.invalidate()
+
+
+def _invalidate_visibility(sender, **kwargs):
+    from opds_catalog import visibility
+    visibility.invalidate()
+
+
+for _model in (User, UserProfile):
+    pre_save.connect(_remember_visibility_fields, sender=_model, dispatch_uid=f"sopds-visibility-pre-{_model.__name__}")
+    post_save.connect(_invalidate_if_visibility_changed, sender=_model,
+                      dispatch_uid=f"sopds-visibility-post-{_model.__name__}")
+post_delete.connect(_invalidate_visibility, sender=User, dispatch_uid="sopds-visibility-user-delete")
+
+
+def _connect_share_signals():
+    from opds_catalog.models import LibraryShare
+    post_save.connect(_invalidate_visibility, sender=LibraryShare, dispatch_uid="sopds-visibility-share-save")
+    post_delete.connect(_invalidate_visibility, sender=LibraryShare, dispatch_uid="sopds-visibility-share-delete")
+
+
+_connect_share_signals()

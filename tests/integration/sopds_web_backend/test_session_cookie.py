@@ -33,7 +33,8 @@ def test_request_with_stale_cookie_does_not_wipe_the_new_one():
     browser = Client()
     browser.force_login(root)
     old_key = browser.cookies[settings.SESSION_COOKIE_NAME].value
-    response = browser.post(reverse("web:user_edit", args=(root.pk,)), {"role": "superuser", "password": NEW})
+    response = browser.post(reverse("web:user_edit", args=(root.pk,)), {"role": "superuser", "password": NEW,
+                                                                        "confirm_password": STRONG})
     assert response.status_code == 302
     new_key = browser.cookies[settings.SESSION_COOKIE_NAME].value
     assert new_key != old_key                                       # ключ сменился — старые копии не работают

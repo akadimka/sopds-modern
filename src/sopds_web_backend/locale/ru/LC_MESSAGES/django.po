@@ -2682,3 +2682,40 @@ msgstr ""
 
 #~ msgid "Search books by series"
 #~ msgstr "Поиск книг по серии"
+
+#: sopds_web_backend/password_rules.py
+msgid "Too many wrong passwords — try again in an hour."
+msgstr "Слишком много неверных паролей — попробуйте через час."
+
+#: sopds_web_backend/activity.py
+msgid "Wrong password when confirming an action"
+msgstr "Неверный пароль при подтверждении действия"
+
+#: sopds_web_backend/activity.py
+msgid "Locked out by wrong passwords"
+msgstr "Блокировка по неверным паролям"
+
+#: sopds_web_backend/views.py
+msgid "Enter your password to confirm this change."
+msgstr "Введите свой пароль, чтобы подтвердить это изменение."
+
+#: sopds_web_backend/views.py
+#, python-format
+msgid "Telegram settings were not saved: %(error)s"
+msgstr "Настройки Telegram не сохранены: %(error)s"
+
+#: sopds_web_backend/templates/sopds_users_pane.html
+msgid "Needed to change a superuser's password or role, including your own."
+msgstr "Нужен, чтобы сменить пароль или роль суперпользователя, в том числе свои."
+
+#: sopds_web_backend/templates/sopds_users_pane.html
+msgid "Needed to create a superuser."
+msgstr "Нужен, чтобы создать суперпользователя."
+
+#: sopds_web_backend/templates/sopds_users_pane.html
+msgid "Needed to turn off one of these protections."
+msgstr "Нужен, чтобы выключить одну из этих защит."
+
+#: sopds_web_backend/templates/sopds_settings.html
+msgid "Needed to change the bot token, the superuser chat id or the Bot API address: superusers' sign-in codes go there."
+msgstr "Нужен, чтобы сменить токен бота, чат суперпользователя или адрес Bot API: туда уходят коды входа суперпользователей."

@@ -38,6 +38,7 @@ from .fb2_utils import (
 )
 from .filename_stem import plain_stem
 from .keyword_match import contains_any_keyword
+from .path_safety import is_within
 from .roman_numerals import roman_to_int
 from .series_normalizer import _nfc_lower_yo as _norm_key
 
@@ -220,6 +221,14 @@ class FB2CompilerService:
         r'|\s*\d+[-–]\d+\s*$',             # trailing 1-4
         re.IGNORECASE | re.UNICODE,
     )
+
+    @classmethod
+    def _safe_series_filename(cls, clean_series: str) -> str:
+        """Серия для имени файла сборника. Первая «\\» — внутренний
+        разделитель серии и подсерии (`_series_to_display`); остальные, как и
+        «/», — из метаданных книги и в имени файла поднимали бы путь выше
+        папки назначения (на Windows «\\» — разделитель каталогов)."""
+        return re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(cls._series_to_display(clean_series)))
 
     @staticmethod
     def _series_to_display(series: str) -> str:
@@ -5451,7 +5460,7 @@ class FB2CompilerService:
                                      series_complete=getattr(group, 'series_complete', True))
         clean_series = self._clean_series_name(self._group_series_for_naming(group))
         safe_author = re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(group.author))
-        safe_series = re.sub(r'[/:*?"<>|]', '_', replace_control_chars(self._series_to_display(clean_series)))
+        safe_series = self._safe_series_filename(clean_series)
         suffix = self._suppress_redundant_suffix(safe_series, suffix)
         new_name = f"{safe_author} - {safe_series} ({suffix}).fb2" if suffix else f"{safe_author} - {safe_series}.fb2"
         if old_path.name.lower().endswith('.fb2.zip'):
@@ -5703,7 +5712,7 @@ class FB2CompilerService:
             # файла — display_root подставляется в оба места сразу.
             clean_series = self._clean_series_name(self._group_series_for_naming(group))
             safe_author = re.sub(r'[\\/:*?"<>|]', '_', replace_control_chars(group.author))
-            safe_series = re.sub(r'[/:*?"<>|]', '_', replace_control_chars(self._series_to_display(clean_series)))
+            safe_series = self._safe_series_filename(clean_series)
 
             # --- Папка назначения: явная или рядом с исходниками ---
             dest_dir = output_dir if output_dir is not None else group.books[0].abs_path.parent
@@ -5761,6 +5770,10 @@ class FB2CompilerService:
                 fname += '.zip'
 
             output_path = dest_dir / fname
+            if not is_within(output_path, dest_dir) or output_path.parent.resolve() != Path(dest_dir).resolve():
+                # Имя — из метаданных книги (серия, автор): каталоги в нём
+                # подняли бы запись выше папки назначения.
+                raise RuntimeError(f"Имя сборника «{fname}» выводит за папку назначения — не записываю")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             if was_compressed:
                 write_fb2_bytes(output_path, output_xml.encode('utf-8'))

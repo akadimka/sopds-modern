@@ -24,6 +24,8 @@
 {% csrf_token %}
 {# вкладка, на которой сохраняют: после сохранения страница откроется на ней #}
 <input type="hidden" name="tab" id="s-active-tab" value="{{ active_tab }}">
+{# пароль суперпользователя для полей Telegram — из поля вне формы (ниже, после </form>) #}
+<input type="hidden" name="confirm_password" id="s-confirm-password" value="">
 
 <!-- ═══════════ Вкладка: Общие ═══════════ -->
 <div id="s-pane-general" class="s-tab-panel{% if active_tab == 'general' %} active{% endif %}">
@@ -524,10 +526,26 @@
 
     <div class="s-hint" style="margin-bottom:1rem;">{% trans "Step-by-step guide: docs/telegram-setup.md." %}</div>
 
+    {% if not can_edit_exec_fields %}
     <button type="submit" class="s-save-btn">💾 {% trans "Save" %}</button>
+    {% endif %}
 </div>
 
 </form>
+
+{% if can_edit_exec_fields %}
+{% comment %}Поле пароля — вне формы настроек: в форме с полем пароля менеджер паролей
+   браузера подставляет логин сайта в поле токена. Значение переносится в
+   скрытое поле формы при сохранении.{% endcomment %}
+<div id="s-pane-telegram-confirm" class="s-tab-panel{% if active_tab == 'telegram' %} active{% endif %}">
+    <div class="s-field" style="max-width:420px;">
+        <label for="s-telegram-confirm-pw">{% trans "Your password" %}</label>
+        <input type="password" id="s-telegram-confirm-pw" autocomplete="current-password">
+        <div class="s-hint">{% trans "Needed to change the bot token, the superuser chat id or the Bot API address: superusers' sign-in codes go there." %}</div>
+    </div>
+    <button type="button" class="s-save-btn" onclick="document.getElementById('s-active-tab').form.requestSubmit()">💾 {% trans "Save" %}</button>
+</div>
+{% endif %}
 
 <!-- ═══════════ Вкладка: Новости (свои формы — вне формы настроек) ═══════════ -->
 <div id="s-pane-news" class="s-tab-panel{% if active_tab == 'news' %} active{% endif %}">
@@ -589,6 +607,8 @@ window.sTab = function(name) {
     document.querySelectorAll('.s-tab-panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelector('.s-tab-btn[onclick="sTab(\''+name+'\')"]').classList.add('active');
     document.getElementById('s-pane-'+name).classList.add('active');
+    var extra = document.getElementById('s-pane-'+name+'-confirm');
+    if (extra) extra.classList.add('active');
     // сохранение и перезагрузка — на этой же вкладке
     document.getElementById('s-active-tab').value = name;
     var url = new URL(window.location.href);
@@ -596,6 +616,11 @@ window.sTab = function(name) {
     url.searchParams.delete('saved');
     history.replaceState(null, '', url);
 };
+
+document.getElementById('s-active-tab').form.addEventListener('submit', function() {
+    var pw = document.getElementById('s-telegram-confirm-pw');
+    document.getElementById('s-confirm-password').value = pw ? pw.value : '';
+});
 
 /* Folder browser for path fields */
 var _fbBrowseUrl = "{% url 'fb2parser:browse' %}";

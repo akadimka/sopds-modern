@@ -42,7 +42,8 @@ def env(tmp_path, monkeypatch, settings):
 
 
 def _post(client, **fields):
-    data = {"language": "ru-RU", "maxitems": "20", "fb2toepub": "", "temp_dir": ""}
+    # Пароль суперпользователя — для смены полей Telegram, куда уходят коды входа.
+    data = {"language": "ru-RU", "maxitems": "20", "fb2toepub": "", "temp_dir": "", "confirm_password": _STRONG}
     data.update(fields)
     return client.post(reverse("web:settings"), data)
 
@@ -176,6 +177,28 @@ def test_telegram_buttons_superuser_only(client, env, monkeypatch):
     su.post(reverse("web:telegram_chats"), {"autosync_telegram_token": "9:T",
                                             "autosync_telegram_api_url": "https://tg.example.workers.dev"})
     assert _FakeClient.api_urls == ["https://tg.example.workers.dev"]
+
+
+@pytest.mark.django_db
+def test_telegram_buttons_never_send_the_saved_token_to_an_unsaved_address(client, env, monkeypatch):
+    """«Найти chat id»/«Тестовое сообщение» с несохранённым адресом Bot API и
+    без токена в форме отправляли бы сохранённый токен бота (а им — коды
+    входа) на любой адрес; адрес — только https и только с токеном из формы."""
+    import fb2parser_core.telegram_notify as tn
+    monkeypatch.setattr(tn, "TelegramClient", _FakeClient)
+    su = _login(client, True)
+    _post(su, **_tg(env, autosync_telegram_token="9:SAVED"))
+    _FakeClient.api_urls, _FakeClient.sent = [], []
+    su.post(reverse("web:telegram_chats"), {"autosync_telegram_api_url": "https://evil.example"})
+    su.post(reverse("web:telegram_test"), _tg(env, autosync_telegram_api_url="https://evil.example"))
+    assert "https://evil.example" not in _FakeClient.api_urls
+    _FakeClient.api_urls = []
+    su.post(reverse("web:telegram_chats"), {"autosync_telegram_token": "9:T",
+                                            "autosync_telegram_api_url": "http://127.0.0.1:8000"})
+    assert _FakeClient.api_urls == [""]                                     # не https — не берётся
+    su.post(reverse("web:telegram_test"), _tg(env, autosync_telegram_token="9:T",
+                                              autosync_telegram_admin_chat="1; DROP"))
+    assert ("9:T", "1; DROP") not in _FakeClient.sent
 
 
 _BOTFATHER = ("Done! Congratulations on your new bot. You will find it at t.me/my_news_bot. "

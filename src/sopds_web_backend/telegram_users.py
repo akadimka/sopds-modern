@@ -30,6 +30,16 @@ LINK_PREFIX = "link_"
 
 ERR_BAD_CODE = "bad_code"
 ERR_TAKEN = "taken"
+ERR_TOO_MANY = "too_many"
+
+# Неверные коды привязки с одного Telegram: больше LINK_MAX_FAILURES за час —
+# коды с него не проверяются (перебор кода дал бы чужой аккаунт в боте).
+LINK_MAX_FAILURES = 10
+LINK_LOCK_SECONDS = 60 * 60
+
+
+def _link_failures_key(tg_id) -> str:
+    return f"sopds-tg-link-failures:{tg_id}"
 
 STATE_BOT_USERNAME = "tg_bot_username"
 STATE_JOIN_LINK = "tg_channel_join_link"
@@ -80,12 +90,21 @@ def _tg_name(tg_user: Dict[str, Any]) -> str:
 
 def link_by_code(code: str, tg_user: Dict[str, Any]) -> Tuple[Optional[TelegramLink], str]:
     """Привязать Telegram-пользователя по коду из профиля. (привязка, ошибка)."""
+    from django.core.cache import cache
+    tg_id = int(tg_user["id"])
+    key = _link_failures_key(tg_id)
+    if (cache.get(key) or 0) >= LINK_MAX_FAILURES:
+        return None, ERR_TOO_MANY
     code = normalize_code(code)
     link = (TelegramLink.objects.select_related("user")
             .filter(code=code, code_expires__gt=timezone.now(), user__is_active=True).first()) if code else None
     if link is None:
+        cache.add(key, 0, LINK_LOCK_SECONDS)
+        try:
+            cache.incr(key)
+        except ValueError:              # ключ успел истечь
+            cache.set(key, 1, LINK_LOCK_SECONDS)
         return None, ERR_BAD_CODE
-    tg_id = int(tg_user["id"])
     if TelegramLink.objects.filter(telegram_id=tg_id).exclude(pk=link.pk).exists():
         return None, ERR_TAKEN  # этот Telegram уже привязан к другому аккаунту
     link.telegram_id = tg_id

@@ -182,3 +182,31 @@ def test_only_superuser_role_sees_everything(lib):
     staff = User.objects.create_user("staff", is_staff=True)
     assert visibility.is_library_admin(users["admin"]) and not visibility.is_library_admin(staff)
     assert _titles(visibility.visible_books(staff)) == ["P"]
+
+
+def test_access_changes_reset_cached_folders_and_counts(lib):
+    """Папки и счётчики кэшируются на 5 минут; блокировка владельца,
+    закрытие библиотеки и отзыв доступа меняют их сразу."""
+    users, books = lib
+    anna = users["anna"]
+    folder_b = books["B"].catalog_id
+    assert folder_b in visibility.visible_catalog_ids(anna)            # библиотека Бориса открыта Анне
+    LibraryShare.objects.filter(owner=users["boris"], grantee=anna).delete()
+    assert folder_b not in visibility.visible_catalog_ids(anna)
+    assert visibility.user_counters(anna)["books"] == 3                # A, AC, P
+
+    folder_p = books["P"].catalog_id
+    profile = UserProfile.objects.get(user=users["pub"])
+    profile.library_public = False
+    profile.save()
+    assert folder_p not in visibility.visible_catalog_ids(anna)
+    assert visibility.catalog_book_counts(anna).get(folder_p) is None
+
+    profile.library_public = True
+    profile.save()
+    assert folder_p in visibility.visible_catalog_ids(anna)
+    pub = users["pub"]
+    pub.is_active = False
+    pub.save()
+    assert folder_p not in visibility.visible_catalog_ids(anna)
+    assert visibility.user_counters(anna)["books"] == 2

@@ -48,6 +48,7 @@ from opds_catalog.services import (
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.utils import to_int
+from sopds_web_backend.password_rules import current_password_error
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,9 @@ def SearchBooksView(request):
             genre_url = reverse("web:genre")
             genres_root = {"label": _("Genres"), "url": genre_url}
             try:
-                genre = Genre.objects.get(id=args["searchterms"])
+                # Название — только жанра с видимыми книгами: иначе по номеру
+                # видно имя папки или жанра чужой закрытой библиотеки.
+                genre = visibility.visible_genres(request.user).get(id=args["searchterms"])
                 section = genre.section
                 subsection = genre.subsection
                 crumbs = [genres_root, {"label": section, "url": ""}]
@@ -601,7 +604,7 @@ def GenresView(request):
         items = genre_services.get_genres(user=request.user)
         args["breadcrumbs"] = [{"label": _("Genres"), "url": ""}]
     else:
-        section = genre_services.get_genre_section(section_id)
+        section = genre_services.get_genre_section(section_id, user=request.user)
         items = list(genre_services.get_genre_details(section_id, user=request.user))
         # Раздел с одним поджанром, который ничего не уточняет (пустой — жанр по
         # папке библиотеки, — или совпадает с разделом), — сразу список книг,
@@ -852,6 +855,43 @@ def _apply_autosync_settings(sm, post):
 _TELEGRAM_CHAT_RE = re.compile(r'^(-?\d+|@[A-Za-z]\w{3,})$')
 
 
+def _security_confirm_error(request):
+    """Изменение, которое ослабляет вход суперпользователей или даёт права
+    суперпользователя (свой пароль из таблицы пользователей, новый
+    суперпользователь, выключить второй фактор, куда уходят коды входа), —
+    только с паролем суперпользователя: украденной сессии мало, чтобы
+    закрепиться. Пустое поле — без счётчика, неверный пароль — в счётчик
+    (`current_password_error`)."""
+    password = request.POST.get("confirm_password", "")
+    if not password:
+        return _("Enter your password to confirm this change.")
+    return current_password_error(request, request.user, password, _("Password is incorrect."))
+
+
+def _telegram_login_fields_changed(sm, post) -> bool:
+    """Меняются поля, от которых зависит, куда уходят коды входа
+    суперпользователей: токен бота, чат суперпользователя, адрес Bot API."""
+    from fb2parser_core.telegram_notify import normalize_api_url
+    saved = sm.get_autosync_settings()
+    token = post.get('autosync_telegram_token', '').strip()
+    if token and token != (saved.get('telegram_token') or ''):
+        return True
+    if post.get('autosync_telegram_token_clear') and saved.get('telegram_token'):
+        return True
+    admin_chat = post.get('autosync_telegram_admin_chat')
+    if admin_chat is not None and admin_chat.strip() != (saved.get('telegram_admin_chat') or ''):
+        return True
+    if 'autosync_telegram_api_url' in post:
+        def norm(value):
+            try:
+                return normalize_api_url(value or '')
+            except ValueError:
+                return (value or '').strip()
+        if norm(post.get('autosync_telegram_api_url')) != norm(saved.get('telegram_api_url')):
+            return True
+    return False
+
+
 def _apply_login_security(sm, post, user):
     """«Безопасность входа» (только суперпользователь): второй фактор для
     суперпользователей и пароли для читалок. Включить второй фактор можно,
@@ -880,11 +920,27 @@ def _telegram_form_settings(request):
     from fb2parser_core.settings_manager import SettingsManager
     cfg = SettingsManager(os.path.normpath(os.path.join(
         os.path.dirname(__file__), "..", "fb2_data", "settings", "config.json"))).get_autosync_settings()
-    from fb2parser_core.telegram_notify import extract_token
-    for key in ('telegram_token', 'telegram_channel', 'telegram_admin_chat', 'telegram_proxy', 'telegram_api_url'):
+    from fb2parser_core.telegram_notify import extract_token, normalize_api_url
+    typed_token = False
+    for key in ('telegram_token', 'telegram_channel', 'telegram_admin_chat', 'telegram_proxy'):
         value = request.POST.get(f'autosync_{key}', '').strip()
-        if value:
-            cfg[key] = (extract_token(value) or value) if key == 'telegram_token' else value
+        if not value:
+            continue
+        if key == 'telegram_token':
+            cfg[key], typed_token = extract_token(value) or value, True
+        elif key in ('telegram_channel', 'telegram_admin_chat') and not _TELEGRAM_CHAT_RE.match(value):
+            continue                                    # как при сохранении: @имя или число
+        else:
+            cfg[key] = value
+    # Адрес Bot API — как при сохранении, только https. Несохранённый адрес —
+    # только с токеном из формы: иначе сохранённый токен бота (а с ним и коды
+    # входа) ушёл бы на любой адрес, вписанный в поле.
+    api_url = request.POST.get('autosync_telegram_api_url', '').strip()
+    if api_url and typed_token:
+        try:
+            cfg['telegram_api_url'] = normalize_api_url(api_url)
+        except ValueError:
+            pass
     return cfg
 
 
@@ -1053,7 +1109,12 @@ def sopds_settings(request):
                     continue
             sopds[f] = value
         if request.user.is_superuser:
-            errors.extend(_apply_autosync_settings(sm, request.POST))
+            confirm_error = (_telegram_login_fields_changed(sm, request.POST)
+                             and _security_confirm_error(request))
+            if confirm_error:
+                errors.append(_("Telegram settings were not saved: %(error)s") % {"error": confirm_error})
+            else:
+                errors.extend(_apply_autosync_settings(sm, request.POST))
         sm.save()
         _record_settings(request, before, sm, active_tab)
 
@@ -1888,8 +1949,9 @@ def user_profile(request):
             old_pw = request.POST.get("old_password", "")
             new_pw = request.POST.get("new_password", "")
             confirm_pw = request.POST.get("confirm_password", "")
-            if not user.check_password(old_pw):
-                errors["password"] = _("Current password is incorrect.")
+            pw_error = current_password_error(request, user, old_pw, _("Current password is incorrect."))
+            if pw_error:
+                errors["password"] = pw_error
             elif new_pw != confirm_pw:
                 errors["password"] = _("Passwords do not match.")
             else:
@@ -1939,10 +2001,11 @@ def user_profile(request):
                     return redirect(reverse("web:login"))
             success = "devices"
 
-        elif action in _PASSWORD_CONFIRMED_ACTIONS and not user.check_password(request.POST.get("confirm_password", "")):
+        elif action in _PASSWORD_CONFIRMED_ACTIONS and (pw_error := current_password_error(
+                request, user, request.POST.get("confirm_password", ""), _("Password is incorrect."))):
             # Долговременный доступ (пароль для читалок, Telegram, 2ФА) — только
             # с паролем: украденной сессии мало, чтобы закрепиться в аккаунте.
-            errors[_PASSWORD_CONFIRMED_ACTIONS[action]] = _("Password is incorrect.")
+            errors[_PASSWORD_CONFIRMED_ACTIONS[action]] = pw_error
 
         elif action == "tg_notify":
             # Личная сводка новинок в Telegram. Включили — точка отсчёта
@@ -2020,8 +2083,9 @@ def user_profile(request):
 
         elif action == "delete":
             confirm_pw = request.POST.get("confirm_password", "")
-            if not user.check_password(confirm_pw):
-                errors["delete"] = _("Password is incorrect.")
+            pw_error = current_password_error(request, user, confirm_pw, _("Password is incorrect."))
+            if pw_error:
+                errors["delete"] = pw_error
             else:
                 activity.record(request, "account_deleted")
                 logout(request)
@@ -2066,8 +2130,9 @@ def password_change_required(request):
     if request.method == "POST":
         old_pw = request.POST.get("old_password", "")
         new_pw = request.POST.get("new_password", "")
-        if not user.check_password(old_pw):
-            error = _("Current password is incorrect.")
+        error = current_password_error(request, user, old_pw, _("Current password is incorrect."))
+        if error:
+            pass
         elif new_pw != request.POST.get("confirm_password", ""):
             error = _("Passwords do not match.")
         elif new_pw == old_pw:
@@ -2236,6 +2301,12 @@ def users_settings(request):
     except ValueError:
         errors.append(_("Device limit must be a whole number (0 — no limit)."))
     sm.settings['autosync'] = sm.get_autosync_settings()
+    weakens = ((sm.settings['autosync'].get('admin_login_code') and request.POST.get('admin_login_code') != 'on')
+               or (sm.settings.get('sopds', {}).get('opds_app_passwords_only')
+                   and request.POST.get('opds_app_passwords_only') != 'on'))
+    confirm_error = weakens and _security_confirm_error(request)
+    if confirm_error:
+        return _users_list_error(request, confirm_error)
     errors.extend(_apply_login_security(sm, request.POST, request.user))
     sm.save()
     _record_settings(request, before, sm, "users")
@@ -2262,6 +2333,8 @@ def user_create(request):
         future = DjangoUser(username=username)
         _set_role(future, role)                          # требования к паролю — по роли
         error = _password_error(password, future)
+    if not error and role == ROLE_SUPERUSER:
+        error = _security_confirm_error(request)
     if error:
         return _users_list_error(request, error)
     user = DjangoUser.objects.create_user(username=username, password=password)
@@ -2286,6 +2359,12 @@ def user_edit(request, user_id):
         return _users_list_error(request, _("You cannot remove the superuser role from yourself."))
     password = request.POST.get("password", "").strip()
     old_role = _role_of(user)
+    if ROLE_SUPERUSER in (old_role, role) and (password or role != old_role):
+        # Пароль суперпользователя (и свой) и роль суперпользователя — только
+        # с паролем: иначе украденная сессия меняла бы владельцу пароль.
+        error = _security_confirm_error(request)
+        if error:
+            return _users_list_error(request, error)
     _set_role(user, role)                                # требования к паролю — по новой роли
     if password:
         error = _password_error(password, user)

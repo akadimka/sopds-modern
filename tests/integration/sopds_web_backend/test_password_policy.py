@@ -82,9 +82,11 @@ def _root():
 
 def test_create_user_checks_rules_by_role_and_requires_change():
     root = _root()
-    response = root.post(reverse("web:user_create"), {"username": "boss", "password": USER_OK, "role": "superuser"})
+    response = root.post(reverse("web:user_create"), {"username": "boss", "password": USER_OK, "role": "superuser",
+                                                      "confirm_password": STRONG})
     assert response.status_code == 422 and not User.objects.filter(username="boss").exists()
-    root.post(reverse("web:user_create"), {"username": "boss", "password": STRONG, "role": "superuser"})
+    root.post(reverse("web:user_create"), {"username": "boss", "password": STRONG, "role": "superuser",
+                                           "confirm_password": STRONG})
     root.post(reverse("web:user_create"), {"username": "anna", "password": USER_OK, "role": "user"})
     assert must_change(User.objects.get(username="boss")) and must_change(User.objects.get(username="anna"))
     page = root.get(reverse("web:users_list")).content.decode("utf-8")
@@ -154,11 +156,13 @@ def test_superuser_reset_is_temporary_own_change_is_not():
     root.post(reverse("web:user_edit", args=(anna.pk,)), {"role": "user", "password": "Zq8!wErT"})
     assert must_change(User.objects.get(pk=anna.pk))
     me = User.objects.get(username="root")
-    root.post(reverse("web:user_edit", args=(me.pk,)), {"role": "superuser", "password": "Zq8!wErT5yUi"})
+    root.post(reverse("web:user_edit", args=(me.pk,)), {"role": "superuser", "password": "Zq8!wErT5yUi",
+                                                        "confirm_password": STRONG})
     me = User.objects.get(pk=me.pk)
     assert me.check_password("Zq8!wErT5yUi") and not must_change(me)        # свой пароль — не временный
     assert root.get(reverse("web:users_list")).status_code == 200
-    response = root.post(reverse("web:user_edit", args=(anna.pk,)), {"role": "superuser", "password": "Zq8!wErT"})
+    response = root.post(reverse("web:user_edit", args=(anna.pk,)), {"role": "superuser", "password": "Zq8!wErT",
+                                                                     "confirm_password": "Zq8!wErT5yUi"})
     assert response.status_code == 422                             # для новой роли — 12 символов
 
 

@@ -71,3 +71,27 @@ def test_browse_accepts_input_id_target(admin_user, tmp_path):
                     path=str(tmp_path), target="names-csv-path")
     assert response.status_code == 200
     assert "closeBrowser('names-csv-path')" in response.content.decode()
+
+
+_QUOTE_PAYLOAD = """x" autofocus onfocus="alert(1)" y='z"""
+
+
+def test_settings_conversions_and_lists_never_put_values_into_onclick(plain_static):
+    """«Замены фамилий»: ключи приходят из «Дублей серий» (название книги).
+    Таблица перерисовывалась в JS с экранированием только & и < и со
+    значением внутри onclick-строки — кавычка из названия выполняла код в
+    сессии суперпользователя. Теперь значение — только экранированным
+    атрибутом data-val, обработчик читает его через dataset."""
+    html = render_to_string("fb2parser/settings.html", {
+        "lists_meta": [("filename_blacklist", "BL")],
+        "first_list_key": "filename_blacklist",
+        "lists_data": {"filename_blacklist": [_QUOTE_PAYLOAD]},
+        "conversions": {_QUOTE_PAYLOAD: "Иванов"},
+    })
+    assert 'onfocus="alert' not in html
+    assert 'data-val="x&quot; autofocus onfocus=&quot;alert(1)&quot; y=&#x27;z"' in html
+    script = html[html.index("function slRender"):]
+    assert "cvDelete(\''" not in script and "slDelete(\''" not in script
+    assert script.count("onclick=\"cvDelete(this.dataset.val)\"") == 1
+    assert script.count("onclick=\"slDelete(this.dataset.val)\"") == 1
+    assert ".replace(/\"/g,'&quot;').replace(/'/g,'&#39;')" in html

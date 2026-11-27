@@ -64,6 +64,8 @@ ACTIONS = {
     "logout": Action(SECURITY, _lazy("Signed out")),
     "code_wrong": Action(SECURITY, _lazy("Wrong second-factor code")),
     "code_locked": Action(SECURITY, _lazy("Locked out by wrong codes")),
+    "password_wrong": Action(SECURITY, _lazy("Wrong password when confirming an action")),
+    "password_locked": Action(SECURITY, _lazy("Locked out by wrong passwords")),
     "device_new": Action(SECURITY, _lazy("New device")),
     "device_deleted": Action(SECURITY, _lazy("Device removed")),
     "password_changed": Action(SECURITY, _lazy("Changed the password")),
@@ -447,8 +449,9 @@ def summary_today() -> dict:
     today = ActivityEvent.objects.filter(at__gte=start_of_today())
     return {
         "logins": today.filter(action="login").count(),
-        "failed": today.filter(action__in=("login_failed", "code_wrong", "login_refused")).count(),
-        "locks": today.filter(action__in=("locked_out", "code_locked")).count(),
+        "failed": today.filter(action__in=("login_failed", "code_wrong", "password_wrong",
+                                           "login_refused")).count(),
+        "locks": today.filter(action__in=("locked_out", "code_locked", "password_locked")).count(),
         "opened": today.filter(action="book_opened").count(),
         "downloads": today.filter(action="book_downloaded").count(),
         "active_users": today.exclude(user=None).values("user").distinct().count(),
@@ -470,7 +473,8 @@ def security_alerts() -> int:
     if cached is not None:
         return cached
     failures = ActivityEvent.objects.filter(at__gte=start_of_today(), category=SECURITY, ok=False,
-                                            action__in=("locked_out", "code_locked", "login_failed"))
+                                            action__in=("locked_out", "code_locked", "password_locked",
+                                                        "login_failed"))
     known = set(ActivityEvent.objects.filter(action="login", ok=True).exclude(ip=None)
                 .values_list("user_id", "ip").distinct())
     count = sum(1 for action, user_id, ip in failures.values_list("action", "user_id", "ip")
@@ -482,15 +486,27 @@ def security_alerts() -> int:
 CSV_LIMIT = 100_000
 
 
+_CSV_FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_cell(value) -> str:
+    """Ячейка выгрузки: текст, который Excel/LibreOffice приняли бы за
+    формулу (имя из неудачного входа «=HYPERLINK(…)», название книги), — с
+    апострофом впереди, как обычный текст."""
+    text = "" if value is None else str(value)
+    return "'" + text if text.startswith(_CSV_FORMULA_START) else text
+
+
 def csv_rows(filters: dict):
     """Строки выгрузки журнала в CSV по тем же фильтрам (без страниц)."""
     import json
     yield ["time", "user", "actor", "category", "action", "channel", "ok", "object", "ip", "details"]
     for e in events(filters).iterator(chunk_size=2000):
-        yield [timezone.localtime(e.at).strftime("%Y-%m-%d %H:%M:%S"), e.username, e.actor_name,
-               str(CATEGORIES.get(e.category, ("", e.category))[1]), str(action_label(e.action)),
-               str(CHANNELS.get(e.channel, ("", e.channel))[1]), "1" if e.ok else "0",
-               e.object_label, e.ip or "", json.dumps(e.details, ensure_ascii=False) if e.details else ""]
+        yield [_csv_cell(v) for v in (
+            timezone.localtime(e.at).strftime("%Y-%m-%d %H:%M:%S"), e.username, e.actor_name,
+            str(CATEGORIES.get(e.category, ("", e.category))[1]), str(action_label(e.action)),
+            str(CHANNELS.get(e.channel, ("", e.channel))[1]), "1" if e.ok else "0",
+            e.object_label, e.ip or "", json.dumps(e.details, ensure_ascii=False) if e.details else "")]
 
 
 def book_events(book_id, limit: int = 10) -> list:

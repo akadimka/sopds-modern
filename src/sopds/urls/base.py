@@ -34,6 +34,9 @@ urlpatterns = [
     # Вход в админку — через общую форму сайта: у неё второй шаг (код из
     # Telegram для суперпользователей), у стандартной формы Django его нет.
     path("admin/login/", RedirectView.as_view(url=reverse_lazy("web:login"), query_string=True)),
+    # Свой пароль — в профиле сайта: там старый пароль проверяется со счётчиком
+    # и смена отзывает пароли для читалок (sopds_web_backend/admin.py).
+    path("admin/password_change/", RedirectView.as_view(url=reverse_lazy("web:profile"))),
     path("admin/", admin.site.urls),
     path("sw.js", web_views.service_worker, name="service_worker"),
     path("", RedirectView.as_view(url=reverse_lazy("web:main"))),

@@ -95,6 +95,41 @@ def check_on_sign_in(user, password: str) -> None:
         set_must_change(user, True)
 
 
+PASSWORD_MAX_FAILURES = 5
+PASSWORD_LOCK_SECONDS = 60 * 60
+
+
+def _password_failures_key(user) -> str:
+    return f"sopds-password-failures:{user.pk}"
+
+
+def current_password_error(request, user, password: str, wrong_message: str):
+    """Проверка текущего пароля внутри сессии (подтверждение действия, смена
+    пароля, удаление учётной записи). None — пароль верный, иначе — текст
+    ошибки. Вход сюда уже открыт, axes эти проверки не считает: без своего
+    счётчика украденная сессия подбирала бы пароль без предела. Неверный
+    пароль — в счётчик учётной записи и в журнал; PASSWORD_MAX_FAILURES за
+    час — проверка на час закрыта даже для верного пароля."""
+    from django.core.cache import cache
+
+    from . import activity
+    key = _password_failures_key(user)
+    if (cache.get(key) or 0) >= PASSWORD_MAX_FAILURES:
+        return _("Too many wrong passwords — try again in an hour.")
+    if user.check_password(password or ""):
+        cache.delete(key)
+        return None
+    cache.add(key, 0, PASSWORD_LOCK_SECONDS)
+    try:
+        cache.incr(key)
+    except ValueError:              # ключ успел истечь
+        cache.set(key, 1, PASSWORD_LOCK_SECONDS)
+    activity.record(request, "password_wrong", user=user, ok=False)
+    if (cache.get(key) or 0) == PASSWORD_MAX_FAILURES:
+        activity.record(request, "password_locked", user=user, ok=False)
+    return wrong_message
+
+
 # Адреса, доступные, пока пароль не сменён: сама смена, выход, вход и
 # служебные страницы (без них не загрузится и страница смены).
 _ALLOWED = {("web", "password_change_required"), ("web", "logout"), ("web", "login"), ("web", "login_code"),
