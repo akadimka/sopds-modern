@@ -412,8 +412,3 @@ def find_books_by_template(
         books = books.filter(lang_code=lang_code)
 
     return books
-
-
-def author_books_count(author: Author | int, *, user) -> int:
-    """Подсчет числа видимых пользователю книг автора."""
-    return visibility.visible_books(user).filter(authors=author).count()

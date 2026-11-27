@@ -326,15 +326,6 @@ class TestSopdsProcessor:
         assert "app_title" in result
         assert "stats" in result
 
-    def test_alphabet_menu(self, rf, counter_with_books, override_config) -> None:
-        from sopds_web_backend.processors import sopds_processor
-
-        with override_config(SOPDS_ALPHABET_MENU=True):
-            request = rf.get("/")
-            request.user = AnonymousUser()
-            result = sopds_processor(request)
-            assert "lang_menu" in result
-
     def test_bookshelf_no_n_plus_one_queries(
         self, rf, counter_with_books, django_user, catalog, override_config, publish
     ) -> None:

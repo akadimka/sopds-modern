@@ -89,21 +89,3 @@ class BookFile(object):
             # and (sorted(self.issues) == sorted(other.issues))
             and self.docdate == other.docdate
         )
-
-
-class BookMetaInfo(object):
-    """Класс для хранения информации о книге"""
-
-    def __init__(self, mimetype: str) -> None:
-        self.authors = []
-        self.genres = []
-        self.title: str = None
-        self.description: str = None
-        self.series: str = None
-        self.series_index: int = None
-        self.cover_file_type: str = None
-        self.cover_image: bytes = None
-        self.mimetype = mimetype
-        self.tags = []
-        self.language_code: str = None
-        self.docdate: str = None

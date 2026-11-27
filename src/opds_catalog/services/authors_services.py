@@ -18,12 +18,6 @@ from opds_catalog.models import Author
 from opds_catalog.services import SearchType
 
 
-class AuthorTemplateResult(TypedDict):
-    sid: str
-    template_length: int
-    cnt: int
-
-
 def find_authors_by_template(
     chars: str, length: int, lang_code: int | None, *, user
 ) -> QuerySet:
@@ -60,38 +54,6 @@ def find_authors_by_template(
         query = query.filter(lang_code=lang_code)
 
     return query
-
-
-def search_authors(searchtype: SearchType, searchterms: str, *, user) -> QuerySet[Author]:
-    """Поиск авторов.
-
-    :param searchtype: Тип поиска (один из значений SearchType).
-    :type searchtype: SearchType
-
-    :param searchterms: Строка для поиска.
-    :type searchterms: str
-
-    :returns: Запрос с авторами, соответствующими критериям поиска.
-    :rtype: QuerySet[Author]
-
-    :raises ValueError: Если передан неподдерживаемый тип поиска.
-    """
-    search_terms_upper = searchterms.upper()
-    if searchtype == SearchType.BY_SUBSTRING:
-        authors = Author.objects.filter(
-            search_full_name__contains=search_terms_upper
-        ).order_by("search_full_name")
-    elif searchtype == SearchType.BY_START_WITH:
-        authors = Author.objects.filter(
-            search_full_name__startswith=search_terms_upper
-        ).order_by("search_full_name")
-    elif searchtype == SearchType.BY_EXACT_MATCH:
-        authors = Author.objects.filter(search_full_name=search_terms_upper).order_by(
-            "search_full_name"
-        )
-    else:
-        raise ValueError(f"Unsupported search type: {searchtype}")
-    return visibility.visible_authors(user, authors)
 
 
 def search_authors_with_counts(

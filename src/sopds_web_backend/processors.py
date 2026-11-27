@@ -1,7 +1,7 @@
 from random import randint
 
 from opds_catalog import settings, visibility
-from opds_catalog.models import Book, Counter, bookshelf, lang_menu
+from opds_catalog.models import Book, Counter, bookshelf
 from opds_catalog.sopds_config import sopds_cfg as config
 from sopds_web_backend import online
 
@@ -11,7 +11,6 @@ def sopds_processor(request):
     args["app_title"] = settings.TITLE
     args["sopds_auth"] = config.SOPDS_AUTH
     args["sopds_version"] = settings.VERSION
-    args["alphabet"] = config.SOPDS_ALPHABET_MENU
     args["splititems"] = config.SOPDS_SPLITITEMS
     args["fb2tomobi"] = config.SOPDS_FB2TOMOBI != ""
     args["fb2toepub"] = config.SOPDS_FB2TOEPUB != ""
@@ -19,10 +18,6 @@ def sopds_processor(request):
     args["nozip"] = settings.NOZIP_FORMATS
     args["sticky_header"] = bool(config.SOPDS_STICKY_HEADER)
     args["maintenance_on"] = bool(config.SOPDS_MAINTENANCE)
-
-    # if config.SOPDS_ALPHABET_MENU:
-    if args["alphabet"]:
-        args["lang_menu"] = lang_menu
 
     # if config.SOPDS_AUTH:
     if args["sopds_auth"]:

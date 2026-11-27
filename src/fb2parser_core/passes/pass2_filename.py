@@ -1178,7 +1178,3 @@ class Pass2Filename:
             self.logger.log(f"[PASS 2] Block-level matching error for '{filename}': {e}")
             traceback.print_exc()
             return ""
-        
-        self.logger.log(f"[PASS 2 DEBUG] No pattern match {'(score=' + str(best_score) + ')' if best_score > 0 else ''}")
-        
-        return ""

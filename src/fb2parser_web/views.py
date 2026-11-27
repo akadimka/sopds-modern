@@ -20,7 +20,7 @@ from opds_catalog.models import Author, Book, Catalog, Counter, Genre, Series
 from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.sopdscan import opdsScanner
 
-from .job_state import JobFlag, JobState, SharedDict
+from .job_state import JobFlag, JobState
 
 # ── Состояние сканирования (общий кэш — виден всем worker-процессам gunicorn) ─
 scan_job = JobState("fb2parser:scan", {

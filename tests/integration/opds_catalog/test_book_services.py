@@ -140,18 +140,6 @@ class TestBookServices:
         )
         assert results.count() == 1
 
-    def test_author_books_count(self, book_with_relations, admin_user):
-        """Подсчёт книг автора."""
-        author = book_with_relations.authors.first()
-        count = book_services.author_books_count(author, user=admin_user)
-        assert count == 1
-
-    def test_author_books_count_by_int(self, book_with_relations, admin_user):
-        """Подсчёт книг автора по ID."""
-        author = book_with_relations.authors.first()
-        count = book_services.author_books_count(author.id, user=admin_user)
-        assert count == 1
-
     def test_book_description_escapes_book_metadata(self, book_with_relations):
         """Описание уходит в OPDS как HTML: разметка из метаданных книги
         (название, авторы, серия, файл, аннотация) не должна отрисоваться в читалке."""

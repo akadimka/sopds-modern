@@ -2,7 +2,7 @@
 
 import pytest
 
-from opds_catalog.utils import get_lang_name, translit
+from opds_catalog.utils import get_lang_name
 
 
 class TestOpdsUtils:
@@ -19,27 +19,6 @@ class TestOpdsUtils:
         """Проверка что неизвестный код возвращается как есть"""
         lang_name = get_lang_name("xx")
         assert lang_name == "xx"
-
-    def test_translit(self) -> None:
-        """Проверка утилиты транслитерации"""
-        text = "Длинношеий чемодан"
-        expected_text = "Dlinnosheij_chemodan"
-        result_text = translit(text)
-        assert expected_text == result_text
-
-    def test_quotes(self) -> None:
-        """Проверка удаления кавычек"""
-        text = '"Крейсер «Аврора»"'
-        expected_text = "Krejser_Avrora"
-        result_text = translit(text)
-        assert result_text == expected_text
-
-    def test_remove_newline(self) -> None:
-        """Проверка удаления символа \n"""
-        text = "Это две\nстроки"
-        expected_text = "Eto_dve_stroki"
-        result_text = translit(text)
-        assert result_text == expected_text
 
     def test_to_int_valid(self) -> None:
         """Проверка to_int с валидным значением"""

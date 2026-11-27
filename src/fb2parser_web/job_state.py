@@ -112,20 +112,3 @@ class JobFlag:
 
     def is_set(self) -> bool:
         return bool(cache.get(self._key, False))
-
-
-class SharedDict:
-    """Cache-backed replacement for a plain shared `dict` (no job/running
-    semantics — just key-value data multiple workers must agree on)."""
-
-    def __init__(self, key: str):
-        self._key = key
-
-    def get(self) -> dict:
-        return dict(cache.get(self._key, {}))
-
-    def set(self, value: dict):
-        cache.set(self._key, dict(value), _TIMEOUT)
-
-    def clear(self):
-        cache.delete(self._key)

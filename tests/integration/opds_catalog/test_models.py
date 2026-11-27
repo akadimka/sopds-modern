@@ -139,12 +139,3 @@ class TestCounter:
         assert Counter.objects.get_counter(models.counter_allcatalogs) == 1
         assert Counter.objects.get_counter(models.counter_allgenres) == 1
         assert Counter.objects.get_counter(models.counter_allseries) == 1
-
-    def test_get_lastscan_none(self):
-        """Если счётчиков нет, get_lastscan возвращает None."""
-        assert Counter.objects.get_lastscan() is None
-
-    def test_get_lastscan_after_update(self, update_counters):
-        """После обновления get_lastscan возвращает не None."""
-        lastscan = Counter.objects.get_lastscan()
-        assert lastscan is not None

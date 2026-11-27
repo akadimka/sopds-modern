@@ -7,7 +7,6 @@ from opds_catalog.services.authors_services import (
     SearchType,
     find_authors_by_template,
     get_author_name,
-    search_authors,
     search_authors_with_counts,
 )
 
@@ -48,7 +47,7 @@ def test_find_authors_by_template(multiple_authors, admin_user):
 def test_search_authors_parametrized(
     multiple_authors, search_type, search_term, expected_count, admin_user):
     """Параметризованный тест поиска авторов."""
-    authors = search_authors(search_type, search_term, user=admin_user)
+    authors = search_authors_with_counts(search_type, search_term, user=admin_user)
     assert authors.count() == expected_count
 
 
@@ -111,14 +110,14 @@ class TestAuthorServicesIntegration:
     """Интеграционные тесты для сервисов авторов."""
 
     def test_find_and_search_combination(self, multiple_authors, admin_user):
-        """Комбинированный тест find_authors_by_template и search_authors."""
+        """Комбинированный тест find_authors_by_template и search_authors_with_counts."""
         # Получаем шаблон "АБ"
         template_result = find_authors_by_template("АБ", 2, 1, user=admin_user)
         assert len(template_result) == 1
 
         # Используем sid из результата для поиска авторов
         sid = template_result[0]["sid"]
-        authors = search_authors(SearchType.BY_START_WITH, sid, user=admin_user)
+        authors = search_authors_with_counts(SearchType.BY_START_WITH, sid, user=admin_user)
         # Два автора начинаются с "АБ"
         assert authors.count() == 2
 

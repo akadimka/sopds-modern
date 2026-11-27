@@ -111,11 +111,6 @@ def _series_title(series) -> str:
     return f"{author} - {series.ser}"
 
 
-def _short_authors(book: Book) -> str:
-    names = [a.full_name for a in book.authors.all()]
-    return names[0] + (" и др." if len(names) > 1 else "") if names else ""
-
-
 # ---------- экраны ----------
 def _nav(prefix: str, page: int, total: int, suffix: str = "") -> List[Dict[str, str]]:
     pages = (total + PAGE - 1) // PAGE

@@ -72,13 +72,6 @@ class fb2tag:
             val = None
         return val
 
-    def getattrs(self, attr):
-        if self.attrss:
-            val = [a.get(attr) for a in self.attrss if attr in a]
-        else:
-            val = []
-        return val
-
 
 class fb2cover(fb2tag):
     def __init__(self, tags):
