@@ -186,9 +186,10 @@ def test_role_and_password_have_own_columns(page):
     assert headers[-3:] == ["Change role", "New password", "Actions"]
     row = html.split(f'id="user-{anna.pk}"', 1)[1].split("</tr>", 1)[0]
     cells = re.findall(r"<td>(.*?)</td>", row, re.S)
-    assert 'name="role"' in cells[6] and f'form="user-edit-{anna.pk}"' in cells[6]
-    assert 'name="password"' in cells[7] and f'form="user-edit-{anna.pk}"' in cells[7] and "sopdsFillPassword" in cells[7]
-    assert 'name="role"' not in cells[8] and 'name="password"' not in cells[8] and "Delete" in cells[8]
+    assert 'name="downloads_per_day"' in cells[6] and 'name="downloads_per_month"' in cells[6]   # лимит книг
+    assert 'name="role"' in cells[7] and f'form="user-edit-{anna.pk}"' in cells[7]
+    assert 'name="password"' in cells[8] and f'form="user-edit-{anna.pk}"' in cells[8] and "sopdsFillPassword" in cells[8]
+    assert 'name="role"' not in cells[9] and 'name="password"' not in cells[9] and "Delete" in cells[9]
 
 
 def test_sticky_header_switch(page, override_config):

@@ -15,6 +15,11 @@ class UserProfile(models.Model):
     # Лимит устройств (браузеров): NULL — по умолчанию из настроек, 0 — без
     # ограничений (docs/devices-design.md).
     max_devices = models.PositiveIntegerField(null=True, blank=True)
+    # Сколько разных книг можно взять (скачать, конвертировать, открыть в
+    # читалке, получить в Telegram) в сутки и в месяц: NULL — по умолчанию из
+    # настроек, 0 — без ограничений (docs/download-limits-design.md).
+    downloads_per_day = models.PositiveIntegerField(null=True, blank=True)
+    downloads_per_month = models.PositiveIntegerField(null=True, blank=True)
     # Нужно сменить пароль при следующем входе: первый вход, пароль задан
     # суперпользователем или не отвечает требованиям (password_rules.py).
     must_change_password = models.BooleanField(default=False)
@@ -207,3 +212,24 @@ class ActivityEvent(models.Model):
 
     def __str__(self):
         return f"ActivityEvent({self.at:%Y-%m-%d %H:%M}, {self.username or '-'}, {self.action})"
+
+
+class BookTake(models.Model):
+    """Книга, взятая пользователем в этом месяце: скачана, конвертирована,
+    открыта в читалке или получена в Telegram (docs/download-limits-design.md).
+    Одна строка на книгу в месяц: повторно та же книга лимит не тратит. Книга —
+    числом, а не ссылкой: удалённая из библиотеки книга не возвращает лимит."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+    book_id = models.IntegerField()
+    month = models.DateField()                       # первое число месяца (местное время)
+    taken_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "book_id", "month"], name="unique_book_take_per_month"),
+        ]
+        indexes = [models.Index(fields=["user", "month", "taken_at"], name="book_take_user_month")]
+
+    def __str__(self):
+        return f"BookTake({self.user_id}, {self.book_id}, {self.month:%Y-%m})"

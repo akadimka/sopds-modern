@@ -36,6 +36,7 @@ from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
 from opds_catalog.sopds_config import sopds_cfg as config
 from opds_catalog.utils import get_fs_book_path, getFileData, getFileName
+from sopds_web_backend import download_limits
 
 logger = logging.getLogger(__name__)
 SOPDS_DEFAULT_COVER = "/static/images/sopds-modern-nocover.png"
@@ -51,6 +52,9 @@ def Download(request, book_id, zip_flag):
     logger.debug(f"Zip flag: {zip_flag}")
     logger.info(f"Reading book {book_id} metadata from database")
     book = visibility.get_visible_book_or_404(request.user, book_id)
+    refused = download_limits.gate(request, book)
+    if refused is not None:
+        return refused
 
     logger.info("Processing user bookshelf ")
     if config.SOPDS_AUTH:
@@ -107,6 +111,7 @@ def Download(request, book_id, zip_flag):
 
 def _record_download(request, book, fmt):
     from sopds_web_backend import activity
+    download_limits.note(request.user, book)
     activity.record(request, "book_downloaded", obj=activity.book_obj(book), format=fmt)
 
 
@@ -218,11 +223,16 @@ def render_book_html(request, book_id, back_url: str = ""):
     if book.format.lower() != "fb2":
         raise Http404
 
+    refused = download_limits.gate(request, book)
+    if refused is not None:
+        return refused
+
     fb2_data = getFileData(book)
     if fb2_data is None:
         raise Http404
 
     from sopds_web_backend import activity
+    download_limits.note(request.user, book)
     activity.record(request, "book_opened", obj=activity.book_obj(book), once_per_day=True)
 
     resume_anchor = ""
@@ -445,6 +455,9 @@ def ConvertFB2(request, book_id, convert_type):
 
     if book.format != "fb2":
         raise Http404
+    refused = download_limits.gate(request, book)
+    if refused is not None:
+        return refused
 
     if config.SOPDS_AUTH and request.user.is_authenticated:
         bookshelf.objects.get_or_create(user=request.user, book=book)

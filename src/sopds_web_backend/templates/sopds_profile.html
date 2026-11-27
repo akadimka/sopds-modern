@@ -88,6 +88,18 @@
   </form>
 </div>
 
+{% if book_limits %}
+<!-- ── Лимит книг (docs/download-limits-design.md) ── -->
+<div class="s-section" style="margin-bottom:1.5rem;" id="book-limits">
+  <div class="s-section-title">{% trans "Book limits" %}</div>
+  <p style="font-size:0.9rem; margin-bottom:0.3rem;">
+    {% trans "Today" %}: {% if book_limits.day %}{% blocktrans with n=book_limits.usage.day limit=book_limits.day %}{{ n }} of {{ limit }}{% endblocktrans %}{% else %}{% blocktrans with n=book_limits.usage.day %}{{ n }} (no limit){% endblocktrans %}{% endif %}
+    · {% trans "This month" %}: {% if book_limits.month %}{% blocktrans with n=book_limits.usage.month limit=book_limits.month %}{{ n }} of {{ limit }}{% endblocktrans %}{% else %}{% blocktrans with n=book_limits.usage.month %}{{ n }} (no limit){% endblocktrans %}{% endif %}
+  </p>
+  <div class="s-hint">{% trans "A book counts once a month — when you first download it, open it in the reader or get it in Telegram. Books you have already taken this month do not count again." %}</div>
+</div>
+{% endif %}
+
 <!-- ── Мои устройства (лимит устройств, docs/devices-design.md) ── -->
 <div class="s-section" style="margin-bottom:1.5rem;" id="devices">
   <div class="s-section-title">{% trans "My devices" %}</div>

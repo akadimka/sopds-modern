@@ -58,6 +58,10 @@ _DEFAULTS: dict = {
     # Устройств (браузеров) на пользователя по умолчанию; 0 — без ограничений
     # (docs/devices-design.md).
     'devices_per_user': 0,
+    # Разных книг на пользователя в сутки и в месяц по умолчанию; 0 — без
+    # ограничений (docs/download-limits-design.md).
+    'downloads_per_day': 20,
+    'downloads_per_month': 200,
     # Сроки хранения журнала действий, дней; 0 — бессрочно
     # (docs/activity-log-design.md, «Хранение во времени»).
     'activity_keep_security_days': 365,
@@ -103,6 +107,8 @@ _KEY_MAP: dict[str, str] = {
     'SOPDS_FANTLAB_RATING': 'fantlab_rating',
     'SOPDS_LITMARKET_RATING': 'litmarket_rating',
     'SOPDS_DEVICES_PER_USER': 'devices_per_user',
+    'SOPDS_DOWNLOADS_PER_DAY': 'downloads_per_day',
+    'SOPDS_DOWNLOADS_PER_MONTH': 'downloads_per_month',
     'SOPDS_ACTIVITY_KEEP_SECURITY_DAYS': 'activity_keep_security_days',
     'SOPDS_ACTIVITY_KEEP_READING_DAYS': 'activity_keep_reading_days',
 }

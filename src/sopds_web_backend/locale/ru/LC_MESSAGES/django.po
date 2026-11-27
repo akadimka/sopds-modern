@@ -2728,3 +2728,110 @@ msgstr "Telegram %(name)s остался привязан: только чере
 #: sopds_web_backend/templates/sopds_profile.html
 msgid "Changing the password unlinks Telegram — but not this one: it is the only way your sign-in code reaches you. Connect an authenticator app to change that."
 msgstr "Смена пароля отвязывает Telegram — но не этот: только через него к вам приходит код входа. Чтобы это изменить, подключите приложение-аутентификатор."
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "Too many new books in a row: no more than %(books)d new books in %(window)d minutes. Try again in %(minutes)d min."
+msgstr "Слишком много новых книг подряд: не больше %(books)d новых книг за %(window)d минут. Попробуйте через %(minutes)d мин."
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "The limit for this month is reached (new books a month: %(limit)d). New books will be available from %(when)s. Books you have already taken this month can be downloaded and read as before."
+msgstr "Лимит на этот месяц исчерпан (новых книг в месяц: %(limit)d). Новые книги будут доступны с %(when)s. Книги, уже взятые в этом месяце, можно скачивать и читать как раньше."
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "The limit for today is reached (new books a day: %(limit)d). New books will be available from %(when)s. Books you have already taken this month can be downloaded and read as before."
+msgstr "Лимит на сегодня исчерпан (новых книг в сутки: %(limit)d). Новые книги будут доступны с %(when)s. Книги, уже взятые в этом месяце, можно скачивать и читать как раньше."
+
+#: sopds_web_backend (download limits)
+msgid "Reached the book limit"
+msgstr "Упёрся в лимит книг"
+
+#: sopds_web_backend (download limits)
+msgid "Changed the book limits"
+msgstr "Изменил лимиты книг"
+
+#: sopds_web_backend (download limits)
+msgid "books a day"
+msgstr "книг в сутки"
+
+#: sopds_web_backend (download limits)
+msgid "books a month"
+msgstr "книг в месяц"
+
+#: sopds_web_backend (download limits)
+msgid "too many books in a row"
+msgstr "слишком много книг подряд"
+
+#: sopds_web_backend (download limits)
+msgid "Book limits (a day / a month)"
+msgstr "Лимиты книг (в сутки / в месяц)"
+
+#: sopds_web_backend (download limits)
+msgid "Book limit must be a whole number (0 — no limit)."
+msgstr "Лимит книг — целое число (0 — без ограничений)."
+
+#: sopds_web_backend (download limits)
+msgid "Book limit reached"
+msgstr "Лимит книг исчерпан"
+
+#: sopds_web_backend (download limits)
+msgid "How many different books a user may take (download, convert, open in the reader, get in Telegram) a day and a month"
+msgstr "Сколько разных книг пользователь может взять (скачать, конвертировать, открыть в читалке, получить в Telegram) в сутки и в месяц"
+
+#: sopds_web_backend (download limits)
+msgid "Books a day / a month"
+msgstr "Книг в сутки / в месяц"
+
+#: sopds_web_backend (download limits)
+msgid "Books a day"
+msgstr "Книг в сутки"
+
+#: sopds_web_backend (download limits)
+msgid "Books a month"
+msgstr "Книг в месяц"
+
+#: sopds_web_backend (download limits)
+msgid "Books a day: empty — default from settings, 0 — no limit"
+msgstr "Книг в сутки: пусто — по умолчанию из настроек, 0 — без ограничений"
+
+#: sopds_web_backend (download limits)
+msgid "Books a month: empty — default from settings, 0 — no limit"
+msgstr "Книг в месяц: пусто — по умолчанию из настроек, 0 — без ограничений"
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "taken: %(day)s today, %(month)s this month"
+msgstr "взято: сегодня %(day)s, в этом месяце %(month)s"
+
+#: sopds_web_backend (download limits)
+msgid "Book limits"
+msgstr "Лимит книг"
+
+#: sopds_web_backend (download limits)
+msgid "Books a day by default"
+msgstr "Книг в сутки по умолчанию"
+
+#: sopds_web_backend (download limits)
+msgid "Books a month by default"
+msgstr "Книг в месяц по умолчанию"
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "How many different books a user may take: download, convert, open in the reader, get in Telegram. The same book again within the month is not counted. In addition, no more than %(books)s new books in %(minutes)s minutes. 0 — no limit; a personal limit is set in the table above; superusers are not limited."
+msgstr "Сколько разных книг пользователь может взять: скачать, конвертировать, открыть в читалке, получить в Telegram. Та же книга повторно в течение месяца не считается. Кроме того — не больше %(books)s новых книг за %(minutes)s минут. 0 — без ограничений; личный лимит задаётся в таблице выше; на суперпользователей не действует."
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "%(n)s of %(limit)s"
+msgstr "%(n)s из %(limit)s"
+
+#: sopds_web_backend (download limits)
+#, python-format
+msgid "%(n)s (no limit)"
+msgstr "%(n)s (без ограничений)"
+
+#: sopds_web_backend (download limits)
+msgid "A book counts once a month — when you first download it, open it in the reader or get it in Telegram. Books you have already taken this month do not count again."
+msgstr "Книга считается один раз в месяц — когда вы впервые скачиваете её, открываете в читалке или получаете в Telegram. Уже взятые в этом месяце книги повторно не считаются."

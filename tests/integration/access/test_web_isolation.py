@@ -6,6 +6,7 @@ import re
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from opds_catalog.models import Book, LibraryShare, bookshelf
 
@@ -191,6 +192,25 @@ def test_rating_progress_admin_only(client, lib):
     assert client.get(url).json()["book_title"] == "Секрет Бориса"
     _, main = _page(client, users["anna"], "main")
     assert 'id="ratings-live-' not in main
+
+
+def test_download_check_reveals_nothing(client, lib):
+    """Проверка лимита книг (web:download_check): по чужой книге — тот же
+    ответ, что по несуществующей, даже когда лимит исчерпан; книга не
+    засчитывается."""
+    from sopds_web_backend.models import BookTake, UserProfile
+    users, books, _ = lib
+    UserProfile.objects.update_or_create(user=users["anna"], defaults={"downloads_per_day": 0,
+                                                                       "downloads_per_month": 0})
+    client.force_login(users["anna"])
+    check = lambda book_id: client.get(reverse("web:download_check", args=(book_id,))).json()  # noqa: E731
+    assert check(books["boris"].pk) == check(999_999) == check(books["anna"].pk) == {"ok": True}
+    UserProfile.objects.filter(user=users["anna"]).update(downloads_per_month=1)
+    BookTake.objects.create(user=users["anna"], book_id=999_998, month=timezone.localdate().replace(day=1),
+                            taken_at=timezone.now())
+    assert check(books["anna"].pk)["ok"] is False                     # своя — отказ по лимиту
+    assert check(books["boris"].pk) == check(999_999) == {"ok": True}
+    assert BookTake.objects.filter(user=users["anna"]).count() == 1
 
 
 def test_reader_in_app(client, lib):

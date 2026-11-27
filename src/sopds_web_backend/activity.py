@@ -78,6 +78,8 @@ ACTIONS = {
     "totp_enabled": Action(SECURITY, _lazy("Connected an authenticator app")),
     "totp_disabled": Action(SECURITY, _lazy("Turned off the authenticator app")),
     "totp_reset": Action(SECURITY, _lazy("Authenticator app reset on the server")),
+    # Отказ по лимиту книг — раз в день на вид лимита (download_limits.report).
+    "download_limit_reached": Action(SECURITY, _lazy("Reached the book limit")),
     # Чтение и скачивание: открытие — одна запись на книгу в день (record_once_per_day).
     "book_opened": Action(READING, _lazy("Opened a book")),
     "book_finished": Action(READING, _lazy("Finished a book")),
@@ -92,6 +94,7 @@ ACTIONS = {
     "account_deleted": Action(ACCOUNTS, _lazy("Deleted own account")),
     "role_changed": Action(ACCOUNTS, _lazy("Changed the role")),
     "device_limit_changed": Action(ACCOUNTS, _lazy("Changed the device limit")),
+    "download_limit_changed": Action(ACCOUNTS, _lazy("Changed the book limits")),
     "admin_user_changed": Action(ACCOUNTS, _lazy("Changed a user in /admin/")),
     # Сайт и библиотека.
     "settings_changed": Action(SITE, _lazy("Changed settings")),
@@ -170,6 +173,11 @@ DETAIL_TEXTS = {
         "broken": _lazy("Broken/incomplete files"),
         "duplicates": _lazy("Duplicates"),
     },
+    "limit_kind": {
+        "day": _lazy("books a day"),
+        "month": _lazy("books a month"),
+        "rate": _lazy("too many books in a row"),
+    },
     "trigger": {
         "schedule_run": _lazy("schedule"),
         "manual": _lazy("by hand"),
@@ -186,6 +194,9 @@ DETAIL_LABELS = {
     "format": _lazy("Format"),
     "role": _lazy("Role"),
     "limit": _lazy("Device limit"),
+    "limit_kind": _lazy("Limit"),
+    "download_limit": _lazy("Books"),
+    "download_limits": _lazy("Book limits (a day / a month)"),
     "tab": _lazy("Tab"),
     "changes": _lazy("Changes"),
     "hidden_values": _lazy("Changed, values not shown"),
@@ -350,7 +361,7 @@ def detail_rows(event) -> list:
             value = _lazy("yes") if value else _lazy("no")
         elif isinstance(value, list):
             value = "; ".join(value)
-        elif key == "limit":
+        elif key in ("limit", "download_limits"):
             value = value.replace("default", str(_lazy("default")))
         else:
             value = DETAIL_TEXTS.get(key, {}).get(value, value)   # код значения — текстом
@@ -463,9 +474,10 @@ ALERT_CACHE_SECONDS = 60
 
 
 def security_alerts() -> int:
-    """Метка в шапке суперпользователя: за сегодня — блокировки (axes, коды)
-    и неудачные входы с адресов, с которых у этого пользователя (или вообще,
-    если имени нет) не было успешного входа. Считается раз в минуту."""
+    """Метка в шапке суперпользователя: за сегодня — блокировки (axes, коды),
+    упоры в лимит книг и неудачные входы с адресов, с которых у этого
+    пользователя (или вообще, если имени нет) не было успешного входа.
+    Считается раз в минуту."""
     from django.core.cache import cache
 
     from .models import ActivityEvent
@@ -474,7 +486,7 @@ def security_alerts() -> int:
         return cached
     failures = ActivityEvent.objects.filter(at__gte=start_of_today(), category=SECURITY, ok=False,
                                             action__in=("locked_out", "code_locked", "password_locked",
-                                                        "login_failed"))
+                                                        "login_failed", "download_limit_reached"))
     known = set(ActivityEvent.objects.filter(action="login", ok=True).exclude(ip=None)
                 .values_list("user_id", "ip").distinct())
     count = sum(1 for action, user_id, ip in failures.values_list("action", "user_id", "ip")

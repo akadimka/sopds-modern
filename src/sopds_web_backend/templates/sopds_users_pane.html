@@ -46,6 +46,7 @@
         <th>Telegram</th>
         <th>{% trans "Devices" %}</th>
         <th>{% trans "Device limit" %}</th>
+        <th title="{% trans "How many different books a user may take (download, convert, open in the reader, get in Telegram) a day and a month" %}">{% trans "Books a day / a month" %}</th>
         <th>{% trans "Change role" %}</th>
         <th>{% trans "New password" %}</th>
         <th>{% trans "Actions" %}</th>
@@ -101,6 +102,27 @@
                  style="width:110px; height:2rem; margin:0; padding:0 0.5rem; font-size:0.82rem;">
           {% endif %}
         </td>
+        <td>
+          {% if u.is_superuser %}
+          <span title="{% trans "Superusers are not limited" %}">∞</span>
+          {% else %}
+          {# лимиты книг (docs/download-limits-design.md) — поля формы строки, как лимит устройств #}
+          <div style="display:flex; gap:0.3rem; align-items:center; white-space:nowrap;">
+            <input type="number" name="downloads_per_day" form="user-edit-{{ u.pk }}" min="0" value="{{ u.personal_downloads_per_day|default_if_none:'' }}"
+                   placeholder="{{ default_downloads_per_day|default:'∞' }}" aria-label="{% trans "Books a day" %}"
+                   title="{% trans "Books a day: empty — default from settings, 0 — no limit" %}"
+                   style="width:70px; height:2rem; margin:0; padding:0 0.4rem; font-size:0.82rem;">
+            /
+            <input type="number" name="downloads_per_month" form="user-edit-{{ u.pk }}" min="0" value="{{ u.personal_downloads_per_month|default_if_none:'' }}"
+                   placeholder="{{ default_downloads_per_month|default:'∞' }}" aria-label="{% trans "Books a month" %}"
+                   title="{% trans "Books a month: empty — default from settings, 0 — no limit" %}"
+                   style="width:80px; height:2rem; margin:0; padding:0 0.4rem; font-size:0.82rem;">
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
+            {% blocktrans with day=u.download_usage.day month=u.download_usage.month %}taken: {{ day }} today, {{ month }} this month{% endblocktrans %}
+          </div>
+          {% endif %}
+        </td>
         {# роль и пароль — поля формы строки (form=…), сохраняются кнопкой «Сохранить» в «Действиях» #}
         <td>
           <div class="sp-user-actions">
@@ -138,7 +160,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
+      <tr><td colspan="10" style="text-align:center; color:var(--text-muted);">{% trans "No users" %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -211,6 +233,18 @@
         <input type="number" name="devices_per_user" value="{{ default_device_limit }}" min="0" max="100" style="max-width:100px;">
         <div class="s-hint">{% trans "How many browsers one account may sign in from; 0 — no limit. A personal limit is set in the table above; superusers are not limited. Reader apps (OPDS) and Telegram are not counted." %}</div>
     </div>
+
+    <div class="s-section-title">{% trans "Book limits" %}</div>
+
+    <div class="s-field" style="display:flex; gap:1rem; flex-wrap:wrap;">
+        <label style="margin:0;">{% trans "Books a day by default" %}
+            <input type="number" name="downloads_per_day" value="{{ default_downloads_per_day }}" min="0" style="max-width:100px;">
+        </label>
+        <label style="margin:0;">{% trans "Books a month by default" %}
+            <input type="number" name="downloads_per_month" value="{{ default_downloads_per_month }}" min="0" style="max-width:100px;">
+        </label>
+    </div>
+    <div class="s-hint" style="margin:-0.4rem 0 1rem;">{% blocktrans with books=download_rate_books minutes=download_rate_minutes %}How many different books a user may take: download, convert, open in the reader, get in Telegram. The same book again within the month is not counted. In addition, no more than {{ books }} new books in {{ minutes }} minutes. 0 — no limit; a personal limit is set in the table above; superusers are not limited.{% endblocktrans %}</div>
 
     <div class="s-section-title">{% trans "Sign-in security" %}</div>
 

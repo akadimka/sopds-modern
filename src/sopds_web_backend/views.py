@@ -1354,6 +1354,22 @@ def read_book(request, book_id):
     return render_book_html(request, book_id, back_url=reverse("web:main"))
 
 
+@require_http_methods(["GET"])
+def download_check(request, book_id):
+    """Можно ли взять книгу (docs/download-limits-design.md): кнопки
+    «Читать» и «Скачать» на сайте спрашивают перед переходом и при отказе
+    показывают окно вместо страницы. Ничего не записывает. Чужая или
+    несуществующая книга — «можно»: дальше её адрес ответит 404, как
+    без проверки (наличие книги отсюда не узнать)."""
+    from . import download_limits
+    book = visibility.visible_books(request.user).filter(pk=book_id).first()         if request.user.is_authenticated else None
+    refused = download_limits.refusal(request.user, book) if book is not None else None
+    if refused is None:
+        return JsonResponse({"ok": True})
+    download_limits.report(request, request.user, refused)
+    return JsonResponse({"ok": False, "message": refused.message()})
+
+
 def offline_page(request):
     return render(request, 'sopds_offline.html')
 
@@ -2109,7 +2125,17 @@ def user_profile(request):
         "password_rules": _rules_text(user),
         "tg_kept": tg_kept,
         "tg_only_channel": login_codes.telegram_is_only_channel(user),
+        "book_limits": _profile_book_limits(user),
     })
+
+
+def _profile_book_limits(user):
+    """Раздел «Лимит книг» профиля: None — у суперпользователя лимитов нет."""
+    from . import download_limits
+    if not download_limits.applies(user):
+        return None
+    day, month = download_limits.limits(user)
+    return {"day": day, "month": month, "usage": download_limits.usage(user)}
 
 
 def _rules_text(user):
@@ -2264,7 +2290,7 @@ def _users_context():
     лимитом (docs/devices-design.md)."""
     from django.contrib.auth.models import User as DjangoUser
 
-    from . import devices
+    from . import devices, download_limits
     users = list(DjangoUser.objects.all().order_by("username").select_related("profile")
                  .prefetch_related("devices"))
     for u in users:
@@ -2272,12 +2298,20 @@ def _users_context():
         u.device_limit = devices.device_limit(u)
         profile = getattr(u, "profile", None)
         u.personal_device_limit = profile.max_devices if profile is not None else None
+        u.personal_downloads_per_day = profile.downloads_per_day if profile is not None else None
+        u.personal_downloads_per_month = profile.downloads_per_month if profile is not None else None
+        if not u.is_superuser:
+            u.download_usage = download_limits.usage(u)
+    default_day, default_month = download_limits.default_limits()
     from fb2parser_core.settings_manager import SettingsManager
     from opds_catalog.sopds_config import sopds_cfg as config
 
     from .usernames import case_conflicts
     autosync = SettingsManager(_site_config_path()).get_autosync_settings()
     return {"users": users, "default_device_limit": int(config.SOPDS_DEVICES_PER_USER or 0),
+            "default_downloads_per_day": default_day, "default_downloads_per_month": default_month,
+            "download_rate_books": download_limits.RATE_BOOKS,
+            "download_rate_minutes": int(download_limits.RATE_WINDOW.total_seconds() // 60),
             "case_conflicts": case_conflicts(),
             "opds_app_passwords_only": bool(config.SOPDS_OPDS_APP_PASSWORDS_ONLY),
             "admin_login_code": bool(autosync.get("admin_login_code"))}
@@ -2317,6 +2351,14 @@ def users_settings(request):
         sm.settings.setdefault('sopds', {})['devices_per_user'] = max(0, int(raw or 0))
     except ValueError:
         errors.append(_("Device limit must be a whole number (0 — no limit)."))
+    for key in ('downloads_per_day', 'downloads_per_month'):
+        if key not in request.POST:
+            continue
+        raw = request.POST.get(key, '').strip()
+        try:
+            sm.settings.setdefault('sopds', {})[key] = max(0, int(raw or 0))
+        except ValueError:
+            errors.append(_("Book limit must be a whole number (0 — no limit)."))
     sm.settings['autosync'] = sm.get_autosync_settings()
     weakens = ((sm.settings['autosync'].get('admin_login_code') and request.POST.get('admin_login_code') != 'on')
                or (sm.settings.get('sopds', {}).get('opds_app_passwords_only')
@@ -2412,6 +2454,10 @@ def user_edit(request, user_id):
             from . import activity
             activity.record(request, "device_limit_changed", user=user, actor=request.user,
                             limit=f"{_limit_text(old_limit)} → {_limit_text(new_limit)}")
+    if "downloads_per_day" in request.POST or "downloads_per_month" in request.POST:
+        error = _save_download_limits(request, user)
+        if error:
+            return _users_list_error(request, error)
     _set_role(user, role)
     user.save()
     if _role_of(user) != old_role:
@@ -2419,6 +2465,29 @@ def user_edit(request, user_id):
         activity.record(request, "role_changed", user=user, actor=request.user,
                         role=f"{old_role} → {_role_of(user)}")
     return redirect(reverse("web:users_list"))
+
+
+def _save_download_limits(request, user):
+    """Личные лимиты книг из строки таблицы пользователей
+    (docs/download-limits-design.md): пусто — по умолчанию, 0 — без ограничений."""
+    from .models import UserProfile
+    values = {}
+    for key in ("downloads_per_day", "downloads_per_month"):
+        raw = request.POST.get(key, "").strip()
+        if raw and not raw.isdigit():
+            return _("Book limit must be a whole number (0 — no limit).")
+        values[key] = int(raw) if raw else None
+    profile, _created = UserProfile.objects.get_or_create(user=user)
+    old = (profile.downloads_per_day, profile.downloads_per_month)
+    new = (values["downloads_per_day"], values["downloads_per_month"])
+    if old != new:
+        profile.downloads_per_day, profile.downloads_per_month = new
+        profile.save(update_fields=["downloads_per_day", "downloads_per_month"])
+        from . import activity
+        activity.record(request, "download_limit_changed", user=user, actor=request.user,
+                        download_limits=f"{_limit_text(old[0])} / {_limit_text(old[1])} → "
+                                        f"{_limit_text(new[0])} / {_limit_text(new[1])}")
+    return None
 
 
 def _limit_text(limit):

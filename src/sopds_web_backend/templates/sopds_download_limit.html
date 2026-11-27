@@ -1,0 +1,15 @@
+{% extends "sopds_main.html" %}
+{% load i18n %}
+
+{% comment %}
+Отказ по лимиту книг, если кнопка сайта не спросила заранее (download_check)
+или адрес открыт напрямую (docs/download-limits-design.md).
+{% endcomment %}
+{% block ext-body %}
+<div class="cell sopds-settings" style="max-width:560px;">
+  <h4 style="color:var(--text); margin-bottom:0.6rem;">⛔ {% trans "Book limit reached" %}</h4>
+  <p style="margin-bottom:1rem;">{{ message }}</p>
+  <a href="{% url 'web:main' %}" class="button secondary" style="margin:0;"
+     onclick="if (history.length > 1) { history.back(); return false; }">{% trans "Back" %}</a>
+</div>
+{% endblock %}

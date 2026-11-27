@@ -55,6 +55,7 @@ ISOLATION_TESTED = {
     "web:ratings_progress": (WEB, "test_rating_progress_admin_only"),
     "web:news": (WEB, "test_news_shows_only_visible_books"),
     "web:read": (WEB, "test_reader_in_app"),
+    "web:download_check": (WEB, "test_download_check_reveals_nothing"),
     # Журнал действий: в нём будут книги (чтение, скачивание) — виден только
     # суперпользователю (docs/activity-log-design.md).
     "web:journal": ("tests.integration.sopds_web_backend.test_activity_log", "test_journal_is_for_superuser_only"),

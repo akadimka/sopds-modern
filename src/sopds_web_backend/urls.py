@@ -45,6 +45,7 @@ urlpatterns = [
             name="news_action"),
     re_path(r"^offline/$", views.offline_page, name="offline"),
     re_path(r"^read/(?P<book_id>[0-9]+)/$", views.read_book, name="read"),
+    re_path(r"^download-check/(?P<book_id>[0-9]+)/$", views.download_check, name="download_check"),
     re_path(r"^online/$", views.online_now, name="online"),
     re_path(r"^book/card/(?P<book_id>\d+)/$", views.book_card, name="book_card"),
     re_path(r"^book/(?P<book_id>\d+)/review/$", views.review_save, name="review_save"),

@@ -249,6 +249,12 @@ class LibraryHandler:
             if book is None or fmt not in available_formats(book):
                 client.send_message(chat_id, "Эта книга или формат больше недоступны — повторите поиск.")
                 return
+            from . import download_limits
+            refused = download_limits.refusal(user, book)
+            if refused is not None:
+                download_limits.report(None, user, refused, channel="telegram")
+                client.send_message(chat_id, "⛔ " + _e(refused.message_ru()))
+                return
             bookshelf.objects.get_or_create(user=user, book=book)  # как скачивание на сайте
             authors = ", ".join(a.full_name for a in book.authors.all())
             caption = f"📖 <b>{_e(book.display_title)}</b>" + (f"\n👤 {_e(authors)}" if authors else "")
@@ -297,6 +303,7 @@ class LibraryHandler:
 
 
 def _record_download(user, book, fmt) -> None:
-    """Книга отправлена в Telegram — в журнал как скачивание."""
-    from . import activity
+    """Книга отправлена в Telegram — в лимит книг и в журнал как скачивание."""
+    from . import activity, download_limits
+    download_limits.note(user, book)
     activity.record(None, "book_downloaded", user=user, channel="telegram", obj=activity.book_obj(book), format=fmt)

@@ -109,6 +109,55 @@
   {% endspaceless %}
 
  {% block block-js %}{% endblock %}
+{% comment %}
+Лимит книг (docs/download-limits-design.md): «Читать», «Скачать» и форматы
+сначала спрашивают web:download_check; отказ — это окно вместо перехода.
+{% endcomment %}
+<div id="sopds-limit-modal" role="dialog" aria-modal="true" aria-labelledby="sopds-limit-title"
+     style="position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:var(--bg-card, var(--surface, #1e293b)); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-lg, 10px); max-width:440px; width:100%; padding:1.2rem 1.3rem; box-shadow:0 10px 40px rgba(0,0,0,0.4);">
+    <h5 id="sopds-limit-title" style="margin:0 0 0.6rem;">⛔ {% trans "Book limit reached" %}</h5>
+    <p id="sopds-limit-text" style="margin:0 0 1rem; font-size:0.95rem;"></p>
+    <button type="button" class="button" style="margin:0;" id="sopds-limit-ok">{% trans "OK" %}</button>
+  </div>
+</div>
+<script>
+(function () {
+  var modal = document.getElementById('sopds-limit-modal');
+  var BOOK_LINK = /^\/(?:opds\/(?:download|convert|view)|web\/read)\/(\d+)\//;
+  function close() { modal.style.display = 'none'; }
+  document.getElementById('sopds-limit-ok').addEventListener('click', close);
+  modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.style.display !== 'none') close(); });
+  // Синхронный запрос: переход по ссылке (новая вкладка, окно приложения)
+  // остаётся обычным, если можно, — без потери «жеста» пользователя.
+  function refusal(bookId) {
+    try {
+      var x = new XMLHttpRequest();
+      x.open('GET', '/web/download-check/' + bookId + '/', false);
+      x.setRequestHeader('Accept', 'application/json');
+      x.send();
+      if (x.status !== 200) return null;
+      var r = JSON.parse(x.responseText);
+      return r && r.ok === false ? r.message : null;
+    } catch (err) { return null; }     // нет сети, другой ответ — решит сервер
+  }
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var m = BOOK_LINK.exec(new URL(a.href, location.href).pathname);
+    if (!m || new URL(a.href, location.href).origin !== location.origin) return;
+    var message = refusal(m[1]);
+    if (!message) return;
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('sopds-limit-text').textContent = message;
+    modal.style.display = 'flex';
+    document.getElementById('sopds-limit-ok').focus();
+  });
+})();
+</script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js', { scope: '/web/' })

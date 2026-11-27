@@ -413,6 +413,25 @@ def test_user_management_names_who_and_whom(boss):
     assert events[-1].user is None                            # удалён — имя осталось копией
 
 
+def test_book_limits_are_recorded(boss):
+    """Лимит книг (docs/download-limits-design.md): изменение личных лимитов —
+    действие суперпользователя; упор в лимит — событие безопасности с
+    понятными подробностями (подробнее — test_download_limits.py)."""
+    admin, client = boss
+    anna = User.objects.create_user("anna")
+    client.post(reverse("web:user_edit", args=[anna.pk]), {"role": "user", "downloads_per_day": "0",
+                                                           "downloads_per_month": "30"})
+    changed = ActivityEvent.objects.get(action="download_limit_changed")
+    assert (changed.actor, changed.user, changed.category) == (admin, anna, "accounts")
+    assert changed.details["download_limits"] == "default / default → 0 / 30"
+    from sopds_web_backend import download_limits
+    download_limits.report(None, anna, download_limits.Refusal("month", 30, timezone.now()), channel="opds")
+    reached = activity.decorate(ActivityEvent.objects.get(action="download_limit_reached"))
+    assert (reached.category, reached.ok, reached.user) == ("security", False, anna)
+    assert ("Limit", "books a month") in [(str(k), str(v)) for k, v in reached.detail_rows]
+    assert str(reached.action_text) == "Reached the book limit"
+
+
 def test_news_actions_are_recorded(boss):
     admin, client = boss
     client.post(reverse("web:news_create"), {"title": "Новые книги", "text": "…"})
